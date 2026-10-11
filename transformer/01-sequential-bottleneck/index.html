@@ -22,9 +22,24 @@
   </div>
 </section>
 
-<section class="slide" id="s-rnn" data-chapter="The problem">
+<section class="slide" id="s-p1" data-chapter="Problem">
   <div class="inner">
-    <span class="qtag prob">① What is the problem?</span>
+    <span class="qtag b1">1 · Problem</span>
+    <h2>A sequence model must connect distant words and train fast on a lot of data</h2>
+    <hr>
+    <p class="lede">Translation is the paper's test bed. A good model has to do three things at once.</p>
+    <div class="grid3">
+      <div class="card a"><h3>Relate distant words</h3><p>In "The animal didn't cross the street because it was tired", resolving "it" needs a link across 6 words. Long-range dependencies are "a key challenge in many sequence transduction tasks" (§4).</p></div>
+      <div class="card b"><h3>Learn from a lot of data</h3><p>WMT 2014 English-German has about 4.5 million sentence pairs; English-French has 36 million sentences (§5.1). Training speed decides what you can afford to try.</p></div>
+      <div class="card c"><h3>Use parallel hardware</h3><p>GPUs run thousands of operations at the same time. Training is only fast if the work can be split across positions.</p></div>
+    </div>
+    <div class="takeaway">The architecture should make any two positions easy to connect, and let all positions be computed at the same time.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-rnn" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
     <h2>An RNN must wait for step t−1 before it can compute step t</h2>
     <hr>
     <p class="lede">A recurrent layer computes the hidden state h<sub>t</sub> = f(h<sub>t−1</sub>, x<sub>t</sub>). Each step needs the result of the previous one, so the steps run <b>one after another</b>, even on hardware that could run thousands of operations at the same time.</p>
@@ -38,9 +53,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-path" data-chapter="The problem">
+<section class="slide" id="s-path" data-chapter="Limitation">
   <div class="inner">
-    <span class="qtag prob">① What is the problem?</span>
+    <span class="qtag b2">2 · Limitation</span>
     <h2>Distant words are many steps apart</h2>
     <hr>
     <p class="lede">To link "<b>it</b>" to "<b>animal</b>", information has to travel through every hidden state in between. A longer path makes the dependency harder to learn: the forward signal and the backward gradient both pass through many transformations. Click two tokens.</p>
@@ -57,9 +72,28 @@
   </div>
 </section>
 
-<section class="slide" id="s-sa" data-chapter="The core idea">
+<section class="slide" id="s-turn" data-chapter="Your turn">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>How would you fix both problems?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">How would you let "it" use "animal" directly, while computing all 10 positions at the same time?</p>
+      <div class="opts">
+      <button>A. Give the RNN a bigger hidden state</button>
+      <button>B. Run the RNN in both directions (bidirectional)</button>
+      <button data-ok>C. Let every position read every other position directly, weighted by relevance</button>
+      <button>D. Stack more RNN layers</button>
+      </div>
+      <div class="why"><b>C is the paper's move.</b> A bigger state (A) or more layers (D) keeps the n-step chain. A bidirectional RNN (B) still needs n sequential steps and long paths in each direction. Only direct position-to-position connections give O(1) sequential operations and O(1) path length (Table 1).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-sa" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
     <h2>Self-attention connects every position to every other in one step</h2>
     <hr>
     <p class="lede">In a self-attention layer, every token reads from every other token <b>directly</b>, and all positions are computed <b>at the same time</b>. Switch between the two layer types.</p>
@@ -76,9 +110,29 @@
   </div>
 </section>
 
-<section class="slide" id="s-cost" data-chapter="The core idea">
+<section class="slide" id="s-how" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
+    <h2>A loop of n dependent steps vs a few matrix products</h2>
+    <hr>
+    <p class="lede">The difference shows up directly in code. A recurrent layer is a loop where each step needs the previous one. A self-attention layer is a handful of matrix products over all positions at once.</p>
+    <div class="vs">
+      <div class="visual" style="margin-top:0"><h3>Recurrent layer</h3><pre class="code">h = h0
+for t in range(n):        # n dependent steps
+    h = f(h, x[t])        # needs h from step t-1
+    out[t] = h</pre></div>
+      <div class="visual" style="margin-top:0"><h3>Self-attention layer</h3><pre class="code">Q, K, V = X@Wq, X@Wk, X@Wv  # all n positions
+S = Q @ K.T / sqrt(d_k)     # n×n scores: 1 matmul
+A = softmax(S, axis=-1)     # each row sums to 1
+out = A @ V                 # all n outputs at once</pre></div>
+    </div>
+    <div class="paper">Every output row depends on <b>all</b> inputs, but no output depends on another output, so the whole layer runs in parallel. Decks 03–05 explain each line.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-cost" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
     <h2>The cost: self-attention compares every pair, n² · d</h2>
     <hr>
     <p class="lede">Connecting every pair costs O(n²·d) per layer, versus O(n·d²) for recurrence. The paper points out that self-attention is <b>cheaper when n &lt; d</b>, which was typical for sentence-level translation with word-piece or BPE tokens.</p>
@@ -95,9 +149,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-paper" data-chapter="In the paper">
+<section class="slide" id="s-paper" data-chapter="Why">
   <div class="inner">
-    <div class="label ppr">In the paper · §4, Table 1</div>
+    <span class="qtag b6">6 · Why it works</span> <span class="ill" style="color:var(--c);border-color:var(--c)">from the paper · §4, Table 1</span>
     <h2>Why self-attention: three criteria</h2>
     <hr>
     <div class="visual scroll-x">
@@ -114,11 +168,66 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="In the paper">
+<section class="slide" id="s-myth" data-chapter="Myths">
   <div class="inner">
-    <div class="label">Recap</div>
-    <h2>Sequential bottleneck in two lines</h2>
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
     <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Self-attention is always cheaper than a recurrent layer."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Per layer, self-attention costs O(n²·d) and recurrence O(n·d²). Self-attention is cheaper only when <b>n &lt; d</b>, which the paper notes is usually true for sentence-level translation. For very long sequences it suggests restricting attention to a neighbourhood of size r (§4).</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"The Transformer has no sequential computation at all."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Within a layer, all positions run in parallel. But the 6 layers still run one after another, and <b>generation</b> is still one token at a time (deck 12).</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"RNNs can't learn long-range dependencies."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They can (LSTMs were the state of the art). The paper's argument is that <b>longer paths make it harder</b>: shorter paths between positions make long-range dependencies easier to learn (§4).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">What is the maximum path length between two positions in a recurrent layer (Table 1)?</p>
+      <div class="opts">
+      <button>A. O(1)</button>
+      <button>B. O(log n)</button>
+      <button data-ok>C. O(n)</button>
+      <button>D. O(n²)</button>
+      </div>
+      <div class="why"><b>O(n).</b> Information must pass through every hidden state in between. Self-attention: O(1). See "Distant words are many steps apart".</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">For n = 50 tokens and d = 512, which layer is cheaper per layer, self-attention or recurrent, and by roughly how much?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Self-attention: n²·d = 50² × 512 ≈ 1.3M. Recurrent: n·d² = 50 × 512² ≈ 13.1M. Self-attention is about <b>10× cheaper</b>, because n &lt; d.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why doesn't batching many sentences together fix the RNN bottleneck?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Batching parallelizes <em>across</em> sentences, but within each sentence the steps stay sequential, and memory limits how large batches can get for long sequences (§1).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Recurrence pushes computation and information through n sequential steps. Self-attention puts every pair of positions one hop apart and computes them all at once.</div>
+    <div class="interview"><b>Say it in 30 seconds</b><p>RNNs compute h<sub>t</sub> from h<sub>t−1</sub>, so a layer needs O(n) sequential steps and distant tokens are O(n) hops apart. That makes training slow and long-range dependencies hard to learn. Self-attention connects all positions directly: O(1) sequential operations and O(1) path length per layer, at O(n²·d) cost, which is cheaper than recurrence's O(n·d²) when n &lt; d, as in sentence-level translation.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> recurrence forces n sequential steps per layer, and puts O(n) hops between distant tokens.</span></div>
       <div><span><b>Core idea:</b> self-attention computes all positions at once with O(1) path length, at O(n²·d) cost, which is cheaper than recurrence when n &lt; d.</span></div>

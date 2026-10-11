@@ -27,9 +27,23 @@
   </div>
 </section>
 
-<section class="slide" id="s-prob" data-chapter="The problem">
+<section class="slide" id="s-p1" data-chapter="Problem">
   <div class="inner">
-    <span class="qtag prob">① What is the problem?</span>
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Sequence transduction: read one sequence, write another</h2>
+    <hr>
+    <p class="lede">Machine translation maps an input sequence (English) to an output sequence (German) of a different length and word order. The standard design in 2017 was an <b>encoder-decoder</b>: the encoder reads the source, and the decoder writes the target one token at a time.</p>
+    <div class="grid3">
+      <div class="card a"><h3>Encoder</h3><p>Turns the source tokens (x<sub>1</sub>…x<sub>n</sub>) into a sequence of continuous representations z = (z<sub>1</sub>…z<sub>n</sub>) (§3).</p></div>
+      <div class="card c"><h3>Decoder</h3><p>Generates the output y<sub>1</sub>…y<sub>m</sub> one symbol at a time, using z and the symbols it has already produced.</p></div>
+      <div class="card b"><h3>How positions talk</h3><p>The open question is how information moves between positions inside each stack. Before this paper: recurrence or convolution, usually with attention added between encoder and decoder.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-prob" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
     <h2>In earlier models, linking two positions cost more the farther apart they were</h2>
     <hr>
     <p class="lede">The paper's §2 compares architectures by how many operations it takes to relate signals from two arbitrary positions. Drag the distance between the two positions.</p>
@@ -42,9 +56,45 @@
   </div>
 </section>
 
-<section class="slide" id="s-fig" data-chapter="The core idea">
+<section class="slide" id="s-turn" data-chapter="Your turn">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What would the model need?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Suppose you delete recurrence and convolution entirely. What must the model still have in order to work?</p>
+      <div class="opts">
+      <button>A. Nothing else: attention alone is enough</button>
+      <button data-ok>B. A way to mix information across positions, a way to encode word order, and per-position processing</button>
+      <button>C. Larger embeddings</button>
+      <button>D. A single convolution at the input</button>
+      </div>
+      <div class="why"><b>B.</b> Attention mixes information across positions, but it is blind to order and only averages values. The paper adds <b>positional encodings</b> (order), <b>position-wise feed-forward networks</b> (per-token processing), and residual connections with layer normalization (stable stacking). The title is a slogan; the model is more than attention.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Keep the encoder-decoder; build every layer from attention and feed-forward blocks</h2>
+    <hr>
+    <p class="lede">The breakthrough is what is <em>left out</em>: no recurrence and no convolution. Six building blocks do all the work.</p>
+    <div class="grid3">
+      <div class="card" style="border-top:3px solid var(--b)"><h3>Multi-head self-attention</h3><p>Mixes information between all positions in one step. <a href="../03-self-attention/index.html">Decks 03–06</a></p></div>
+      <div class="card" style="border-top:3px solid #3a8fd8"><h3>Position-wise FFN</h3><p>Transforms each token on its own. <a href="../11-position-wise-ffn/index.html">Deck 11</a></p></div>
+      <div class="card e"><h3>Add &amp; Norm</h3><p>Residual connection + layer normalization around every sub-layer. <a href="../10-residual-layernorm/index.html">Deck 10</a></p></div>
+      <div class="card" style="border-top:3px solid #c9a227"><h3>Positional encoding</h3><p>Injects word order into the embeddings. <a href="../07-positional-encoding/index.html">Deck 07</a></p></div>
+      <div class="card c"><h3>Encoder-decoder attention</h3><p>Lets the decoder read the source. <a href="../08-encoder-decoder-attention/index.html">Deck 08</a></p></div>
+      <div class="card d"><h3>Masked self-attention</h3><p>Stops the decoder seeing future tokens. <a href="../09-masked-self-attention/index.html">Deck 09</a></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-fig" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
     <h2>The full model: an encoder stack and a decoder stack (Figure 1)</h2>
     <hr>
     <div class="grid2" style="grid-template-columns:1.25fr 1fr">
@@ -58,9 +108,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-flow" data-chapter="The core idea">
+<section class="slide" id="s-flow" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
     <h2>Follow one sentence through the model: shapes at every stage</h2>
     <hr>
     <p class="lede">Translating a source sentence of n tokens. While training, the decoder sees the m target tokens, shifted right by one position. Every sub-layer keeps the width at d<sub>model</sub> = 512, which is what lets the residual connections add their input to their output.</p>
@@ -72,9 +122,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-cfg" data-chapter="The core idea">
+<section class="slide" id="s-cfg" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
     <h2>Two sizes: base and big</h2>
     <hr>
     <div class="visual scroll-x">
@@ -95,9 +145,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-paper" data-chapter="In the paper">
+<section class="slide" id="s-paper" data-chapter="How">
   <div class="inner">
-    <div class="label ppr">In the paper · §3.1, §3.4</div>
+    <span class="qtag b5">5 · How it works</span> <span class="ill" style="color:var(--c);border-color:var(--c)">from the paper · §3.1, §3.4</span>
     <h2>The paper's own description</h2>
     <hr>
     <div class="paper"><b>Encoder:</b> a stack of N = 6 identical layers, each with two sub-layers: multi-head self-attention, and a simple, position-wise fully connected feed-forward network. Each sub-layer has a residual connection followed by layer normalization, so its output is <code>LayerNorm(x + Sublayer(x))</code>, and all outputs have dimension d<sub>model</sub> = 512.</div>
@@ -106,11 +156,85 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="In the paper">
+<section class="slide" id="s-why" data-chapter="Why">
   <div class="inner">
-    <div class="label">Recap</div>
-    <h2>The architecture in two lines</h2>
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why this design works</h2>
     <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Constant path length</h3><p>Any two positions are connected by one attention step in every layer, compared with O(n) for recurrence (Table 1). Long-range dependencies become easier to learn.</p></div>
+      <div class="card e"><h3>Parallel training</h3><p>All positions in a layer are computed at once. The decoder stays auto-regressive through masking plus the shifted-right input, yet still trains on every position in parallel.</p></div>
+      <div class="card b"><h3>Easy to stack</h3><p>Every sub-layer outputs d<sub>model</sub> = 512, so residual connections can add input to output, and N = 6 identical layers stack cleanly. Table 3 (C): N = 2 gives 23.7 BLEU, N = 6 gives 25.8.</p></div>
+      <div class="card c"><h3>Evidence</h3><p>New state of the art on WMT 2014 EN-DE (28.4 BLEU) and EN-FR (41.8) at a fraction of the training cost (Table 2, deck 14).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"The original Transformer is a decoder-only model."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The 2017 model is an <b>encoder-decoder</b>: a 6-layer encoder and a 6-layer decoder joined by encoder-decoder attention.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Encoder and decoder layers are identical."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Encoder layers have 2 sub-layers (self-attention, FFN). Decoder layers have <b>3</b>: masked self-attention, encoder-decoder attention, FFN.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"The encoder output only feeds the first decoder layer."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why"><b>Every</b> decoder layer attends to the final encoder output through its encoder-decoder attention sub-layer.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">How many sub-layers does each decoder layer have?</p>
+      <div class="opts">
+      <button>A. 1</button>
+      <button>B. 2</button>
+      <button data-ok>C. 3</button>
+      <button>D. 6</button>
+      </div>
+      <div class="why"><b>3</b>: masked multi-head self-attention, multi-head attention over the encoder output, and the position-wise FFN (§3.1).</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">For an n-token source, what shape leaves the base encoder?</p>
+      <div class="opts">
+      <button>A. n × 64</button>
+      <button data-ok>B. n × 512</button>
+      <button>C. n × 2048</button>
+      <button>D. 512 × 512</button>
+      </div>
+      <div class="why"><b>n × 512.</b> Every sub-layer keeps d<sub>model</sub> = 512. See "Follow one sentence through the model".</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why must every sub-layer output exactly d<sub>model</sub> = 512 dimensions?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Because each sub-layer is wrapped as LayerNorm(<b>x + Sublayer(x)</b>): you can only add the input to the output if their shapes match (§3.1).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">An encoder-decoder built only from attention and position-wise feed-forward sub-layers, each wrapped as LayerNorm(x + Sublayer(x)), stacked 6 deep on each side.</div>
+    <div class="interview"><b>Say it in 30 seconds</b><p>The Transformer keeps the encoder-decoder structure but drops recurrence and convolution. Each of the 6 encoder layers has multi-head self-attention and a position-wise FFN; each of the 6 decoder layers adds masked self-attention and attention over the encoder output. Every sub-layer is LayerNorm(x + Sublayer(x)) with d<sub>model</sub> = 512, and sinusoidal positional encodings added to the embeddings provide word order.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> recurrent and convolutional models needed more operations to relate positions the farther apart they were.</span></div>
       <div><span><b>Core idea:</b> an encoder-decoder made only of attention and position-wise FFN sub-layers, each wrapped as LayerNorm(x + Sublayer(x)), with N = 6 layers on each side, d<sub>model</sub> = 512.</span></div>

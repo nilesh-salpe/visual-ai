@@ -23,9 +23,23 @@
   </div>
 </section>
 
-<section class="slide" id="s-prob" data-chapter="The problem">
+<section class="slide" id="s-p1" data-chapter="Problem">
   <div class="inner">
-    <span class="qtag prob">① What is the problem?</span>
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Word order carries meaning</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Who did what</h3><p>"dog bites man" and "man bites dog" use the same words with opposite meanings.</p></div>
+      <div class="card b"><h3>Translation reorders</h3><p>German often moves the verb to the end of a clause, so the model must track where each word sits.</p></div>
+      <div class="card c"><h3>Relative position matters</h3><p>"not" changes the word right after it; adjectives modify the noun next to them.</p></div>
+    </div>
+    <div class="takeaway">Any sequence model must know where each token is, and how far apart two tokens are.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-prob" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
     <h2>Without position information, word order doesn't change anything</h2>
     <hr>
     <p class="lede">Self-attention computes softmax(QKᵀ/√d<sub>k</sub>)V. Nothing in that formula depends on <em>where</em> a token is. Reorder the input and every token's output stays the same; only the order of the output rows changes. Below is a live toy self-attention (d = 4).</p>
@@ -41,9 +55,28 @@
   </div>
 </section>
 
-<section class="slide" id="s-add" data-chapter="The core idea">
+<section class="slide" id="s-turn" data-chapter="Your turn">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>How would you add order?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Without recurrence or convolution, how would you give the model information about token order?</p>
+      <div class="opts">
+      <button>A. Append the raw position number (0, 1, 2, …) as an extra feature</button>
+      <button data-ok>B. Add a vector that encodes the position to each token's embedding</button>
+      <button>C. Sort the tokens alphabetically</button>
+      <button>D. Use the decoder's causal mask</button>
+      </div>
+      <div class="why"><b>B.</b> The paper adds a d<sub>model</sub>-dimensional positional encoding to each embedding. A raw integer (A) grows without bound and sits on a very different scale from the other features. Sorting (C) destroys order. The mask (D) exists only in the decoder and only blocks future positions; it doesn't say where a token is.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-add" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
     <h2>Add a position vector to each word vector</h2>
     <hr>
     <p class="lede">PE has the same dimension as the embeddings (d<sub>model</sub> = 512), so the two can be <b>summed</b>. This happens once, at the bottom of both the encoder and decoder stacks, and dropout is applied to the sum.</p>
@@ -52,9 +85,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-heat" data-chapter="The core idea">
+<section class="slide" id="s-heat" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
     <h2>Every dimension is a sinusoid with its own wavelength</h2>
     <hr>
     <p class="lede">Low dimensions oscillate quickly and high dimensions slowly. The wavelengths form a geometric progression <b>from 2π to 10000·2π</b>, so every position gets a unique pattern, a bit like the hands of a clock running at many speeds.</p>
@@ -71,9 +104,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-rel" data-chapter="The core idea">
+<section class="slide" id="s-rel" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
     <h2>Why sinusoids: a fixed offset k is a fixed rotation</h2>
     <hr>
     <p class="lede">For each frequency ω, the pair (sin ωp, cos ωp) is a point on a circle. Moving k positions rotates it by the angle ωk, <b>whatever p is</b>, so PE(pos+k) is a linear function of PE(pos). The authors hypothesized this would make it easy to attend by <b>relative position</b>.</p>
@@ -90,9 +123,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-paper" data-chapter="In the paper">
+<section class="slide" id="s-paper" data-chapter="Why">
   <div class="inner">
-    <div class="label ppr">In the paper · §3.5, Table 3 (E)</div>
+    <span class="qtag b6">6 · Why it works</span> <span class="ill" style="color:var(--c);border-color:var(--c)">from the paper · §3.5, Table 3 (E)</span>
     <h2>The choice, and the experiment behind it</h2>
     <hr>
     <div class="paper"><b>§3.5:</b> "We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions, since for any fixed offset k, PE<sub>pos+k</sub> can be represented as a linear function of PE<sub>pos</sub>."</div>
@@ -107,11 +140,66 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="In the paper">
+<section class="slide" id="s-myth" data-chapter="Myths">
   <div class="inner">
-    <div class="label">Recap</div>
-    <h2>Positional encoding in two lines</h2>
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
     <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"The positional encoding is concatenated to the embedding."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is <b>added</b>. PE has the same dimension d<sub>model</sub> as the embedding "so that the two can be summed" (§3.5).</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Positional encodings are added in every layer."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They are added once, "at the bottoms of the encoder and decoder stacks" (§3.5). Residual connections carry them upward.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Sinusoids were shown to beat learned position embeddings."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The two gave <b>nearly identical</b> results (Table 3 E: 25.7 vs 25.8 BLEU). Sinusoids were chosen because they may extrapolate to longer sequences.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">What range do the PE wavelengths span?</p>
+      <div class="opts">
+      <button>A. 1 to 512</button>
+      <button data-ok>B. 2π to 10000·2π</button>
+      <button>C. 0 to 1</button>
+      <button>D. 2π to 512·2π</button>
+      </div>
+      <div class="why"><b>A geometric progression from 2π to 10000·2π</b> (§3.5).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">What is the positional encoding at position 0?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Every even dimension is sin(0) = <b>0</b> and every odd dimension is cos(0) = <b>1</b>.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Without positional encoding, what happens to the encoder's per-token outputs if you shuffle the input words?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Each word gets <b>exactly the same output</b>, just in a different row order. Self-attention is permutation-invariant (see the "dog bites man" demo).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Add a fixed sinusoidal code PE(pos) to every embedding, so attention can tell positions apart and a fixed offset becomes a fixed rotation.</div>
+    <div class="interview"><b>Say it in 30 seconds</b><p>Self-attention is permutation-invariant: shuffle the inputs and each token's output is unchanged, so it can't use word order. The paper adds positional encodings to the input embeddings: sines and cosines whose wavelengths range geometrically from 2π to 10000·2π. For any fixed offset k, PE(pos+k) is a linear function of PE(pos), which the authors hypothesized makes relative positions easy to learn. Learned position embeddings gave nearly identical results; sinusoids were kept because they may extrapolate to longer sequences.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> attention is permutation-invariant, so without extra information it can't tell "dog bites man" from "man bites dog".</span></div>
       <div><span><b>Core idea:</b> add fixed sinusoids PE(pos) to the embeddings. Each position gets a unique code, and offsets become rotations. Learned PE scored the same (Table 3E).</span></div>

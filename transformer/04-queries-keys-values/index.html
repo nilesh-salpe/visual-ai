@@ -22,9 +22,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-prob" data-chapter="The problem">
+<section class="slide" id="s-prob" data-chapter="Problem">
   <div class="inner">
-    <span class="qtag prob">① What is the problem?</span>
+    <span class="qtag b1">1 · Problem</span>
     <h2>Searching needs a question, an index and the content itself</h2>
     <hr>
     <p class="lede">Think of a library. You arrive with a <b>question</b>, you compare it with each book's <b>label</b>, and you take <b>content</b> from the books that match. If a token's raw embedding had to be the question, the label and the content all at once, it couldn't specialize for any of those roles.</p>
@@ -33,9 +33,45 @@
   </div>
 </section>
 
-<section class="slide" id="s-proj" data-chapter="The core idea">
+<section class="slide" id="s-lim" data-chapter="Limitation">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Scoring with the raw embeddings, x<sub>i</sub>·x<sub>j</sub>, doesn't work well</h2>
+    <hr>
+    <p class="lede">The simplest idea is to score each pair of tokens by the dot product of their embeddings. Below is that score matrix for the toy embeddings used in this deck.</p>
+    <div class="grid2" style="align-items:center">
+      <div class="visual" style="margin-top:0"><svg id="limSvg" viewBox="0 0 330 270" role="img" aria-label="Raw embedding dot products"></svg></div>
+      <div>
+        <div class="card d"><h3>Symmetric</h3><p>x<sub>i</sub>·x<sub>j</sub> = x<sub>j</sub>·x<sub>i</sub>. If "it" looks for "animal", "animal" must look for "it" just as strongly.</p></div>
+        <div class="card d" style="margin-top:8px"><h3>Each word matches itself best</h3><p>The diagonal dominates: "it" scores 1.02 with itself and only 0.10 with "animal".</p></div>
+        <div class="card d" style="margin-top:8px"><h3>One vector, three jobs</h3><p>What a word is matched on and what it passes on are forced to be the same vector.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>How would you separate the roles?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">How can "it" look for animate things without "animal" having to look for pronouns?</p>
+      <div class="opts">
+      <button>A. Keep using x<sub>i</sub>·x<sub>j</sub> but normalize the embeddings</button>
+      <button data-ok>B. Use separate learned projections for asking (query) and for being matched (key)</button>
+      <button>C. Add positional encodings</button>
+      <button>D. Use a larger embedding size</button>
+      </div>
+      <div class="why"><b>B.</b> With q = xW<sup>Q</sup> and k = xW<sup>K</sup>, the score q<sub>i</sub>·k<sub>j</sub> is no longer symmetric, and each projection can specialize. A third projection, v = xW<sup>V</sup>, separates what is passed on from what is matched. Normalizing (A) keeps the symmetry, and (C) and (D) don't separate the roles.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-proj" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
     <h2>Three learned projections of the same token: q = xW<sup>Q</sup>, k = xW<sup>K</sup>, v = xW<sup>V</sup></h2>
     <hr>
     <p class="lede">Every token's vector x is multiplied by three learned matrices. The toy model below has d<sub>model</sub> = 4 and d<sub>k</sub> = 3; the paper uses 512 and 64. All numbers are computed live. Pick a token.</p>
@@ -47,9 +83,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-match" data-chapter="The core idea">
+<section class="slide" id="s-match" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
     <h2>Compatibility → weights → weighted sum of values</h2>
     <hr>
     <p class="lede">The query of the selected token is compared with <b>every key</b> by dot product. The scores are scaled by 1/√d<sub>k</sub> and passed through a softmax to give weights that sum to 1. The output is the <b>weighted sum of the values</b>.</p>
@@ -61,9 +97,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-matrix" data-chapter="The core idea">
+<section class="slide" id="s-matrix" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
     <h2>All tokens at once, in matrix form</h2>
     <hr>
     <p class="lede">Stack the token vectors into X (n × d<sub>model</sub>). Then Q = XW<sup>Q</sup>, K = XW<sup>K</sup> and V = XW<sup>V</sup> are three matrix multiplications, and every query is matched against every key in one product, QKᵀ.</p>
@@ -72,9 +108,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-paper" data-chapter="In the paper">
+<section class="slide" id="s-paper" data-chapter="How">
   <div class="inner">
-    <div class="label ppr">In the paper · §3.2, §3.2.1</div>
+    <span class="qtag b5">5 · How it works</span> <span class="ill" style="color:var(--c);border-color:var(--c)">from the paper · §3.2, §3.2.1</span>
     <h2>The paper's wording</h2>
     <hr>
     <div class="paper"><b>§3.2:</b> "An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors. The output is computed as a weighted sum of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key."</div>
@@ -83,11 +119,85 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="In the paper">
+<section class="slide" id="s-why" data-chapter="Why">
   <div class="inner">
-    <div class="label">Recap</div>
-    <h2>Q, K, V in two lines</h2>
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why separate Q, K and V work</h2>
     <hr>
+    <div class="grid2">
+      <div class="card c"><h3>Asymmetric matching</h3><p>q<sub>i</sub>·k<sub>j</sub> ≠ q<sub>j</sub>·k<sub>i</sub> in general, so "it → animal" can be strong while "animal → it" is weak.</p></div>
+      <div class="card b"><h3>Specialized roles</h3><p>Keys can expose the features worth matching on (animate, place). Queries can ask for exactly those features.</p></div>
+      <div class="card a"><h3>Content decoupled from matching</h3><p>Values carry what is passed on, which can differ from what made the match.</p></div>
+      <div class="card e"><h3>The matching does real work</h3><p>Table 3 (B): shrinking the key size d<sub>k</sub> to 16 drops dev BLEU from 25.8 to 25.1. "Determining compatibility is not easy" (§6.2).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Q, K and V are three different inputs."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">In <b>self-attention</b> all three are projections of the same input X. Only in encoder-decoder attention do they come from different places (Q from the decoder, K and V from the encoder).</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Keys and values are the same thing."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They come from the same tokens but use different projections. The <b>key</b> decides how much weight a token gets; the <b>value</b> is what actually gets passed on.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Attention picks the single best-matching value."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It outputs a <b>weighted average</b> of all values. Softmax gives every key some weight; in the toy, "it" still takes 15% from "street".</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">In the base model, what is the shape of one head's W<sup>Q</sup>?</p>
+      <div class="opts">
+      <button>A. 64 × 64</button>
+      <button data-ok>B. 512 × 64</button>
+      <button>C. 512 × 512</button>
+      <button>D. 2048 × 512</button>
+      </div>
+      <div class="why"><b>512 × 64</b>: d<sub>model</sub> × d<sub>k</sub>, with d<sub>k</sub> = 512 / 8 heads (§3.2.2).</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">In encoder-decoder attention, which come from the encoder output?</p>
+      <div class="opts">
+      <button>A. Queries only</button>
+      <button data-ok>B. Keys and values</button>
+      <button>C. Queries and keys</button>
+      <button>D. All three</button>
+      </div>
+      <div class="why"><b>Keys and values.</b> Queries come from the decoder (§3.2.3).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">In the toy, q(it)·k(animal) is the highest score. Why does "it" still give 15% of its weight to "street"?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Softmax never outputs exact zeros for finite scores. Every key gets <b>some</b> weight, in proportion to exp(score / √d<sub>k</sub>).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Queries ask, keys answer, values deliver. softmax(q·k / √d<sub>k</sub>) decides how much of each value a token takes.</div>
+    <div class="interview"><b>Say it in 30 seconds</b><p>Each token's vector is projected three ways by learned matrices: a query (what it is looking for), a key (what it can be matched on) and a value (what it passes on). Compatibility is the dot product of a query with each key, scaled by 1/√d<sub>k</sub> and softmaxed into weights; the output is the weighted sum of values. Separate projections make matching asymmetric and let content differ from the features used for matching.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> one embedding can't play all three roles: asking, being matched, and supplying content.</span></div>
       <div><span><b>Core idea:</b> learned projections give each token a query, a key and a value. softmax(q·k / √d<sub>k</sub>) weights the values to produce the output.</span></div>
@@ -179,6 +289,14 @@
     });
     svg('text', { x: 20, y: 205, class: 't', text: 'rows = tokens (animal, street, it, tired). One matrix product QKᵀ scores every query against every key at once.' }, s);
   })();
+})();
+</script>
+<script>
+(() => {
+  const s = document.getElementById('limSvg'), T = ['animal', 'street', 'it', 'tired'];
+  const X = [[1, 0, 0, 0.2], [0, 1, 0, 0], [0.1, 0.1, 1, 0], [0.3, 0, 0, 1]];
+  TX.heat(s, TX.matMul(X, TX.T(X)), { x: 80, y: 50, cell: 48, rows: T, cols: T, color: 'var(--b)', rotate: true });
+  Deck.svg('text', { x: 4, y: 262, class: 'tm', style: 'font-size:11px', text: 'score = x_i · x_j (no projections)' }, s);
 })();
 </script>
 </body>

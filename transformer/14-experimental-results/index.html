@@ -22,9 +22,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-prior" data-chapter="The problem">
+<section class="slide" id="s-prior" data-chapter="Problem">
   <div class="inner">
-    <span class="qtag prob">① What is the problem?</span>
+    <span class="qtag b1">1 · Problem</span>
     <h2>Before: better BLEU cost much more compute</h2>
     <hr>
     <p class="lede">Each dot is a published model from Table 2: translation quality (BLEU on newstest2014) against estimated training cost. The best results came from <b>ensembles</b> at 10<sup>20</sup>–10<sup>21</sup> FLOPs. Turn on the Transformer to compare.</p>
@@ -40,9 +40,41 @@
   </div>
 </section>
 
-<section class="slide" id="s-table" data-chapter="The core idea">
+<section class="slide" id="s-lim" data-chapter="Limitation">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>The best systems were ensembles, and they were expensive</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Ensembles cost more</h3><p>The best EN-DE result (ConvS2S ensemble, 26.36 BLEU) took 7.7·10¹⁹ training FLOPs; the best EN-FR ensembles took about 10²¹ (Table 2).</p></div>
+      <div class="card b"><h3>Small gains</h3><p>On EN-DE, the best single model reached 26.03 (MoE) and the best ensemble only 26.36.</p></div>
+      <div class="card c"><h3>Slow to train</h3><p>Recurrent models can't parallelize across positions within a sentence, so every experiment takes longer (deck 01).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Predict the result</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">The best previous EN-DE result was 26.36 BLEU (an ensemble, 7.7·10¹⁹ FLOPs). What did a single Transformer (big) achieve?</p>
+      <div class="opts">
+      <button>A. About 1 BLEU worse, but cheaper</button>
+      <button>B. About the same BLEU</button>
+      <button data-ok>C. About 2 BLEU better, with about a third of the training FLOPs</button>
+      <button>D. 10 BLEU better</button>
+      </div>
+      <div class="why"><b>C.</b> 28.4 BLEU (+2.0) with 2.3·10¹⁹ FLOPs, about 0.3× the ConvS2S ensemble's cost. Even the <b>base</b> model (27.3 BLEU, 3.3·10¹⁸ FLOPs) beat every earlier model and ensemble.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-table" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
     <h2>Table 2: higher BLEU, lower training cost</h2>
     <hr>
     <div class="visual scroll-x">
@@ -69,9 +101,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-cost" data-chapter="The core idea">
+<section class="slide" id="s-cost" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
     <h2>Where the training-cost numbers come from</h2>
     <hr>
     <p class="lede">The paper estimates FLOPs as <b>training time × number of GPUs × sustained single-precision throughput per GPU</b>, using 9.5 TFLOPS for a P100 (footnote 5). You can reproduce the Table 2 values below.</p>
@@ -88,9 +120,34 @@
   </div>
 </section>
 
-<section class="slide" id="s-parse" data-chapter="The core idea">
+<section class="slide" id="s-paper" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span> <span class="ill" style="color:var(--c);border-color:var(--c)">from the paper · Abstract, §6.1</span>
+    <h2>The headline claims</h2>
+    <hr>
+    <div class="paper"><b>Abstract:</b> 28.4 BLEU on WMT 2014 English-to-German, "improving over the existing best results, including ensembles, by over 2 BLEU", and a new single-model state of the art of 41.8 BLEU on English-to-French "after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature."</div>
+    <div class="paper"><b>Setup (§5):</b> WMT 2014 EN-DE, ~4.5M sentence pairs with a shared BPE vocabulary of ~37K; EN-FR, 36M sentences with a 32K word-piece vocabulary. Adam (β₁ = 0.9, β₂ = 0.98, ε = 10⁻⁹) with 4,000 warmup steps, then inverse-square-root decay.</div>
+    <div class="paper"><b>Decoding (§6.1):</b> beam size 4, length penalty α = 0.6, checkpoint averaging (last 5 for base, last 20 for big).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why the results came out this way</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card e"><h3>Parallel training</h3><p>All positions are processed in each step, so a big model trains in 3.5 days on one 8-GPU machine (decks 01, 12).</p></div>
+      <div class="card a"><h3>Short paths</h3><p>Direct connections make long-range dependencies easier to learn (Table 1), which matters for translation quality.</p></div>
+      <div class="card b"><h3>Cheap enough to beat ensembles</h3><p>The base model needs 3.3·10¹⁸ FLOPs (12 hours) and still beats ensembles costing up to 10²¹.</p></div>
+      <div class="card c"><h3>It generalizes</h3><p>Without task-specific tuning it also did well on English constituency parsing (next slide).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-parse" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
     <h2>Does it generalize? English constituency parsing (Table 4)</h2>
     <hr>
     <p class="lede">A 4-layer Transformer (d<sub>model</sub> = 1024) trained on the WSJ portion of the Penn Treebank (~40K sentences), and in a semi-supervised setting (~17M sentences), with little task-specific tuning. Metric: F1 on WSJ section 23.</p>
@@ -102,22 +159,71 @@
   </div>
 </section>
 
-<section class="slide" id="s-paper" data-chapter="In the paper">
+<section class="slide" id="s-myth" data-chapter="Myths">
   <div class="inner">
-    <div class="label ppr">In the paper · Abstract, §6.1</div>
-    <h2>The headline claims</h2>
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
     <hr>
-    <div class="paper"><b>Abstract:</b> 28.4 BLEU on WMT 2014 English-to-German, "improving over the existing best results, including ensembles, by over 2 BLEU", and a new single-model state of the art of 41.8 BLEU on English-to-French "after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature."</div>
-    <div class="paper"><b>Setup (§5):</b> WMT 2014 EN-DE, ~4.5M sentence pairs with a shared BPE vocabulary of ~37K; EN-FR, 36M sentences with a 32K word-piece vocabulary. Adam (β₁ = 0.9, β₂ = 0.98, ε = 10⁻⁹) with 4,000 warmup steps, then inverse-square-root decay.</div>
-    <div class="paper"><b>Decoding (§6.1):</b> beam size 4, length penalty α = 0.6, checkpoint averaging (last 5 for base, last 20 for big).</div>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"28.4 BLEU means 28.4% of the translation is correct."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">BLEU scores n-gram overlap with reference translations on a 0–100 scale. It is a <b>corpus-level similarity score</b>, not a percentage of correct sentences.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"The training FLOPs in Table 2 were measured."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They are <b>estimates</b>: training time × number of GPUs × an assumed sustained TFLOPS per GPU (9.5 for a P100, footnote 5).</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"The Transformer won EN-FR by a large margin."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">On EN-FR the gain is small: 41.8 vs 41.29 for the ConvS2S ensemble. The big win there is <b>cost</b>: under 1/4 of the previous state of the art's training cost (§6.1).</div>
+    </div>
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="In the paper">
+<section class="slide" id="s-check" data-chapter="Check">
   <div class="inner">
-    <div class="label">Recap</div>
-    <h2>Results in two lines</h2>
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
     <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">What EN-DE BLEU did the base model achieve?</p>
+      <div class="opts">
+      <button>A. 25.8</button>
+      <button data-ok>B. 27.3</button>
+      <button>C. 28.4</button>
+      <button>D. 41.8</button>
+      </div>
+      <div class="why"><b>27.3</b> on newstest2014 (25.8 is its dev score in Table 3).</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">What hardware did the paper train on?</p>
+      <div class="opts">
+      <button>A. 1 TPU pod</button>
+      <button data-ok>B. 8 NVIDIA P100 GPUs on one machine</button>
+      <button>C. 64 K80 GPUs</button>
+      <button>D. 16 V100 GPUs</button>
+      </div>
+      <div class="why"><b>One machine with 8 P100 GPUs</b> (§5.2).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why does this guide report 41.8 for EN-FR when §6.1 says 41.0?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The paper is inconsistent: the abstract and Table 2 say <b>41.8</b>, while the §6.1 text says 41.0. The guide uses the table value and notes the mismatch.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Better and cheaper: 28.4 BLEU EN-DE (+2.0 over all prior ensembles) and 41.8 EN-FR, for 2.3·10¹⁹ FLOPs on 8 P100 GPUs in 3.5 days.</div>
+    <div class="interview"><b>Say it in 30 seconds</b><p>On WMT 2014, the big Transformer reached 28.4 BLEU English-German, more than 2 BLEU above the best previous results including ensembles, and 41.8 English-French, a new single-model state of the art, after 3.5 days of training on 8 P100 GPUs. The paper estimates its training cost at 2.3·10¹⁹ FLOPs, a fraction of what earlier systems used. The base model reached 27.3 in 12 hours. It also transferred to constituency parsing, with 92.7 F1 in the semi-supervised setting.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> state-of-the-art translation needed large ensembles and 10<sup>20</sup>+ FLOPs of training.</span></div>
       <div><span><b>Result:</b> Transformer (big) 28.4 BLEU EN-DE and 41.8 EN-FR at 2.3·10¹⁹ FLOPs (3.5 days, 8 P100s). Base 27.3 EN-DE in 12 hours. Generalizes to parsing (92.7 F1 semi-supervised).</span></div>

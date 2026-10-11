@@ -22,9 +22,22 @@
   </div>
 </section>
 
-<section class="slide" id="s-prob" data-chapter="The problem">
+<section class="slide" id="s-p1" data-chapter="Problem">
   <div class="inner">
-    <span class="qtag prob">① What is the problem?</span>
+    <span class="qtag b1">1 · Problem</span>
+    <h2>After gathering context, each token needs to compute new features</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card b"><h3>Attention gathers</h3><p>It decides which tokens to take information from, and how much.</p></div>
+      <div class="card a"><h3>Then process it</h3><p>Turning "it + context about the animal" into useful new features is a per-token computation.</p></div>
+      <div class="card e"><h3>Non-linearity</h3><p>Rich features need non-linear transformations, layer after layer.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-prob" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
     <h2>An attention output is always a blend of the values</h2>
     <hr>
     <p class="lede">The softmax weights are positive and sum to 1, so each output is a <b>convex combination</b> of the value vectors: it always lies inside the region they span. Attention <em>routes</em> information between tokens; on its own it doesn't add much new per-token computation. Change the weights below.</p>
@@ -36,9 +49,28 @@
   </div>
 </section>
 
-<section class="slide" id="s-pos" data-chapter="The core idea">
+<section class="slide" id="s-turn" data-chapter="Your turn">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What should process each token?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">After attention has mixed context into each token, what should transform each token's vector?</p>
+      <div class="opts">
+      <button>A. Another attention layer</button>
+      <button data-ok>B. The same small MLP, applied to each position separately</button>
+      <button>C. A recurrent layer running over the positions</button>
+      <button>D. Nothing: attention is enough</button>
+      </div>
+      <div class="why"><b>B.</b> A position-wise feed-forward network adds a ReLU non-linearity and more capacity per token. Tokens don't interact at this step, so it stays fully parallel. Another attention layer (A) mixes tokens again, and an RNN (C) would bring back sequential computation.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-pos" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
     <h2>The same small network, applied to every position independently</h2>
     <hr>
     <p class="lede">Each token's 512-dim vector goes through its own copy of one shared MLP: expand to 2048, ReLU, and project back to 512. Tokens don't interact in this step (attention already did that), so all positions run in parallel.</p>
@@ -47,9 +79,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-relu" data-chapter="The core idea">
+<section class="slide" id="s-relu" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
     <h2>Inside one FFN: expand, ReLU, project back <span class="ill">toy size 4 → 8 → 4</span></h2>
     <hr>
     <p class="lede">The inner layer is 4× wider (d<sub>ff</sub> = 2048 = 4 × 512). ReLU switches hidden units off (to 0) depending on the input, which is where the non-linearity comes from. Slide between two token representations and watch different units turn on.</p>
@@ -61,9 +93,20 @@
   </div>
 </section>
 
-<section class="slide" id="s-size" data-chapter="The core idea">
+<section class="slide" id="s-paper" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span> <span class="ill" style="color:var(--c);border-color:var(--c)">from the paper · §3.3</span>
+    <h2>The paper's wording</h2>
+    <hr>
+    <div class="paper"><b>§3.3:</b> "In addition to attention sub-layers, each of the layers in our encoder and decoder contains a fully connected feed-forward network, which is applied to each position separately and identically. This consists of two linear transformations with a ReLU activation in between."</div>
+    <div class="eq">FFN(x) = max(0, xW₁ + b₁)W₂ + b₂</div>
+    <div class="paper">"While the linear transformations are the same across different positions, they use different parameters from layer to layer. Another way of describing this is as two convolutions with kernel size 1. The dimensionality of input and output is d<sub>model</sub> = 512, and the inner-layer has dimensionality d<sub>ff</sub> = 2048."</div>
+  </div>
+</section>
+
+<section class="slide" id="s-size" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
     <h2>Where the parameters are, and what d<sub>ff</sub> buys</h2>
     <hr>
     <div class="grid2">
@@ -82,22 +125,71 @@
   </div>
 </section>
 
-<section class="slide" id="s-paper" data-chapter="In the paper">
+<section class="slide" id="s-myth" data-chapter="Myths">
   <div class="inner">
-    <div class="label ppr">In the paper · §3.3</div>
-    <h2>The paper's wording</h2>
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
     <hr>
-    <div class="paper"><b>§3.3:</b> "In addition to attention sub-layers, each of the layers in our encoder and decoder contains a fully connected feed-forward network, which is applied to each position separately and identically. This consists of two linear transformations with a ReLU activation in between."</div>
-    <div class="eq">FFN(x) = max(0, xW₁ + b₁)W₂ + b₂</div>
-    <div class="paper">"While the linear transformations are the same across different positions, they use different parameters from layer to layer. Another way of describing this is as two convolutions with kernel size 1. The dimensionality of input and output is d<sub>model</sub> = 512, and the inner-layer has dimensionality d<sub>ff</sub> = 2048."</div>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"The FFN mixes information between tokens."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is <b>position-wise</b>: each token is transformed on its own. Only the attention sub-layers move information between positions.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Each position has its own FFN weights."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The weights are <b>shared across positions</b> within a layer, and differ from layer to layer (§3.3).</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"The FFN is a small add-on next to attention."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It holds about <b>two-thirds</b> of each encoder layer's weights: 2 × 512 × 2048 vs 4 × 512² for attention.</div>
+    </div>
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="In the paper">
+<section class="slide" id="s-check" data-chapter="Check">
   <div class="inner">
-    <div class="label">Recap</div>
-    <h2>Position-wise FFN in two lines</h2>
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
     <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">What is the FFN's inner dimension in the base model?</p>
+      <div class="opts">
+      <button>A. 512</button>
+      <button>B. 1024</button>
+      <button data-ok>C. 2048</button>
+      <button>D. 4096</button>
+      </div>
+      <div class="why"><b>2048</b> (d<sub>ff</sub>); 4096 in the big model.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">Which activation does the paper's FFN use?</p>
+      <div class="opts">
+      <button>A. Sigmoid</button>
+      <button>B. tanh</button>
+      <button data-ok>C. ReLU</button>
+      <button>D. Softmax</button>
+      </div>
+      <div class="why"><b>ReLU</b>: FFN(x) = max(0, xW₁ + b₁)W₂ + b₂.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why can the FFN be described as "two convolutions with kernel size 1"?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">A kernel-size-1 convolution applies the <b>same</b> linear map at every position and looks at only that position, which is exactly a shared per-position linear layer.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">A shared 512 → 2048 → 512 ReLU network transforms each token separately: attention moves information between tokens, and the FFN processes it.</div>
+    <div class="interview"><b>Say it in 30 seconds</b><p>Every encoder and decoder layer has a position-wise feed-forward network, FFN(x) = max(0, xW₁ + b₁)W₂ + b₂, with 512 → 2048 → 512 dimensions. The same weights apply at every position, which is equivalent to two kernel-size-1 convolutions, with different weights in each layer. It adds per-token non-linear processing after attention has mixed in context, and holds about two-thirds of each layer's parameters. A wider d<sub>ff</sub> improved BLEU in Table 3.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> attention outputs are weighted averages of values. They mix tokens but add little per-token non-linear processing.</span></div>
       <div><span><b>Core idea:</b> a shared 512 → 2048 → 512 ReLU MLP applied to each position on its own, holding about 2/3 of each layer's weights.</span></div>

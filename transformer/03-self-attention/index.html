@@ -22,9 +22,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-prob" data-chapter="The problem">
+<section class="slide" id="s-prob" data-chapter="Problem">
   <div class="inner">
-    <span class="qtag prob">① What is the problem?</span>
+    <span class="qtag b1">1 · Problem</span>
     <h2>Same word, same vector, different meaning</h2>
     <hr>
     <p class="lede">An embedding table gives "<b>it</b>" one fixed vector. In the first sentence "it" means the <span class="em-a">animal</span>; in the second it means the <span class="em-b">street</span>. Something has to mix in context.</p>
@@ -34,9 +34,42 @@
   </div>
 </section>
 
-<section class="slide" id="s-arcs" data-chapter="The core idea">
+<section class="slide" id="s-lim" data-chapter="Limitation">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Existing ways of adding context are slow, local, or absent</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Embedding lookup</h3><p>No context at all: "it" gets the same vector in every sentence.</p></div>
+      <div class="card b"><h3>Recurrence</h3><p>Context arrives through a chain of hidden states: n sequential steps, and O(n) hops between distant words (<a href="../01-sequential-bottleneck/index.html">deck 01</a>).</p></div>
+      <div class="card c"><h3>Convolution</h3><p>Sees a fixed window of k tokens. Linking distant words needs a stack of O(n/k) layers, or O(log<sub>k</sub> n) with dilated convolutions (§4).</p></div>
+    </div>
+    <div class="takeaway">What's missing: a way for each word to draw on <b>any</b> other word in the sentence directly, chosen by relevance rather than by distance.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>How should "it" build a context-aware vector?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Given vectors for every word in the sentence, how should "it" build its new, context-aware vector?</p>
+      <div class="opts">
+      <button>A. Average all words equally</button>
+      <button>B. Copy the previous word's vector</button>
+      <button data-ok>C. Take a weighted average, with weights reflecting how relevant each word is to "it"</button>
+      <button>D. Concatenate all the word vectors</button>
+      </div>
+      <div class="why"><b>C is self-attention.</b> An equal average (A) loses which word matters. Copying a neighbour (B) only sees local context. Concatenation (D) makes the vector size depend on sentence length. Relevance weights that sum to 1 give a fixed-size, context-specific mix.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-arcs" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
     <h2>Each token takes a weighted mix of every token in the sentence <span class="ill">illustrative weights</span></h2>
     <hr>
     <p class="lede">Self-attention relates different positions of a <b>single sequence</b> to compute a new representation of it. Click a token to see where it attends. Arc thickness is the attention weight, and the weights for each token add up to 1.</p>
@@ -50,9 +83,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-matrix" data-chapter="The core idea">
+<section class="slide" id="s-matrix" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
     <h2>All tokens do this at once: an n × n attention matrix <span class="ill">illustrative weights</span></h2>
     <hr>
     <p class="lede">Row <i>i</i> is token <i>i</i>'s attention distribution over every token. All rows are computed in parallel with a few matrix multiplications, and nothing waits on a previous step. Hover a row.</p>
@@ -64,9 +97,35 @@
   </div>
 </section>
 
-<section class="slide" id="s-real" data-chapter="The core idea">
+<section class="slide" id="s-paper" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span> <span class="ill" style="color:var(--c);border-color:var(--c)">from the paper · §2, §3.2, §3.2.3</span>
+    <h2>The definitions</h2>
+    <hr>
+    <div class="paper"><b>Self-attention (§2):</b> "sometimes called intra-attention, is an attention mechanism relating different positions of a single sequence in order to compute a representation of the sequence."</div>
+    <div class="paper"><b>Attention function (§3.2):</b> maps a query and a set of key-value pairs to an output. The output is a weighted sum of the values, where each weight comes from a compatibility function of the query with the matching key.</div>
+    <div class="paper"><b>In the encoder (§3.2.3):</b> all of the keys, values and queries come from the output of the previous encoder layer, so each position can attend to all positions in the previous layer.</div>
+    <div class="cite">Next: deck 04 shows where queries, keys and values come from.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Context-dependent by construction</h3><p>The weights are computed from the actual sentence, so the same word gets different outputs in different contexts ("it" → animal vs street).</p></div>
+      <div class="card e"><h3>One hop to anything</h3><p>Every token reaches every other token in a single step, so distance doesn't weaken the connection (path length O(1)).</p></div>
+      <div class="card b"><h3>All positions in parallel</h3><p>The whole n × n weight matrix comes out of matrix products, with no step-by-step dependency.</p></div>
+      <div class="card c"><h3>Learned, not hand-designed</h3><p>What to attend to is learned from data. The trained model's heads end up tracking real linguistic structure, as the next slide shows.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-real" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
     <h2>What the trained model actually learned (paper, Figures 3–4)</h2>
     <hr>
     <p class="lede">The paper shows encoder self-attention from <b>layer 5 of 6</b> on real sentences. Some heads link a verb to the words it governs far away; others resolve what a pronoun refers to.</p>
@@ -79,23 +138,71 @@
   </div>
 </section>
 
-<section class="slide" id="s-paper" data-chapter="In the paper">
+<section class="slide" id="s-myth" data-chapter="Myths">
   <div class="inner">
-    <div class="label ppr">In the paper · §2, §3.2, §3.2.3</div>
-    <h2>The definitions</h2>
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
     <hr>
-    <div class="paper"><b>Self-attention (§2):</b> "sometimes called intra-attention, is an attention mechanism relating different positions of a single sequence in order to compute a representation of the sequence."</div>
-    <div class="paper"><b>Attention function (§3.2):</b> maps a query and a set of key-value pairs to an output. The output is a weighted sum of the values, where each weight comes from a compatibility function of the query with the matching key.</div>
-    <div class="paper"><b>In the encoder (§3.2.3):</b> all of the keys, values and queries come from the output of the previous encoder layer, so each position can attend to all positions in the previous layer.</div>
-    <div class="cite">Next: deck 04 shows where queries, keys and values come from.</div>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Attention weights show which words are important in the sentence."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They are <b>per-query mixing weights</b> in one head of one layer: how much a given token takes from each other token. Different heads and layers attend differently (Figure 5). They are not a global importance score.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Self-attention compares the raw word embeddings directly."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It compares learned <b>query and key projections</b> of the embeddings and mixes learned <b>value</b> projections (<a href="../04-queries-keys-values/index.html">deck 04</a>).</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"A token cannot attend to itself."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It can and usually does: the diagonal of the attention matrix is typically non-zero. The token's own value is part of its mix.</div>
+    </div>
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="In the paper">
+<section class="slide" id="s-check" data-chapter="Check">
   <div class="inner">
-    <div class="label">Recap</div>
-    <h2>Self-attention in two lines</h2>
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
     <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">In encoder self-attention, where do the queries, keys and values come from?</p>
+      <div class="opts">
+      <button>A. Q from the decoder, K and V from the encoder</button>
+      <button data-ok>B. All three from the output of the previous encoder layer</button>
+      <button>C. Q from the embeddings, K and V from positional encodings</button>
+      <button>D. They are fixed, not learned</button>
+      </div>
+      <div class="why"><b>All three from the previous encoder layer</b> (§3.2.3), so each position can attend to all positions of that layer.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">What does each row of the attention matrix sum to?</p>
+      <div class="opts">
+      <button>A. 0</button>
+      <button data-ok>B. 1</button>
+      <button>C. n</button>
+      <button>D. d<sub>model</sub></button>
+      </div>
+      <div class="why"><b>1</b>, because each row comes from a softmax: it is one token's distribution over all tokens.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">"it" has the same embedding in the "tired" and "wide" sentences. How can self-attention give it different outputs?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The weights depend on the <b>other tokens in the sentence</b>: "tired" vs "wide" changes how well "animal" and "street" match "it", so the weighted mix and the output change.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Each token's new representation is a relevance-weighted average of all tokens in the same sequence, so context changes what a word means.</div>
+    <div class="interview"><b>Say it in 30 seconds</b><p>Self-attention lets every position look at every other position of the same sequence. For each token it computes weights over all tokens, summing to 1, and outputs the weighted sum of their value vectors, so "it" can draw mostly from "animal". All positions are computed in parallel with matrix products, and any two tokens are one hop apart.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> a fixed embedding can't express that a word's meaning depends on context ("it" → animal or street).</span></div>
       <div><span><b>Core idea:</b> each token's output is a relevance-weighted mix of all tokens in the same sequence, computed for all positions in parallel.</span></div>

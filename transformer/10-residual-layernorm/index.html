@@ -22,9 +22,23 @@
   </div>
 </section>
 
-<section class="slide" id="s-prob" data-chapter="The problem">
+<section class="slide" id="s-p1" data-chapter="Problem">
   <div class="inner">
-    <span class="qtag prob">① What is the problem?</span>
+    <span class="qtag b1">1 · Problem</span>
+    <h2>The model is deep: 12 sub-layers in the encoder, 18 in the decoder</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>Encoder</h3><p>6 layers × 2 sub-layers = 12 transformations in a row.</p></div>
+      <div class="card c"><h3>Decoder</h3><p>6 layers × 3 sub-layers = 18 transformations in a row.</p></div>
+      <div class="card e"><h3>Depth helps</h3><p>Table 3 (C): N = 2 gives 23.7 dev BLEU, N = 6 gives 25.8.</p></div>
+    </div>
+    <div class="takeaway">The architecture needs depth, so signals and gradients must pass cleanly through many stacked sub-layers.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-prob" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
     <h2>Pass a signal through 12 sub-layers and it drifts <span class="ill">illustrative simulation</span></h2>
     <hr>
     <p class="lede">The encoder alone has 6 layers × 2 sub-layers. Here a 64-dim vector goes through 12 random sub-layers (linear + ReLU). With no skip path, its size shrinks or explodes (depending on the weight scale) and its resemblance to the input is lost. Turn on each component to see what it fixes.</p>
@@ -43,9 +57,28 @@
   </div>
 </section>
 
-<section class="slide" id="s-wrap" data-chapter="The core idea">
+<section class="slide" id="s-turn" data-chapter="Your turn">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Make each sub-layer safe to stack</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">How can each new sub-layer be designed so that, at worst, it does no harm to the signal passing through?</p>
+      <div class="opts">
+      <button>A. Initialize all weights to zero</button>
+      <button data-ok>B. Add the input back to the output: x + Sublayer(x)</button>
+      <button>C. Use fewer layers</button>
+      <button>D. Use a larger learning rate</button>
+      </div>
+      <div class="why"><b>B is a residual connection.</b> The input always has an identity path, so the sub-layer only needs to learn a correction. If that correction is small, the signal passes through nearly unchanged. Zero weights (A) would make all units identical. The paper adds layer normalization after the sum to keep the scale stable.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-wrap" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
     <h2>Every sub-layer is wrapped the same way</h2>
     <hr>
     <p class="lede">The input x skips around the sub-layer and is <b>added</b> to its (dropout-regularized) output, and the sum is then layer-normalized. The paper places the normalization <b>after</b> the addition. All widths are d<sub>model</sub> = 512 so the addition works.</p>
@@ -58,9 +91,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-ln" data-chapter="The core idea">
+<section class="slide" id="s-ln" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
     <h2>Layer normalization works on one token's features</h2>
     <hr>
     <p class="lede">For a single token vector: subtract its mean μ, divide by its standard deviation σ, then apply a learned gain γ and bias β. It never looks across other tokens or other examples. Scale or shift the input to see that the normalized output doesn't change.</p>
@@ -76,9 +109,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-paper" data-chapter="In the paper">
+<section class="slide" id="s-paper" data-chapter="How">
   <div class="inner">
-    <div class="label ppr">In the paper · §3.1, §5.4</div>
+    <span class="qtag b5">5 · How it works</span> <span class="ill" style="color:var(--c);border-color:var(--c)">from the paper · §3.1, §5.4</span>
     <h2>The paper's wording</h2>
     <hr>
     <div class="paper"><b>§3.1:</b> "We employ a residual connection [11] around each of the two sub-layers, followed by layer normalization [1]. That is, the output of each sub-layer is LayerNorm(x + Sublayer(x)), where Sublayer(x) is the function implemented by the sub-layer itself. To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension d<sub>model</sub> = 512."</div>
@@ -87,11 +120,85 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="In the paper">
+<section class="slide" id="s-why" data-chapter="Why">
   <div class="inner">
-    <div class="label">Recap</div>
-    <h2>Residuals + LayerNorm in two lines</h2>
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works</h2>
     <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Identity path</h3><p>x reaches the output unchanged, plus a learned correction. Information and gradients have a direct route through the whole stack.</p></div>
+      <div class="card e"><h3>Stable scale</h3><p>LayerNorm re-centres and re-scales each token's features after every sub-layer, so activations don't drift with depth.</p></div>
+      <div class="card b"><h3>Regularized corrections</h3><p>Dropout on each sub-layer output before the add. Table 3 (D): P<sub>drop</sub> = 0 gives 24.6 BLEU vs 25.8 with 0.1.</p></div>
+      <div class="card c"><h3>One width everywhere</h3><p>All sub-layers and embeddings output d<sub>model</sub> = 512, so every residual addition lines up (§3.1).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Layer normalization normalizes across the batch."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It normalizes across the <b>features of one token</b> (its 512 values). Normalizing across the batch is batch normalization, a different technique.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"The paper applies LayerNorm before each sub-layer."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The paper uses <b>LayerNorm(x + Sublayer(x))</b>: normalization comes <b>after</b> the residual addition (§3.1).</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Residual connections add parameters."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The skip path is the <b>identity</b>: no parameters. LayerNorm adds only a gain and bias per feature.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">What is the output of each sub-layer in the paper?</p>
+      <div class="opts">
+      <button>A. Sublayer(LayerNorm(x))</button>
+      <button data-ok>B. LayerNorm(x + Sublayer(x))</button>
+      <button>C. x + LayerNorm(Sublayer(x))</button>
+      <button>D. LayerNorm(Sublayer(x))</button>
+      </div>
+      <div class="why"><b>LayerNorm(x + Sublayer(x))</b> (§3.1), with dropout applied to Sublayer(x) before the addition.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">Where is residual dropout applied?</p>
+      <div class="opts">
+      <button>A. To the input x</button>
+      <button data-ok>B. To each sub-layer's output before it is added and normalized</button>
+      <button>C. After LayerNorm</button>
+      <button>D. Only to the attention weights</button>
+      </div>
+      <div class="why"><b>To each sub-layer output before the add &amp; norm</b>, and also to the sums of embeddings and positional encodings (§5.4).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why must every sub-layer output exactly 512 dimensions?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">So that x + Sublayer(x) is defined: you can only add vectors of the same size.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Wrap every sub-layer as LayerNorm(x + Sublayer(x)): the skip path carries information through, and normalization keeps each token's scale stable.</div>
+    <div class="interview"><b>Say it in 30 seconds</b><p>Each of the Transformer's sub-layers, whether attention or FFN, is wrapped in a residual connection followed by layer normalization: output = LayerNorm(x + Dropout(Sublayer(x))). The identity path lets information and gradients flow through the 12-to-18-sub-layer stacks, so each sub-layer only learns a correction. LayerNorm normalizes each token's 512 features to keep activations stable, and all widths are 512 so the additions line up.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> deep stacks of transformations make the signal and gradients drift, fade or explode.</span></div>
       <div><span><b>Core idea:</b> output = LayerNorm(x + Dropout(Sublayer(x))). The skip path carries x through unchanged, and LN keeps each token's features centred and scaled.</span></div>

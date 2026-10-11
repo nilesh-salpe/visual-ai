@@ -23,9 +23,22 @@
   </div>
 </section>
 
-<section class="slide" id="s-prob" data-chapter="The problem">
+<section class="slide" id="s-p1" data-chapter="Problem">
   <div class="inner">
-    <span class="qtag prob">① What is the problem?</span>
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Sequence models were slow to train and struggled with long-range structure</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Speed</h3><p>Recurrent models need n sequential steps per layer, which limits how much data and how many experiments you can afford.</p></div>
+      <div class="card b"><h3>Long-range structure</h3><p>Dependencies between distant words have to cross long paths.</p></div>
+      <div class="card c"><h3>Many relationships</h3><p>Reference, syntax and agreement all have to be captured at once.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-prob" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
     <h2>Three criteria that recurrent layers score poorly on</h2>
     <hr>
     <p class="lede">§4 compares layer types on three criteria. For translation-length sequences (n &lt; d), recurrence loses on all three.</p>
@@ -38,9 +51,28 @@
   </div>
 </section>
 
-<section class="slide" id="s-map" data-chapter="The core idea">
+<section class="slide" id="s-turn" data-chapter="Your turn">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Patch attention's weak spots</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Attention alone is order-blind and blurs relationships by averaging. Which two ingredients does the paper add to fix exactly those two problems?</p>
+      <div class="opts">
+      <button data-ok>A. Positional encoding and multi-head attention</button>
+      <button>B. Dropout and label smoothing</button>
+      <button>C. Beam search and checkpoint averaging</button>
+      <button>D. Byte-pair encoding and a bigger vocabulary</button>
+      </div>
+      <div class="why"><b>A.</b> Positional encodings give attention word order (deck 07), and multiple heads counteract the "reduced effective resolution due to averaging" (§2, deck 06). The other options are training or decoding techniques, not fixes to attention itself.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-map" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
     <h2>Four ingredients, each solving a specific problem</h2>
     <hr>
     <p class="lede">Click an ingredient to see which problem it addresses and the evidence in the paper.</p>
@@ -51,9 +83,28 @@
   </div>
 </section>
 
-<section class="slide" id="s-abl" data-chapter="The core idea">
+<section class="slide" id="s-how" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
+    <h2>How the ingredients fit together in one encoder layer</h2>
+    <hr>
+    <div class="visual scroll-x">
+      <table class="tbl">
+        <tr><th>Step</th><th>Ingredient</th><th>Problem it handles</th><th>Deck</th></tr>
+        <tr><td>0</td><td>Embedding × √d<sub>model</sub> + positional encoding</td><td>Order</td><td><a href="../07-positional-encoding/index.html">07</a></td></tr>
+        <tr><td>1</td><td>Multi-head self-attention</td><td>Parallel computation, one-hop paths, several relationships</td><td><a href="../03-self-attention/index.html">03</a>–<a href="../06-multi-head-attention/index.html">06</a></td></tr>
+        <tr><td>2</td><td>Add &amp; Norm</td><td>Stable signal and gradient flow</td><td><a href="../10-residual-layernorm/index.html">10</a></td></tr>
+        <tr><td>3</td><td>Position-wise FFN</td><td>Per-token non-linear processing</td><td><a href="../11-position-wise-ffn/index.html">11</a></td></tr>
+        <tr><td>4</td><td>Add &amp; Norm, then repeat × 6</td><td>Depth</td><td><a href="../10-residual-layernorm/index.html">10</a></td></tr>
+        <tr><td>Decoder</td><td>+ masked self-attention, + encoder-decoder attention</td><td>Causal generation, reading the source</td><td><a href="../09-masked-self-attention/index.html">09</a>, <a href="../08-encoder-decoder-attention/index.html">08</a></td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-abl" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
     <h2>The evidence: Table 3 model variations</h2>
     <hr>
     <p class="lede">Each row changes one thing relative to the base model and reports BLEU and perplexity on the EN-DE development set (newstest2013). Pick a group.</p>
@@ -69,9 +120,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-interp" data-chapter="The core idea">
+<section class="slide" id="s-interp" data-chapter="Why">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b6">6 · Why it works</span>
     <h2>A side benefit: you can look inside</h2>
     <hr>
     <p class="lede">Attention weights can be visualized directly. The paper reports that different heads learn different jobs, many related to the structure of the sentence.</p>
@@ -84,9 +135,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-paper" data-chapter="In the paper">
+<section class="slide" id="s-paper" data-chapter="Why">
   <div class="inner">
-    <div class="label ppr">In the paper · §4, §6.2, §7</div>
+    <span class="qtag b6">6 · Why it works</span> <span class="ill" style="color:var(--c);border-color:var(--c)">from the paper · §4, §6.2, §7</span>
     <h2>The paper's own conclusions</h2>
     <hr>
     <div class="paper"><b>§6.2 (A):</b> "While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads."</div>
@@ -96,11 +147,71 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="In the paper">
+<section class="slide" id="s-myth" data-chapter="Myths">
   <div class="inner">
-    <div class="label">Recap</div>
-    <h2>Why it works, in two lines</h2>
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
     <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">""Attention is all you need" means the model is only attention."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The model also depends on <b>position-wise FFNs, residual connections, layer normalization, positional encodings and embeddings</b>. The title means no recurrence and no convolution.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"In Table 3, bigger is always better."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Bigger d<sub>model</sub> and d<sub>ff</sub> helped, but <b>too many heads</b> (h = 32) hurt, and removing dropout hurt (24.6 BLEU).</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"The gains come from one key trick."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Table 3 shows <b>many</b> design choices each matter: heads, key size, depth, width, dropout and label smoothing.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">Table 3 (C): what dev BLEU did N = 2 layers get, against 25.8 for the base model?</p>
+      <div class="opts">
+      <button>A. 25.5</button>
+      <button>B. 24.9</button>
+      <button data-ok>C. 23.7</button>
+      <button>D. 26.4</button>
+      </div>
+      <div class="why"><b>23.7</b>: depth matters.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">Learned positional embeddings vs sinusoids (row E)?</p>
+      <div class="opts">
+      <button>A. Much worse</button>
+      <button data-ok>B. Nearly identical (25.7 vs 25.8)</button>
+      <button>C. Much better</button>
+      <button>D. Not tested</button>
+      </div>
+      <div class="why"><b>Nearly identical.</b> Sinusoids were kept for possible extrapolation to longer sequences.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Which Table 1 property best explains why long-range dependencies are easier to learn in a Transformer?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why"><b>Maximum path length O(1)</b>: any two positions are one attention step apart, compared with O(n) for recurrence.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Direct attention for speed and reach, multiple heads for several relationships, positional encoding for order, and residual stacks with FFNs for depth. Table 3 shows each one matters.</div>
+    <div class="interview"><b>Say it in 30 seconds</b><p>The Transformer works because each ingredient fixes a specific weakness. Self-attention makes layers fully parallel with O(1) paths between any two tokens. Multiple heads counteract the blurring from averaging. Positional encodings supply the order that attention ignores. Residual connections, layer normalization and position-wise FFNs make a deep stack trainable and expressive. The paper's ablations back this up: one head, a smaller d<sub>k</sub>, fewer layers or no dropout all lower BLEU.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> recurrence is sequential, uses long paths between distant tokens, and squeezes all relationships into one state.</span></div>
       <div><span><b>Core idea:</b> direct attention (parallel, O(1) paths) + multiple heads (several relationships) + positional encoding (order) + stacked residual layers with FFNs (depth), each backed by the Table 3 ablations.</span></div>

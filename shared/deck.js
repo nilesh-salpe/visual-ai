@@ -113,10 +113,13 @@
       if (c && !chapters.find(x => x.name === c)) chapters.push({ name: c, first: i });
     });
 
+    // Number content chapters from 01; an opening "Start" chapter stays unnumbered.
+    const startOffset = chapters.length && chapters[0].name === 'Start' ? 0 : 1;
+    const num = i => (i === 0 && !startOffset) ? '' : String(i + startOffset).padStart(2, '0') + ' ';
     const top = document.createElement('header');
     top.className = 'topbar';
     top.innerHTML = `<a class="brand" href="${home}">← ${homeLabel} · <span>${deckTitle}</span></a>
-      <nav class="chapters">${chapters.map((c, i) => `<button data-i="${c.first}">${String(i + 1).padStart(2, '0')} ${c.name}</button>`).join('')}</nav>
+      <nav class="chapters">${chapters.map((c, i) => `<button data-i="${c.first}">${num(i)}${c.name}</button>`).join('')}</nav>
       <button class="icon-btn" id="themeBtn" title="Toggle theme">◐</button>`;
     document.body.prepend(top);
 

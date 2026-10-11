@@ -23,3 +23,39 @@
 .steps button { border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 8px; padding: 6px 10px; cursor: pointer; font: 600 12.5px Inter, sans-serif; }
 .steps button.on { background: var(--a-soft); color: var(--a); border-color: var(--a); }
 @media (max-width: 640px) { .eq { white-space: normal; font-size: 14px; } }
+
+/* ---------- 9-beat learning template ---------- */
+.qtag.b1 { background: var(--d-soft); color: var(--d); }            /* Problem */
+.qtag.b2 { background: var(--b-soft); color: var(--b); }            /* Limitation */
+.qtag.b3 { background: var(--c-soft); color: var(--c); }            /* Your turn */
+.qtag.b4 { background: var(--e-soft); color: var(--e); }            /* Core idea */
+.qtag.b5 { background: var(--a-soft); color: var(--a); }            /* How it works */
+.qtag.b6 { background: rgba(58,143,216,.14); color: #3a8fd8; }      /* Why it works */
+.qtag.b7 { background: var(--b-soft); color: var(--b); }            /* Misconceptions */
+.qtag.b8 { background: var(--c-soft); color: var(--c); }            /* Check yourself */
+.qtag.b9 { background: var(--panel-2); color: var(--ink); }         /* Key takeaway */
+
+.quiz { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-top: 14px; }
+.quiz .qq { font-weight: 650; font-size: 16.5px; margin: 0 0 12px; }
+.quiz .qq small { display: block; font-weight: 500; color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+.quiz .opts { display: grid; gap: 8px; }
+.quiz .opts button { text-align: left; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); border-radius: 9px; padding: 10px 14px; cursor: pointer; font: 500 14.5px Inter, sans-serif; }
+.quiz .opts button:hover { border-color: var(--c); }
+.quiz .opts button.right { background: var(--e-soft); border-color: var(--e); color: var(--e); font-weight: 650; }
+.quiz .opts button.wrong { background: var(--d-soft); border-color: var(--d); color: var(--d); }
+.quiz .opts button:disabled { cursor: default; }
+.quiz .why { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 9px; background: var(--panel-2); color: var(--muted); font-size: 14.5px; border-left: 4px solid var(--e); }
+.quiz .why b { color: var(--ink); }
+.quiz.done .why { display: block; }
+.quiz .reveal { border: 1px dashed var(--c); background: var(--c-soft); color: var(--c); border-radius: 9px; padding: 9px 14px; cursor: pointer; font: 600 14px Inter, sans-serif; }
+.quiz.done .reveal { display: none; }
+.quiz .think { font-size: 13px; color: var(--faint); margin: 0 0 10px; }
+.myth .qq::before { content: '✗ '; color: var(--d); }
+.myth .why { border-left-color: var(--b); }
+.take-line { font-size: clamp(22px, 2.8vw, 30px); font-weight: 750; line-height: 1.3; letter-spacing: -.01em; border-left: 6px solid var(--e); padding: 6px 0 6px 18px; margin: 6px 0 18px; }
+.interview { background: var(--c-soft); border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; }
+.interview b { color: var(--c); font: 700 12px 'JetBrains Mono', monospace; letter-spacing: .06em; text-transform: uppercase; }
+.interview p { margin: 6px 0 0; font-size: 15.5px; }
+pre.code { font: 13px/1.6 'JetBrains Mono', monospace; background: var(--panel-2); padding: 14px 16px; border-radius: 10px; overflow-x: auto; margin: 0; }
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 760px) { .vs { grid-template-columns: 1fr; } }

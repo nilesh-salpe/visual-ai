@@ -22,9 +22,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-prob" data-chapter="The problem">
+<section class="slide" id="s-prob" data-chapter="Problem">
   <div class="inner">
-    <span class="qtag prob">① What is the problem?</span>
+    <span class="qtag b1">1 · Problem</span>
     <h2>Count the sequential steps for one target sentence</h2>
     <hr>
     <p class="lede">For a target of m tokens: an RNN decoder needs m dependent steps <em>even in training</em>. A Transformer decoder needs one parallel pass in training, but m passes when generating, because token t+1 can't be computed until token t is chosen.</p>
@@ -36,9 +36,41 @@
   </div>
 </section>
 
-<section class="slide" id="s-train" data-chapter="The core idea">
+<section class="slide" id="s-lim" data-chapter="Limitation">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Two constraints pull in opposite directions</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Generation is inherently sequential</h3><p>Token t+1 depends on token t, which doesn't exist until it has been chosen.</p></div>
+      <div class="card b"><h3>RNNs copy that structure into training</h3><p>An RNN decoder computes h<sub>t</sub> from h<sub>t−1</sub>, so even with the reference translation available, training takes m dependent steps.</p></div>
+      <div class="card c"><h3>Greedy decoding can't recover</h3><p>Choosing only the single most likely token at each step locks in early mistakes.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Use what you know in training</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">In training you already know the whole reference translation. How can you use that to make training parallel?</p>
+      <div class="opts">
+      <button>A. Feed the model its own predictions, one step at a time</button>
+      <button data-ok>B. Feed the reference translation shifted right, with a mask so no position sees the future</button>
+      <button>C. Predict all target tokens with no decoder input</button>
+      <button>D. Train only the encoder</button>
+      </div>
+      <div class="why"><b>B</b>: teacher forcing plus masking. Every position gets the true previous tokens as input, and the mask hides later ones, so all m predictions come from one forward pass. Option A is sequential again, and C drops the information that each prediction needs.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-train" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
     <h2>Training: one forward pass gives m predictions and m loss terms</h2>
     <hr>
     <p class="lede">The decoder input is the reference translation shifted right by one (teacher forcing). Masked self-attention stops each position from seeing later tokens, so every position can be trained <b>at the same time</b>.</p>
@@ -47,9 +79,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-gen" data-chapter="The core idea">
+<section class="slide" id="s-gen" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
     <h2>Generation: one token per decoder pass, fed back in</h2>
     <hr>
     <p class="lede">The encoder runs <b>once</b> on the source. Then the decoder runs repeatedly: each pass reads the tokens generated so far plus the encoder memory, and predicts the next token, which is appended to the input. Step through it.</p>
@@ -60,9 +92,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-beam" data-chapter="The core idea">
+<section class="slide" id="s-beam" data-chapter="How">
   <div class="inner">
-    <span class="qtag core">② Core idea</span>
+    <span class="qtag b5">5 · How it works</span>
     <h2>Beam search: keep the 4 best partial translations <span class="ill">toy probabilities</span></h2>
     <hr>
     <p class="lede">Instead of greedily keeping only the single best token at each step, the paper keeps a <b>beam of 4</b> hypotheses, extends each, and keeps the 4 highest-scoring by total log-probability. Finished hypotheses are ranked with a length penalty (α = 0.6).</p>
@@ -77,9 +109,9 @@
   </div>
 </section>
 
-<section class="slide" id="s-paper" data-chapter="In the paper">
+<section class="slide" id="s-paper" data-chapter="How">
   <div class="inner">
-    <div class="label ppr">In the paper · §3, §6.1, §7</div>
+    <span class="qtag b5">5 · How it works</span> <span class="ill" style="color:var(--c);border-color:var(--c)">from the paper · §3, §6.1, §7</span>
     <h2>The paper's wording</h2>
     <hr>
     <div class="paper"><b>§3:</b> "At each step the model is auto-regressive, consuming the previously generated symbols as additional input when generating the next."</div>
@@ -88,11 +120,85 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="In the paper">
+<section class="slide" id="s-why" data-chapter="Why">
   <div class="inner">
-    <div class="label">Recap</div>
-    <h2>Training vs generation in two lines</h2>
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works</h2>
     <hr>
+    <div class="grid2">
+      <div class="card e"><h3>The same context in training and at inference</h3><p>Masking plus shift-right means each position conditions only on earlier tokens, just as it will when generating.</p></div>
+      <div class="card a"><h3>m loss terms from one pass</h3><p>Every target position contributes to the loss in a single parallel forward and backward pass, so GPUs stay busy.</p></div>
+      <div class="card c"><h3>Beam search hedges</h3><p>Keeping 4 hypotheses lets the decoder recover from a locally attractive but globally poor token.</p></div>
+      <div class="card b"><h3>Length penalty</h3><p>Summed log-probabilities favour shorter outputs; dividing by lp(Y) with α = 0.6 counters that bias.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Transformers generate all output tokens at once."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Only <b>training</b> is parallel across positions. Generation produces one token per decoder pass (§3: "auto-regressive").</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Teacher forcing lets the model see the token it is predicting."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It sees only the <b>previous</b> reference tokens. Shift-right plus the mask hide the current and future ones.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Beam search finds the best possible translation."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is an <b>approximate</b> search that keeps only the 4 best partial hypotheses at each step.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">Which beam size and length penalty does the paper use for translation?</p>
+      <div class="opts">
+      <button>A. 1 and 1.0</button>
+      <button data-ok>B. 4 and 0.6</button>
+      <button>C. 10 and 0.3</button>
+      <button>D. 21 and 0.3</button>
+      </div>
+      <div class="why"><b>Beam 4, α = 0.6</b> (§6.1). Beam 21 with α = 0.3 was used for parsing.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">What is the maximum output length at inference?</p>
+      <div class="opts">
+      <button>A. 50 tokens</button>
+      <button data-ok>B. Input length + 50</button>
+      <button>C. 2 × input length</button>
+      <button>D. Unlimited</button>
+      </div>
+      <div class="why"><b>Input length + 50</b>, terminating early when possible.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">How many encoder passes and how many decoder passes does it take to generate a 20-token translation?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why"><b>1 encoder pass</b> (the source is fixed) and <b>one decoder pass per generated token</b>, about 20 (21 including the end token).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Train with the reference shifted right and masked, so all positions train in one pass. Generate one token at a time, with beam search.</div>
+    <div class="interview"><b>Say it in 30 seconds</b><p>In training the decoder receives the reference translation shifted right, and masked self-attention stops any position from seeing later tokens, so all m positions are predicted and trained in one parallel pass. At inference the model is auto-regressive: the encoder runs once, then the decoder runs once per output token, feeding each prediction back in. The paper decodes with beam size 4, length penalty α = 0.6, and a maximum length of input + 50.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> fast training needs parallelism, but generated tokens only become known one at a time.</span></div>
       <div><span><b>Core idea:</b> train on all m positions in one masked, teacher-forced pass; generate left to right with beam search (size 4, α = 0.6).</span></div>

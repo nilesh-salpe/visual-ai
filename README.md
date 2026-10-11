@@ -19,7 +19,7 @@ Interactive slide decks that explain AI systems concepts, built for interview pr
 
 ## Attention Is All You Need (Vaswani et al., 2017)
 
-Fourteen standalone explainers. Each one answers two questions: **what is the problem?** and **what are the core ideas that solve it?** All numbers are checked against [arXiv:1706.03762v7](https://arxiv.org/abs/1706.03762v7).
+Fourteen standalone explainers, each following the same 9 beats: Problem → Limitation → Your turn (predict the fix) → Core idea → How it works → Why it works → Misconceptions → Check yourself → Key takeaway. All numbers are checked against [arXiv:1706.03762v7](https://arxiv.org/abs/1706.03762v7).
 
 | # | Concept |
 |---|---------|
