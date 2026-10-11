@@ -27,7 +27,7 @@
   <div class="inner">
     <div class="kicker">GPU for GenAI · 01</div>
     <h1>What a GPU is,<br>and how it thinks</h1>
-    <p class="sub">A CPU is built to finish one task quickly. A GPU is built to finish a huge number of tasks at once. This deck covers the chip, its execution model, and the details interviewers ask about: warps, occupancy, Tensor Cores and wave quantization.</p>
+    <p class="sub">A CPU is built to finish one task quickly. A GPU is built to finish a huge number of tasks at once. This deck covers the chip, its execution model, and the details that matter in practice: warps, occupancy, Tensor Cores and wave quantization.</p>
     <div class="toc" data-auto></div>
     <p class="start-hint">Press <kbd>→</kbd> or <kbd>Space</kbd> to begin.</p>
   </div>
@@ -223,10 +223,10 @@
 </section>
 
 <!-- 11 · Questions -->
-<section class="slide" id="s-qa" data-chapter="Interview">
+<section class="slide" id="s-qa" data-chapter="Test yourself">
   <div class="inner">
-    <div class="label">10 · Interview</div>
-    <h2>Questions you'll get</h2>
+    <div class="label">10 · Test yourself</div>
+    <h2>Questions to test your understanding</h2>
     <hr>
     <details class="qa"><summary>Why does a GPU need tens of thousands of threads in flight?</summary><div class="ans">To <b>hide latency</b>. An HBM access takes hundreds of cycles, and a GPU core has no large caches or out-of-order engine to cover that. Instead, every cycle the warp scheduler picks a warp that is ready to run. With too few resident warps (low occupancy), the units sit idle waiting on memory. By Little's law, the parallelism you need equals latency × throughput.</div></details>
     <details class="qa"><summary>What is a warp, and why does divergence hurt?</summary><div class="ans">A warp is a group of <b>32 threads that execute one instruction together</b> (SIMT). When threads in a warp take different branches, the paths run one after another with lanes masked off, so utilization drops by the number of distinct paths. Fixes: arrange data so the threads in a warp take the same branch, or use branch-free arithmetic.</div></details>
@@ -237,7 +237,7 @@
 </section>
 
 <!-- 12 · Take it with you -->
-<section class="slide" id="s-end" data-chapter="Interview">
+<section class="slide" id="s-end" data-chapter="Test yourself">
   <div class="inner">
     <div class="label">11 · Take it with you</div>
     <h2>Four things to remember</h2>

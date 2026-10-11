@@ -182,10 +182,10 @@
   </div>
 </section>
 
-<section class="slide" id="s-qa" data-chapter="Interview">
+<section class="slide" id="s-qa" data-chapter="Test yourself">
   <div class="inner">
-    <div class="label">08 · Interview</div>
-    <h2>Questions you'll get</h2>
+    <div class="label">08 · Test yourself</div>
+    <h2>Questions to test your understanding</h2>
     <hr>
     <details class="qa"><summary>MIG vs MPS vs time-slicing: when would you use each?</summary><div class="ans"><b>MIG</b>: untrusted multi-tenant or SLO-bound inference (hardware partitioning of memory, cache and SMs, fault isolation), with fixed profile sizes, up to 7 instances. <b>MPS</b>: cooperating processes from one team that each underuse the GPU, such as several small inference workers. It gives real concurrency but weak fault isolation. <b>Time-slicing</b>: dev, notebooks and CI, where convenience matters and performance or isolation guarantees don't. You can combine them, for example MPS inside a MIG instance.</div></details>
     <details class="qa"><summary>How would you serve 200 customer fine-tunes of a 70B model?</summary><div class="ans">Train them as <b>LoRA adapters</b> and serve with a <b>multi-LoRA</b> server (vLLM, S-LoRA, LoRAX): one copy of the base weights, with adapters in GPU memory or paged in from host memory based on popularity. Mixed-adapter batches use segmented-GEMM kernels, alongside continuous batching and paged KV. Route by adapter for cache locality. Capacity plan: base model ≈ 140 GB plus about 0.4 GB per rank-16 adapter, plus KV. Full fine-tunes would need about 200 separate deployments.</div></details>
@@ -194,7 +194,7 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="Interview">
+<section class="slide" id="s-end" data-chapter="Test yourself">
   <div class="inner">
     <div class="label">09 · Take it with you</div>
     <h2>Four things to remember</h2>

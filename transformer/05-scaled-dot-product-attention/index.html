@@ -215,7 +215,7 @@
     <h2>Key takeaway</h2>
     <hr>
     <div class="take-line">Score with dot products, divide by √d<sub>k</sub> to keep the variance at 1, softmax each row, and take the weighted sum of V: two matrix multiplies and a softmax.</div>
-    <div class="interview"><b>Say it in 30 seconds</b><p>Scaled dot-product attention computes softmax(QKᵀ/√d<sub>k</sub>)V. Dot products are fast because they are a matrix multiply, but with unit-variance components q·k has variance d<sub>k</sub>, so large d<sub>k</sub> pushes the softmax toward one-hot and its gradients vanish. Dividing by √d<sub>k</sub> restores unit variance. The paper notes that unscaled dot-product attention underperforms additive attention at large d<sub>k</sub>; scaling fixes this while keeping the speed.</p></div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Scaled dot-product attention computes softmax(QKᵀ/√d<sub>k</sub>)V. Dot products are fast because they are a matrix multiply, but with unit-variance components q·k has variance d<sub>k</sub>, so large d<sub>k</sub> pushes the softmax toward one-hot and its gradients vanish. Dividing by √d<sub>k</sub> restores unit variance. The paper notes that unscaled dot-product attention underperforms additive attention at large d<sub>k</sub>; scaling fixes this while keeping the speed.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> raw dot products have variance d<sub>k</sub>, so the softmax saturates and gradients shrink as d<sub>k</sub> grows.</span></div>
       <div><span><b>Core idea:</b> scores = QKᵀ / √d<sub>k</sub>, then a row-wise softmax gives weights, then weights × V gives outputs. That is two matrix multiplications and a softmax.</span></div>

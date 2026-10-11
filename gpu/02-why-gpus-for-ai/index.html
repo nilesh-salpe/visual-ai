@@ -70,7 +70,7 @@
       </div>
     </div>
     <p class="caption">Sanity check against Llama 3 405B: 6 × 405B × 15.6T ≈ <b>3.8 × 10²⁵ FLOPs</b>. On H100s at about 40% MFU that is roughly 27M GPU-hours. Meta reported 30.84M H100 GPU-hours, which includes restarts and overhead.</p>
-    <div class="takeaway">Interviewers love this: you can estimate any training run from four numbers (N, D, peak FLOPS, MFU) in 30 seconds.</div>
+    <div class="takeaway">A useful habit: you can estimate any training run from four numbers (N, D, peak FLOPS, MFU) in 30 seconds.</div>
     <div class="cite">Llama Team, "The Llama 3 Herd of Models" (2024); Kaplan et al., "Scaling Laws for Neural Language Models" (2020).</div>
   </div>
 </section>
@@ -140,7 +140,7 @@
       </div>
     </div>
     <p class="caption">Model: prefill FLOPs ≈ 2·N·P at 60% of 8 × 989 TFLOPS. Decode step ≈ (140 GB weights + KV) ÷ (8 × 3.35 TB/s × 80%). At batch 1 the Tensor Cores sit almost idle during decode.</p>
-    <div class="takeaway">TTFT depends on compute (prompt length × FLOPs). TPOT depends on bandwidth (bytes ÷ HBM bandwidth). These two metrics come up in every LLM-serving interview.</div>
+    <div class="takeaway">TTFT depends on compute (prompt length × FLOPs). TPOT depends on bandwidth (bytes ÷ HBM bandwidth). Every discussion of LLM serving uses these two metrics.</div>
   </div>
 </section>
 
@@ -217,10 +217,10 @@
   </div>
 </section>
 
-<section class="slide" id="s-qa" data-chapter="Interview">
+<section class="slide" id="s-qa" data-chapter="Test yourself">
   <div class="inner">
-    <div class="label">09 · Interview</div>
-    <h2>Questions you'll get</h2>
+    <div class="label">09 · Test yourself</div>
+    <h2>Questions to test your understanding</h2>
     <hr>
     <details class="qa"><summary>Estimate the max decode speed of a 70B model on one H100, batch 1.</summary><div class="ans">BF16 weights are 140 GB, which <b>doesn't fit</b> in 80 GB. In FP8 they are about 70 GB, which barely fits. Each token has to read all the weights: 70 GB ÷ 3.35 TB/s ≈ <b>21 ms per token, so at most about 48 tokens/s</b>, and less in practice once KV-cache reads and imperfect bandwidth are included. Compute is nowhere near the limit: 2 × 70e9 FLOPs per token is only about 0.14 ms of H100 compute.</div></details>
     <details class="qa"><summary>Why is prefill compute-bound but decode memory-bound?</summary><div class="ans">Prefill multiplies a [P × d] activation matrix by every weight matrix, so each weight byte is reused P times and the intensity is about P. Decode uses each weight once per sequence in the batch, so the intensity is about the batch size, far below the ~300 FLOPs/byte ridge. Attention in decode is worse still: every sequence reads its own KV cache, so batching doesn't help it.</div></details>
@@ -230,7 +230,7 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="Interview">
+<section class="slide" id="s-end" data-chapter="Test yourself">
   <div class="inner">
     <div class="label">10 · Take it with you</div>
     <h2>Four things to remember</h2>

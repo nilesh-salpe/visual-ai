@@ -201,7 +201,7 @@
     <h2>Key takeaway</h2>
     <hr>
     <div class="take-line">Split 512 dimensions into 8 heads of 64, let each head attend in its own subspace, then concatenate and mix with W<sup>O</sup>: several relationships for the price of one.</div>
-    <div class="interview"><b>Say it in 30 seconds</b><p>One attention head gives a single weighted average per token, which blurs different relationships together. Multi-head attention projects Q, K and V h = 8 times into 64-dimensional subspaces, runs scaled dot-product attention in each in parallel, concatenates the results and applies W<sup>O</sup>. Because each head is smaller, the total cost is similar to one full-width head. In Table 3, one head was 0.9 BLEU worse than eight, and 32 heads also did worse.</p></div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>One attention head gives a single weighted average per token, which blurs different relationships together. Multi-head attention projects Q, K and V h = 8 times into 64-dimensional subspaces, runs scaled dot-product attention in each in parallel, concatenates the results and applies W<sup>O</sup>. Because each head is smaller, the total cost is similar to one full-width head. In Table 3, one head was 0.9 BLEU worse than eight, and 32 heads also did worse.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> one softmax per token averages different relationships together and loses resolution.</span></div>
       <div><span><b>Core idea:</b> 8 heads × 64 dims attend in parallel, in different subspaces, then Concat → W<sup>O</sup>. Same cost, and measurably better than 1 head (Table 3A).</span></div>

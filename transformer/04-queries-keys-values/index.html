@@ -197,7 +197,7 @@
     <h2>Key takeaway</h2>
     <hr>
     <div class="take-line">Queries ask, keys answer, values deliver. softmax(q·k / √d<sub>k</sub>) decides how much of each value a token takes.</div>
-    <div class="interview"><b>Say it in 30 seconds</b><p>Each token's vector is projected three ways by learned matrices: a query (what it is looking for), a key (what it can be matched on) and a value (what it passes on). Compatibility is the dot product of a query with each key, scaled by 1/√d<sub>k</sub> and softmaxed into weights; the output is the weighted sum of values. Separate projections make matching asymmetric and let content differ from the features used for matching.</p></div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Each token's vector is projected three ways by learned matrices: a query (what it is looking for), a key (what it can be matched on) and a value (what it passes on). Compatibility is the dot product of a query with each key, scaled by 1/√d<sub>k</sub> and softmaxed into weights; the output is the weighted sum of values. Separate projections make matching asymmetric and let content differ from the features used for matching.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> one embedding can't play all three roles: asking, being matched, and supplying content.</span></div>
       <div><span><b>Core idea:</b> learned projections give each token a query, a key and a value. softmax(q·k / √d<sub>k</sub>) weights the values to produce the output.</span></div>

@@ -234,7 +234,7 @@
     <h2>Key takeaway</h2>
     <hr>
     <div class="take-line">An encoder-decoder built only from attention and position-wise feed-forward sub-layers, each wrapped as LayerNorm(x + Sublayer(x)), stacked 6 deep on each side.</div>
-    <div class="interview"><b>Say it in 30 seconds</b><p>The Transformer keeps the encoder-decoder structure but drops recurrence and convolution. Each of the 6 encoder layers has multi-head self-attention and a position-wise FFN; each of the 6 decoder layers adds masked self-attention and attention over the encoder output. Every sub-layer is LayerNorm(x + Sublayer(x)) with d<sub>model</sub> = 512, and sinusoidal positional encodings added to the embeddings provide word order.</p></div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>The Transformer keeps the encoder-decoder structure but drops recurrence and convolution. Each of the 6 encoder layers has multi-head self-attention and a position-wise FFN; each of the 6 decoder layers adds masked self-attention and attention over the encoder output. Every sub-layer is LayerNorm(x + Sublayer(x)) with d<sub>model</sub> = 512, and sinusoidal positional encodings added to the embeddings provide word order.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> recurrent and convolutional models needed more operations to relate positions the farther apart they were.</span></div>
       <div><span><b>Core idea:</b> an encoder-decoder made only of attention and position-wise FFN sub-layers, each wrapped as LayerNorm(x + Sublayer(x)), with N = 6 layers on each side, d<sub>model</sub> = 512.</span></div>

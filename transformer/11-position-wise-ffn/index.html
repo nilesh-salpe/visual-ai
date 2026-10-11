@@ -189,7 +189,7 @@
     <h2>Key takeaway</h2>
     <hr>
     <div class="take-line">A shared 512 → 2048 → 512 ReLU network transforms each token separately: attention moves information between tokens, and the FFN processes it.</div>
-    <div class="interview"><b>Say it in 30 seconds</b><p>Every encoder and decoder layer has a position-wise feed-forward network, FFN(x) = max(0, xW₁ + b₁)W₂ + b₂, with 512 → 2048 → 512 dimensions. The same weights apply at every position, which is equivalent to two kernel-size-1 convolutions, with different weights in each layer. It adds per-token non-linear processing after attention has mixed in context, and holds about two-thirds of each layer's parameters. A wider d<sub>ff</sub> improved BLEU in Table 3.</p></div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Every encoder and decoder layer has a position-wise feed-forward network, FFN(x) = max(0, xW₁ + b₁)W₂ + b₂, with 512 → 2048 → 512 dimensions. The same weights apply at every position, which is equivalent to two kernel-size-1 convolutions, with different weights in each layer. It adds per-token non-linear processing after attention has mixed in context, and holds about two-thirds of each layer's parameters. A wider d<sub>ff</sub> improved BLEU in Table 3.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> attention outputs are weighted averages of values. They mix tokens but add little per-token non-linear processing.</span></div>
       <div><span><b>Core idea:</b> a shared 512 → 2048 → 512 ReLU MLP applied to each position on its own, holding about 2/3 of each layer's weights.</span></div>

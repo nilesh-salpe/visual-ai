@@ -225,10 +225,10 @@
   </div>
 </section>
 
-<section class="slide" id="s-qa" data-chapter="Interview">
+<section class="slide" id="s-qa" data-chapter="Test yourself">
   <div class="inner">
-    <div class="label">10 · Interview</div>
-    <h2>Questions you'll get</h2>
+    <div class="label">10 · Test yourself</div>
+    <h2>Questions to test your understanding</h2>
     <hr>
     <details class="qa"><summary>Your 4K-GPU job hangs at step 30,000 with no error. How do you debug it?</summary><div class="ans">A hang means some rank isn't entering, or isn't finishing, a collective. Steps: (1) Use the <b>NCCL flight recorder</b> or dumps to see which collective each rank is stuck in and which rank is missing. (2) Use <code>py-spy dump</code> on the stuck ranks for the Python stack. (3) Check that node's <code>dmesg</code> for Xid errors, NIC and link counters, and thermal throttling. (4) Look for a code-level cause, such as data-dependent control flow making ranks issue collectives in different orders. Then cordon the node and restart from checkpoint, with a shorter watchdog timeout in future.</div></details>
     <details class="qa"><summary>How often should you checkpoint a 16K-GPU run?</summary><div class="ans">Use Young/Daly: τ* ≈ √(2δM). With an MTBF of about 3 h and a 5-minute blocking checkpoint, τ* ≈ √(2 × 5 × 180) ≈ 42 minutes. With async checkpointing the stall drops to about 10–30 s, which gives τ* ≈ 10 minutes and much less lost work. Also check storage bandwidth: a 405B model with optimizer state is about 6 TB, so how fast you can write it (and spreading the writes across ranks) matters.</div></details>
@@ -237,7 +237,7 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="Interview">
+<section class="slide" id="s-end" data-chapter="Test yourself">
   <div class="inner">
     <div class="label">11 · Take it with you</div>
     <h2>Four things to remember</h2>

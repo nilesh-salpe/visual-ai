@@ -150,10 +150,10 @@
   </div>
 </section>
 
-<section class="slide" id="s-qa" data-chapter="Interview">
+<section class="slide" id="s-qa" data-chapter="Test yourself">
   <div class="inner">
-    <div class="label">07 · Interview</div>
-    <h2>Questions you'll get</h2>
+    <div class="label">07 · Test yourself</div>
+    <h2>Questions to test your understanding</h2>
     <hr>
     <details class="qa"><summary>You have 2K H100s and 2K A100s. How do you use them for one model?</summary><div class="ans">Don't run one synchronous job across both. Equal-batch DP would run at A100 speed, and proportional batching makes memory and communication harder. Better options: (1) run <b>pretraining on the H100s</b> and put <b>evals, data processing, RL rollouts or inference on the A100s</b>; (2) if it must be one job, use <b>separate pipeline stages per type</b> with layers balanced by speed, or weighted DP; (3) for serving, use disaggregation: prefill on the H100s, decode on whichever has the best bandwidth per dollar.</div></details>
     <details class="qa"><summary>Why does disaggregated prefill/decode make sense?</summary><div class="ans">The two phases have opposite bottlenecks: prefill is compute-bound (needs TFLOPS) and decode is bandwidth- and capacity-bound (needs HBM bandwidth and KV space). Running them together means long prefills stall decode (bad TPOT tail latency) and each batch is a compromise. Splitting them lets you size and choose hardware per phase and tune TTFT and TPOT SLOs independently. The cost is moving the KV cache, which has to go over RDMA or NVLink and be pipelined layer by layer.</div></details>
@@ -161,7 +161,7 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="Interview">
+<section class="slide" id="s-end" data-chapter="Test yourself">
   <div class="inner">
     <div class="label">08 · Take it with you</div>
     <h2>Four things to remember</h2>

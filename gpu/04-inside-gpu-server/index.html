@@ -176,10 +176,10 @@
   </div>
 </section>
 
-<section class="slide" id="s-qa" data-chapter="Interview">
+<section class="slide" id="s-qa" data-chapter="Test yourself">
   <div class="inner">
-    <div class="label">08 · Interview</div>
-    <h2>Questions you'll get</h2>
+    <div class="label">08 · Test yourself</div>
+    <h2>Questions to test your understanding</h2>
     <hr>
     <details class="qa"><summary>Walk me through what's in an 8×H100 server and how the GPUs talk.</summary><div class="ans">There are 8 SXM GPUs on an HGX baseboard. Each has 18 NVLink 4 links that go to <b>4 NVSwitch chips</b>, so any GPU can reach any other at 900 GB/s bidirectional, all-to-all, without blocking. Separately, PCIe Gen5 switches connect GPUs to <b>one 400G NIC per GPU</b> (ConnectX-7, used with GPUDirect RDMA), to NVMe, and to the 2 CPU sockets. The CPUs handle orchestration and data loading but sit off the hot path.</div></details>
     <details class="qa"><summary>What does GPUDirect RDMA do and why does it matter?</summary><div class="ans">It lets the NIC <b>read and write GPU memory directly</b> over PCIe, with no staging copy in host DRAM and no CPU involvement. Without it, every inter-node message is copied GPU → host → NIC, which doubles the PCIe traffic, adds latency and uses CPU memory bandwidth. NCCL depends on it for inter-node collectives. GPUDirect Storage does the same for NVMe and parallel file systems.</div></details>
@@ -189,7 +189,7 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="Interview">
+<section class="slide" id="s-end" data-chapter="Test yourself">
   <div class="inner">
     <div class="label">09 · Take it with you</div>
     <h2>Four things to remember</h2>

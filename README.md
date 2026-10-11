@@ -1,6 +1,6 @@
 # Visual AI
 
-Interactive slide decks that explain AI systems concepts, built for interview preparation.
+Interactive slide decks that explain AI systems concepts visually.
 
 **Live site:** https://nilesh-salpe.github.io/visual-ai/
 

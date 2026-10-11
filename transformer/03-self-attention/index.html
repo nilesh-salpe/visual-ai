@@ -202,7 +202,7 @@
     <h2>Key takeaway</h2>
     <hr>
     <div class="take-line">Each token's new representation is a relevance-weighted average of all tokens in the same sequence, so context changes what a word means.</div>
-    <div class="interview"><b>Say it in 30 seconds</b><p>Self-attention lets every position look at every other position of the same sequence. For each token it computes weights over all tokens, summing to 1, and outputs the weighted sum of their value vectors, so "it" can draw mostly from "animal". All positions are computed in parallel with matrix products, and any two tokens are one hop apart.</p></div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Self-attention lets every position look at every other position of the same sequence. For each token it computes weights over all tokens, summing to 1, and outputs the weighted sum of their value vectors, so "it" can draw mostly from "animal". All positions are computed in parallel with matrix products, and any two tokens are one hop apart.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> a fixed embedding can't express that a word's meaning depends on context ("it" → animal or street).</span></div>
       <div><span><b>Core idea:</b> each token's output is a relevance-weighted mix of all tokens in the same sequence, computed for all positions in parallel.</span></div>

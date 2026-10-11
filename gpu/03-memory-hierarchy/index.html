@@ -226,10 +226,10 @@
   </div>
 </section>
 
-<section class="slide" id="s-qa" data-chapter="Interview">
+<section class="slide" id="s-qa" data-chapter="Test yourself">
   <div class="inner">
-    <div class="label">10 · Interview</div>
-    <h2>Questions you'll get</h2>
+    <div class="label">10 · Test yourself</div>
+    <h2>Questions to test your understanding</h2>
     <hr>
     <details class="qa"><summary>Explain why FlashAttention is faster when it does the same FLOPs.</summary><div class="ans">Standard attention is <b>IO-bound</b>: it writes the N×N score matrix to HBM and reads it back several times (for scale, mask, softmax and the matmul with V). FlashAttention tiles Q, K and V into SRAM, computes softmax incrementally (online softmax with a running max and sum), and writes only the N×d output. HBM traffic drops and memory goes from O(N²) to O(N). In the backward pass it recomputes the scores instead of storing them, which is extra FLOPs, and it is still faster.</div></details>
     <details class="qa"><summary>How much KV cache does a 70B model need for 32 users at 8K context?</summary><div class="ans">2 × 80 layers × 8 KV heads × 128 × 2 bytes = <b>320 KB per token</b>. × 8,192 × 32 ≈ <b>86 GB</b>, on top of 140 GB of weights. You need at least 4 × 80 GB GPUs, or FP8 KV to halve it. Without GQA (64 KV heads) it would be 8× larger, about 690 GB.</div></details>
@@ -239,7 +239,7 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="Interview">
+<section class="slide" id="s-end" data-chapter="Test yourself">
   <div class="inner">
     <div class="label">11 · Take it with you</div>
     <h2>Four things to remember</h2>

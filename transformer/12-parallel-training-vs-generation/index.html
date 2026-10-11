@@ -198,7 +198,7 @@
     <h2>Key takeaway</h2>
     <hr>
     <div class="take-line">Train with the reference shifted right and masked, so all positions train in one pass. Generate one token at a time, with beam search.</div>
-    <div class="interview"><b>Say it in 30 seconds</b><p>In training the decoder receives the reference translation shifted right, and masked self-attention stops any position from seeing later tokens, so all m positions are predicted and trained in one parallel pass. At inference the model is auto-regressive: the encoder runs once, then the decoder runs once per output token, feeding each prediction back in. The paper decodes with beam size 4, length penalty α = 0.6, and a maximum length of input + 50.</p></div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>In training the decoder receives the reference translation shifted right, and masked self-attention stops any position from seeing later tokens, so all m positions are predicted and trained in one parallel pass. At inference the model is auto-regressive: the encoder runs once, then the decoder runs once per output token, feeding each prediction back in. The paper decodes with beam size 4, length penalty α = 0.6, and a maximum length of input + 50.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> fast training needs parallelism, but generated tokens only become known one at a time.</span></div>
       <div><span><b>Core idea:</b> train on all m positions in one masked, teacher-forced pass; generate left to right with beam search (size 4, α = 0.6).</span></div>

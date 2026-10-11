@@ -187,7 +187,7 @@
     <h2>Key takeaway</h2>
     <hr>
     <div class="take-line">Queries from the decoder, keys and values from the encoder output: every target position can look at the whole source, in every decoder layer.</div>
-    <div class="interview"><b>Say it in 30 seconds</b><p>In encoder-decoder attention, the decoder's states provide the queries, and the final encoder output provides the keys and values. Each target position therefore computes a soft alignment over all source positions, in every one of the 6 decoder layers, with multiple heads. It replaces the single fixed context vector of early seq2seq models and is not masked, because the whole source is known.</p></div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>In encoder-decoder attention, the decoder's states provide the queries, and the final encoder output provides the keys and values. Each target position therefore computes a soft alignment over all source positions, in every one of the 6 decoder layers, with multiple heads. It replaces the single fixed context vector of early seq2seq models and is not masked, because the whole source is known.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> the decoder needs the relevant source words at every step, and a single context vector is a bottleneck.</span></div>
       <div><span><b>Core idea:</b> Q = decoder states and K, V = encoder memory, in every decoder layer, so each target position attends over the whole source.</span></div>

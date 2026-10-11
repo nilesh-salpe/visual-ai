@@ -200,10 +200,10 @@
   </div>
 </section>
 
-<section class="slide" id="s-qa" data-chapter="Interview">
+<section class="slide" id="s-qa" data-chapter="Test yourself">
   <div class="inner">
-    <div class="label">10 · Interview</div>
-    <h2>Questions you'll get</h2>
+    <div class="label">10 · Test yourself</div>
+    <h2>Questions to test your understanding</h2>
     <hr>
     <details class="qa"><summary>You have 1,024 H100s and a 70B model. How do you lay out the parallelism?</summary><div class="ans">Start with <b>TP=8 inside each node</b> on NVLink, which is enough to shard the layers and keep the GEMMs efficient. Add PP of 2–4 across nodes only if memory or activations require it, and run enough micro-batches to keep the bubble small. Put the rest into <b>DP with FSDP or ZeRO-1</b>: 1024 / (8 × 2) = 64 replicas. Check memory per GPU, the global batch size (DP × micro-batch × grad accumulation must stay within a good batch size), and that DP communication overlaps with backward. Then say what you would measure: MFU, exposed communication time, and bubble fraction.</div></details>
     <details class="qa"><summary>Why is ring all-reduce bandwidth-optimal, and when is it a bad choice?</summary><div class="ans">Every GPU sends and receives 2(N−1)/N × S, which is the lower bound for all-reduce, and all links are used in every step. But it takes 2(N−1) sequential steps, so the latency term grows linearly. At thousands of GPUs, or for small messages, that dominates. Hierarchical schemes (reduce inside the node, then a ring or tree across nodes), double binary trees, and in-network reduction (SHARP) handle that case.</div></details>
@@ -213,7 +213,7 @@
   </div>
 </section>
 
-<section class="slide" id="s-end" data-chapter="Interview">
+<section class="slide" id="s-end" data-chapter="Test yourself">
   <div class="inner">
     <div class="label">11 · Take it with you</div>
     <h2>Four things to remember</h2>

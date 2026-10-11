@@ -198,7 +198,7 @@
     <h2>Key takeaway</h2>
     <hr>
     <div class="take-line">Wrap every sub-layer as LayerNorm(x + Sublayer(x)): the skip path carries information through, and normalization keeps each token's scale stable.</div>
-    <div class="interview"><b>Say it in 30 seconds</b><p>Each of the Transformer's sub-layers, whether attention or FFN, is wrapped in a residual connection followed by layer normalization: output = LayerNorm(x + Dropout(Sublayer(x))). The identity path lets information and gradients flow through the 12-to-18-sub-layer stacks, so each sub-layer only learns a correction. LayerNorm normalizes each token's 512 features to keep activations stable, and all widths are 512 so the additions line up.</p></div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Each of the Transformer's sub-layers, whether attention or FFN, is wrapped in a residual connection followed by layer normalization: output = LayerNorm(x + Dropout(Sublayer(x))). The identity path lets information and gradients flow through the 12-to-18-sub-layer stacks, so each sub-layer only learns a correction. LayerNorm normalizes each token's 512 features to keep activations stable, and all widths are 512 so the additions line up.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> deep stacks of transformations make the signal and gradients drift, fade or explode.</span></div>
       <div><span><b>Core idea:</b> output = LayerNorm(x + Dropout(Sublayer(x))). The skip path carries x through unchanged, and LN keeps each token's features centred and scaled.</span></div>

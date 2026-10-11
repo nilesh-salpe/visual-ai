@@ -227,7 +227,7 @@ out = A @ V                 # all n outputs at once</pre></div>
     <h2>Key takeaway</h2>
     <hr>
     <div class="take-line">Recurrence pushes computation and information through n sequential steps. Self-attention puts every pair of positions one hop apart and computes them all at once.</div>
-    <div class="interview"><b>Say it in 30 seconds</b><p>RNNs compute h<sub>t</sub> from h<sub>t−1</sub>, so a layer needs O(n) sequential steps and distant tokens are O(n) hops apart. That makes training slow and long-range dependencies hard to learn. Self-attention connects all positions directly: O(1) sequential operations and O(1) path length per layer, at O(n²·d) cost, which is cheaper than recurrence's O(n·d²) when n &lt; d, as in sentence-level translation.</p></div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>RNNs compute h<sub>t</sub> from h<sub>t−1</sub>, so a layer needs O(n) sequential steps and distant tokens are O(n) hops apart. That makes training slow and long-range dependencies hard to learn. Self-attention connects all positions directly: O(1) sequential operations and O(1) path length per layer, at O(n²·d) cost, which is cheaper than recurrence's O(n·d²) when n &lt; d, as in sentence-level translation.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> recurrence forces n sequential steps per layer, and puts O(n) hops between distant tokens.</span></div>
       <div><span><b>Core idea:</b> self-attention computes all positions at once with O(1) path length, at O(n²·d) cost, which is cheaper than recurrence when n &lt; d.</span></div>

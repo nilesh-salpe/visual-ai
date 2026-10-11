@@ -190,7 +190,7 @@
     <h2>Key takeaway</h2>
     <hr>
     <div class="take-line">Shift the target right and put −∞ above the diagonal: every position trains in parallel, yet only ever sees the past.</div>
-    <div class="interview"><b>Say it in 30 seconds</b><p>At inference the decoder generates left to right, so in training a position must not see later tokens. The paper shifts the decoder input right by one and, inside scaled dot-product attention, sets the scores for future positions to −∞ before the softmax, which gives them exactly zero weight. Position i then depends only on positions before i, while all positions are still trained in one parallel pass.</p></div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>At inference the decoder generates left to right, so in training a position must not see later tokens. The paper shifts the decoder input right by one and, inside scaled dot-product attention, sets the scores for future positions to −∞ before the softmax, which gives them exactly zero weight. Position i then depends only on positions before i, while all positions are still trained in one parallel pass.</p></div>
     <div class="recap">
       <div><span><b>Problem:</b> with the full target visible in training, an unmasked decoder could copy future tokens.</span></div>
       <div><span><b>Core idea:</b> output embeddings offset by one, plus −∞ on future scores, means position i depends only on positions &lt; i in the target, while every position is still trained in parallel.</span></div>
