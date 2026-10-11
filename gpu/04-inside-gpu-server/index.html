@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inside a GPU Server</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<style>
+  .node-svg [data-info] { cursor: pointer; }
+  .node-svg [data-info]:hover { filter: brightness(1.12); }
+  .infobox { min-height: 64px; background: var(--panel-2); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--muted); margin-top: 12px; }
+  .infobox b { color: var(--ink); }
+  .topo { border-collapse: collapse; font: 500 12px 'JetBrains Mono', monospace; }
+  .topo th, .topo td { padding: 5px 6px; text-align: center; border: 1px solid var(--line); }
+  .topo th { color: var(--muted); font-weight: 600; background: var(--panel-2); }
+  .topo td { cursor: default; }
+  .topo td.NV { background: var(--e-soft); color: var(--e); }
+  .topo td.PIX { background: var(--a-soft); color: var(--a); }
+  .topo td.NODE { background: var(--b-soft); color: var(--b); }
+  .topo td.SYS { background: var(--d-soft); color: var(--d); }
+  .topo td.X { color: var(--faint); }
+  .topo td.hl { outline: 2px solid var(--ink); outline-offset: -2px; }
+</style>
+</head>
+<body data-deck="Inside a GPU server" data-home="../index.html" data-home-label="GPU">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">GPU for GenAI · 04</div>
+    <h1>Inside a GPU server:<br>8 GPUs, 4 switches, 1 box</h1>
+    <p class="sub">The 8-GPU HGX/DGX node is the basic unit of AI infrastructure. This deck shows what is inside it, how data moves between its parts, and which link is the bottleneck for each kind of traffic.</p>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Press <kbd>→</kbd> or <kbd>Space</kbd> to begin.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-map" data-chapter="The box">
+  <div class="inner">
+    <div class="label">01 · The box</div>
+    <h2>An HGX H100 node, opened up</h2>
+    <hr>
+    <p class="lede">Hover or tap any component. Two separate networks run through this box: <span class="em-e">NVLink</span> connects the GPUs to each other through NVSwitch, and <span class="em-c">PCIe</span> connects the GPUs to the CPUs, NICs and storage.</p>
+    <div class="visual"><svg id="mapSvg" class="node-svg" viewBox="0 0 900 360" role="img" aria-label="HGX H100 node diagram"></svg>
+      <div class="infobox" id="mapInfo"><b>DGX H100</b>: 8× H100 SXM (640 GB HBM3 in total), 4× NVSwitch, 8× ConnectX-7 400 Gb/s compute NICs, 2× Xeon CPUs, 2 TB DDR5, about 30 TB of NVMe, up to about 10.2 kW.</div>
+    </div>
+    <div class="cite">NVIDIA DGX H100 user guide and datasheet. PCIe switch arrangement simplified; it varies by OEM (HGX boards go into Dell, Supermicro, HPE and other servers).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-paths" data-chapter="Data paths">
+  <div class="inner">
+    <div class="label">02 · Data paths</div>
+    <h2>Follow the bytes: each kind of traffic takes a different path</h2>
+    <hr>
+    <div class="seg" id="pathSeg">
+      <button data-v="nvl" class="on">GPU ↔ GPU (in node)</button>
+      <button data-v="rdma">GPU → remote GPU</button>
+      <button data-v="bounce">… without GPUDirect</button>
+      <button data-v="h2d">CPU → GPU</button>
+      <button data-v="gds">NVMe → GPU (GDS)</button>
+    </div>
+    <div class="visual"><svg id="pathSvg" class="node-svg" viewBox="0 0 900 360" role="img" aria-label="Animated data path"></svg>
+      <div class="grid3" style="margin-top:10px">
+        <div class="stat"><div class="num" id="pBW" style="color:var(--a)"></div><div class="lbl">bandwidth per GPU (one direction)</div></div>
+        <div class="stat"><div class="num" id="pT"></div><div class="lbl">time to move 10 GB</div></div>
+        <div class="stat"><div class="num" id="pUse" style="font:600 15px Inter"></div><div class="lbl">used for</div></div>
+      </div>
+      <div class="infobox" id="pathInfo"></div>
+    </div>
+    <div class="takeaway">Inside the node a GPU gets about 450 GB/s per direction; to another node it gets about 50 GB/s. That 9× gap determines how every parallelism strategy is mapped onto the hardware: tensor parallelism stays on NVLink, and only data and pipeline parallelism cross the network.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-ladder" data-chapter="Data paths">
+  <div class="inner">
+    <div class="label">03 · Data paths</div>
+    <h2>Bandwidth falls off at each step away from the GPU</h2>
+    <hr>
+    <div class="visual"><div id="ladBars"></div>
+      <div class="controls"><label class="ctl">All-reduce size <input type="range" id="arS" min="-1" max="2" step="0.05" value="0.845"> <output id="arSo"></output></label></div>
+      <div class="grid2" style="margin-top:10px">
+        <div class="stat"><div class="num" id="arIn" style="color:var(--e)"></div><div class="lbl">ring all-reduce, 8 GPUs over NVLink</div></div>
+        <div class="stat"><div class="num" id="arOut" style="color:var(--d)"></div><div class="lbl">same, 8 GPUs on 8 nodes over 400G NICs</div></div>
+      </div>
+    </div>
+    <p class="caption">All-reduce time ≈ 2·(n−1)/n × size ÷ per-GPU bandwidth, ignoring latency. Default: 7 GB, the BF16 gradients of a 3.5B model. In-node bandwidth uses 450 GB/s; the NVLink SHARP in-switch reduction on NVSwitch can do better.</p>
+    <div class="takeaway">Per GPU and per direction: HBM 3,350 · NVLink 450 · PCIe Gen5 64 · NIC 50 · NVMe ~7 GB/s. Memorize these five numbers.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-topo" data-chapter="Affinity">
+  <div class="inner">
+    <div class="label">04 · Affinity</div>
+    <h2><code>nvidia-smi topo -m</code>: which GPUs, NICs and CPUs are close to each other</h2>
+    <hr>
+    <p class="lede">A node has two CPU sockets (two NUMA domains). If a dataloader on socket 1 feeds GPU 0, or GPU 0 sends through a NIC on the other socket, traffic crosses the inter-socket link (UPI) and loses bandwidth. Hover any cell.</p>
+    <div>
+      <div class="visual scroll-x"><table class="topo" id="topo" style="margin:0 auto"></table>
+        <div class="infobox" id="topoInfo">Hover a cell.</div></div>
+      <div class="visual">
+        <table class="tbl" style="margin-top:12px">
+          <tr><td><code>NV#</code></td><td>Connected by # NVLinks (NV18 = 18 NVLink 4 links ≈ 900 GB/s bidirectional)</td></tr>
+          <tr><td><code>PIX</code></td><td>Same PCIe switch, so the shortest PCIe path. Best GPU↔NIC pairing for GPUDirect RDMA.</td></tr>
+          <tr><td><code>NODE</code></td><td>Same CPU socket, different PCIe switch: goes through the CPU root complex.</td></tr>
+          <tr><td><code>SYS</code></td><td>Crosses sockets over UPI, which is slower and less predictable.</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="takeaway">NCCL reads this topology and picks the NIC for each GPU, ideally PIX. When jobs are slow, check the pinning: <code>numactl</code> and CPU affinity for dataloaders, and <code>NCCL_IB_HCA</code> or <code>NCCL_TOPO_FILE</code> when auto-detection gets it wrong (common in VMs).</div>
+    <div class="cite">Illustrative matrix for a 2-socket, 8-GPU, 8-NIC node. Run the command on your own hardware.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-power" data-chapter="Power">
+  <div class="inner">
+    <div class="label">05 · Power</div>
+    <h2>Power is the real limit: a cluster's capacity is set by megawatts</h2>
+    <hr>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <select id="pwSys">
+          <option value="10.2,8">DGX H100 · 8 GPUs · ~10.2 kW</option>
+          <option value="14.3,8">DGX B200 · 8 GPUs · ~14.3 kW</option>
+          <option value="120,72">GB200 NVL72 rack · 72 GPUs · ~120 kW</option>
+        </select>
+        <label class="ctl">Rack power budget <input type="range" id="pwR" min="10" max="140" step="5" value="40"> <output id="pwRo"></output></label>
+        <label class="ctl">Cluster GPUs <input type="range" id="pwG" min="10" max="17" step="1" value="14"> <output id="pwGo"></output></label>
+        <label class="ctl">PUE <input type="range" id="pwP" min="1.05" max="1.6" step="0.05" value="1.2"> <output id="pwPo"></output></label>
+      </div>
+      <div class="grid4" style="margin-top:16px">
+        <div class="stat"><div class="num" id="pwPer"></div><div class="lbl">systems per rack</div></div>
+        <div class="stat"><div class="num" id="pwGR"></div><div class="lbl">GPUs per rack</div></div>
+        <div class="stat"><div class="num" id="pwRacks"></div><div class="lbl">racks for the cluster</div></div>
+        <div class="stat"><div class="num" id="pwMW" style="color:var(--d)"></div><div class="lbl">facility power</div></div>
+      </div>
+      <svg id="pwSvg" viewBox="0 0 660 120" style="margin-top:12px" role="img" aria-label="Racks"></svg>
+    </div>
+    <p class="caption">Typical air-cooled data-center racks were designed for about 10–20 kW. A single DGX H100 nearly fills one. Blackwell rack-scale systems need direct liquid cooling. PUE (power usage effectiveness) = facility power ÷ IT power.</p>
+    <div class="takeaway">"Why don't you just add more GPUs?" Because of power, cooling and floor space. A 16K-GPU H100 cluster draws about 25 MW, which is roughly the consumption of a small town.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-nvl72" data-chapter="Scale-up">
+  <div class="inner">
+    <div class="label">06 · Scale-up</div>
+    <h2>The NVLink domain grows from 8 GPUs to 72</h2>
+    <hr>
+    <p class="lede">GB200 NVL72 puts 72 Blackwell GPUs and 36 Grace CPUs in one rack, all connected through NVLink switch trays. Every GPU can reach every other GPU at 1.8 TB/s, so the whole rack works like <b>one big GPU</b> for tensor and expert parallelism.</p>
+    <div class="visual">
+      <div class="seg" id="sdSeg"><button data-v="8" class="on">HGX H100 (8)</button><button data-v="72">GB200 NVL72 (72)</button></div>
+      <svg id="sdSvg" viewBox="0 0 660 240" style="margin-top:12px" role="img" aria-label="NVLink domain"></svg>
+      <div class="grid4" style="margin-top:8px">
+        <div class="stat"><div class="num" id="sdG"></div><div class="lbl">GPUs in one NVLink domain</div></div>
+        <div class="stat"><div class="num" id="sdBW"></div><div class="lbl">NVLink per GPU (bidir.)</div></div>
+        <div class="stat"><div class="num" id="sdAgg"></div><div class="lbl">aggregate NVLink</div></div>
+        <div class="stat"><div class="num" id="sdMem"></div><div class="lbl">HBM in domain</div></div>
+      </div>
+    </div>
+    <div class="takeaway">A bigger scale-up domain means tensor parallelism and MoE all-to-all traffic can span more GPUs without touching the slower network. Frontier labs care about this because MoE inference is limited by all-to-all bandwidth.</div>
+    <div class="cite">NVIDIA GB200 NVL72 product page: 72 GPUs, 130 TB/s aggregate NVLink, ~13.5 TB HBM3e. HGX H100: 900 GB/s per GPU over NVLink 4.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-debug" data-chapter="Scale-up">
+  <div class="inner">
+    <div class="label">07 · In practice</div>
+    <h2>A node is slow. What do you check?</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>1 · Clocks and throttling</h3><p><code>nvidia-smi -q -d PERFORMANCE,CLOCK,POWER,TEMPERATURE</code>: look for thermal or power-cap throttling, or clocks locked low. One hot GPU slows the whole job.</p></div>
+      <div class="card b"><h3>2 · Errors</h3><p><code>dmesg | grep -i xid</code>, ECC counters and row remapping (<code>nvidia-smi -q -d ECC,ROW_REMAPPER</code>), NVLink error counters.</p></div>
+      <div class="card c"><h3>3 · Topology and links</h3><p><code>nvidia-smi topo -m</code>, <code>nvidia-smi nvlink -s</code> (are all links up?), <code>lspci -vv</code> for the negotiated PCIe width and speed (x16 Gen5, not x8 Gen3).</p></div>
+      <div class="card e"><h3>4 · Microbenchmarks</h3><p><code>dcgmi diag -r 3</code>, <code>nccl-tests all_reduce_perf</code> (compare busbw with a known-good node), and a GEMM burn-in to check sustained TFLOPS.</p></div>
+    </div>
+    <div class="takeaway">Labs run these as <b>preflight checks</b> before admitting a node into a training job, and keep a quarantine pool for nodes that fail. Deck 06 covers this in detail.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-qa" data-chapter="Interview">
+  <div class="inner">
+    <div class="label">08 · Interview</div>
+    <h2>Questions you'll get</h2>
+    <hr>
+    <details class="qa"><summary>Walk me through what's in an 8×H100 server and how the GPUs talk.</summary><div class="ans">There are 8 SXM GPUs on an HGX baseboard. Each has 18 NVLink 4 links that go to <b>4 NVSwitch chips</b>, so any GPU can reach any other at 900 GB/s bidirectional, all-to-all, without blocking. Separately, PCIe Gen5 switches connect GPUs to <b>one 400G NIC per GPU</b> (ConnectX-7, used with GPUDirect RDMA), to NVMe, and to the 2 CPU sockets. The CPUs handle orchestration and data loading but sit off the hot path.</div></details>
+    <details class="qa"><summary>What does GPUDirect RDMA do and why does it matter?</summary><div class="ans">It lets the NIC <b>read and write GPU memory directly</b> over PCIe, with no staging copy in host DRAM and no CPU involvement. Without it, every inter-node message is copied GPU → host → NIC, which doubles the PCIe traffic, adds latency and uses CPU memory bandwidth. NCCL depends on it for inter-node collectives. GPUDirect Storage does the same for NVMe and parallel file systems.</div></details>
+    <details class="qa"><summary>Why is there one NIC per GPU?</summary><div class="ans">So that each GPU gets <b>its own 400 Gb/s (50 GB/s) path</b> to the network behind a nearby PCIe switch (PIX affinity), which avoids PCIe and UPI contention. It also matches the rail-optimized network design: GPU i in every node connects to the same leaf switch (rail i). See deck 05.</div></details>
+    <details class="qa"><summary>Can you train with PCIe H100 cards instead of SXM? What changes?</summary><div class="ans">PCIe H100s have a lower TDP (about 350 W vs 700 W), fewer SMs and lower HBM bandwidth, and only an optional NVLink <b>bridge between pairs</b> rather than NVSwitch all-to-all. Tensor parallelism across 8 GPUs would then go over PCIe (~64 GB/s), which is far too slow. They suit inference of models that fit on 1–2 GPUs, but not large-scale training.</div></details>
+    <details class="qa"><summary>What's the practical limit on how many H100s you can put in a data hall?</summary><div class="ans"><b>Power and cooling</b>, not floor space. Each DGX H100 draws about 10 kW, so a 16K-GPU cluster is about 20 MW of IT load and about 25 MW of facility load at PUE 1.2. Many existing data centers can't deliver 40+ kW per rack, which is why new AI builds are designed around power and use liquid cooling for Blackwell-class racks.</div></details>
+  </div>
+</section>
+
+<section class="slide" id="s-end" data-chapter="Interview">
+  <div class="inner">
+    <div class="label">09 · Take it with you</div>
+    <h2>Four things to remember</h2>
+    <hr>
+    <div class="recap">
+      <div><span><b>There are two fabrics in the box:</b> NVLink/NVSwitch (GPU↔GPU, 900 GB/s bidirectional) and PCIe (GPU↔NIC, NVMe and CPU, ~64 GB/s per direction).</span></div>
+      <div><span><b>One 400G NIC per GPU, with GPUDirect RDMA</b>, gives about 50 GB/s per GPU off the node, roughly 9× less than NVLink.</span></div>
+      <div><span><b>Topology and NUMA affinity matter.</b> Check them with <code>nvidia-smi topo -m</code>; wrong pinning quietly costs bandwidth.</span></div>
+      <div><span><b>Power is the binding constraint.</b> NVL72-style racks make the scale-up domain bigger at about 120 kW per rack.</span></div>
+    </div>
+    <p class="start-hint">Next: <a href="../05-cluster-topology/index.html">05 · Cluster topology →</a> · Previous: <a href="../03-memory-hierarchy/index.html">← 03</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  // geometry shared by both node diagrams
+  const GX = i => 200 + i * 86, GW = 78;
+  const SX = j => 230 + j * 165, SW = 135;
+  const PX = k => 200 + 2 * k * 86, PW = 164;
+  const Y = { sw: 14, gpu: 84, pcie: 176, nic: 226, bus: 274, fab: 300 };
+  const C0 = { x: 10, y: 84, w: 160, h: 70 }, C1 = { x: 10, y: 176, w: 160, h: 70 }, NV = { x: 10, y: 268, w: 160, h: 40 };
+
+  function drawNode(s, interactive) {
+    const I = msg => interactive ? { 'data-info': msg } : {};
+    // NVLink wiring
+    for (let i = 0; i < 8; i++) for (let j = 0; j < 4; j++)
+      svg('line', { x1: GX(i) + GW / 2, y1: Y.gpu, x2: SX(j) + SW / 2, y2: Y.sw + 30, style: 'stroke:var(--e);stroke-width:1;opacity:.35' }, s);
+    // PCIe wiring
+    for (let i = 0; i < 8; i++) svg('line', { x1: GX(i) + GW / 2, y1: Y.gpu + 56, x2: GX(i) + GW / 2, y2: Y.pcie, style: 'stroke:var(--c);stroke-width:2;opacity:.6' }, s);
+    for (let i = 0; i < 8; i++) svg('line', { x1: GX(i) + GW / 2, y1: Y.pcie + 26, x2: GX(i) + GW / 2, y2: Y.nic, style: 'stroke:var(--c);stroke-width:2;opacity:.6' }, s);
+    for (let i = 0; i < 8; i++) svg('line', { x1: GX(i) + GW / 2, y1: Y.nic + 26, x2: GX(i) + GW / 2, y2: Y.fab, style: 'stroke:var(--b);stroke-width:2;opacity:.6' }, s);
+    for (let k = 0; k < 4; k++) {
+      const cx = PX(k) + 82, by = Y.bus + (k < 2 ? 0 : 10);
+      svg('polyline', { points: `${cx},${Y.pcie + 26} ${cx},${by} 182,${by} 182,${k < 2 ? C0.y + 35 : C1.y + 35} ${C0.x + C0.w},${k < 2 ? C0.y + 35 : C1.y + 35}`, fill: 'none', style: 'stroke:var(--c);stroke-width:1.6;opacity:.5' }, s);
+    }
+    svg('line', { x1: 90, y1: C1.y + C1.h, x2: 90, y2: NV.y, style: 'stroke:var(--c);stroke-width:2;opacity:.6' }, s);
+    svg('line', { x1: 60, y1: C0.y + C0.h, x2: 60, y2: C1.y, style: 'stroke:var(--faint);stroke-width:3;stroke-dasharray:4 3' }, s);
+    svg('text', { x: 66, y: C0.y + C0.h + 15, class: 'tm', style: 'font-size:10px', text: 'UPI' }, s);
+
+    for (let j = 0; j < 4; j++) {
+      const g = svg('g', I(`<b>NVSwitch ${j}</b> (3rd gen): every GPU sends 4–5 of its 18 NVLink links to each of the 4 switches. Together they give a non-blocking all-to-all fabric with in-switch reduction (NVLink SHARP).`), s);
+      svg('rect', { x: SX(j), y: Y.sw, width: SW, height: 30, rx: 6, class: 'f-e' }, g);
+      svg('text', { x: SX(j) + SW / 2, y: Y.sw + 20, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:600;font-size:12px', text: 'NVSwitch ' + j }, g);
+    }
+    for (let i = 0; i < 8; i++) {
+      const g = svg('g', I(`<b>GPU ${i}: H100 SXM5</b>. 80 GB HBM3 at 3.35 TB/s, 700 W, 18 NVLink 4 links (900 GB/s bidirectional), PCIe Gen5 x16 to its switch.`), s);
+      svg('rect', { x: GX(i), y: Y.gpu, width: GW, height: 56, rx: 8, class: 'f-a', 'data-gpu': i }, g);
+      svg('text', { x: GX(i) + GW / 2, y: Y.gpu + 25, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:700', text: 'GPU ' + i }, g);
+      svg('text', { x: GX(i) + GW / 2, y: Y.gpu + 42, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:10.5px;opacity:.9', text: 'H100 · 80 GB' }, g);
+      const n = svg('g', I(`<b>NIC ${i}: ConnectX-7, 400 Gb/s</b> (InfiniBand NDR or Ethernet/RoCE). It is dedicated to GPU ${i} and reads and writes its HBM directly with GPUDirect RDMA.`), s);
+      svg('rect', { x: GX(i), y: Y.nic, width: GW, height: 26, rx: 5, class: 'f-b' }, n);
+      svg('text', { x: GX(i) + GW / 2, y: Y.nic + 17, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px;font-weight:600', text: 'NIC ' + i + ' · 400G' }, n);
+    }
+    for (let k = 0; k < 4; k++) {
+      const g = svg('g', I(`<b>PCIe Gen5 switch ${k}</b>: connects GPUs ${2 * k}–${2 * k + 1} and NICs ${2 * k}–${2 * k + 1} (and storage) to CPU ${k < 2 ? 0 : 1}. GPU↔NIC traffic stays inside this switch and never touches the CPU.`), s);
+      svg('rect', { x: PX(k) + 4, y: Y.pcie, width: PW - 8, height: 26, rx: 5, class: 'f-c' }, g);
+      svg('text', { x: PX(k) + PW / 2, y: Y.pcie + 17, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px;font-weight:600', text: 'PCIe Gen5 switch ' + k }, g);
+    }
+    const fab = svg('g', I('<b>Compute fabric</b>: 8 × 400 Gb/s = 3.2 Tb/s per node into a rail-optimized InfiniBand or RoCE network (deck 05). A separate frontend network carries storage and management traffic.'), s);
+    svg('rect', { x: 200, y: Y.fab, width: 680, height: 26, rx: 6, style: 'fill:var(--b-soft);stroke:var(--b)' }, fab);
+    svg('text', { x: 540, y: Y.fab + 17, 'text-anchor': 'middle', class: 't', style: 'fill:var(--b);font-weight:600;font-size:12px', text: 'compute fabric → other nodes (8 × 400 Gb/s)' }, fab);
+    [[C0, 'CPU 0', '56-core Xeon · 1 TB DDR5'], [C1, 'CPU 1', '56-core Xeon · 1 TB DDR5']].forEach(([c, n, d], idx) => {
+      const g = svg('g', I(`<b>${n}</b>: a NUMA domain hosting PCIe switches ${idx * 2}–${idx * 2 + 1}. Runs the training process, dataloaders and NCCL proxy threads. Its DDR5 is the "host memory" for pinned buffers and offload.`), s);
+      svg('rect', { x: c.x, y: c.y, width: c.w, height: c.h, rx: 8, style: 'fill:var(--faint)' }, g);
+      svg('text', { x: c.x + c.w / 2, y: c.y + 30, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:700', text: n }, g);
+      svg('text', { x: c.x + c.w / 2, y: c.y + 48, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:10.5px', text: d }, g);
+    });
+    const nv = svg('g', I('<b>Local NVMe</b> (~30 TB, U.2): a cache for dataset shards and fast local checkpoints. With GPUDirect Storage, the drive can DMA straight into GPU memory.'), s);
+    svg('rect', { x: NV.x, y: NV.y, width: NV.w, height: NV.h, rx: 6, style: 'fill:var(--faint);opacity:.7' }, nv);
+    svg('text', { x: NV.x + NV.w / 2, y: NV.y + 25, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11.5px;font-weight:600', text: 'NVMe · ~30 TB' }, nv);
+    svg('text', { x: 10, y: 340, class: 'tm', style: 'font-size:11px', text: '— NVLink   — PCIe   — network' }, s);
+  }
+
+  const map = document.getElementById('mapSvg');
+  drawNode(map, true);
+  const info = document.getElementById('mapInfo');
+  const pick = e => { const g = e.target.closest('[data-info]'); if (g) info.innerHTML = g.dataset.info; };
+  map.addEventListener('mouseover', pick); map.addEventListener('click', pick);
+
+  /* data paths */
+  const gx = i => GX(i) + GW / 2;
+  const PATHS = {
+    nvl: { pts: [[gx(0), Y.gpu], [SX(1) + SW / 2, Y.sw + 30], [gx(5), Y.gpu]], bw: 450, c: 'var(--e)', use: 'Tensor-parallel all-reduce, MoE all-to-all within the node',
+      info: '<b>GPU 0 → NVSwitch → GPU 5.</b> One hop through a switch, and all 8 GPUs can do this at the same time at full rate (non-blocking). The bandwidth is 18 links × 25 GB/s ≈ 450 GB/s per direction.' },
+    rdma: { pts: [[gx(0), Y.gpu + 56], [gx(0), Y.pcie + 13], [gx(0), Y.nic + 13], [gx(0), Y.fab + 13], [880, Y.fab + 13]], bw: 50, c: 'var(--b)', use: 'Data-parallel gradient all-reduce, pipeline sends',
+      info: '<b>GPU 0 → PCIe switch → NIC 0 → fabric.</b> With GPUDirect RDMA the NIC DMAs straight from HBM. The CPU is not involved and there is no copy in host memory. The limit is 400 Gb/s ≈ 50 GB/s.' },
+    bounce: { pts: [[gx(0), Y.gpu + 56], [gx(0), Y.pcie + 13], [PX(0) + 82, Y.pcie + 26], [PX(0) + 82, Y.bus], [182, Y.bus], [182, C0.y + 35], [C0.x + C0.w / 2, C0.y + 35], [182, C0.y + 35], [182, Y.bus], [PX(0) + 82, Y.bus], [PX(0) + 82, Y.pcie + 26], [gx(0), Y.nic + 13], [gx(0), Y.fab + 13], [880, Y.fab + 13]], bw: 25, c: 'var(--d)', use: 'What happens if GPUDirect RDMA is misconfigured',
+      info: '<b>Bounce through host memory:</b> GPU → CPU DRAM (copy) → NIC. The data crosses PCIe twice, uses CPU memory bandwidth and adds latency. Effective throughput drops a lot. Check that <code>nvidia-peermem</code> is loaded, and look at the NCCL logs for "GDR".' },
+    h2d: { pts: [[C0.x + C0.w / 2, C0.y + 35], [182, C0.y + 35], [182, Y.bus], [PX(0) + 82, Y.bus], [PX(0) + 82, Y.pcie + 26], [gx(1), Y.pcie + 13], [gx(1), Y.gpu + 56]], bw: 55, c: 'var(--c)', use: 'Input batches, offloaded optimizer state, KV-cache swap-in',
+      info: '<b>Host → device copy over PCIe Gen5 x16</b> (~64 GB/s theoretical, about 50–55 GB/s in practice with <em>pinned</em> memory; pageable memory is much slower). Use <code>pin_memory=True</code> and non-blocking copies that overlap with compute.' },
+    gds: { pts: [[NV.x + NV.w / 2, NV.y], [90, C1.y + C1.h], [182, C1.y + 35], [182, Y.bus + 10], [PX(2) + 82, Y.bus + 10], [PX(2) + 82, Y.pcie + 26], [gx(4), Y.pcie + 13], [gx(4), Y.gpu + 56]], bw: 14, c: 'var(--faint)', use: 'Checkpoint load, dataset streaming',
+      info: '<b>GPUDirect Storage</b>: NVMe → PCIe → GPU HBM by DMA, with no bounce buffer in CPU memory. The limit is drive throughput (~7 GB/s per drive; a few drives in parallel give ~14+ GB/s), not PCIe.' },
+  };
+  const ps = document.getElementById('pathSvg');
+  drawNode(ps, false);
+  const overlay = svg('g', {}, ps);
+  let cur = 'nvl';
+  const renderPath = () => {
+    clear(overlay);
+    const p = PATHS[cur];
+    svg('polyline', { points: p.pts.map(q => q.join(',')).join(' '), fill: 'none', style: `stroke:${p.c};stroke-width:6;stroke-linejoin:round;opacity:.9` }, overlay);
+    Deck.out('pBW', p.bw + ' GB/s'); Deck.out('pT', (10 / p.bw < 1 ? (10000 / p.bw).toFixed(0) + ' ms' : (10 / p.bw).toFixed(2) + ' s'));
+    Deck.out('pUse', p.use); document.getElementById('pathInfo').innerHTML = p.info;
+  };
+  Deck.seg('pathSeg', v => { cur = v; renderPath(); });
+  Deck.enter('s-paths', () => {
+    const dots = [0, 1, 2].map(() => svg('circle', { r: 7, style: 'fill:var(--ink);stroke:var(--panel);stroke-width:2' }, ps));
+    const stop = Deck.loop(t => {
+      const p = PATHS[cur].pts;
+      const seg = []; let L = 0;
+      for (let i = 1; i < p.length; i++) { const d = Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]); seg.push(d); L += d; }
+      dots.forEach((dot, k) => {
+        let pos = ((t * 220 + k * L / 3) % L), i = 0;
+        while (i < seg.length - 1 && pos > seg[i]) { pos -= seg[i]; i++; }
+        const f = seg[i] ? pos / seg[i] : 0;
+        dot.setAttribute('cx', p[i][0] + (p[i + 1][0] - p[i][0]) * f);
+        dot.setAttribute('cy', p[i][1] + (p[i + 1][1] - p[i][1]) * f);
+      });
+    });
+    return () => { stop(); dots.forEach(d => d.remove()); };
+  });
+
+  /* ladder */
+  Deck.hbars(document.getElementById('ladBars'), [
+    { label: 'HBM3', value: 3350, color: 'var(--b)', text: '3,350 GB/s' },
+    { label: 'NVLink 4 (per dir.)', value: 450, color: 'var(--e)', text: '450 GB/s' },
+    { label: 'PCIe Gen5 x16', value: 64, color: 'var(--c)', text: '64 GB/s' },
+    { label: '400G NIC', value: 50, color: 'var(--b)', text: '50 GB/s' },
+    { label: 'NVMe (1 drive)', value: 7, color: 'var(--faint)', text: '~7 GB/s' },
+  ], { log: true, min: 3, max: 5000 });
+  Deck.bind(['arS'], () => {
+    const GB = Math.pow(10, Deck.val('arS'));
+    Deck.out('arSo', GB < 10 ? GB.toFixed(1) + ' GB' : GB.toFixed(0) + ' GB');
+    const f = 2 * 7 / 8, t = bw => { const s = f * GB / bw; return s < 1 ? (s * 1000).toFixed(0) + ' ms' : s.toFixed(2) + ' s'; };
+    Deck.out('arIn', t(450)); Deck.out('arOut', t(50));
+  });
+
+  /* topo matrix */
+  const topo = document.getElementById('topo');
+  const rel = (a, b, nic) => {
+    if (!nic) return a === b ? 'X' : 'NV18';
+    if (Math.floor(a / 2) === Math.floor(b / 2)) return 'PIX';
+    if (Math.floor(a / 4) === Math.floor(b / 4)) return 'NODE';
+    return 'SYS';
+  };
+  let html = '<tr><th></th>' + [...Array(8)].map((_, i) => `<th>GPU${i}</th>`).join('') + [...Array(8)].map((_, i) => `<th>NIC${i}</th>`).join('') + '<th>CPU</th></tr>';
+  for (let r = 0; r < 8; r++) {
+    html += `<tr><th>GPU${r}</th>`;
+    for (let c = 0; c < 8; c++) { const v = rel(r, c, false); html += `<td class="${v === 'NV18' ? 'NV' : 'X'}" data-r="${r}" data-c="G${c}">${v}</td>`; }
+    for (let c = 0; c < 8; c++) { const v = rel(r, c, true); html += `<td class="${v}" data-r="${r}" data-c="N${c}">${v}</td>`; }
+    html += `<td class="X">${r < 4 ? '0' : '1'}</td></tr>`;
+  }
+  topo.innerHTML = html;
+  const tInfo = document.getElementById('topoInfo');
+  const EXPL = {
+    NV18: (r, c) => `<b>GPU${r} ↔ GPU${c}: NV18.</b> 18 NVLink 4 links through NVSwitch. Every GPU pair is equidistant, which is why tensor parallelism inside the node doesn't care about rank order.`,
+    PIX: (r, c) => `<b>GPU${r} ↔ NIC${c}: PIX.</b> Behind the same PCIe switch. ${r === c ? 'This is the NIC NCCL should use for this GPU.' : 'Close, but this NIC belongs to the neighbouring GPU.'}`,
+    NODE: (r, c) => `<b>GPU${r} ↔ NIC${c}: NODE.</b> Same socket, so traffic goes through the CPU root complex. It works, but it competes with other PCIe traffic.`,
+    SYS: (r, c) => `<b>GPU${r} ↔ NIC${c}: SYS.</b> Crosses sockets over UPI. Avoid this for RDMA: lower bandwidth, higher latency, and it disturbs the other socket.`,
+    X: (r, c) => `<b>GPU${r}</b> itself.`,
+  };
+  topo.addEventListener('mouseover', e => {
+    const td = e.target.closest('td[data-r]'); if (!td) return;
+    Deck.$$('td.hl', topo).forEach(x => x.classList.remove('hl')); td.classList.add('hl');
+    tInfo.innerHTML = EXPL[td.textContent](td.dataset.r, td.dataset.c.slice(1));
+  });
+
+  /* power */
+  Deck.bind(['pwSys', 'pwR', 'pwG', 'pwP'], () => {
+    const [kw, g] = Deck.val('pwSys').split(',').map(Number), R = Deck.val('pwR'), G = Math.pow(2, Deck.val('pwG')), P = Deck.val('pwP');
+    Deck.out('pwRo', R + ' kW'); Deck.out('pwGo', G.toLocaleString()); Deck.out('pwPo', P.toFixed(2));
+    const per = Math.floor(R / kw), gpr = per * g;
+    Deck.out('pwPer', per || '0 (too hot)'); Deck.out('pwGR', gpr);
+    document.getElementById('pwPer').style.color = per ? 'var(--ink)' : 'var(--d)';
+    const systems = Math.ceil(G / g), racks = per ? Math.ceil(systems / per) : Infinity;
+    Deck.out('pwRacks', isFinite(racks) ? racks.toLocaleString() : '—');
+    const mw = systems * kw * P / 1000;
+    Deck.out('pwMW', mw < 1 ? (mw * 1000).toFixed(0) + ' kW' : mw.toFixed(1) + ' MW');
+    const s = clear(document.getElementById('pwSvg'));
+    const shown = Math.min(isFinite(racks) ? racks : 0, 40);
+    for (let i = 0; i < shown; i++) {
+      const x = 10 + (i % 20) * 32, y = 8 + Math.floor(i / 20) * 54;
+      svg('rect', { x, y, width: 26, height: 48, rx: 3, style: 'fill:var(--panel-2);stroke:var(--line)' }, s);
+      for (let k = 0; k < Math.min(per, 6); k++) svg('rect', { x: x + 3, y: y + 4 + k * 7, width: 20, height: 5, rx: 1, class: 'f-a' }, s);
+    }
+    if (racks > 40 && isFinite(racks)) svg('text', { x: 650, y: 115, 'text-anchor': 'end', class: 'tm', text: `showing 40 of ${racks.toLocaleString()} racks` }, s);
+  });
+
+  /* scale-up domain */
+  Deck.seg('sdSeg', v => {
+    const n = +v, s = clear(document.getElementById('sdSvg'));
+    const cols = n === 8 ? 8 : 18, rows = Math.ceil(n / cols), cw = 640 / cols, ch = n === 8 ? 70 : 36;
+    const top = n === 8 ? 40 : 10;
+    svg('rect', { x: 6, y: top + rows * (ch + 8) + 8, width: 648, height: 28, rx: 6, class: 'f-e', opacity: .85 }, s);
+    svg('text', { x: 330, y: top + rows * (ch + 8) + 27, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:600', text: n === 8 ? '4 × NVSwitch (on the baseboard)' : '9 NVLink switch trays · 18 NVSwitch chips (in the rack)' }, s);
+    for (let i = 0; i < n; i++) {
+      const x = 10 + (i % cols) * cw, y = top + Math.floor(i / cols) * (ch + 8);
+      svg('line', { x1: x + cw / 2 - 2, y1: y + ch, x2: x + cw / 2 - 2, y2: top + rows * (ch + 8) + 8, style: 'stroke:var(--e);opacity:.4' }, s);
+      svg('rect', { x, y, width: cw - 4, height: ch, rx: 4, class: 'f-a' }, s);
+      if (n === 8) svg('text', { x: x + cw / 2 - 2, y: y + ch / 2 + 5, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:600', text: 'H100' }, s);
+    }
+    const h = top + rows * (ch + 8) + 46;
+    s.setAttribute('viewBox', `0 0 660 ${h}`);
+    Deck.out('sdG', n); Deck.out('sdBW', n === 8 ? '900 GB/s' : '1.8 TB/s');
+    Deck.out('sdAgg', n === 8 ? '7.2 TB/s' : '130 TB/s'); Deck.out('sdMem', n === 8 ? '640 GB' : '~13.5 TB');
+  });
+})();
+</script>
+</body>
+</html>

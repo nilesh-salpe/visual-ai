@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPU Memory Hierarchy</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<style>
+  #pyr g { cursor: pointer; }
+  #pyr g:hover polygon { filter: brightness(1.1); }
+  .lvl-card { min-height: 150px; }
+  .lvl-card .grid3 { margin-top: 10px; }
+</style>
+</head>
+<body data-deck="Memory hierarchy" data-home="../index.html" data-home-label="GPU">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">GPU for GenAI · 03</div>
+    <h1>The memory hierarchy:<br>where performance is decided</h1>
+    <p class="sub">Most GPU performance work is about not moving bytes. This deck goes level by level from registers out to NVMe, then covers the techniques that keep data close to the compute: tiling, fusion, FlashAttention and paged KV caches.</p>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Press <kbd>→</kbd> or <kbd>Space</kbd> to begin.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-pyr" data-chapter="The levels">
+  <div class="inner">
+    <div class="label">01 · The levels</div>
+    <h2>Each level down is about 10× bigger and much slower</h2>
+    <hr>
+    <div class="grid2">
+      <div class="visual" style="margin-top:0"><svg id="pyr" viewBox="0 0 420 360" role="img" aria-label="Memory pyramid"></svg></div>
+      <div class="visual lvl-card" style="margin-top:0">
+        <h3 id="lvName"></h3>
+        <p class="caption" id="lvDesc" style="margin-top:0"></p>
+        <div class="grid3">
+          <div class="stat"><div class="num" id="lvSize" style="font-size:22px"></div><div class="lbl">capacity (H100 node)</div></div>
+          <div class="stat"><div class="num" id="lvBW" style="font-size:22px"></div><div class="lbl">bandwidth</div></div>
+          <div class="stat"><div class="num" id="lvLat" style="font-size:22px"></div><div class="lbl">latency</div></div>
+        </div>
+        <div id="lvBars" style="margin-top:18px"></div>
+        <p class="caption">Bandwidth per GPU, log scale.</p>
+      </div>
+    </div>
+    <div class="cite">H100 SXM figures from NVIDIA's whitepaper and datasheet. On-chip bandwidths and latencies are approximate and come from microbenchmark studies; they vary by access pattern.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-energy" data-chapter="The levels">
+  <div class="inner">
+    <div class="label">02 · The levels</div>
+    <h2>Fetching a number from DRAM costs ~170× more energy than multiplying it</h2>
+    <hr>
+    <p class="lede">The gap shows up in energy as well as time. A chip that ships every operand to and from DRAM would spend most of its power budget moving data.</p>
+    <div class="visual"><div id="enBars"></div></div>
+    <p class="caption">Energy per operation, 45 nm process (log scale). Newer nodes shrink every number, but the <em>ratio</em> between arithmetic and off-chip access has stayed huge.</p>
+    <div class="takeaway">This is the physics behind every optimization in this deck: reuse data that is already on-chip and avoid round trips to HBM.</div>
+    <div class="cite">M. Horowitz, "Computing's Energy Problem (and what we can do about it)", ISSCC 2014.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-tile" data-chapter="Keep data close">
+  <div class="inner">
+    <div class="label">03 · Keep data close</div>
+    <h2>Tiling: load a block into shared memory once, then use it T times</h2>
+    <hr>
+    <p class="lede">A naive matmul reads A[i,k] and B[k,j] from memory for every multiply-add. A tiled kernel loads a T×K strip of A and a K×T strip of B into SRAM, computes a whole T×T output tile from them, and so cuts memory traffic by a factor of T.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Tile size T <input type="range" id="tT" min="0" max="8" step="1" value="5"> <output id="tTo"></output></label>
+        <label class="ctl">Matrix N <input type="range" id="tN" min="10" max="14" step="1" value="13"> <output id="tNo"></output></label>
+      </div>
+      <div class="grid2" style="margin-top:12px;align-items:center">
+        <svg id="tileSvg" viewBox="0 0 400 220" role="img" aria-label="Tiled matmul"></svg>
+        <div>
+          <div class="grid2">
+            <div class="stat"><div class="num" id="tTraffic"></div><div class="lbl">loaded into SMs</div></div>
+            <div class="stat"><div class="num" id="tAI"></div><div class="lbl">FLOPs per byte loaded</div></div>
+          </div>
+          <div id="tBars" style="margin-top:14px"></div>
+          <p class="caption" id="tSram"></p>
+        </div>
+      </div>
+    </div>
+    <p class="caption">Model: square output tiles, BF16 values. Real GEMMs also order their tiles so that neighbouring blocks reuse each other's strips in <b>L2</b>, which cuts HBM traffic further.</p>
+    <div class="takeaway">Tile size is limited by SRAM capacity (228 KB of shared memory per SM) and registers. That limit is why kernel writers obsess over tile shapes, and why Hopper added TMA to copy tiles asynchronously.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-fuse" data-chapter="Keep data close">
+  <div class="inner">
+    <div class="label">04 · Keep data close</div>
+    <h2>Kernel fusion: one trip to HBM instead of five</h2>
+    <hr>
+    <p class="lede">After a GEMM, a typical MLP block runs bias-add → GELU → dropout → residual-add. Run as separate kernels, each one <b>reads the whole tensor from HBM and writes it back</b>. A fused kernel keeps the values in registers.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <div class="seg" id="fMode"><button data-v="0" class="on">Unfused (eager)</button><button data-v="1">Fused</button></div>
+        <label class="ctl">Tokens × hidden <input type="range" id="fS" min="20" max="30" step="1" value="25"> <output id="fSo"></output></label>
+      </div>
+      <svg id="fuseSvg" viewBox="0 0 660 200" style="margin-top:12px" role="img" aria-label="Kernel fusion diagram"></svg>
+      <div class="grid3" style="margin-top:8px">
+        <div class="stat"><div class="num" id="fBytes"></div><div class="lbl">HBM traffic</div></div>
+        <div class="stat"><div class="num" id="fTime"></div><div class="lbl">time at 3.35 TB/s</div></div>
+        <div class="stat"><div class="num" id="fLaunch"></div><div class="lbl">kernel launches</div></div>
+      </div>
+    </div>
+    <div class="takeaway">That is what <code>torch.compile</code> (Inductor + Triton), XLA, and hand-written fused kernels do. Fusion doesn't reduce the FLOPs at all; the speedup comes from fewer bytes moved and fewer kernel launches.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-flash" data-chapter="Keep data close">
+  <div class="inner">
+    <div class="label">05 · Keep data close</div>
+    <h2>FlashAttention never writes the N×N attention matrix to HBM</h2>
+    <hr>
+    <p class="lede">Standard attention writes <code>S = QKᵀ</code> (N×N) to HBM, reads it back for softmax, then writes and reads it again for the weighted sum. FlashAttention streams K/V tiles through SRAM and uses an <b>online softmax</b> (a running max and running sum), so the full matrix never exists in memory.</p>
+    <div class="grid2">
+      <div class="visual" style="margin-top:0">
+        <svg id="faSvg" viewBox="0 0 360 300" role="img" aria-label="FlashAttention tiling animation"></svg>
+        <div class="controls"><button class="btn" id="faPlay">Pause</button><span class="caption" style="margin:0" id="faStep"></span></div>
+      </div>
+      <div class="visual" style="margin-top:0">
+        <label class="ctl">Sequence length <input type="range" id="faN" min="10" max="17" step="1" value="13"> <output id="faNo"></output></label>
+        <h3 style="margin-top:14px">Memory for scores (per head)</h3>
+        <div id="faMem"></div>
+        <h3 style="margin-top:14px">HBM traffic for attention (per head)</h3>
+        <div id="faTraffic"></div>
+        <p class="caption">Model: head dim 128, BF16, 128-row tiles. The standard version runs scale, mask, softmax and dropout as separate kernels.</p>
+      </div>
+    </div>
+    <div class="takeaway">Score memory drops from O(N²) to O(N), and HBM traffic drops several-fold. The FLOPs are the same or slightly <em>higher</em> (there is recomputation in the backward pass), yet it runs 2–4× faster. That is the clearest example of attention being limited by IO rather than compute.</div>
+    <div class="cite">Dao et al., "FlashAttention" (2022); FlashAttention-2 (2023); FlashAttention-3 (2024, Hopper: async TMA + FP8).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-train" data-chapter="Capacity">
+  <div class="inner">
+    <div class="label">06 · Capacity</div>
+    <h2>Training memory: 16 bytes per parameter before activations</h2>
+    <hr>
+    <p class="lede">Mixed-precision Adam stores BF16 weights (2 B) + BF16 gradients (2 B) + FP32 master weights, momentum and variance (12 B). <b>ZeRO and FSDP</b> shard these across data-parallel ranks.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Params <input type="range" id="zP" min="0" max="2.7" step="0.01" value="1.845"> <output id="zPo"></output></label>
+        <label class="ctl">DP ranks <input type="range" id="zD" min="0" max="10" step="1" value="6"> <output id="zDo"></output></label>
+        <div class="seg" id="zS"><button data-v="0">No sharding</button><button data-v="1">ZeRO-1</button><button data-v="2">ZeRO-2</button><button data-v="3" class="on">ZeRO-3 / FSDP</button></div>
+      </div>
+      <svg id="zSvg" viewBox="0 0 660 140" style="margin-top:14px" role="img" aria-label="Per-GPU memory"></svg>
+      <div class="legend"><span><i style="background:var(--a)"></i>weights (BF16)</span><span><i style="background:var(--b)"></i>gradients (BF16)</span><span><i style="background:var(--c)"></i>optimizer state (FP32 ×3)</span><span><i style="background:var(--d)"></i>80 GB H100 limit</span></div>
+      <p class="readout" id="zOut" style="margin-top:8px"></p>
+    </div>
+    <p class="caption">Not included: activations, which scale with batch × sequence × layers and are often the largest item. They are reduced with activation checkpointing, sequence/context parallelism, or offloading.</p>
+    <div class="takeaway">A 70B model needs about 1.1 TB just for weights and optimizer state. That is why training is always sharded, and why FSDP and ZeRO-3 add an all-gather of the weights before every layer.</div>
+    <div class="cite">Rajbhandari et al., "ZeRO: Memory Optimizations Toward Training Trillion Parameter Models" (2020).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-kv" data-chapter="Capacity">
+  <div class="inner">
+    <div class="label">07 · Capacity</div>
+    <h2>In inference, the KV cache uses up HBM capacity</h2>
+    <hr>
+    <p class="lede"><code>KV bytes = 2 × layers × kv_heads × head_dim × bytes × tokens × batch</code>. It grows linearly with context <em>and</em> with the number of concurrent users.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <select id="kvM">
+          <option value="32,8,128,16">Llama 3 8B (GQA, 8 KV heads)</option>
+          <option value="80,8,128,140" selected>Llama 3 70B (GQA, 8 KV heads)</option>
+          <option value="80,64,128,140">70B if it used MHA (64 KV heads)</option>
+          <option value="126,8,128,810">Llama 3 405B (GQA, 8 KV heads)</option>
+        </select>
+        <label class="ctl">Context <input type="range" id="kvC" min="10" max="17" step="1" value="13"> <output id="kvCo"></output></label>
+        <label class="ctl">Batch <input type="range" id="kvB" min="0" max="8" step="1" value="5"> <output id="kvBo"></output></label>
+        <div class="seg" id="kvT"><button data-v="2" class="on">BF16</button><button data-v="1">FP8</button></div>
+      </div>
+      <div class="grid3" style="margin-top:14px">
+        <div class="stat"><div class="num" id="kvTok"></div><div class="lbl">KV per token</div></div>
+        <div class="stat"><div class="num" id="kvTot" style="color:var(--b)"></div><div class="lbl">total KV cache</div></div>
+        <div class="stat"><div class="num" id="kvW"></div><div class="lbl">model weights (BF16)</div></div>
+      </div>
+      <div id="kvBars" style="margin-top:16px"></div>
+      <p class="caption">Weights + KV cache compared with GPU memory (log scale).</p>
+    </div>
+    <div class="takeaway">GQA (8× fewer KV heads than query heads), FP8 KV and MLA all exist to shrink this number. Every byte saved means more concurrent users, and decode reads less memory per step.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-paged" data-chapter="Capacity">
+  <div class="inner">
+    <div class="label">08 · Capacity</div>
+    <h2>PagedAttention: virtual memory for the KV cache</h2>
+    <hr>
+    <p class="lede">Early servers reserved one contiguous KV buffer per request, sized for <em>max length</em>. Most requests finish early, so most of that space was never used. vLLM allocates fixed-size <b>blocks</b> on demand, the way an OS allocates pages.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <div class="seg" id="pgMode"><button data-v="c" class="on">Contiguous (reserve 2,048)</button><button data-v="p">Paged (16-token blocks)</button></div>
+        <button class="btn" id="pgNew">New requests</button>
+      </div>
+      <svg id="pgSvg" viewBox="0 0 660 230" style="margin-top:12px" role="img" aria-label="KV cache memory map"></svg>
+      <div class="legend" id="pgLegend"></div>
+      <div class="grid3" style="margin-top:8px">
+        <div class="stat"><div class="num" id="pgUsed"></div><div class="lbl">memory holding real tokens</div></div>
+        <div class="stat"><div class="num" id="pgFit"></div><div class="lbl">requests that fit</div></div>
+        <div class="stat"><div class="num" id="pgWaste"></div><div class="lbl">reserved but unused</div></div>
+      </div>
+    </div>
+    <div class="takeaway">The vLLM paper measured 60–80% KV memory waste in earlier systems, compared with under 4% using paging. Paging also enables <b>prefix sharing</b>: requests with a common system prompt point to the same blocks.</div>
+    <div class="cite">Kwon et al., "Efficient Memory Management for Large Language Model Serving with PagedAttention", SOSP 2023.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-off" data-chapter="Beyond the GPU">
+  <div class="inner">
+    <div class="label">09 · Beyond the GPU</div>
+    <h2>Off-GPU memory is huge but sits behind a narrow pipe</h2>
+    <hr>
+    <p class="lede">Offloading weights, optimizer state or KV cache to CPU RAM or NVMe buys capacity, but every byte has to come back through PCIe. Drag to see how long it takes to move a given amount of data at each level.</p>
+    <div class="visual">
+      <label class="ctl">Data to move <input type="range" id="oS" min="0" max="3" step="0.05" value="2.146"> <output id="oSo"></output></label>
+      <div id="oBars" style="margin-top:14px"></div>
+    </div>
+    <p class="caption">Per-GPU, one direction: HBM3 3.35 TB/s · NVLink 4 450 GB/s · PCIe Gen5 x16 ~64 GB/s · 400 Gb/s NIC 50 GB/s · local NVMe ~7 GB/s per drive.</p>
+    <div class="takeaway">Offloading works when the transfer can be <b>overlapped</b> with compute: ZeRO-Offload optimizer steps, prefetching the next layer's weights, or a tiered KV cache for idle chat sessions. It fails when a transfer sits on the critical path of every token.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-qa" data-chapter="Interview">
+  <div class="inner">
+    <div class="label">10 · Interview</div>
+    <h2>Questions you'll get</h2>
+    <hr>
+    <details class="qa"><summary>Explain why FlashAttention is faster when it does the same FLOPs.</summary><div class="ans">Standard attention is <b>IO-bound</b>: it writes the N×N score matrix to HBM and reads it back several times (for scale, mask, softmax and the matmul with V). FlashAttention tiles Q, K and V into SRAM, computes softmax incrementally (online softmax with a running max and sum), and writes only the N×d output. HBM traffic drops and memory goes from O(N²) to O(N). In the backward pass it recomputes the scores instead of storing them, which is extra FLOPs, and it is still faster.</div></details>
+    <details class="qa"><summary>How much KV cache does a 70B model need for 32 users at 8K context?</summary><div class="ans">2 × 80 layers × 8 KV heads × 128 × 2 bytes = <b>320 KB per token</b>. × 8,192 × 32 ≈ <b>86 GB</b>, on top of 140 GB of weights. You need at least 4 × 80 GB GPUs, or FP8 KV to halve it. Without GQA (64 KV heads) it would be 8× larger, about 690 GB.</div></details>
+    <details class="qa"><summary>How much memory does it take to train a 7B model with Adam, and how do you fit it?</summary><div class="ans">16 B/param × 7B = <b>112 GB</b> of states, plus activations. That doesn't fit on one 80 GB GPU. Options: ZeRO-2 or 3 / FSDP across 8 GPUs (≈14 GB/GPU of states), activation checkpointing, 8-bit optimizers, or CPU offload of optimizer state. Explain each trade-off: more communication, recompute cost, PCIe bandwidth.</div></details>
+    <details class="qa"><summary>What is kernel fusion, and when doesn't it help?</summary><div class="ans">Fusion merges several ops into one kernel so that intermediate values stay in registers or SRAM, which saves HBM round trips and launches. It helps <b>memory-bound chains</b> (elementwise ops, norms, softmax). It helps little for big compute-bound GEMMs, beyond fusing their epilogue. It can hurt if the fused kernel needs too many registers, which lowers occupancy.</div></details>
+    <details class="qa"><summary>Why is shared memory faster than L1 or L2 if it's the same SRAM?</summary><div class="ans">On Hopper, L1 and shared memory are the <b>same 256 KB physical SRAM</b> per SM, split by configuration. Shared memory is <b>managed by the programmer</b>, so you place exactly the tile you will reuse there, with no misses or evictions. L2 (50 MB) is shared across all SMs, farther away and slower. Distributed shared memory on H100 also lets SMs in a cluster read each other's shared memory.</div></details>
+  </div>
+</section>
+
+<section class="slide" id="s-end" data-chapter="Interview">
+  <div class="inner">
+    <div class="label">11 · Take it with you</div>
+    <h2>Four things to remember</h2>
+    <hr>
+    <div class="recap">
+      <div><span><b>The levels are registers → SMEM/L1 → L2 → HBM → NVLink peers → host DRAM → NVMe.</b> Each step down is bigger and slower; HBM is about 3 TB/s and PCIe about 64 GB/s.</span></div>
+      <div><span><b>Most optimizations are about reuse:</b> tiling (GEMM), fusion (elementwise chains) and IO-aware algorithms (FlashAttention).</span></div>
+      <div><span><b>Training memory is 16 B/param plus activations,</b> so it is sharded with ZeRO/FSDP. Inference memory is weights + KV cache, managed with paging, GQA and FP8.</span></div>
+      <div><span><b>Offloading only pays off when the transfer overlaps with compute.</b> If it's on the critical path, the PCIe link becomes the limit.</span></div>
+    </div>
+    <p class="start-hint">Next: <a href="../04-inside-gpu-server/index.html">04 · Inside a GPU server →</a> · Previous: <a href="../02-why-gpus-for-ai/index.html">← 02</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt, bytes } = Deck;
+
+  /* pyramid */
+  const LV = [
+    { n: 'Registers', size: '256 KB / SM · ~33 MB total', bw: 'highest (feeds ALUs every cycle)', lat: '~1 cycle', bwv: 100000, c: 'var(--e)', d: 'Private to each thread. 64K × 32-bit registers per SM. Tensor Core operands and accumulators live here. Using too many registers per thread limits occupancy.' },
+    { n: 'Shared mem / L1', size: '256 KB / SM · ~33 MB total', bw: '~30 TB/s aggregate', lat: '~20–30 cycles', bwv: 30000, c: 'var(--a)', d: 'On-chip SRAM inside each SM, split between a hardware-managed L1 and a programmer-managed shared memory (up to 228 KB). This is where GEMM and attention tiles live.' },
+    { n: 'L2 cache', size: '50 MB', bw: '~10 TB/s (approx.)', lat: '~200 cycles', bwv: 10000, c: 'var(--c)', d: 'Shared by all 132 SMs. Absorbs reuse between neighbouring thread blocks and buffers HBM traffic. Too small to hold a model\'s weights.' },
+    { n: 'HBM3', size: '80 GB', bw: '3.35 TB/s', lat: '~500+ cycles', bwv: 3350, c: 'var(--b)', d: 'Stacked DRAM on the GPU package. Holds weights, activations, KV cache and optimizer state. Its bandwidth sets the speed of LLM decode.' },
+    { n: 'Peer GPU (NVLink)', size: '7 × 80 GB in node', bw: '450 GB/s per direction', lat: '~µs', bwv: 450, c: 'var(--d)', d: 'Other GPUs\' HBM, reached through NVSwitch. Used by tensor-parallel collectives and peer-to-peer copies.' },
+    { n: 'Host DRAM', size: '~2 TB per node', bw: '~64 GB/s (PCIe Gen5 x16)', lat: '~µs', bwv: 64, c: 'var(--faint)', d: 'CPU memory. Used for staging data loading, pinned-memory copies, ZeRO-Offload, and spill-over KV cache.' },
+    { n: 'Local NVMe', size: '~30 TB per node', bw: '~7 GB/s per drive', lat: '~10–100 µs', bwv: 7, c: 'var(--faint)', d: 'Checkpoints, dataset shards, ZeRO-Infinity offload. GPUDirect Storage can DMA straight into HBM, skipping the CPU bounce buffer.' },
+  ];
+  const pyr = document.getElementById('pyr');
+  const H = 46, top = 14, cx = 210;
+  LV.forEach((l, i) => {
+    const w0 = 70 + i * 48, w1 = 70 + (i + 1) * 48, y = top + i * H;
+    const g = svg('g', { 'data-i': i }, pyr);
+    svg('polygon', { points: `${cx - w0 / 2},${y} ${cx + w0 / 2},${y} ${cx + w1 / 2},${y + H - 4} ${cx - w1 / 2},${y + H - 4}`, style: `fill:${l.c};opacity:${i > 4 ? .55 : .9}` }, g);
+    svg('text', { x: cx, y: y + H / 2 + 3, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:600;font-size:12.5px', text: l.n }, g);
+  });
+  svg('text', { x: 18, y: 30, class: 'tm', text: 'faster' }, pyr);
+  svg('text', { x: 18, y: 330, class: 'tm', text: 'bigger' }, pyr);
+  svg('line', { x1: 34, y1: 40, x2: 34, y2: 314, class: 's-line', 'stroke-width': 2, 'marker-end': '' }, pyr);
+  const pick = i => {
+    const l = LV[i];
+    Deck.out('lvName', l.n); Deck.out('lvDesc', l.d); Deck.out('lvSize', l.size.split(' · ')[0]);
+    Deck.out('lvBW', l.bw.split(' (')[0]); Deck.out('lvLat', l.lat);
+    Deck.$$('#pyr g').forEach(g => g.style.opacity = +g.dataset.i === i ? 1 : .55);
+    Deck.hbars(document.getElementById('lvBars'), LV.slice(1).map((x, k) => ({ label: x.n, value: x.bwv, color: k + 1 === i ? x.c : 'var(--line)', text: x.bwv >= 1000 ? (x.bwv / 1000).toFixed(x.bwv < 10000 ? 2 : 0) + ' TB/s' : x.bwv + ' GB/s' })), { log: true, min: 3, max: 40000 });
+  };
+  pyr.addEventListener('click', e => { const g = e.target.closest('g[data-i]'); if (g) pick(+g.dataset.i); });
+  pyr.addEventListener('mouseover', e => { const g = e.target.closest('g[data-i]'); if (g) pick(+g.dataset.i); });
+  pick(3);
+
+  /* energy */
+  Deck.hbars(document.getElementById('enBars'), [
+    { label: '8-bit int add', value: 0.03, color: 'var(--e)', text: '0.03 pJ' },
+    { label: '32-bit float add', value: 0.9, color: 'var(--e)', text: '0.9 pJ' },
+    { label: '32-bit float mult', value: 3.7, color: 'var(--a)', text: '3.7 pJ' },
+    { label: '32-bit SRAM read (8 KB)', value: 5, color: 'var(--c)', text: '5 pJ' },
+    { label: '32-bit DRAM read', value: 640, color: 'var(--d)', text: '640 pJ' },
+  ], { log: true, min: 0.01, max: 1000 });
+
+  /* tiling */
+  Deck.bind(['tT', 'tN'], () => {
+    const T = Math.pow(2, Deck.val('tT')), N = Math.pow(2, Deck.val('tN'));
+    Deck.out('tTo', T + '×' + T); Deck.out('tNo', N.toLocaleString());
+    const loads = 2 * N ** 3 / T * 2, flops = 2 * N ** 3, ai = flops / loads;
+    Deck.out('tTraffic', bytes(loads)); Deck.out('tAI', ai < 10 ? ai.toFixed(1) : ai.toFixed(0));
+    Deck.hbars(document.getElementById('tBars'), [
+      { label: 'naive (T=1)', value: 2 * N ** 3 * 2, color: 'var(--d)', text: bytes(2 * N ** 3 * 2) },
+      { label: `tiled (T=${T})`, value: loads, color: 'var(--a)', text: bytes(loads) },
+    ], { log: true });
+    const sram = 2 * T * 64 * 2;
+    document.getElementById('tSram').innerHTML = `SRAM per stage (two T×64 BF16 strips): <b>${bytes(sram)}</b> ${sram > 228 * 1024 ? '<span style="color:var(--d)">exceeds 228 KB of shared memory</span>' : '<span style="color:var(--e)">fits</span>'}`;
+    const s = clear(document.getElementById('tileSvg'));
+    const g = 8, cs = 10, tcell = Math.min(g, Math.max(1, Math.round(T / 32)));
+    const mat = (x, y, lab, hl) => {
+      for (let i = 0; i < g; i++) for (let j = 0; j < g; j++) svg('rect', { x: x + j * cs, y: y + i * cs, width: cs - 1, height: cs - 1, style: `fill:${hl(i, j) ? 'var(--a)' : 'var(--line)'}` }, s);
+      svg('text', { x: x + g * cs / 2, y: y + g * cs + 18, 'text-anchor': 'middle', class: 't', style: 'font-weight:700', text: lab }, s);
+    };
+    mat(10, 40, 'A', (i) => i < tcell);
+    mat(140, 40, 'B', (i, j) => j < tcell);
+    mat(270, 40, 'C', (i, j) => i < tcell && j < tcell);
+    svg('text', { x: 115, y: 85, class: 't', style: 'font-size:20px', text: '×' }, s);
+    svg('text', { x: 245, y: 85, class: 't', style: 'font-size:20px', text: '=' }, s);
+    svg('text', { x: 200, y: 190, 'text-anchor': 'middle', class: 'tm', text: 'one output tile reads a row-strip of A and a column-strip of B' }, s);
+  });
+
+  /* fusion */
+  let fused = false;
+  const OPS = ['GEMM out', 'bias', 'GELU', 'dropout', 'residual +'];
+  const fuse = () => {
+    const S = Math.pow(2, Deck.val('fS')), b = S * 2;
+    Deck.out('fSo', fmt(S) + ' el');
+    const s = clear(document.getElementById('fuseSvg'));
+    svg('rect', { x: 10, y: 150, width: 640, height: 36, rx: 6, class: 'f-panel' }, s);
+    svg('text', { x: 330, y: 173, 'text-anchor': 'middle', class: 'tm', text: 'HBM' }, s);
+    let traffic, launches;
+    if (!fused) {
+      OPS.slice(1).forEach((o, i) => {
+        const x = 40 + i * 155;
+        svg('rect', { x, y: 30, width: 120, height: 44, rx: 8, class: 'f-b' }, s);
+        svg('text', { x: x + 60, y: 57, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:600', text: o + ' kernel' }, s);
+        svg('line', { x1: x + 35, y1: 148, x2: x + 35, y2: 78, style: 'stroke:var(--d);stroke-width:2.5', 'marker-end': 'url(#ar)' }, s);
+        svg('line', { x1: x + 85, y1: 78, x2: x + 85, y2: 148, style: 'stroke:var(--d);stroke-width:2.5', 'marker-end': 'url(#ar)' }, s);
+        svg('text', { x: x + 23, y: 118, 'text-anchor': 'end', class: 'tm', style: 'font-size:10px', text: 'read' }, s);
+        svg('text', { x: x + 97, y: 118, class: 'tm', style: 'font-size:10px', text: 'write' }, s);
+      });
+      traffic = 4 * 2 * b + b; launches = 4;
+    } else {
+      svg('rect', { x: 140, y: 30, width: 380, height: 44, rx: 8, class: 'f-a' }, s);
+      svg('text', { x: 330, y: 57, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:600', text: 'bias + GELU + dropout + residual (one kernel)' }, s);
+      [[190, 'read x'], [330, 'read residual']].forEach(([x, t]) => {
+        svg('line', { x1: x, y1: 148, x2: x, y2: 78, style: 'stroke:var(--e);stroke-width:2.5', 'marker-end': 'url(#ar)' }, s);
+        svg('text', { x: x + 8, y: 118, class: 'tm', style: 'font-size:10px', text: t }, s);
+      });
+      svg('line', { x1: 470, y1: 78, x2: 470, y2: 148, style: 'stroke:var(--e);stroke-width:2.5', 'marker-end': 'url(#ar)' }, s);
+      svg('text', { x: 478, y: 118, class: 'tm', style: 'font-size:10px', text: 'write out' }, s);
+      traffic = 3 * b; launches = 1;
+    }
+    const defs = svg('defs', {}, s), m = svg('marker', { id: 'ar', viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' }, defs);
+    svg('path', { d: 'M0,0 L10,5 L0,10 z', style: 'fill:var(--muted)' }, m);
+    Deck.out('fBytes', bytes(traffic)); Deck.out('fTime', (traffic / 3.35e12 * 1e6).toFixed(0) + ' µs'); Deck.out('fLaunch', launches);
+  };
+  Deck.seg('fMode', v => { fused = v === '1'; if (document.getElementById('fS')) fuse(); });
+  Deck.bind(['fS'], fuse);
+
+  /* flash attention */
+  Deck.bind(['faN'], () => {
+    const N = Math.pow(2, Deck.val('faN')), d = 128, Br = 128;
+    Deck.out('faNo', N >= 1024 ? N / 1024 + 'K' : N);
+    const naiveMem = N * N * 2, flashMem = N * 2 * 4;
+    Deck.hbars(document.getElementById('faMem'), [
+      { label: 'standard (N×N)', value: naiveMem, color: 'var(--d)', text: bytes(naiveMem) },
+      { label: 'Flash (stats only)', value: flashMem, color: 'var(--a)', text: bytes(flashMem) },
+    ], { log: true, min: 1e3, max: 1e11 });
+    const naiveT = 8 * N * N * 2 + 4 * N * d * 2, flashT = 4 * N * N * d / Br + 4 * N * d * 2;
+    Deck.hbars(document.getElementById('faTraffic'), [
+      { label: 'standard', value: naiveT, color: 'var(--d)', text: bytes(naiveT) },
+      { label: 'Flash', value: flashT, color: 'var(--a)', text: bytes(flashT) + ' · ' + (naiveT / flashT).toFixed(1) + '× less' },
+    ]);
+  });
+  Deck.enter('s-flash', () => {
+    const s = clear(document.getElementById('faSvg'));
+    const n = 6, c = 34, x0 = 90, y0 = 40;
+    svg('text', { x: x0 + n * c / 2, y: 24, 'text-anchor': 'middle', class: 'tm', text: 'Kᵀ / V tiles →' }, s);
+    svg('text', { x: 20, y: y0 + n * c / 2, class: 'tm', transform: `rotate(-90 20 ${y0 + n * c / 2})`, 'text-anchor': 'middle', text: 'Q tiles' }, s);
+    const cells = [];
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) cells.push(svg('rect', { x: x0 + j * c, y: y0 + i * c, width: c - 3, height: c - 3, rx: 3, style: 'fill:var(--line)' }, s));
+    const qBox = svg('rect', { x: 40, y: y0, width: 30, height: c - 3, rx: 3, class: 'f-c' }, s);
+    svg('text', { x: 55, y: y0 - 6, 'text-anchor': 'middle', class: 'tm', style: 'font-size:10px', text: 'Q' }, s);
+    const sram = svg('rect', { x: 40, y: 262, width: 280, height: 28, rx: 6, style: 'fill:var(--a-soft);stroke:var(--a)' }, s);
+    const st = svg('text', { x: 180, y: 281, 'text-anchor': 'middle', class: 't', style: 'font-size:11.5px', text: '' }, s);
+    let k = -1, playing = true, acc = 1;
+    const btn = document.getElementById('faPlay');
+    btn.textContent = 'Pause';
+    btn.onclick = () => { playing = !playing; btn.textContent = playing ? 'Pause' : 'Play'; };
+    return Deck.loop((t, dt) => {
+      if (!playing) return;
+      acc += dt; if (acc < 0.35) return; acc = 0;
+      k = (k + 1) % (n * n);
+      const i = Math.floor(k / n), j = k % n;
+      cells.forEach((r, idx) => {
+        const ii = Math.floor(idx / n), jj = idx % n;
+        r.style.fill = ii < i || (ii === i && jj < j) ? 'var(--a-soft)' : (ii === i && jj === j ? 'var(--a)' : 'var(--line)');
+      });
+      qBox.setAttribute('y', y0 + i * c);
+      st.textContent = `SRAM: Q tile ${i} · K/V tile ${j} · running max m, sum ℓ, output O`;
+      Deck.out('faStep', j === n - 1 ? `Row ${i} finished → write O tile ${i} to HBM once` : `update O ← rescale(O) + softmax-part · V${j}`);
+    });
+  });
+
+  /* ZeRO */
+  let stage = 3;
+  const zero = () => {
+    const P = Math.pow(10, Deck.val('zP')) * 1e9, D = Math.pow(2, Deck.val('zD'));
+    Deck.out('zPo', fmt(P, 0)); Deck.out('zDo', D);
+    let w = 2 * P, g = 2 * P, o = 12 * P;
+    if (stage >= 1) o /= D;
+    if (stage >= 2) g /= D;
+    if (stage >= 3) w /= D;
+    const tot = w + g + o, GB = 1e9, s = clear(document.getElementById('zSvg'));
+    const maxv = Math.max(tot, 80 * GB) * 1.05, X = v => 10 + v / maxv * 640;
+    let x = 10;
+    [[w, 'var(--a)', 'weights'], [g, 'var(--b)', 'grads'], [o, 'var(--c)', 'optimizer']].forEach(([v, c, n]) => {
+      const wpx = X(v) - 10;
+      svg('rect', { x, y: 30, width: Math.max(.5, wpx), height: 50, style: `fill:${c}` }, s);
+      if (wpx > 70) svg('text', { x: x + wpx / 2, y: 60, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:12px', text: `${n} ${(v / GB).toFixed(0)} GB` }, s);
+      x += wpx;
+    });
+    svg('line', { x1: X(80 * GB), x2: X(80 * GB), y1: 16, y2: 96, style: 'stroke:var(--d);stroke-width:2.5;stroke-dasharray:5 4' }, s);
+    svg('text', { x: X(80 * GB), y: 12, 'text-anchor': 'middle', class: 't', style: 'fill:var(--d);font-size:11px', text: '80 GB' }, s);
+    svg('text', { x: 10, y: 118, class: 'tm', text: `per-GPU state: ${(tot / GB).toFixed(1)} GB` }, s);
+    const ok = tot < 80 * GB;
+    document.getElementById('zOut').innerHTML = `${['No sharding', 'ZeRO-1', 'ZeRO-2', 'ZeRO-3 / FSDP'][stage]} across ${D} GPUs → <span style="color:${ok ? 'var(--e)' : 'var(--d)'}">${(tot / GB).toFixed(1)} GB per GPU ${ok ? '(fits, with ' + (80 - tot / GB).toFixed(0) + ' GB left for activations)' : '(does not fit)'}</span>`;
+  };
+  Deck.seg('zS', v => { stage = +v; if (document.getElementById('zP')) zero(); });
+  Deck.bind(['zP', 'zD'], zero);
+
+  /* KV */
+  let kvBytes = 2;
+  const kv = () => {
+    const [L, H, d, wGB] = Deck.val('kvM').split(',').map(Number);
+    const C = Math.pow(2, Deck.val('kvC')), B = Math.pow(2, Deck.val('kvB'));
+    Deck.out('kvCo', C >= 1024 ? C / 1024 + 'K' : C); Deck.out('kvBo', B);
+    const per = 2 * L * H * d * kvBytes, tot = per * C * B;
+    Deck.out('kvTok', bytes(per)); Deck.out('kvTot', (tot / 1e9).toFixed(tot < 1e10 ? 1 : 0) + ' GB'); Deck.out('kvW', wGB + ' GB');
+    const need = (tot / 1e9) + wGB;
+    Deck.hbars(document.getElementById('kvBars'), [
+      { label: 'weights + KV', value: need, color: 'var(--b)', text: need.toFixed(0) + ' GB' },
+      { label: '1× H100 (80 GB)', value: 80, color: need <= 80 ? 'var(--e)' : 'var(--line)', text: '80 GB' },
+      { label: '1× H200 (141 GB)', value: 141, color: need <= 141 ? 'var(--e)' : 'var(--line)', text: '141 GB' },
+      { label: '1× B200 (192 GB)', value: 192, color: need <= 192 ? 'var(--e)' : 'var(--line)', text: '192 GB' },
+      { label: '8× H100 node', value: 640, color: need <= 640 ? 'var(--e)' : 'var(--line)', text: '640 GB' },
+    ], { log: true, min: 5, max: Math.max(2000, need * 1.2) });
+  };
+  Deck.seg('kvT', v => { kvBytes = +v; if (document.getElementById('kvM')) kv(); });
+  Deck.bind(['kvM', 'kvC', 'kvB'], kv);
+
+  /* paged */
+  let mode = 'c', reqs = [];
+  const COLORS = ['var(--a)', 'var(--b)', 'var(--c)', 'var(--e)', 'var(--d)', '#3a8fd8', '#c9a227', '#8a6d3b'];
+  const newReqs = () => { reqs = Array.from({ length: 8 }, () => Math.round(80 + Math.random() * Math.random() * 1500)); };
+  const paged = () => {
+    const s = clear(document.getElementById('pgSvg'));
+    const cols = 64, rows = 8, cells = cols * rows, blk = 16; // 512 cells × 16 tokens = 8192 tokens
+    const cw = 640 / cols, ch = 26;
+    const grid = Array(cells).fill(-1), reserved = Array(cells).fill(false);
+    let fit = 0, used = 0, reservedCells = 0;
+    const rejected = new Set();
+    if (mode === 'c') {
+      let pos = 0;
+      reqs.forEach((len, r) => {
+        const need = 2048 / blk;
+        if (pos + need > cells) { rejected.add(r); return; }
+        fit++;
+        const usedC = Math.ceil(len / blk);
+        for (let k = 0; k < need; k++) { reserved[pos + k] = true; if (k < usedC) grid[pos + k] = r; }
+        used += len; reservedCells += need; pos += need;
+      });
+    } else {
+      const order = [];
+      reqs.forEach((len, r) => { for (let k = 0; k < Math.ceil(len / blk); k++) order.push(r); });
+      for (let i = order.length - 1; i > 0; i--) { const j = Math.floor((Math.sin(i * 9301 + 49297) * 0.5 + 0.5) * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+      order.slice(0, cells).forEach((r, k) => { grid[k] = r; reserved[k] = true; });
+      fit = reqs.length; used = reqs.reduce((a, b) => a + b, 0); reservedCells = Math.min(cells, order.length);
+    }
+    for (let i = 0; i < cells; i++) {
+      const x = 10 + (i % cols) * cw, y = 10 + Math.floor(i / cols) * ch;
+      const fill = grid[i] >= 0 ? COLORS[grid[i]] : reserved[i] ? 'var(--d-soft)' : 'var(--panel-2)';
+      svg('rect', { x, y, width: cw - 1, height: ch - 2, style: `fill:${fill}${reserved[i] && grid[i] < 0 ? ';stroke:var(--d);stroke-width:.5' : ''}` }, s);
+    }
+    const usedPct = used / (cells * blk), waste = reservedCells * blk - used;
+    Deck.out('pgUsed', (100 * usedPct).toFixed(0) + '%');
+    Deck.out('pgFit', `${fit} / ${reqs.length}`);
+    Deck.out('pgWaste', (100 * waste / (reservedCells * blk || 1)).toFixed(0) + '%');
+    document.getElementById('pgLegend').innerHTML = reqs.map((l, i) => `<span style="${rejected.has(i) ? 'text-decoration:line-through;opacity:.6' : ''}"><i style="background:${COLORS[i]}"></i>req ${i}: ${l} tok${rejected.has(i) ? ' (rejected)' : ''}</span>`).join('') + '<span><i style="background:var(--d-soft);border:1px solid var(--d)"></i>reserved, empty</span>';
+  };
+  newReqs();
+  Deck.seg('pgMode', v => { mode = v; paged(); });
+  document.getElementById('pgNew').onclick = () => { newReqs(); paged(); };
+
+  /* offload */
+  Deck.bind(['oS'], () => {
+    const GB = Math.pow(10, Deck.val('oS'));
+    Deck.out('oSo', GB < 10 ? GB.toFixed(1) + ' GB' : GB.toFixed(0) + ' GB');
+    const t = bw => { const s = GB / bw; return s < 1 ? (s * 1000).toFixed(s < .01 ? 2 : 0) + ' ms' : s.toFixed(1) + ' s'; };
+    const rows = [['HBM3', 3350, 'var(--b)'], ['NVLink 4', 450, 'var(--d)'], ['PCIe Gen5 x16', 64, 'var(--c)'], ['400G NIC', 50, 'var(--c)'], ['NVMe drive', 7, 'var(--faint)']];
+    Deck.hbars(document.getElementById('oBars'), rows.map(([n, bw, c]) => ({ label: n, value: GB / bw, color: c, text: t(bw) })), { log: true, min: GB / 6000, max: GB / 5 });
+  });
+})();
+</script>
+</body>
+</html>

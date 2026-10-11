@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPU Cluster Topology</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<style>
+  #ftSvg circle.ep { cursor: pointer; }
+  .warn { color: var(--d); font-weight: 600; }
+  .ok { color: var(--e); font-weight: 600; }
+  .checks div { padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .checks div:last-child { border-bottom: 0; }
+</style>
+</head>
+<body data-deck="Cluster topology" data-home="../index.html" data-home-label="GPU">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">GPU for GenAI · 05</div>
+    <h1>Cluster topology:<br>wiring 16,000 GPUs together</h1>
+    <p class="sub">Above about 8 GPUs, the network is the computer. This deck covers scale-up vs scale-out, fat trees and rails, the collective operations, why ring all-reduce works, and how TP, PP, DP and EP are placed onto the network.</p>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Press <kbd>→</kbd> or <kbd>Space</kbd> to begin.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-tiers" data-chapter="Two tiers">
+  <div class="inner">
+    <div class="label">01 · Two tiers</div>
+    <h2>Scale-up inside a node, scale-out between nodes</h2>
+    <hr>
+    <p class="lede">Each node is a fast <b>NVLink island</b> (450 GB/s per GPU per direction). The islands are connected by a <b>network</b> (about 50 GB/s per GPU). Pick a parallelism type to see which links its traffic uses.</p>
+    <div class="visual">
+      <div class="seg" id="tierSeg"><button data-v="tp" class="on">Tensor parallel</button><button data-v="dp">Data parallel</button><button data-v="pp">Pipeline parallel</button></div>
+      <svg id="tierSvg" viewBox="0 0 660 300" style="margin-top:12px" role="img" aria-label="Nodes and traffic"></svg>
+      <p class="readout" id="tierOut"></p>
+    </div>
+    <div class="takeaway">The rule of thumb: the chattiest parallelism goes on the fastest links. TP is synchronous on every layer, so it stays in the node. PP sends activations point-to-point between stages. DP all-reduces gradients once per step and can overlap that with the backward pass.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-fat" data-chapter="Network shape">
+  <div class="inner">
+    <div class="label">02 · Network shape</div>
+    <h2>Leaf-spine (fat tree): every endpoint is a few hops from every other</h2>
+    <hr>
+    <p class="lede">NICs connect to <b>leaf</b> switches, and every leaf connects to every <b>spine</b>. If uplink capacity equals downlink capacity, the network is <b>non-blocking</b>: any half of the cluster can talk to the other half at full rate. Click two endpoints, then reduce the uplinks.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Uplinks per leaf <input type="range" id="ftU" min="1" max="4" step="1" value="4"> <output id="ftUo"></output></label>
+      </div>
+      <svg id="ftSvg" viewBox="0 0 660 300" style="margin-top:8px" role="img" aria-label="Leaf spine network"></svg>
+      <div class="grid3">
+        <div class="stat"><div class="num" id="ftHops"></div><div class="lbl">switch hops on selected path</div></div>
+        <div class="stat"><div class="num" id="ftOver"></div><div class="lbl">oversubscription (down : up)</div></div>
+        <div class="stat"><div class="num" id="ftBW"></div><div class="lbl">per-NIC bandwidth for cross-leaf traffic</div></div>
+      </div>
+    </div>
+    <p class="caption">Real clusters add a third tier (leaf → spine → core) above roughly 2–4K GPUs. Meta's Llama 3 RoCE cluster used full bisection bandwidth inside each 3,072-GPU pod and 1:7 oversubscription between pods. Jobs were placed so that the heavy traffic stayed inside a pod.</p>
+    <div class="cite">Llama 3 paper §3.3.1 (network topology).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-rail" data-chapter="Network shape">
+  <div class="inner">
+    <div class="label">03 · Network shape</div>
+    <h2>Rail-optimized: GPU <i>i</i> of every node shares one leaf switch</h2>
+    <hr>
+    <p class="lede">With a top-of-rack layout, all of a node's NICs go to the same leaf. In a <b>rail</b> layout, NIC <i>i</i> of every node goes to leaf <i>i</i>. Data-parallel peers (same local rank on different nodes) are then <b>one switch apart</b>.</p>
+    <div class="visual">
+      <div class="seg" id="railSeg"><button data-v="tor">Top-of-rack</button><button data-v="rail" class="on">Rail-optimized</button></div>
+      <svg id="railSvg" viewBox="0 0 660 320" style="margin-top:12px" role="img" aria-label="Rail topology"></svg>
+      <p class="readout" id="railOut"></p>
+    </div>
+    <div class="takeaway">NCCL's <b>PXN</b> (PCIe × NVLink) uses this: to reach rail 3 on another node, GPU 0 first moves its data over NVLink to local GPU 3, which then sends it out on its own rail. The NVLink hop is nearly free, and the expensive spine hop is avoided.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-coll" data-chapter="Collectives">
+  <div class="inner">
+    <div class="label">04 · Collectives</div>
+    <h2>The five collectives that distributed training is built from</h2>
+    <hr>
+    <div class="seg" id="collSeg">
+      <button data-v="ar" class="on">All-reduce</button><button data-v="rs">Reduce-scatter</button><button data-v="ag">All-gather</button><button data-v="bc">Broadcast</button><button data-v="a2a">All-to-all</button>
+    </div>
+    <div class="visual"><svg id="collSvg" viewBox="0 0 660 250" role="img" aria-label="Collective before and after"></svg>
+      <div class="infobox" id="collInfo" style="background:var(--panel-2);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:14px;color:var(--muted)"></div>
+    </div>
+    <div class="takeaway">All-reduce = reduce-scatter + all-gather. FSDP and ZeRO-3 split this in two: they <b>all-gather</b> the weights before each layer and <b>reduce-scatter</b> the gradients after it, so each GPU only keeps its own shard.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-ring" data-chapter="Collectives">
+  <div class="inner">
+    <div class="label">05 · Collectives</div>
+    <h2>Ring all-reduce, step by step</h2>
+    <hr>
+    <p class="lede">Split the buffer into N chunks. In each step, every GPU sends one chunk to its right-hand neighbour and adds the chunk it receives. After N−1 steps each GPU holds one fully reduced chunk (<b>reduce-scatter</b>). Another N−1 steps circulate those chunks (<b>all-gather</b>).</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><button class="btn primary" id="rgStep">Step →</button><button class="btn" id="rgPlay">Play</button><button class="btn" id="rgReset">Reset</button><span class="readout" id="rgPhase"></span></div>
+      <svg id="ringSvg" viewBox="0 0 660 290" style="margin-top:10px" role="img" aria-label="Ring all-reduce"></svg>
+    </div>
+    <p class="caption">Each GPU sends 2·(N−1)/N × the buffer size in total, which is <b>nearly independent of N</b>. Every link is busy in every step. That's why ring all-reduce makes full use of bandwidth.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-cost" data-chapter="Collectives">
+  <div class="inner">
+    <div class="label">06 · Collectives</div>
+    <h2>Ring is limited by bandwidth; tree is limited by latency</h2>
+    <hr>
+    <p class="lede"><code>T_ring ≈ 2(N−1)·α + 2(N−1)/N · S/B</code>. The bandwidth term stays flat as N grows, but the latency term grows <em>linearly</em>. Trees grow only with log N. Change the message size to see which one wins.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Message size <input type="range" id="cS" min="3" max="10" step="0.1" value="9"> <output id="cSo"></output></label>
+        <label class="ctl">Per-hop latency α <input type="range" id="cA" min="1" max="20" step="1" value="5"> <output id="cAo"></output></label>
+      </div>
+      <svg id="costSvg" viewBox="0 0 660 300" style="margin-top:10px" role="img" aria-label="Collective cost vs N"></svg>
+      <div class="legend"><span><i style="background:var(--a)"></i>ring</span><span><i style="background:var(--b)"></i>tree (pipelined, approx.)</span></div>
+    </div>
+    <div class="takeaway">For large gradient buckets (hundreds of MB), ring is near optimal. For small, latency-sensitive collectives such as MoE dispatch, decode-time TP all-reduce or many-node all-reduce, trees or in-network reduction (SHARP) win. NCCL picks the algorithm automatically based on size and topology.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-plan" data-chapter="Mapping">
+  <div class="inner">
+    <div class="label">07 · Mapping</div>
+    <h2>Parallelism planner: place TP × PP × DP on the cluster</h2>
+    <hr>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <select id="plM"><option value="8">8B model</option><option value="70" selected>70B model</option><option value="405">405B model</option></select>
+        <select id="plN"><option>64</option><option>256</option><option selected>1024</option><option>4096</option><option>16384</option></select>
+        <span class="ctl">TP</span><div class="seg" id="plTP"><button data-v="1">1</button><button data-v="2">2</button><button data-v="4">4</button><button data-v="8" class="on">8</button><button data-v="16">16</button></div>
+        <label class="ctl">PP <input type="range" id="plPP" min="0" max="5" step="1" value="2"> <output id="plPPo"></output></label>
+      </div>
+      <div class="grid2" style="margin-top:14px">
+        <div>
+          <div class="grid2">
+            <div class="stat"><div class="num" id="plDP"></div><div class="lbl">DP replicas</div></div>
+            <div class="stat"><div class="num" id="plMem"></div><div class="lbl">states per GPU (ZeRO-1)</div></div>
+          </div>
+          <div class="checks" id="plChecks" style="margin-top:12px"></div>
+        </div>
+        <svg id="plSvg" viewBox="0 0 360 220" role="img" aria-label="One model replica layout"></svg>
+      </div>
+    </div>
+    <p class="caption">One replica is drawn on the right: each column is a pipeline stage, each dot is a TP rank, and its colour shows which 8-GPU node it sits on (a red dashed outline means the TP group spans nodes). Memory = (2 + 2) B/param of weights and grads, plus 12 B/param of optimizer state sharded over DP. Activations are not included. Pipeline bubble assumes 32 micro-batches.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-llama" data-chapter="Mapping">
+  <div class="inner">
+    <div class="label">08 · Mapping</div>
+    <h2>A real example: Llama 3 405B on 16K H100s</h2>
+    <hr>
+    <div class="visual scroll-x">
+      <table class="tbl">
+        <tr><th>GPUs</th><th>TP</th><th>CP</th><th>PP</th><th>DP</th><th>Seq len</th><th>BF16 MFU</th></tr>
+        <tr><td>8,192</td><td>8</td><td>1</td><td>16</td><td>64</td><td>8,192</td><td>43%</td></tr>
+        <tr><td>16,384</td><td>8</td><td>1</td><td>16</td><td>128</td><td>8,192</td><td>41%</td></tr>
+        <tr><td>16,384</td><td>8</td><td>16</td><td>16</td><td>8</td><td>131,072</td><td>38%</td></tr>
+      </table>
+    </div>
+    <div class="grid3" style="margin-top:16px">
+      <div class="card e"><h3>TP = 8 → inside the node</h3><p>All-reduces on every layer stay on NVLink. TP is never larger than the NVLink domain.</p></div>
+      <div class="card c"><h3>PP = 16 → across nodes</h3><p>Only activations are sent point-to-point between stages. Meta modified the schedule to reduce bubbles and balance memory.</p></div>
+      <div class="card b"><h3>DP / FSDP outermost</h3><p>Gradient reduce-scatter overlaps with the backward pass. It is the most tolerant of the slower, oversubscribed links.</p></div>
+    </div>
+    <div class="takeaway">The order (inner to outer) is TP → CP → PP → DP. The rank layout follows bandwidth needs: the innermost dimension gets the fastest links. CP (context parallel) was added to train on 128K-token sequences.</div>
+    <div class="cite">Llama Team, "The Llama 3 Herd of Models" (2024), Table 4 and §3.3.2.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-moe" data-chapter="Mapping">
+  <div class="inner">
+    <div class="label">09 · Mapping</div>
+    <h2>Expert parallelism means all-to-all, and the busiest GPU sets the pace</h2>
+    <hr>
+    <p class="lede">In MoE layers each token goes to the GPUs that host its top-k experts (dispatch) and comes back (combine). If the router sends a skewed share of tokens to one expert, that GPU receives more data and every other GPU waits for it.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Router skew <input type="range" id="eS" min="0" max="100" step="1" value="30"> <output id="eSo"></output></label>
+        <div class="seg" id="eNet"><button data-v="450" class="on">EP within NVLink</button><button data-v="50">EP across nodes</button></div>
+      </div>
+      <div class="grid2" style="margin-top:12px;align-items:center">
+        <svg id="eSvg" viewBox="0 0 300 300" style="max-width:340px" role="img" aria-label="All-to-all traffic matrix"></svg>
+        <div>
+          <div class="grid2">
+            <div class="stat"><div class="num" id="eImb"></div><div class="lbl">busiest GPU vs average</div></div>
+            <div class="stat"><div class="num" id="eT"></div><div class="lbl">dispatch time (busiest GPU)</div></div>
+          </div>
+          <p class="caption">Rows: source GPU. Columns: GPU hosting the expert. Each GPU sends 8K tokens × top-2 × 7168 hidden × 2 B ≈ 235 MB per MoE layer.</p>
+        </div>
+      </div>
+    </div>
+    <div class="takeaway">MoE systems fight this with load-balancing losses (or the auxiliary-loss-free bias used in DeepSeek-V3), capacity limits, node-limited routing (each token goes to at most M nodes), and by putting EP inside the largest available NVLink domain.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-qa" data-chapter="Interview">
+  <div class="inner">
+    <div class="label">10 · Interview</div>
+    <h2>Questions you'll get</h2>
+    <hr>
+    <details class="qa"><summary>You have 1,024 H100s and a 70B model. How do you lay out the parallelism?</summary><div class="ans">Start with <b>TP=8 inside each node</b> on NVLink, which is enough to shard the layers and keep the GEMMs efficient. Add PP of 2–4 across nodes only if memory or activations require it, and run enough micro-batches to keep the bubble small. Put the rest into <b>DP with FSDP or ZeRO-1</b>: 1024 / (8 × 2) = 64 replicas. Check memory per GPU, the global batch size (DP × micro-batch × grad accumulation must stay within a good batch size), and that DP communication overlaps with backward. Then say what you would measure: MFU, exposed communication time, and bubble fraction.</div></details>
+    <details class="qa"><summary>Why is ring all-reduce bandwidth-optimal, and when is it a bad choice?</summary><div class="ans">Every GPU sends and receives 2(N−1)/N × S, which is the lower bound for all-reduce, and all links are used in every step. But it takes 2(N−1) sequential steps, so the latency term grows linearly. At thousands of GPUs, or for small messages, that dominates. Hierarchical schemes (reduce inside the node, then a ring or tree across nodes), double binary trees, and in-network reduction (SHARP) handle that case.</div></details>
+    <details class="qa"><summary>What does "rail-optimized" mean, and why do labs build networks that way?</summary><div class="ans">NIC i of every node connects to leaf (rail) i, so same-rank GPUs across nodes, which are exactly the DP and PP peers, are one switch hop apart. Most training traffic stays inside a rail and never touches the spine. Fewer spine ports are needed and tail latency is lower. Cross-rail traffic is routed over NVLink first (NCCL PXN).</div></details>
+    <details class="qa"><summary>InfiniBand vs RoCE: what's the trade-off?</summary><div class="ans"><b>InfiniBand</b> has lossless credit-based flow control, adaptive routing, SHARP in-network reduction and mature NCCL support, and it is a single-vendor ecosystem. <b>RoCE v2</b> runs RDMA over Ethernet, which is cheaper and more widely available, but it needs PFC/ECN tuning and congestion control, and ECMP hash collisions on large flows hurt it. Meta trained Llama 3 on RoCE and other labs use IB, so both work at scale. The newer Ultra Ethernet specification aims to close the gap.</div></details>
+    <details class="qa"><summary>What is an MoE all-to-all bottleneck, and how do you reduce it?</summary><div class="ans">Dispatch and combine move every token's hidden state to its experts' GPUs and back, which is bandwidth-heavy and latency-sensitive, and router skew creates hot GPUs. Mitigations: keep EP within the NVLink domain (8, or 72 on NVL72), limit how many nodes each token can be sent to, add load-balancing terms to the router, overlap communication with computation (for example micro-batch interleaving and DeepEP-style kernels), and compress the dispatch data to FP8.</div></details>
+  </div>
+</section>
+
+<section class="slide" id="s-end" data-chapter="Interview">
+  <div class="inner">
+    <div class="label">11 · Take it with you</div>
+    <h2>Four things to remember</h2>
+    <hr>
+    <div class="recap">
+      <div><span><b>There are two tiers:</b> the NVLink island (fast and small) and the network (about 9× slower, very large). Map TP → node, PP and DP → network.</span></div>
+      <div><span><b>Fat tree plus rails:</b> non-blocking inside a pod, oversubscribed above it. Same-rank GPUs share a leaf.</span></div>
+      <div><span><b>All-reduce = reduce-scatter + all-gather.</b> Ring is bandwidth-optimal at 2(N−1)/N · S, but its latency grows with N.</span></div>
+      <div><span><b>MoE all-to-all is limited by the busiest GPU.</b> Keep EP in the NVLink domain and balance the router.</span></div>
+    </div>
+    <p class="start-hint">Next: <a href="../06-gpu-failures/index.html">06 · GPU failures →</a> · Previous: <a href="../04-inside-gpu-server/index.html">← 04</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt, bytes } = Deck;
+
+  /* tiers */
+  Deck.seg('tierSeg', v => {
+    const s = clear(document.getElementById('tierSvg'));
+    const nodes = 4, g = 8, nx = 60, gw = 62, nh = 54;
+    const gpuX = i => nx + 12 + i * (gw + 9), nodeY = n => 14 + n * 70;
+    if (v === 'dp') for (let i = 0; i < g; i++) svg('line', { x1: gpuX(i) + gw / 2, y1: nodeY(0) + 30, x2: gpuX(i) + gw / 2, y2: nodeY(3) + 30, style: 'stroke:var(--b);stroke-width:4;opacity:.75' }, s);
+    if (v === 'pp') for (let n = 0; n < nodes - 1; n++) {
+      svg('path', { d: `M ${nx + 590} ${nodeY(n) + 30} C ${nx + 640} ${nodeY(n) + 40}, ${nx + 640} ${nodeY(n + 1) + 20}, ${nx + 590} ${nodeY(n + 1) + 30}`, fill: 'none', style: 'stroke:var(--c);stroke-width:4' }, s);
+    }
+    for (let n = 0; n < nodes; n++) {
+      svg('rect', { x: nx, y: nodeY(n), width: 590, height: nh + 6, rx: 10, style: `fill:${v === 'tp' ? 'var(--e-soft)' : 'var(--panel-2)'};stroke:${v === 'tp' ? 'var(--e)' : 'var(--line)'};stroke-width:${v === 'tp' ? 2.5 : 1}` }, s);
+      svg('text', { x: 8, y: nodeY(n) + 35, class: 'tm tc', text: 'node ' + n }, s);
+      for (let i = 0; i < g; i++) {
+        svg('rect', { x: gpuX(i), y: nodeY(n) + 10, width: gw, height: 40, rx: 6, class: 'f-a' }, s);
+        svg('text', { x: gpuX(i) + gw / 2, y: nodeY(n) + 35, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px', text: (v === 'pp' ? 'stage ' + n : v === 'dp' ? 'rank ' + i : 'TP ' + i) }, s);
+      }
+    }
+    const msg = {
+      tp: '<span class="ok">TP group = the 8 GPUs of one node.</span> 2 all-reduces per layer, on the critical path, over NVLink at 450 GB/s.',
+      dp: '<span style="color:var(--b);font-weight:600">DP group = the same local rank on every node.</span> One gradient all-reduce per step, overlapped with backward, over the network on that GPU\'s rail.',
+      pp: '<span style="color:var(--c);font-weight:600">PP: each node is one stage.</span> Activations are sent point-to-point to the next node: small and latency-tolerant when there are enough micro-batches.',
+    };
+    document.getElementById('tierOut').innerHTML = msg[v];
+  });
+
+  /* fat tree */
+  let sel = [0, 13];
+  const ft = () => {
+    const U = Deck.val('ftU'); Deck.out('ftUo', U);
+    const s = clear(document.getElementById('ftSvg'));
+    const leaves = 4, eps = 16, spX = j => 330 - (U - 1) * 80 + j * 160 * (U > 1 ? 1 : 0) / 1, lfX = l => 90 + l * 160, epX = e => 40 + e * 37.5;
+    const spineXs = [...Array(U)].map((_, j) => U === 1 ? 330 : 90 + j * (480 / (U - 1)));
+    const la = Math.floor(sel[0] / 4), lb = Math.floor(sel[1] / 4), cross = la !== lb;
+    const sp = 0;
+    for (let l = 0; l < leaves; l++) spineXs.forEach((x, j) => {
+      const on = cross && j === sp && (l === la || l === lb);
+      svg('line', { x1: lfX(l), y1: 140, x2: x, y2: 50, style: `stroke:${on ? 'var(--a)' : 'var(--line)'};stroke-width:${on ? 4 : 2}` }, s);
+    });
+    for (let e = 0; e < eps; e++) {
+      const l = Math.floor(e / 4), on = sel.includes(e);
+      svg('line', { x1: epX(e), y1: 250, x2: lfX(l), y2: 166, style: `stroke:${on ? 'var(--a)' : 'var(--line)'};stroke-width:${on ? 4 : 1.5}` }, s);
+    }
+    spineXs.forEach((x, j) => {
+      svg('rect', { x: x - 50, y: 26, width: 100, height: 28, rx: 6, style: `fill:${cross && j === sp ? 'var(--a)' : 'var(--c)'}` }, s);
+      svg('text', { x, y: 45, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11.5px;font-weight:600', text: 'spine ' + j }, s);
+    });
+    for (let l = 0; l < leaves; l++) {
+      const on = l === la || l === lb;
+      svg('rect', { x: lfX(l) - 55, y: 140, width: 110, height: 28, rx: 6, style: `fill:${on ? 'var(--a)' : 'var(--b)'}` }, s);
+      svg('text', { x: lfX(l), y: 159, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11.5px;font-weight:600', text: 'leaf ' + l }, s);
+    }
+    for (let e = 0; e < eps; e++) {
+      const on = sel.includes(e);
+      const c = svg('circle', { cx: epX(e), cy: 262, r: 11, class: 'ep', 'data-e': e, style: `fill:${on ? 'var(--a)' : 'var(--panel-2)'};stroke:var(--a);stroke-width:2` }, s);
+      svg('text', { x: epX(e), y: 266, 'text-anchor': 'middle', class: 'tm tc', style: `font-size:9.5px;pointer-events:none;fill:${on ? '#fff' : 'var(--muted)'}`, text: e }, s);
+    }
+    svg('text', { x: 330, y: 294, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'click endpoints (NICs) to pick a pair' }, s);
+    Deck.out('ftHops', cross ? '3 (leaf → spine → leaf)' : '1 (same leaf)');
+    document.getElementById('ftHops').style.fontSize = '18px';
+    Deck.out('ftOver', `4 : ${U}`);
+    Deck.out('ftBW', (400 * U / 4).toFixed(0) + ' Gb/s');
+    document.getElementById('ftBW').style.color = U === 4 ? 'var(--e)' : 'var(--d)';
+  };
+  document.getElementById('ftSvg').addEventListener('click', e => {
+    const c = e.target.closest('[data-e]'); if (!c) return;
+    sel = [sel[1], +c.dataset.e]; ft();
+  });
+  Deck.bind(['ftU'], ft);
+
+  /* rails */
+  Deck.seg('railSeg', v => {
+    const s = clear(document.getElementById('railSvg'));
+    const N = 4, R = 4, nodeX = n => 30 + n * 160, gpuX = (n, r) => nodeX(n) + 12 + r * 34, leafX = l => 60 + l * 160;
+    const src = [0, 2], dst = [2, 2];
+    const rail = v === 'rail';
+    const leafOf = (n, r) => rail ? r : n;
+    const L1 = leafOf(...src), L2 = leafOf(...dst), cross = L1 !== L2;
+    svg('rect', { x: 230, y: 14, width: 200, height: 30, rx: 6, style: `fill:${cross ? 'var(--d)' : 'var(--c)'}` }, s);
+    svg('text', { x: 330, y: 34, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:600;font-size:12px', text: 'spine' }, s);
+    for (let l = 0; l < 4; l++) {
+      const on = l === L1 || l === L2;
+      svg('line', { x1: leafX(l) + 50, y1: 110, x2: 330, y2: 44, style: `stroke:${on && cross ? 'var(--d)' : 'var(--line)'};stroke-width:${on && cross ? 4 : 2}` }, s);
+    }
+    for (let n = 0; n < N; n++) for (let r = 0; r < R; r++) {
+      const isPath = (n === src[0] && r === src[1]) || (n === dst[0] && r === dst[1]);
+      const l = leafOf(n, r);
+      svg('line', { x1: gpuX(n, r) + 14, y1: 210, x2: leafX(l) + 50, y2: 140, style: `stroke:${isPath ? 'var(--a)' : ['var(--a)', 'var(--b)', 'var(--c)', 'var(--e)'][r]};stroke-width:${isPath ? 4 : 1.3};opacity:${isPath ? 1 : .45}` }, s);
+    }
+    for (let l = 0; l < 4; l++) {
+      const on = l === L1 || l === L2;
+      svg('rect', { x: leafX(l), y: 110, width: 100, height: 30, rx: 6, style: `fill:${on ? 'var(--a)' : 'var(--b)'}` }, s);
+      svg('text', { x: leafX(l) + 50, y: 130, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11.5px;font-weight:600', text: rail ? `leaf · rail ${l}` : `leaf · ToR ${l}` }, s);
+    }
+    for (let n = 0; n < N; n++) {
+      svg('rect', { x: nodeX(n), y: 206, width: 148, height: 70, rx: 8, style: 'fill:var(--panel-2);stroke:var(--line)' }, s);
+      svg('text', { x: nodeX(n) + 74, y: 298, 'text-anchor': 'middle', class: 'tm', text: 'node ' + n }, s);
+      for (let r = 0; r < R; r++) {
+        const on = (n === src[0] && r === src[1]) || (n === dst[0] && r === dst[1]);
+        svg('rect', { x: gpuX(n, r), y: 222, width: 28, height: 40, rx: 4, style: `fill:${['var(--a)', 'var(--b)', 'var(--c)', 'var(--e)'][r]};opacity:${on ? 1 : .5};${on ? 'stroke:var(--ink);stroke-width:2.5' : ''}` }, s);
+        svg('text', { x: gpuX(n, r) + 14, y: 246, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:10px;font-weight:700', text: 'G' + r }, s);
+      }
+    }
+    document.getElementById('railOut').innerHTML = rail
+      ? '<span class="ok">Node 0 · GPU 2 → node 2 · GPU 2: 1 switch hop</span> (both on rail 2). DP/PP traffic never reaches the spine.'
+      : '<span class="warn">Node 0 · GPU 2 → node 2 · GPU 2: 3 switch hops</span> (ToR 0 → spine → ToR 2). Every DP flow loads the spine.';
+  });
+
+  /* collectives */
+  const COL = ['var(--a)', 'var(--b)', 'var(--c)', 'var(--e)'];
+  const COLL = {
+    ar: { info: '<b>All-reduce</b>: every GPU ends up with the sum (or mean) of all inputs. Used for <b>DP gradient sync</b> and the <b>TP partial-sum</b> after row-parallel matmuls.', before: g => [0, 1, 2, 3].map(c => [g]), after: g => [0, 1, 2, 3].map(() => [0, 1, 2, 3]) },
+    rs: { info: '<b>Reduce-scatter</b>: the sum is computed, but each GPU keeps only its 1/N slice. Used for <b>FSDP/ZeRO gradient sharding</b> and sequence-parallel TP.', before: g => [0, 1, 2, 3].map(() => [g]), after: g => [0, 1, 2, 3].map(c => c === g ? [0, 1, 2, 3] : null) },
+    ag: { info: '<b>All-gather</b>: each GPU contributes its slice and every GPU ends up with all slices. Used by <b>FSDP to rebuild a layer\'s weights</b> just before computing it.', before: g => [0, 1, 2, 3].map(c => c === g ? [g] : null), after: g => [0, 1, 2, 3].map(c => [c]) },
+    bc: { info: '<b>Broadcast</b>: one GPU sends the same data to all. Used for initial weight sync and distributing configuration or random seeds.', before: g => [0, 1, 2, 3].map(() => g === 0 ? [0] : null), after: g => [0, 1, 2, 3].map(() => [0]) },
+    a2a: { info: '<b>All-to-all</b>: GPU g sends a <em>different</em> chunk to each GPU (chunk j goes to GPU j). Used for <b>MoE token dispatch and combine</b>, and for Ulysses-style sequence parallelism.', before: g => [0, 1, 2, 3].map(c => [g, c]), after: g => [0, 1, 2, 3].map(c => [c, g]) },
+  };
+  Deck.seg('collSeg', v => {
+    const s = clear(document.getElementById('collSvg')), c = COLL[v];
+    const drawSide = (x0, fn, title) => {
+      svg('text', { x: x0 + 125, y: 18, 'text-anchor': 'middle', class: 't', style: 'font-weight:700', text: title }, s);
+      for (let g = 0; g < 4; g++) {
+        const y = 30 + g * 52;
+        svg('text', { x: x0, y: y + 27, class: 'tm tc', text: 'GPU' + g }, s);
+        fn(g).forEach((cell, k) => {
+          const x = x0 + 46 + k * 52;
+          if (!cell) { svg('rect', { x, y, width: 46, height: 40, rx: 5, style: 'fill:var(--panel-2);stroke:var(--line);stroke-dasharray:3 3' }, s); return; }
+          if (v === 'a2a') {
+            svg('rect', { x, y, width: 46, height: 40, rx: 5, style: `fill:${COL[cell[0]]}` }, s);
+            svg('text', { x: x + 23, y: y + 25, 'text-anchor': 'middle', class: 't tc', style: 'fill:#fff;font-size:11px;font-weight:600', text: `${cell[0]}→${cell[1]}` }, s);
+          } else if (cell.length === 1) {
+            svg('rect', { x, y, width: 46, height: 40, rx: 5, style: `fill:${COL[cell[0]]}` }, s);
+            svg('text', { x: x + 23, y: y + 25, 'text-anchor': 'middle', class: 't tc', style: 'fill:#fff;font-size:11px;font-weight:600', text: String.fromCharCode(97 + cell[0]) + k }, s);
+          } else {
+            cell.forEach((src, i) => svg('rect', { x: x + i * 11.5, y, width: 11.5, height: 40, style: `fill:${COL[src]}` }, s));
+            svg('text', { x: x + 23, y: y + 25, 'text-anchor': 'middle', class: 't tc', style: 'fill:#fff;font-size:12px;font-weight:700', text: 'Σ' + k }, s);
+          }
+        });
+      }
+    };
+    drawSide(10, c.before, 'before');
+    svg('text', { x: 330, y: 135, 'text-anchor': 'middle', class: 't', style: 'font-size:26px;fill:var(--faint)', text: '⟶' }, s);
+    drawSide(350, c.after, 'after');
+    document.getElementById('collInfo').innerHTML = c.info;
+  });
+
+  /* ring all-reduce */
+  const N = 4;
+  let st, step, timer = null;
+  const reset = () => { st = [...Array(N)].map((_, g) => [...Array(N)].map(() => new Set([g]))); step = 0; drawRing(null); };
+  const sendsFor = k => {
+    if (k < N - 1) return [...Array(N)].map((_, g) => ({ from: g, to: (g + 1) % N, chunk: ((g - k) % N + N) % N, op: 'add' }));
+    const s = k - (N - 1);
+    return [...Array(N)].map((_, g) => ({ from: g, to: (g + 1) % N, chunk: ((g + 1 - s) % N + N) % N, op: 'copy' }));
+  };
+  const drawRing = sends => {
+    const s = clear(document.getElementById('ringSvg'));
+    const pos = [[150, 60], [510, 60], [510, 200], [150, 200]];
+    const cw = 34;
+    if (sends) sends.forEach(m => {
+      const [x1, y1] = pos[m.from], [x2, y2] = pos[m.to];
+      svg('line', { x1: x1 + (x2 > x1 ? 80 : x2 < x1 ? -80 : 0), y1: y1 + (y2 > y1 ? 34 : y2 < y1 ? -34 : 0), x2: x2 + (x2 > x1 ? -80 : x2 < x1 ? 80 : 0), y2: y2 + (y2 > y1 ? -34 : y2 < y1 ? 34 : 0), style: `stroke:${COL[m.chunk]};stroke-width:5`, 'marker-end': 'url(#rarr)' }, s);
+    });
+    const defs = svg('defs', {}, s), mk = svg('marker', { id: 'rarr', viewBox: '0 0 10 10', refX: 7, refY: 5, markerWidth: 4, markerHeight: 4, orient: 'auto' }, defs);
+    svg('path', { d: 'M0,0 L10,5 L0,10 z', style: 'fill:var(--ink)' }, mk);
+    pos.forEach(([x, y], g) => {
+      svg('rect', { x: x - 76, y: y - 30, width: 152, height: 60, rx: 8, style: 'fill:var(--panel-2);stroke:var(--line)' }, s);
+      svg('text', { x: x - 72, y: y - 36, class: 'tm tc', text: 'GPU ' + g }, s);
+      for (let c = 0; c < N; c++) {
+        const set = st[g][c], cx = x - 70 + c * cw + c * 2;
+        const full = set.size === N;
+        [...set].sort().forEach((src, i) => svg('rect', { x: cx, y: y - 22 + i * (44 / N), width: cw, height: 44 / N - 1, style: `fill:${COL[c]};opacity:${.35 + .65 * (set.size / N)}` }, s));
+        svg('rect', { x: cx, y: y - 22, width: cw, height: 44, rx: 3, style: `fill:none;stroke:${full ? 'var(--ink)' : 'var(--line)'};stroke-width:${full ? 2 : 1}` }, s);
+        svg('text', { x: cx + cw / 2, y: y + 5, 'text-anchor': 'middle', class: 't tc', style: 'font-size:11px;font-weight:700;fill:var(--ink)', text: set.size + '/' + N }, s);
+      }
+    });
+    const total = 2 * (N - 1);
+    Deck.out('rgPhase', step === 0 ? 'Each GPU holds its own gradients (1/4 = only its contribution)' : step <= N - 1 ? `Reduce-scatter step ${step}/${N - 1}` : step < total ? `All-gather step ${step - (N - 1)}/${N - 1}` : 'Done: every GPU has the full sum (4/4 in every chunk)');
+  };
+  const doStep = () => {
+    if (step >= 2 * (N - 1)) return false;
+    const sends = sendsFor(step);
+    const snap = st.map(r => r.map(x => new Set(x)));
+    sends.forEach(m => {
+      const inc = snap[m.from][m.chunk];
+      if (m.op === 'add') inc.forEach(v => st[m.to][m.chunk].add(v));
+      else st[m.to][m.chunk] = new Set(inc);
+    });
+    step++;
+    drawRing(sends);
+    return true;
+  };
+  document.getElementById('rgStep').onclick = doStep;
+  document.getElementById('rgReset').onclick = () => { if (timer) { clearInterval(timer); timer = null; document.getElementById('rgPlay').textContent = 'Play'; } reset(); };
+  document.getElementById('rgPlay').onclick = e => {
+    if (timer) { clearInterval(timer); timer = null; e.target.textContent = 'Play'; return; }
+    if (step >= 2 * (N - 1)) reset();
+    e.target.textContent = 'Pause';
+    timer = setInterval(() => { if (!doStep()) { clearInterval(timer); timer = null; e.target.textContent = 'Play'; } }, 1100);
+  };
+  reset();
+  Deck.enter('s-ring', () => () => { if (timer) { clearInterval(timer); timer = null; document.getElementById('rgPlay').textContent = 'Play'; } });
+
+  /* cost */
+  Deck.bind(['cS', 'cA'], () => {
+    const S = Math.pow(10, Deck.val('cS')), a = Deck.val('cA') * 1e-6, B = 50e9;
+    Deck.out('cSo', bytes(S)); Deck.out('cAo', Deck.val('cA') + ' µs');
+    const ring = n => 2 * (n - 1) * a + 2 * (n - 1) / n * S / B;
+    const tree = n => 2 * Math.log2(n) * a + 2 * S / B;
+    const s = clear(document.getElementById('costSvg'));
+    const L = 70, R = 640, T = 16, Bm = 250, ns = [];
+    for (let n = 2; n <= 4096; n *= 1.15) ns.push(n);
+    const all = ns.flatMap(n => [ring(n), tree(n)]), lo = Math.min(...all), hi = Math.max(...all);
+    const X = n => L + (Math.log2(n) - 1) / 11 * (R - L);
+    const Y = t => Bm - (Math.log10(t) - Math.log10(lo * .8)) / (Math.log10(hi * 1.2) - Math.log10(lo * .8)) * (Bm - T);
+    [2, 8, 32, 128, 512, 2048].forEach(n => {
+      svg('line', { x1: X(n), x2: X(n), y1: T, y2: Bm, class: 'ln' }, s);
+      svg('text', { x: X(n), y: Bm + 16, 'text-anchor': 'middle', class: 'tm tc', text: n }, s);
+    });
+    const tf = t => t < 1e-3 ? (t * 1e6).toFixed(0) + ' µs' : t < 1 ? (t * 1e3).toFixed(1) + ' ms' : t.toFixed(2) + ' s';
+    for (let k = 0; k <= 3; k++) {
+      const t = Math.pow(10, Math.log10(lo * .8) + k / 3 * (Math.log10(hi * 1.2) - Math.log10(lo * .8)));
+      svg('text', { x: L - 6, y: Y(t) + 4, 'text-anchor': 'end', class: 'tm tc', style: 'font-size:10px', text: tf(t) }, s);
+    }
+    svg('text', { x: (L + R) / 2, y: Bm + 36, 'text-anchor': 'middle', class: 'tm', text: 'number of GPUs (N), 50 GB/s each' }, s);
+    svg('polyline', { points: ns.map(n => `${X(n)},${Y(ring(n))}`).join(' '), fill: 'none', style: 'stroke:var(--a);stroke-width:3' }, s);
+    svg('polyline', { points: ns.map(n => `${X(n)},${Y(tree(n))}`).join(' '), fill: 'none', style: 'stroke:var(--b);stroke-width:3' }, s);
+    svg('text', { x: R, y: Y(ring(4096)) - 8, 'text-anchor': 'end', class: 't', style: 'fill:var(--a);font-weight:600', text: 'ring ' + tf(ring(4096)) }, s);
+    svg('text', { x: R, y: Y(tree(4096)) + 18, 'text-anchor': 'end', class: 't', style: 'fill:var(--b);font-weight:600', text: 'tree ' + tf(tree(4096)) }, s);
+  });
+
+  /* planner */
+  let TP = 8;
+  const plan = () => {
+    const P = +Deck.val('plM') * 1e9, N = +Deck.val('plN'), PP = Math.pow(2, Deck.val('plPP'));
+    Deck.out('plPPo', PP);
+    const DP = N / (TP * PP), ok = DP >= 1 && Number.isInteger(DP);
+    Deck.out('plDP', ok ? DP.toLocaleString() : '—');
+    const mem = ok ? (4 * P / (TP * PP) + 12 * P / (TP * PP * DP)) / 1e9 : NaN;
+    Deck.out('plMem', ok ? mem.toFixed(1) + ' GB' : '—');
+    document.getElementById('plMem').style.color = mem > 60 ? 'var(--d)' : 'var(--e)';
+    const bubble = (PP - 1) / (32 + PP - 1);
+    const items = [];
+    items.push(!ok ? '<span class="warn">✗ TP × PP exceeds the GPU count</span>' : `<span class="ok">✓</span> ${DP} replicas × ${TP * PP} GPUs each`);
+    items.push(TP <= 8 ? '<span class="ok">✓ TP stays inside one node (NVLink)</span>' : '<span class="warn">✗ TP spans nodes: per-layer all-reduce over a 50 GB/s network</span>');
+    items.push(PP === 1 ? '<span class="ok">✓ No pipeline bubble</span>' : `${bubble > .1 ? '<span class="warn">!' : '<span class="ok">✓'} Pipeline bubble ≈ ${(bubble * 100).toFixed(0)}%</span> (32 micro-batches)`);
+    items.push(mem > 60 ? '<span class="warn">✗ States exceed ~60 GB: little room left for activations</span>' : mem > 40 ? '<span style="color:var(--b);font-weight:600">! Tight: use activation checkpointing</span>' : '<span class="ok">✓ Memory headroom for activations</span>');
+    if (ok && TP * PP > N) items.push('<span class="warn">✗ Not enough GPUs</span>');
+    document.getElementById('plChecks').innerHTML = items.map(x => `<div>${x}</div>`).join('');
+    const s = clear(document.getElementById('plSvg'));
+    const stages = Math.min(PP, 32), cols = Math.min(stages, 16), cw = 340 / cols;
+    const dotsPer = TP, gpusPerNode = 8;
+    for (let st = 0; st < stages; st++) {
+      const cx = 10 + (st % cols) * cw, cy = 10 + Math.floor(st / cols) * 105;
+      for (let t = 0; t < dotsPer; t++) {
+        const gid = st * TP + t, node = Math.floor(gid / gpusPerNode);
+        const y = cy + 6 + t * Math.min(12, 90 / dotsPer);
+        svg('circle', { cx: cx + cw / 2, cy: y, r: Math.min(5, cw / 3, 90 / dotsPer / 2.4), style: `fill:${['var(--a)', 'var(--b)', 'var(--c)', 'var(--e)'][node % 4]}` }, s);
+      }
+      if (TP > 8) svg('rect', { x: cx + 2, y: cy, width: cw - 4, height: 98, rx: 4, style: 'fill:none;stroke:var(--d);stroke-dasharray:4 3;stroke-width:1.5' }, s);
+      if (cols <= 16) svg('text', { x: cx + cw / 2, y: cy + 112 > 215 ? 215 : cy + 104, 'text-anchor': 'middle', class: 'tm tc', style: 'font-size:9px', text: 's' + st }, s);
+    }
+    svg('text', { x: 180, y: 218, 'text-anchor': 'middle', class: 'tm', style: 'font-size:10px', text: 'dot colour = which 8-GPU node it lives on' }, s);
+  };
+  Deck.seg('plTP', v => { TP = +v; if (document.getElementById('plPP')) plan(); });
+  Deck.bind(['plM', 'plN', 'plPP'], plan);
+
+  /* MoE */
+  let net = 450;
+  const moe = () => {
+    const k = Deck.val('eS') / 100; Deck.out('eSo', (k * 100).toFixed(0) + '%');
+    const n = 8, w = [...Array(n)].map((_, j) => 1 + k * 6 * Math.exp(-j * 1.2));
+    const sum = w.reduce((a, b) => a + b, 0);
+    const M = [...Array(n)].map((_, i) => w.map((x, j) => x / sum * (1 + 0.15 * Math.sin(i * 3 + j * 7))));
+    const col = [...Array(n)].map((_, j) => M.reduce((a, r) => a + r[j], 0));
+    const mean = col.reduce((a, b) => a + b, 0) / n, mx = Math.max(...col), imb = mx / mean;
+    const s = clear(document.getElementById('eSvg'));
+    const c = 32, x0 = 30, y0 = 20, mmax = Math.max(...M.flat());
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) svg('rect', { x: x0 + j * c, y: y0 + i * c, width: c - 2, height: c - 2, rx: 3, style: `fill:var(--a);opacity:${.1 + .9 * M[i][j] / mmax}` }, s);
+    col.forEach((v, j) => svg('rect', { x: x0 + j * c, y: y0 + n * c + 6, width: c - 2, height: 6 + 22 * v / mx, rx: 2, style: `fill:${v === mx ? 'var(--d)' : 'var(--faint)'}` }, s));
+    for (let i = 0; i < n; i++) svg('text', { x: x0 - 6, y: y0 + i * c + 20, 'text-anchor': 'end', class: 'tm tc', style: 'font-size:10px', text: i }, s);
+    Deck.out('eImb', imb.toFixed(2) + '×');
+    document.getElementById('eImb').style.color = imb > 1.5 ? 'var(--d)' : 'var(--e)';
+    const bytesPer = 8192 * 2 * 7168 * 2, t = bytesPer * imb / (net * 1e9);
+    Deck.out('eT', (t * 1000).toFixed(2) + ' ms');
+  };
+  Deck.seg('eNet', v => { net = +v; if (document.getElementById('eS')) moe(); });
+  Deck.bind(['eS'], moe);
+})();
+</script>
+</body>
+</html>

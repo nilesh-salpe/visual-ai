@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPU for GenAI</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>
+  body { overflow-y: auto; }
+  .path { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; font: 600 13px 'JetBrains Mono', monospace; }
+  .path a { text-decoration: none; background: var(--a-soft); color: var(--a); border-radius: 6px; padding: 4px 9px; }
+  .path span { color: var(--faint); }
+  .nums td:nth-child(2) { font-family: 'JetBrains Mono', monospace; font-weight: 600; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="kicker label" style="margin-top:28px">Interview prep · AI labs</div>
+  <h1>GPU for GenAI</h1>
+  <p class="lede">Eight interactive slide decks on the GPU concepts that come up in ML-infra, research-engineering and systems interviews. Each slide has a visual you can adjust, and each deck ends with interview questions and model answers.</p>
+  <p class="caption" style="margin-top:14px">Suggested study order: roofline thinking first, since the other decks build on it.</p>
+  <div class="path">
+    <a href="02-why-gpus-for-ai/index.html">02</a><span>→</span><a href="03-memory-hierarchy/index.html">03</a><span>→</span><a href="01-what-is-a-gpu/index.html">01</a><span>→</span><a href="04-inside-gpu-server/index.html">04</a><span>→</span><a href="05-cluster-topology/index.html">05</a><span>→</span><a href="06-gpu-failures/index.html">06</a><span>→</span><a href="08-sharing-gpus/index.html">08</a><span>→</span><a href="07-heterogeneous-gpus/index.html">07</a>
+  </div>
+
+  <div class="hub-grid">
+    <a class="hub-card" href="01-what-is-a-gpu/index.html"><div class="n">01 · 12 slides</div><h3>What a GPU is</h3><p>CPU vs GPU, SMs and Tensor Cores, warps and divergence, latency hiding, wave quantization.</p><div class="tags"><span>SIMT</span><span>occupancy</span><span>H100 anatomy</span></div></a>
+    <a class="hub-card" href="02-why-gpus-for-ai/index.html"><div class="n">02 · 11 slides</div><h3>Why GPUs for AI</h3><p>2N and 6ND FLOPs, arithmetic intensity, the roofline, prefill vs decode, batching, precision, MFU.</p><div class="tags"><span>roofline</span><span>TTFT / TPOT</span><span>FP8</span></div></a>
+    <a class="hub-card" href="03-memory-hierarchy/index.html"><div class="n">03 · 12 slides</div><h3>Memory hierarchy</h3><p>Registers to NVMe, tiling, kernel fusion, FlashAttention, ZeRO memory, KV-cache sizing, PagedAttention.</p><div class="tags"><span>HBM</span><span>FlashAttention</span><span>KV cache</span></div></a>
+    <a class="hub-card" href="04-inside-gpu-server/index.html"><div class="n">04 · 10 slides</div><h3>Inside a GPU server</h3><p>HGX H100 layout, NVLink/NVSwitch vs PCIe, GPUDirect RDMA, NUMA affinity, power, NVL72.</p><div class="tags"><span>NVSwitch</span><span>topo -m</span><span>power</span></div></a>
+    <a class="hub-card" href="05-cluster-topology/index.html"><div class="n">05 · 12 slides</div><h3>Cluster topology</h3><p>Scale-up vs scale-out, fat tree, rails, collectives, ring all-reduce, parallelism planner, MoE all-to-all.</p><div class="tags"><span>all-reduce</span><span>TP/PP/DP</span><span>rails</span></div></a>
+    <a class="hub-card" href="06-gpu-failures/index.html"><div class="n">06 · 12 slides</div><h3>GPU failures</h3><p>Llama 3 failure data, cluster MTBF, Xid errors, stragglers, checkpoint maths, fast recovery, SDC.</p><div class="tags"><span>MTBF</span><span>checkpointing</span><span>SDC</span></div></a>
+    <a class="hub-card" href="07-heterogeneous-gpus/index.html"><div class="n">07 · 9 slides</div><h3>Heterogeneous GPUs</h3><p>Mixed fleets, the slowest GPU sets the pace, rebalancing DP and PP, disaggregated prefill/decode, placement.</p><div class="tags"><span>A100/H100/B200</span><span>disaggregation</span></div></a>
+    <a class="hub-card" href="08-sharing-gpus/index.html"><div class="n">08 · 10 slides</div><h3>Sharing GPUs</h3><p>Time-slicing, MPS, MIG builder, continuous batching, multi-LoRA, gang scheduling and fragmentation.</p><div class="tags"><span>MIG</span><span>multi-LoRA</span><span>scheduling</span></div></a>
+  </div>
+
+  <h2 style="margin-top:44px;font-size:26px">Numbers to memorize</h2>
+  <div class="visual scroll-x">
+    <table class="tbl nums">
+      <tr><th>What</th><th>Value</th><th>Why it matters</th></tr>
+      <tr><td>H100 SXM BF16 / FP8 (dense)</td><td>989 / 1,979 TFLOPS</td><td>Compute ceiling</td></tr>
+      <tr><td>H100 HBM3</td><td>80 GB · 3.35 TB/s</td><td>Decode speed and capacity</td></tr>
+      <tr><td>Ridge point (H100)</td><td>~295 FLOPs/byte</td><td>Below it you are memory-bound</td></tr>
+      <tr><td>NVLink 4 per GPU</td><td>900 GB/s bidir (450 per direction)</td><td>TP stays inside the node</td></tr>
+      <tr><td>PCIe Gen5 x16 / 400G NIC</td><td>~64 / 50 GB/s</td><td>About 9× slower than NVLink</td></tr>
+      <tr><td>Training FLOPs</td><td>6 · N · D</td><td>Estimate a training run</td></tr>
+      <tr><td>Inference FLOPs per token</td><td>2 · N</td><td>Prefill cost</td></tr>
+      <tr><td>Mixed-precision Adam</td><td>16 bytes / param</td><td>Why training is sharded</td></tr>
+      <tr><td>Llama-3-70B KV cache</td><td>320 KB / token (BF16)</td><td>Concurrency limit</td></tr>
+      <tr><td>Ring all-reduce traffic</td><td>2(N−1)/N · S per GPU</td><td>Collective cost</td></tr>
+      <tr><td>Llama 3 at 16K H100s</td><td>1 interruption / ~3 h</td><td>Why fault tolerance is required</td></tr>
+      <tr><td>Optimal checkpoint interval</td><td>√(2 · δ · MTBF)</td><td>Young/Daly</td></tr>
+      <tr><td>MIG on H100</td><td>≤7 instances · 10 GB memory slices</td><td>Multi-tenant isolation</td></tr>
+    </table>
+  </div>
+  <p class="cite" style="margin-top:20px">Specs from NVIDIA/AMD datasheets and whitepapers; field data from the Llama 3 paper (2024). Interactive models are simplified for teaching, and each slide states its assumptions.</p>
+</div>
+</body>
+</html>

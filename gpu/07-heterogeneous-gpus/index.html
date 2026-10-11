@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heterogeneous GPUs</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<style>
+  .infobox { min-height: 80px; background: var(--panel-2); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--muted); margin-top: 12px; }
+  .infobox b { color: var(--ink); }
+  .spec td:first-child { font-weight: 600; }
+  .spec td.best { color: var(--e); font-weight: 700; }
+</style>
+</head>
+<body data-deck="Heterogeneous GPUs" data-home="../index.html" data-home-label="GPU">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">GPU for GenAI · 07</div>
+    <h1>Heterogeneous GPUs:<br>getting value from a mixed fleet</h1>
+    <p class="sub">Real fleets mix A100s, H100s, H200s, B200s and sometimes other vendors. This deck covers why mixing hurts synchronous training, how to rebalance the work, where mixed hardware actually helps (disaggregated inference), and what breaks along the way.</p>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Press <kbd>→</kbd> or <kbd>Space</kbd> to begin.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-fleet" data-chapter="The fleet">
+  <div class="inner">
+    <div class="label">01 · The fleet</div>
+    <h2>A new GPU generation every ~2 years, and old ones stay in service for 5+</h2>
+    <hr>
+    <p class="lede">Supply constraints, depreciation schedules and long contracts mean any large lab runs several generations at once. Pick two GPUs to see how different they are.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <select id="gA"></select><span class="ctl">vs</span><select id="gB"></select>
+      </div>
+      <div class="scroll-x" style="margin-top:12px"><table class="tbl spec" id="specTbl"></table></div>
+      <div id="ratioBars" style="margin-top:14px"></div>
+    </div>
+    <div class="cite">Vendor datasheets, dense (non-sparse) peak values. B200 figures vary by system configuration (HGX vs GB200); treat them as approximate.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-slow" data-chapter="Training">
+  <div class="inner">
+    <div class="label">02 · Training</div>
+    <h2>Synchronous training runs at the speed of the slowest GPU</h2>
+    <hr>
+    <p class="lede">With equal per-GPU batches, every step waits for the slowest rank. Mix A100s into an H100 job and the H100s spend most of each step <b>idle at the all-reduce</b>.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Share of A100s <input type="range" id="hMix" min="0" max="100" step="12.5" value="25"> <output id="hMixo"></output></label>
+        <div class="seg" id="hMode"><button data-v="eq" class="on">Equal batch per GPU</button><button data-v="prop">Batch ∝ GPU speed</button></div>
+      </div>
+      <svg id="hSvg" viewBox="0 0 660 230" style="margin-top:12px" role="img" aria-label="Per-rank step times"></svg>
+      <div class="legend"><span><i style="background:var(--a)"></i>H100 compute</span><span><i style="background:var(--b)"></i>A100 compute</span><span><i style="background:var(--d-soft);border:1px solid var(--d)"></i>idle waiting</span></div>
+      <div class="grid3" style="margin-top:8px">
+        <div class="stat"><div class="num" id="hThr" style="color:var(--a)"></div><div class="lbl">throughput vs. H100s alone</div></div>
+        <div class="stat"><div class="num" id="hIdle" style="color:var(--d)"></div><div class="lbl">H100 time spent idle</div></div>
+        <div class="stat"><div class="num" id="hGain"></div><div class="lbl">gain from adding the A100s</div></div>
+      </div>
+    </div>
+    <p class="caption">Model: 8 ranks; an A100 is about 3× slower than an H100 at BF16 GEMMs (312 vs 989 TFLOPS peak; the measured gap is often 2–3×). With proportional batching, gradients must be averaged <b>weighted by sample count</b>.</p>
+    <div class="takeaway">With equal batches, adding slow GPUs can make the job <em>slower</em> than leaving them out. Uneven batches fix the compute imbalance, but memory limits and the communication pattern still differ between the two types.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-pipe" data-chapter="Training">
+  <div class="inner">
+    <div class="label">03 · Training</div>
+    <h2>Pipeline parallel on mixed GPUs: balance the layers by speed</h2>
+    <hr>
+    <p class="lede">Put 80 layers on 4 pipeline stages: 2 on H100s and 2 on A100s. With an equal split, the A100 stages become the bottleneck and the pipeline stalls. Rebalance by giving faster stages more layers, as long as each stage's <b>memory</b> still fits.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <div class="seg" id="ppMode"><button data-v="eq" class="on">20 / 20 / 20 / 20</button><button data-v="bal">Balanced by speed</button></div>
+        <span class="readout" id="ppSplit"></span>
+      </div>
+      <svg id="ppSvg" viewBox="0 0 660 230" style="margin-top:12px" role="img" aria-label="Pipeline Gantt chart"></svg>
+      <div class="grid3" style="margin-top:6px">
+        <div class="stat"><div class="num" id="ppT"></div><div class="lbl">time for 8 micro-batches (forward)</div></div>
+        <div class="stat"><div class="num" id="ppU"></div><div class="lbl">average stage utilization</div></div>
+        <div class="stat"><div class="num" id="ppMem"></div><div class="lbl">largest stage memory (weights + optimizer)</div></div>
+      </div>
+    </div>
+    <p class="caption">Each block is one micro-batch passing through one stage. Grey gaps are idle time. Memory assumes a 70B model at 16 B/param split by layer, sharded 16 ways by DP/ZeRO, against an 80 GB limit per GPU.</p>
+    <div class="takeaway">Heterogeneous pipelines are an optimization problem with two constraints: equalize stage time and stay within each stage's memory. Research systems solve it automatically (Metis, HexiScale, Cephalo), but production labs usually avoid mixing GPU types inside one training job.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-disagg" data-chapter="Inference">
+  <div class="inner">
+    <div class="label">04 · Inference</div>
+    <h2>Where mixing helps: prefill and decode on different hardware</h2>
+    <hr>
+    <p class="lede">Prefill is <b>compute-bound</b> and decode is <b>bandwidth-bound</b> (see deck 02). Disaggregated serving runs them on separate GPU pools, each matched to its phase, and sends the KV cache between them.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Prefill pool <select id="dP"></select></label>
+        <label class="ctl">Decode pool <select id="dD"></select></label>
+        <div class="seg" id="dLink"><button data-v="50" class="on">KV over 400G network</button><button data-v="450">KV over NVLink</button></div>
+      </div>
+      <svg id="dSvg" viewBox="0 0 660 150" style="margin-top:12px" role="img" aria-label="Disaggregated serving"></svg>
+      <div class="grid4" style="margin-top:8px">
+        <div class="stat"><div class="num" id="dTTFT"></div><div class="lbl">prefill time (4K prompt)</div></div>
+        <div class="stat"><div class="num" id="dKV"></div><div class="lbl">KV transfer</div></div>
+        <div class="stat"><div class="num" id="dTPOT"></div><div class="lbl">time per output token (batch 1)</div></div>
+        <div class="stat"><div class="num" id="dNote" style="font:600 14px Inter"></div><div class="lbl">note</div></div>
+      </div>
+    </div>
+    <p class="caption">Model: 70B in FP8 on 8 GPUs per pool. Prefill at 50% of FP8 peak. Decode reads 70 GB of weights per step at 80% of HBM bandwidth. FP8 KV ≈ 160 KB/token, so 4K tokens ≈ 0.67 GB.</p>
+    <div class="takeaway">Separating the pools also removes <b>interference</b>: a long prefill no longer pauses everyone's decode. Splitwise, DistServe, Mooncake and NVIDIA Dynamo all use this design. The cost is moving the KV cache between pools, which needs fast links or pipelined transfer.</div>
+    <div class="cite">Patel et al., "Splitwise" (ISCA 2024); Zhong et al., "DistServe" (OSDI 2024); Qin et al., "Mooncake" (2024).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-break" data-chapter="Gotchas">
+  <div class="inner">
+    <div class="label">05 · Gotchas</div>
+    <h2>What breaks when you mix GPUs</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Numerics</h3><p>V100 has no BF16, and A100 has no FP8. A recipe that depends on FP8 Tensor Cores can't run on the older parts, and changing precision changes training dynamics.</p></div>
+      <div class="card b"><h3>Kernels</h3><p>FlashAttention-3, <code>wgmma</code> and TMA are Hopper-only, and Blackwell adds new instructions. You end up maintaining several code paths and checking that they agree numerically.</p></div>
+      <div class="card c"><h3>Communication</h3><p>NCCL (NVIDIA) and RCCL (AMD) don't interoperate in one collective. Mixed-vendor jobs need separate groups joined by a gateway, or they don't work at all.</p></div>
+      <div class="card a"><h3>Memory shape</h3><p>40 vs 80 vs 141 vs 192 GB means different shard sizes, batch sizes and KV capacity. One parallelism config no longer fits every GPU.</p></div>
+      <div class="card e"><h3>Reproducibility</h3><p>Different kernels and reduction orders give results that differ in the last bits. Bitwise reproducibility across generations is effectively impossible.</p></div>
+      <div class="card"><h3>Operations</h3><p>Different drivers, firmware, failure modes and topologies (NVLink-8 vs NVL72 vs PCIe). Scheduling has to understand GPU types.</p></div>
+    </div>
+    <div class="takeaway">The common pattern in industry: keep each <b>training job on one GPU type</b>, and use the mix at the <b>fleet level</b>, putting each workload on the generation that suits it.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-place" data-chapter="Gotchas">
+  <div class="inner">
+    <div class="label">06 · Placement</div>
+    <h2>Matching workloads to GPU generations</h2>
+    <hr>
+    <div class="seg" id="wSeg">
+      <button data-v="pre" class="on">Frontier pretraining</button><button data-v="rl">RL rollouts</button><button data-v="sft">SFT / small models</button><button data-v="dec">Long-context decode</button><button data-v="eval">Evals &amp; batch</button><button data-v="emb">Embeddings</button>
+    </div>
+    <div class="visual">
+      <div class="grid2" style="align-items:center">
+        <div id="wBars"></div>
+        <div class="infobox" id="wInfo" style="margin-top:0"></div>
+      </div>
+    </div>
+    <p class="caption">Fit scores are judgement calls meant for discussion, not benchmarks. They weigh compute, bandwidth, memory, interconnect and opportunity cost.</p>
+    <div class="takeaway">Old GPUs aren't useless: they handle evals, data processing, embedding and small-model work well. That frees the newest parts for the jobs that need the largest NVLink domain and FP8 or FP4.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-qa" data-chapter="Interview">
+  <div class="inner">
+    <div class="label">07 · Interview</div>
+    <h2>Questions you'll get</h2>
+    <hr>
+    <details class="qa"><summary>You have 2K H100s and 2K A100s. How do you use them for one model?</summary><div class="ans">Don't run one synchronous job across both. Equal-batch DP would run at A100 speed, and proportional batching makes memory and communication harder. Better options: (1) run <b>pretraining on the H100s</b> and put <b>evals, data processing, RL rollouts or inference on the A100s</b>; (2) if it must be one job, use <b>separate pipeline stages per type</b> with layers balanced by speed, or weighted DP; (3) for serving, use disaggregation: prefill on the H100s, decode on whichever has the best bandwidth per dollar.</div></details>
+    <details class="qa"><summary>Why does disaggregated prefill/decode make sense?</summary><div class="ans">The two phases have opposite bottlenecks: prefill is compute-bound (needs TFLOPS) and decode is bandwidth- and capacity-bound (needs HBM bandwidth and KV space). Running them together means long prefills stall decode (bad TPOT tail latency) and each batch is a compromise. Splitting them lets you size and choose hardware per phase and tune TTFT and TPOT SLOs independently. The cost is moving the KV cache, which has to go over RDMA or NVLink and be pipelined layer by layer.</div></details>
+    <details class="qa"><summary>What changes when you port a training stack from H100 to MI300X?</summary><div class="ans">The software stack changes from CUDA to ROCm/HIP and NCCL to RCCL. Kernels must be ported or come from Triton (FlashAttention has ROCm versions). The parallelism plan changes too: 192 GB of HBM allows larger shards and less TP or PP, and the GPU-to-GPU fabric differs (Infinity Fabric, with a different topology). Budget for numerical validation: loss curves must match the reference within tolerance before you scale up.</div></details>
+  </div>
+</section>
+
+<section class="slide" id="s-end" data-chapter="Interview">
+  <div class="inner">
+    <div class="label">08 · Take it with you</div>
+    <h2>Four things to remember</h2>
+    <hr>
+    <div class="recap">
+      <div><span><b>A synchronous job runs at the speed of its slowest GPU.</b> Mixing generations in one job wastes the fast ones unless you rebalance.</span></div>
+      <div><span><b>Rebalance by speed:</b> batch per GPU in DP, layers per stage in PP, both subject to memory limits.</span></div>
+      <div><span><b>Disaggregated serving is where mixing pays off:</b> prefill on compute-heavy GPUs, decode on bandwidth-heavy ones.</span></div>
+      <div><span><b>Use one GPU type per job and mix at the fleet level</b>, putting each workload on the generation that suits it.</span></div>
+    </div>
+    <p class="start-hint">Next: <a href="../08-sharing-gpus/index.html">08 · Sharing GPUs →</a> · Previous: <a href="../06-gpu-failures/index.html">← 06</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const G = {
+    V100: { bf16: 125, fp8: 0, mem: 32, bw: 0.9, nvl: 300, year: 2017, note: 'FP16 tensor only (no BF16)' },
+    A100: { bf16: 312, fp8: 0, mem: 80, bw: 2.04, nvl: 600, year: 2020, note: 'BF16/TF32, no FP8' },
+    H100: { bf16: 989, fp8: 1979, mem: 80, bw: 3.35, nvl: 900, year: 2022, note: 'FP8, TMA, wgmma' },
+    H200: { bf16: 989, fp8: 1979, mem: 141, bw: 4.8, nvl: 900, year: 2024, note: 'H100 compute, bigger/faster HBM3e' },
+    B200: { bf16: 2250, fp8: 4500, mem: 192, bw: 8, nvl: 1800, year: 2025, note: 'FP4, NVLink 5, 2-die' },
+    MI300X: { bf16: 1307, fp8: 2615, mem: 192, bw: 5.3, nvl: 896, year: 2023, note: 'AMD · ROCm/RCCL · Infinity Fabric' },
+  };
+  const names = Object.keys(G);
+  ['gA', 'gB'].forEach((id, k) => { const el = document.getElementById(id); el.innerHTML = names.map(n => `<option ${n === (k ? 'H100' : 'A100') ? 'selected' : ''}>${n}</option>`).join(''); });
+  Deck.bind(['gA', 'gB'], () => {
+    const a = Deck.val('gA'), b = Deck.val('gB'), A = G[a], B = G[b];
+    const rows = [['Year', 'year', ''], ['BF16 dense TFLOPS', 'bf16', ''], ['FP8 dense TFLOPS', 'fp8', ''], ['HBM (GB)', 'mem', ''], ['HBM bandwidth (TB/s)', 'bw', ''], ['GPU↔GPU link (GB/s, bidir.)', 'nvl', '']];
+    document.getElementById('specTbl').innerHTML = `<tr><th></th><th>${a}</th><th>${b}</th></tr>` + rows.map(([n, k]) => {
+      const va = A[k], vb = B[k], fa = va === 0 ? '—' : va, fb = vb === 0 ? '—' : vb;
+      const better = k === 'year' ? '' : va > vb ? 'a' : vb > va ? 'b' : '';
+      return `<tr><td>${n}</td><td class="${better === 'a' ? 'best' : ''}">${fa}</td><td class="${better === 'b' ? 'best' : ''}">${fb}</td></tr>`;
+    }).join('') + `<tr><td>Notes</td><td>${A.note}</td><td>${B.note}</td></tr>`;
+    const r = k => B[k] && A[k] ? B[k] / A[k] : 0;
+    Deck.hbars(document.getElementById('ratioBars'), [
+      { label: `${b} ÷ ${a} · compute`, value: r('bf16'), color: 'var(--a)', text: r('bf16').toFixed(2) + '×' },
+      { label: `${b} ÷ ${a} · bandwidth`, value: r('bw'), color: 'var(--b)', text: r('bw').toFixed(2) + '×' },
+      { label: `${b} ÷ ${a} · memory`, value: r('mem'), color: 'var(--c)', text: r('mem').toFixed(2) + '×' },
+    ], { max: Math.max(4, r('bf16'), r('bw'), r('mem')) });
+  });
+
+  /* slowest wins */
+  let hMode = 'eq';
+  const het = () => {
+    const share = Deck.val('hMix') / 100; Deck.out('hMixo', (share * 100).toFixed(1).replace('.0', '') + '%');
+    const n = 8, nA = Math.round(share * n), speed = i => i >= n - nA ? 1 / 3 : 1;
+    const total = [...Array(n)].reduce((a, _, i) => a + speed(i), 0);
+    const batch = i => hMode === 'eq' ? 1 : speed(i) * n / total;
+    const t = [...Array(n)].map((_, i) => batch(i) / speed(i));
+    const step = Math.max(...t);
+    const s = clear(document.getElementById('hSvg'));
+    const L = 70, W = 560, sc = W / 3.2;
+    t.forEach((v, i) => {
+      const y = 10 + i * 26;
+      svg('text', { x: 0, y: y + 15, class: 'tm tc', style: 'font-size:11px', text: (speed(i) === 1 ? 'H100 ' : 'A100 ') + i }, s);
+      svg('rect', { x: L, y, width: v * sc, height: 20, rx: 3, style: `fill:${speed(i) === 1 ? 'var(--a)' : 'var(--b)'}` }, s);
+      if (step - v > 1e-6) svg('rect', { x: L + v * sc, y, width: (step - v) * sc, height: 20, style: 'fill:var(--d-soft);stroke:var(--d);stroke-width:.6' }, s);
+      if (hMode === 'prop') svg('text', { x: L + 6, y: y + 14, class: 't', style: 'fill:#fff;font-size:10px;font-weight:600', text: `batch ${(batch(i) * 32).toFixed(0)}` }, s);
+    });
+    svg('line', { x1: L + step * sc, x2: L + step * sc, y1: 4, y2: 220, style: 'stroke:var(--d);stroke-width:2;stroke-dasharray:4 3' }, s);
+    const samples = [...Array(n)].reduce((a, _, i) => a + batch(i), 0), thr = samples / step;
+    const nH = n - nA, baseline = nH;
+    Deck.out('hThr', (thr / n * 100).toFixed(0) + '% of 8×H100');
+    const idle = nH ? [...Array(nH)].reduce((a, _, i) => a + (step - t[i]) / step, 0) / nH : 0;
+    Deck.out('hIdle', (idle * 100).toFixed(0) + '%');
+    const gain = baseline ? thr / baseline - 1 : 0;
+    Deck.out('hGain', nA === 0 ? '—' : nH === 0 ? 'n/a' : (gain >= 0 ? '+' : '') + (gain * 100).toFixed(0) + '%');
+    document.getElementById('hGain').style.color = gain < 0 ? 'var(--d)' : 'var(--e)';
+  };
+  Deck.seg('hMode', v => { hMode = v; if (document.getElementById('hMix')) het(); });
+  Deck.bind(['hMix'], het);
+
+  /* pipeline */
+  Deck.seg('ppMode', v => {
+    const speeds = [1, 1, 1 / 3, 1 / 3];
+    let layers = [20, 20, 20, 20];
+    if (v === 'bal') {
+      const tot = speeds.reduce((a, b) => a + b, 0);
+      layers = speeds.map(sp => Math.round(80 * sp / tot));
+      layers[0] += 80 - layers.reduce((a, b) => a + b, 0);
+    }
+    Deck.out('ppSplit', 'layers: ' + layers.join(' / ') + ' (H100, H100, A100, A100)');
+    const dur = layers.map((l, i) => l / speeds[i] / 20);
+    const m = 8, S = 4, start = [...Array(S)].map(() => Array(m).fill(0)), end = [...Array(S)].map(() => Array(m).fill(0));
+    for (let s = 0; s < S; s++) for (let i = 0; i < m; i++) {
+      const ready = Math.max(s ? end[s - 1][i] : 0, i ? end[s][i - 1] : 0);
+      start[s][i] = ready; end[s][i] = ready + dur[s];
+    }
+    const T = end[S - 1][m - 1];
+    const sv = clear(document.getElementById('ppSvg'));
+    const L = 110, W = 470, sc = W / 30;
+    for (let s = 0; s < S; s++) {
+      const y = 14 + s * 48;
+      svg('text', { x: 0, y: y + 22, class: 'tm tc', style: 'font-size:11px', text: `stage ${s} · ${speeds[s] === 1 ? 'H100' : 'A100'}` }, sv);
+      svg('rect', { x: L, y, width: T * sc, height: 34, style: 'fill:var(--panel-2)' }, sv);
+      for (let i = 0; i < m; i++) {
+        svg('rect', { x: L + start[s][i] * sc + .5, y, width: Math.max(1, dur[s] * sc - 1), height: 34, rx: 3, style: `fill:${speeds[s] === 1 ? 'var(--a)' : 'var(--b)'};opacity:${.6 + .4 * (i % 2)}` }, sv);
+        if (dur[s] * sc > 16) svg('text', { x: L + start[s][i] * sc + dur[s] * sc / 2, y: y + 22, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:10px;font-weight:600', text: i }, sv);
+      }
+    }
+    svg('text', { x: L + T * sc + 6, y: 120, class: 't tc', style: 'font-size:11px;font-weight:600', text: T.toFixed(1) + ' units' }, sv);
+    const busy = dur.reduce((a, d) => a + d * m, 0) / (S * T);
+    Deck.out('ppT', T.toFixed(1) + ' units'); Deck.out('ppU', (busy * 100).toFixed(0) + '%');
+    const memPer = layers.map(l => 70e9 * 16 * (l / 80) / 16 / 1e9);
+    const mx = Math.max(...memPer);
+    Deck.out('ppMem', mx.toFixed(0) + ' GB');
+    document.getElementById('ppMem').style.color = mx > 80 ? 'var(--d)' : 'var(--e)';
+  });
+
+  /* disaggregation */
+  ['dP', 'dD'].forEach((id, k) => { const el = document.getElementById(id); el.innerHTML = names.map(n => `<option ${n === (k ? 'H200' : 'H100') ? 'selected' : ''}>${n}</option>`).join(''); });
+  let link = 50;
+  const dis = () => {
+    const P = G[Deck.val('dP')], D = G[Deck.val('dD')];
+    const pf = (P.fp8 || P.bf16) * 1e12, pfNote = P.fp8 ? '' : ' (no FP8 → BF16 rate)';
+    const ttft = 2 * 70e9 * 4096 / (8 * pf * 0.5);
+    const kv = 4096 * 163840 / (link * 1e9);
+    const fits = D.mem * 8 >= 70 + 40;
+    const tpot = 70e9 / (8 * D.bw * 1e12 * 0.8);
+    Deck.out('dTTFT', (ttft * 1000).toFixed(0) + ' ms'); Deck.out('dKV', (kv * 1000).toFixed(1) + ' ms'); Deck.out('dTPOT', (tpot * 1000).toFixed(1) + ' ms');
+    Deck.out('dNote', !P.fp8 ? 'Prefill pool lacks FP8' + pfNote : D.bw >= P.bw * 1.3 ? 'Decode pool has the faster HBM ✓' : D.bw < P.bw ? 'Decode pool is slower at decode' : 'Similar pools');
+    const s = clear(document.getElementById('dSvg'));
+    const box = (x, w, c, t1, t2) => { svg('rect', { x, y: 30, width: w, height: 70, rx: 10, style: `fill:${c}` }, s); svg('text', { x: x + w / 2, y: 60, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:700', text: t1 }, s); svg('text', { x: x + w / 2, y: 80, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px', text: t2 }, s); };
+    svg('text', { x: 10, y: 70, class: 'tm', text: 'prompt →' }, s);
+    box(80, 200, 'var(--a)', 'Prefill · 8× ' + Deck.val('dP'), 'compute-bound · ' + fmt((P.fp8 || P.bf16), 0) + ' TF');
+    svg('line', { x1: 285, y1: 65, x2: 375, y2: 65, style: `stroke:var(--c);stroke-width:${link > 100 ? 7 : 3}`, 'marker-end': 'url(#dar)' }, s);
+    svg('text', { x: 330, y: 55, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'KV cache' }, s);
+    svg('text', { x: 330, y: 88, 'text-anchor': 'middle', class: 'tm tc', style: 'font-size:10.5px', text: link + ' GB/s' }, s);
+    box(380, 200, 'var(--b)', 'Decode · 8× ' + Deck.val('dD'), 'bandwidth-bound · ' + D.bw + ' TB/s');
+    svg('text', { x: 590, y: 70, class: 'tm', text: '→ tokens' }, s);
+    const defs = svg('defs', {}, s), mk = svg('marker', { id: 'dar', viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 4, markerHeight: 4, orient: 'auto' }, defs);
+    svg('path', { d: 'M0,0 L10,5 L0,10 z', style: 'fill:var(--c)' }, mk);
+    if (!fits) svg('text', { x: 480, y: 125, 'text-anchor': 'middle', class: 't', style: 'fill:var(--d);font-size:11px', text: 'tight on memory for KV' }, s);
+  };
+  Deck.seg('dLink', v => { link = +v; if (document.getElementById('dP')) dis(); });
+  Deck.bind(['dP', 'dD'], dis);
+
+  /* placement */
+  const W = {
+    pre: { s: { V100: 5, A100: 25, H100: 75, H200: 80, B200: 100, MI300X: 60 }, t: '<b>Frontier pretraining</b> needs peak FLOPs, FP8/FP4, and the <b>largest NVLink domain</b> for TP/EP. Use the newest homogeneous GPUs in large pods. Every percent of MFU is worth millions of dollars.' },
+    rl: { s: { V100: 10, A100: 55, H100: 75, H200: 90, B200: 85, MI300X: 80 }, t: '<b>RL rollouts</b> are mostly <em>generation</em> (decode-heavy, many concurrent sequences). Memory capacity and bandwidth for KV matter more than peak FLOPs, so H200 and MI300X do well and older parts are usable.' },
+    sft: { s: { V100: 30, A100: 85, H100: 80, H200: 75, B200: 55, MI300X: 70 }, t: '<b>Fine-tuning small and medium models</b> fits on a single node. An A100 node is cost-effective; using B200s here takes them away from bigger jobs.' },
+    dec: { s: { V100: 5, A100: 40, H100: 60, H200: 90, B200: 95, MI300X: 90 }, t: '<b>Long-context decode</b> is limited by HBM bandwidth and KV capacity. Choose by TB/s and GB per dollar, which favours H200, MI300X and B200.' },
+    eval: { s: { V100: 45, A100: 85, H100: 60, H200: 55, B200: 35, MI300X: 60 }, t: '<b>Evals and batch inference</b> are throughput jobs that tolerate latency and are easy to preempt. Older GPUs are a good fit, which frees new parts for training.' },
+    emb: { s: { V100: 70, A100: 85, H100: 55, H200: 45, B200: 30, MI300X: 50 }, t: '<b>Embedding and reranking</b> models are small and need high QPS. Older GPUs, partitioned with MIG or MPS (deck 08), give the best cost per query.' },
+  };
+  Deck.seg('wSeg', v => {
+    const w = W[v];
+    Deck.hbars(document.getElementById('wBars'), names.map(n => ({ label: n, value: w.s[n], color: w.s[n] >= 80 ? 'var(--e)' : w.s[n] >= 50 ? 'var(--a)' : 'var(--faint)', text: w.s[n] + ' / 100' })), { max: 100 });
+    document.getElementById('wInfo').innerHTML = w.t;
+  });
+})();
+</script>
+</body>
+</html>

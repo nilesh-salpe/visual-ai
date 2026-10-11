@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPU Failures at Scale</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<style>
+  .xid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .xid button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 6px 10px; cursor: pointer; font: 600 13px 'JetBrains Mono', monospace; }
+  .xid button.on { background: var(--a-soft); border-color: var(--a); color: var(--a); }
+  .xid button[data-sev="hw"] { border-left: 4px solid var(--d); }
+  .xid button[data-sev="sw"] { border-left: 4px solid var(--b); }
+  .xid button[data-sev="mixed"] { border-left: 4px solid var(--c); }
+  .infobox { min-height: 90px; background: var(--panel-2); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--muted); margin-top: 12px; }
+  .infobox b { color: var(--ink); }
+  .toggles { display: flex; flex-wrap: wrap; gap: 8px; }
+  .toggles label { display: flex; align-items: center; gap: 6px; font-size: 14px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; background: var(--panel); }
+  .toggles input { accent-color: var(--a); }
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .flow .card { position: relative; }
+  @media (max-width: 820px) { .flow { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body data-deck="GPU failures" data-home="../index.html" data-home-label="GPU">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">GPU for GenAI · 06</div>
+    <h1>GPU failures:<br>at scale they are routine</h1>
+    <p class="sub">With 16,000 GPUs, something breaks every few hours. The question is how quickly you notice, how much work you lose and how fast you resume. This deck covers failure rates, failure types, why a single fault stops the whole job, checkpointing maths, and silent data corruption.</p>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Press <kbd>→</kbd> or <kbd>Space</kbd> to begin.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-llama" data-chapter="The data">
+  <div class="inner">
+    <div class="label">01 · The data</div>
+    <h2>Llama 3 405B: 419 unexpected interruptions in 54 days</h2>
+    <hr>
+    <div class="grid4">
+      <div class="stat"><div class="num">16,384</div><div class="lbl">H100 GPUs</div></div>
+      <div class="stat"><div class="num" style="color:var(--d)">~3 h</div><div class="lbl">mean time between interruptions</div></div>
+      <div class="stat"><div class="num">~78%</div><div class="lbl">confirmed or suspected hardware</div></div>
+      <div class="stat"><div class="num" style="color:var(--e)">&gt;90%</div><div class="lbl">effective training time</div></div>
+    </div>
+    <div class="visual">
+      <div class="seg" id="llSeg"><button data-v="all" class="on">All causes</button><button data-v="gpu">GPU-related only</button></div>
+      <div id="llBars" style="margin-top:14px"></div>
+    </div>
+    <p class="caption">Counts of unexpected interruptions by root cause. A further 47 interruptions were planned (466 in total). Only 3 needed significant manual intervention; automation handled the rest.</p>
+    <div class="takeaway">The GPU itself (faulty GPU, HBM3, SRAM, the GSP system processor and thermal issues) accounts for more than half of all interruptions. Plan as though hardware will fail during the run.</div>
+    <div class="cite">Llama Team, "The Llama 3 Herd of Models" (2024), Table 5. The paper lists Faulty GPU as 30.1% next to a count of 148; the counts are shown here.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-mtbf" data-chapter="The data">
+  <div class="inner">
+    <div class="label">02 · The data</div>
+    <h2>Cluster MTBF = per-GPU MTBF ÷ number of GPUs</h2>
+    <hr>
+    <p class="lede">Each H100 is quite reliable: the Llama 3 data implies about <b>50,000 hours</b> (roughly 6 years) between interruptions per GPU. But the job is only as reliable as the <em>product</em> of all its components, so the failure rate grows with the size of the cluster.</p>
+    <div class="visual">
+      <label class="ctl">GPUs in job <input type="range" id="mN" min="3" max="17" step="0.25" value="14"> <output id="mNo"></output></label>
+      <div class="grid3" style="margin-top:14px">
+        <div class="stat"><div class="num" id="mM" style="color:var(--d)"></div><div class="lbl">expected time between failures</div></div>
+        <div class="stat"><div class="num" id="mDay"></div><div class="lbl">failures per day</div></div>
+        <div class="stat"><div class="num" id="mP"></div><div class="lbl">chance a 24 h run has no failure</div></div>
+      </div>
+      <svg id="mSvg" viewBox="0 0 660 230" style="margin-top:12px" role="img" aria-label="MTBF vs cluster size"></svg>
+    </div>
+    <p class="caption">Assumes the Llama 3 rate (419 interruptions ÷ 54 days ÷ 16,384 GPUs ≈ 2×10⁻⁵ per GPU-hour) and independent failures. Real rates depend on hardware age (burn-in failures early, wear-out late), temperature and firmware.</p>
+    <div class="takeaway">At 100K GPUs you should expect a failure about every 30 minutes. Recovery has to be <b>automatic and fast</b>; paging an engineer each time doesn't scale.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-xid" data-chapter="Failure types">
+  <div class="inner">
+    <div class="label">03 · Failure types</div>
+    <h2>Reading the signals: Xid errors and other failure modes</h2>
+    <hr>
+    <p class="lede">The NVIDIA driver logs <b>Xid</b> events to the kernel log (<code>dmesg</code>). Some point to your code, some to the hardware. Click one.</p>
+    <div class="visual">
+      <div class="xid" id="xidBtns"></div>
+      <div class="infobox" id="xidInfo"></div>
+      <div class="legend"><span><i style="background:var(--d)"></i>usually hardware: drain the node</span><span><i style="background:var(--c)"></i>could be either</span><span><i style="background:var(--b)"></i>usually software / application</span></div>
+    </div>
+    <div class="grid4" style="margin-top:14px">
+      <div class="card d"><h3>Fail-stop</h3><p>GPU off the bus, uncorrectable ECC, node crash. Loud and easy to detect.</p></div>
+      <div class="card c"><h3>Network</h3><p>Link flaps, bad optics or cables, switch reboots. They show up as NCCL timeouts or hangs.</p></div>
+      <div class="card b"><h3>Fail-slow</h3><p>Thermal throttling, degraded links, a slow host. No error at all, just a slower job.</p></div>
+      <div class="card a"><h3>Silent (SDC)</h3><p>The arithmetic is wrong and nothing reports an error. The hardest to detect (slide 08).</p></div>
+    </div>
+    <div class="cite">NVIDIA "XID Errors" documentation. Exact meanings vary by driver version; always confirm with <code>nvidia-smi -q</code> and DCGM.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-blast" data-chapter="Blast radius">
+  <div class="inner">
+    <div class="label">04 · Blast radius</div>
+    <h2>Why one dead GPU stops 16,383 healthy ones</h2>
+    <hr>
+    <p class="lede">Synchronous training is a chain of collectives. If one rank stops contributing, every other rank <b>waits inside the all-reduce</b> until a watchdog times out. The job then has to tear down, swap the bad node and restart from the last checkpoint.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><button class="btn primary" id="bKill">Kill rank 5</button><button class="btn" id="bReset">Reset</button><span class="readout" id="bState"></span></div>
+      <svg id="bSvg" viewBox="0 0 660 250" style="margin-top:10px" role="img" aria-label="Ranks waiting on a collective"></svg>
+    </div>
+    <div class="takeaway">The cost of a failure = time to detect + time to restart + <b>work lost since the last checkpoint</b>, multiplied by every GPU in the job. A 10-minute NCCL timeout on 16K GPUs wastes about 2,700 GPU-hours before anything has even been diagnosed.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-strag" data-chapter="Blast radius">
+  <div class="inner">
+    <div class="label">05 · Blast radius</div>
+    <h2>Stragglers: a slow GPU is worse than a dead one</h2>
+    <hr>
+    <p class="lede">A dead GPU triggers a restart. A GPU that is <em>20% slow</em> (thermal throttling, a degraded NVLink, a noisy neighbour on the host) quietly slows <b>every step</b> of the job, and nothing raises an alarm.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Straggler slowdown <input type="range" id="sS" min="0" max="60" step="1" value="20"> <output id="sSo"></output></label>
+        <label class="ctl">Per-rank jitter <input type="range" id="sJ" min="0" max="15" step="1" value="3"> <output id="sJo"></output></label>
+      </div>
+      <svg id="sSvg" viewBox="0 0 660 240" style="margin-top:10px" role="img" aria-label="Per-rank step times"></svg>
+      <div class="grid3">
+        <div class="stat"><div class="num" id="sStep"></div><div class="lbl">step time (= slowest rank)</div></div>
+        <div class="stat"><div class="num" id="sEff" style="color:var(--d)"></div><div class="lbl">job efficiency</div></div>
+        <div class="stat"><div class="num" id="sCost"></div><div class="lbl">GPU-hours wasted per day (16K GPUs)</div></div>
+      </div>
+    </div>
+    <div class="takeaway">Detect stragglers by timing each rank's compute and communication, for example with the NCCL flight recorder, per-rank step-time histograms, or comparing a rank's GEMM TFLOPS with its peers. Then evict the slow node like a dead one.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-ckpt" data-chapter="Recovery">
+  <div class="inner">
+    <div class="label">06 · Recovery</div>
+    <h2>Checkpoint interval: frequent saves vs. lost work</h2>
+    <hr>
+    <p class="lede">Checkpointing often means more time spent saving. Checkpointing rarely means more work lost per failure. The optimum is about <code>τ* ≈ √(2 · δ · MTBF)</code> (Young/Daly), where δ is the time the training loop is blocked while saving.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Cluster MTBF <input type="range" id="cM" min="0.25" max="24" step="0.25" value="3"> <output id="cMo"></output></label>
+        <label class="ctl">Checkpoint stall δ <input type="range" id="cD" min="0.5" max="20" step="0.5" value="5"> <output id="cDo"></output></label>
+        <label class="ctl">Restart cost R <input type="range" id="cR" min="1" max="60" step="1" value="20"> <output id="cRo"></output></label>
+        <label class="ctl">Interval τ <input type="range" id="cT" min="5" max="360" step="5" value="120"> <output id="cTo"></output></label>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <svg id="cSvg" viewBox="0 0 360 220" role="img" aria-label="Goodput vs checkpoint interval"></svg>
+        <div>
+          <div class="grid2">
+            <div class="stat"><div class="num" id="cG" style="color:var(--a)"></div><div class="lbl">goodput at your τ</div></div>
+            <div class="stat"><div class="num" id="cOpt" style="color:var(--e)"></div><div class="lbl">optimal τ* (goodput)</div></div>
+          </div>
+          <h3 style="margin-top:14px">Simulated 24 hours</h3>
+          <svg id="cTl" viewBox="0 0 360 80" role="img" aria-label="Simulated timeline"></svg>
+          <div class="legend"><span><i style="background:var(--a)"></i>useful</span><span><i style="background:var(--c)"></i>checkpoint stall</span><span><i style="background:var(--d)"></i>lost work</span><span><i style="background:var(--faint)"></i>restart</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="takeaway">Lowering δ is what moves the curve, and <b>async checkpointing</b> does that: snapshot the state to CPU memory in seconds, then write it to storage in the background. Then you can checkpoint every few minutes.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-fast" data-chapter="Recovery">
+  <div class="inner">
+    <div class="label">07 · Recovery</div>
+    <h2>Making each failure cheap</h2>
+    <hr>
+    <p class="lede">Turn on each technique to see what it removes from the time lost per failure. The cluster is 16K GPUs with a failure about every 3 hours.</p>
+    <div class="visual">
+      <div class="toggles" id="fxT">
+        <label><input type="checkbox" data-k="hb"> Fast detection (heartbeats, not a 10-min timeout)</label>
+        <label><input type="checkbox" data-k="spare"> Hot spare nodes</label>
+        <label><input type="checkbox" data-k="mem"> In-memory / peer checkpoints</label>
+        <label><input type="checkbox" data-k="async"> Async checkpoints every 10 min (vs. hourly)</label>
+        <label><input type="checkbox" data-k="warm"> Warm restart (keep processes, skip re-init)</label>
+      </div>
+      <svg id="fxSvg" viewBox="0 0 660 120" style="margin-top:14px" role="img" aria-label="Recovery breakdown"></svg>
+      <div class="legend"><span><i style="background:var(--b)"></i>detect</span><span><i style="background:var(--faint)"></i>replace node / reschedule</span><span><i style="background:var(--c)"></i>re-init + load checkpoint</span><span><i style="background:var(--d)"></i>recompute lost work</span></div>
+      <div class="grid3" style="margin-top:10px">
+        <div class="stat"><div class="num" id="fxPer"></div><div class="lbl">lost per failure</div></div>
+        <div class="stat"><div class="num" id="fxDay" style="color:var(--d)"></div><div class="lbl">GPU-hours lost per day</div></div>
+        <div class="stat"><div class="num" id="fxGood" style="color:var(--e)"></div><div class="lbl">effective training time</div></div>
+      </div>
+    </div>
+    <div class="takeaway">Labs build all of this: health-check daemons, spare pools, in-memory checkpoint replication (for example Gemini-style or ByteDance-style systems), and elastic or partial restarts. Llama 3 reached more than 90% effective training time with automation.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-sdc" data-chapter="Silent errors">
+  <div class="inner">
+    <div class="label">08 · Silent errors</div>
+    <h2>Silent data corruption: the GPU gives a wrong answer and reports nothing</h2>
+    <hr>
+    <p class="lede">A defective ALU, a marginal voltage or an aging part can flip bits in a computation without triggering ECC. Training continues on bad numbers. Sometimes the loss spikes; sometimes the model just gets subtly worse.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><button class="btn primary" id="sdcGo">Inject SDC at step 600</button><button class="btn" id="sdcReset">Reset</button>
+        <label class="ctl">Detector threshold (σ) <input type="range" id="sdcZ" min="2" max="8" step="0.5" value="4"> <output id="sdcZo"></output></label></div>
+      <svg id="sdcSvg" viewBox="0 0 660 230" style="margin-top:10px" role="img" aria-label="Loss curve with SDC"></svg>
+      <p class="readout" id="sdcOut"></p>
+    </div>
+    <div class="grid4" style="margin-top:12px">
+      <div class="card a"><h3>Loss / grad-norm monitors</h3><p>Flag spikes against a rolling z-score, then roll back and skip the batch.</p></div>
+      <div class="card c"><h3>Cross-replica checks</h3><p>DP replicas should hold identical weights. Compare checksums periodically.</p></div>
+      <div class="card b"><h3>Deterministic replay</h3><p>Re-run the suspicious step on other hardware and diff the results.</p></div>
+      <div class="card e"><h3>Known-answer tests</h3><p>Periodic GEMM tests with known answers, run during the job or in preflight.</p></div>
+    </div>
+    <div class="cite">Meta, "Detecting silent errors in the wild" (2022); Google, "Cores that don't count" (HotOS 2021). Llama 3 attributed 6 of 419 interruptions to SDC.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-ops" data-chapter="Silent errors">
+  <div class="inner">
+    <div class="label">09 · Operations</div>
+    <h2>The node lifecycle in a well-run cluster</h2>
+    <hr>
+    <div class="flow">
+      <div class="card e"><h3>1 · Burn-in</h3><p>New nodes run multi-day stress tests (GEMM, HBM, NVLink, NCCL) to catch early failures before they join production.</p></div>
+      <div class="card a"><h3>2 · Preflight</h3><p>Before each job: <code>dcgmi diag</code>, an NCCL all-reduce check against expected busbw, a GEMM TFLOPS check, and ECC / row-remap counters.</p></div>
+      <div class="card b"><h3>3 · In-job monitoring</h3><p>Xid watchers, per-rank step-time telemetry, NIC counters, temperature and clocks. Automatic cordon on anomalies.</p></div>
+      <div class="card d"><h3>4 · Quarantine / RMA</h3><p>Failing nodes are drained, re-tested, repaired or sent back to the vendor. A node returns only after it passes burn-in again.</p></div>
+    </div>
+    <div class="takeaway">"How would you design fault tolerance for a 10K-GPU training job?" Cover five layers: <b>prevent</b> (burn-in, preflight), <b>detect</b> (fast, per-rank), <b>contain</b> (cordon, spares), <b>recover</b> (async and in-memory checkpoints, warm restart), <b>verify</b> (SDC checks).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-qa" data-chapter="Interview">
+  <div class="inner">
+    <div class="label">10 · Interview</div>
+    <h2>Questions you'll get</h2>
+    <hr>
+    <details class="qa"><summary>Your 4K-GPU job hangs at step 30,000 with no error. How do you debug it?</summary><div class="ans">A hang means some rank isn't entering, or isn't finishing, a collective. Steps: (1) Use the <b>NCCL flight recorder</b> or dumps to see which collective each rank is stuck in and which rank is missing. (2) Use <code>py-spy dump</code> on the stuck ranks for the Python stack. (3) Check that node's <code>dmesg</code> for Xid errors, NIC and link counters, and thermal throttling. (4) Look for a code-level cause, such as data-dependent control flow making ranks issue collectives in different orders. Then cordon the node and restart from checkpoint, with a shorter watchdog timeout in future.</div></details>
+    <details class="qa"><summary>How often should you checkpoint a 16K-GPU run?</summary><div class="ans">Use Young/Daly: τ* ≈ √(2δM). With an MTBF of about 3 h and a 5-minute blocking checkpoint, τ* ≈ √(2 × 5 × 180) ≈ 42 minutes. With async checkpointing the stall drops to about 10–30 s, which gives τ* ≈ 10 minutes and much less lost work. Also check storage bandwidth: a 405B model with optimizer state is about 6 TB, so how fast you can write it (and spreading the writes across ranks) matters.</div></details>
+    <details class="qa"><summary>What's the difference between fail-stop, fail-slow and silent failures?</summary><div class="ans"><b>Fail-stop</b>: the component dies and reports an error (Xid 79, uncorrectable ECC), so it's easy to detect and the response is restart. <b>Fail-slow</b>: it works, but degraded (throttling, link down-training), so the whole synchronous job slows and you need per-rank telemetry to find it. <b>Silent</b> (SDC): wrong results with no error. You need numerical monitors, cross-replica checksums and replay. Many teams consider SDC the most dangerous because it can damage the model without anyone noticing.</div></details>
+    <details class="qa"><summary>Why not just make training asynchronous so failures don't block everyone?</summary><div class="ans">Asynchronous or stale-gradient SGD hurts convergence and reproducibility at LLM scale. Synchronous data parallelism with large batches is the proven approach. The industry made synchronous training <em>resilient</em> instead: fast detection, hot spares and cheap checkpoints. There is research on elastic and partial-failure-tolerant training (for example dropping a DP replica for a few steps), but it isn't yet the default.</div></details>
+  </div>
+</section>
+
+<section class="slide" id="s-end" data-chapter="Interview">
+  <div class="inner">
+    <div class="label">11 · Take it with you</div>
+    <h2>Four things to remember</h2>
+    <hr>
+    <div class="recap">
+      <div><span><b>Failures scale linearly with GPU count.</b> At 16K H100s, expect one about every 3 hours, mostly from the GPU and HBM.</span></div>
+      <div><span><b>One fault stops the whole synchronous job</b>, and stragglers slow every step without raising an error.</span></div>
+      <div><span><b>Optimal checkpoint interval ≈ √(2δ·MTBF).</b> Async and in-memory checkpoints reduce δ, and the lost work along with it.</span></div>
+      <div><span><b>Prevent, detect, contain, recover, verify</b>, with SDC as the silent risk that needs active checks.</span></div>
+    </div>
+    <p class="start-hint">Next: <a href="../07-heterogeneous-gpus/index.html">07 · Heterogeneous GPUs →</a> · Previous: <a href="../05-cluster-topology/index.html">← 05</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+
+  /* Llama table */
+  const L3 = [
+    ['Faulty GPU', 148, 1], ['GPU HBM3 memory', 72, 1], ['Software bug', 54, 0], ['Network switch / cable', 35, 0],
+    ['Host maintenance', 32, 0], ['GPU SRAM memory', 19, 1], ['GPU system processor', 17, 1], ['NIC', 7, 0],
+    ['NCCL watchdog timeouts', 7, 0], ['Silent data corruption', 6, 1], ['GPU thermal / sensor', 6, 1], ['SSD', 3, 0],
+    ['Power supply', 3, 0], ['Other (chassis, CPU, DRAM, …)', 10, 0],
+  ];
+  Deck.seg('llSeg', v => {
+    const rows = L3.filter(r => v === 'all' || r[2]);
+    Deck.hbars(document.getElementById('llBars'), rows.map(r => ({ label: r[0], value: r[1], color: r[2] ? 'var(--d)' : 'var(--faint)', text: `${r[1]} · ${(100 * r[1] / 419).toFixed(1)}%` })), { max: 150 });
+  });
+
+  /* MTBF */
+  const LAMBDA = 419 / (54 * 24) / 16384;
+  Deck.bind(['mN'], () => {
+    const N = Math.round(Math.pow(2, Deck.val('mN')));
+    Deck.out('mNo', N.toLocaleString());
+    const M = 1 / (LAMBDA * N);
+    Deck.out('mM', M >= 48 ? (M / 24).toFixed(1) + ' days' : M >= 1 ? M.toFixed(1) + ' h' : (M * 60).toFixed(0) + ' min');
+    Deck.out('mDay', (24 / M).toFixed(24 / M < 1 ? 2 : 1));
+    const p = Math.exp(-24 / M);
+    Deck.out('mP', p < 0.001 ? '≈ 0%' : (100 * p).toFixed(p > .1 ? 0 : 1) + '%');
+    const s = clear(document.getElementById('mSvg'));
+    const L = 70, R = 640, T = 10, B = 190;
+    const X = n => L + (Math.log2(n) - 3) / 14 * (R - L);
+    const Y = h => B - (Math.log10(h) + 1) / 5 * (B - T);
+    [[0.1, '6 min'], [1, '1 h'], [10, '10 h'], [100, '4 days'], [1000, '6 wks']].forEach(([h, t]) => {
+      svg('line', { x1: L, x2: R, y1: Y(h), y2: Y(h), class: 'ln' }, s);
+      svg('text', { x: L - 6, y: Y(h) + 4, 'text-anchor': 'end', class: 'tm tc', style: 'font-size:10px', text: t }, s);
+    });
+    [8, 64, 512, 4096, 32768, 131072].forEach(n => svg('text', { x: X(n), y: B + 16, 'text-anchor': 'middle', class: 'tm tc', style: 'font-size:10px', text: fmt(n, 0) }, s));
+    svg('text', { x: (L + R) / 2, y: B + 34, 'text-anchor': 'middle', class: 'tm', text: 'GPUs in the job' }, s);
+    let pts = '';
+    for (let n = 8; n <= 131072; n *= 1.2) pts += `${X(n)},${Y(Math.min(5000, 1 / (LAMBDA * n)))} `;
+    svg('polyline', { points: pts, fill: 'none', style: 'stroke:var(--d);stroke-width:3' }, s);
+    svg('circle', { cx: X(16384), cy: Y(1 / (LAMBDA * 16384)), r: 5, style: 'fill:var(--faint)' }, s);
+    svg('text', { x: X(16384) + 8, y: Y(1 / (LAMBDA * 16384)) - 8, class: 'tm', style: 'font-size:11px', text: 'Llama 3 405B' }, s);
+    svg('circle', { cx: X(N), cy: Y(Math.min(5000, M)), r: 8, style: 'fill:var(--d);stroke:var(--panel);stroke-width:2' }, s);
+  });
+
+  /* Xid */
+  const XID = [
+    ['13', 'sw', 'Graphics engine exception', 'Usually an <b>application bug</b>, such as an out-of-bounds access in a kernel. If it repeats on one GPU across different jobs, suspect the hardware.'],
+    ['31', 'sw', 'GPU memory page fault (MMU)', 'An illegal address was accessed. Almost always an <b>application or driver bug</b> (bad pointer, use-after-free in custom kernels).'],
+    ['43', 'sw', 'GPU stopped processing', 'Usually follows a user-application fault. The context is killed and the GPU itself stays healthy.'],
+    ['48', 'hw', 'Double-bit ECC error (DBE)', '<b>Uncorrectable memory error.</b> The application is killed. Reset the GPU so the bad row is remapped, and RMA it if the errors recur.'],
+    ['63 / 64', 'hw', 'Row remapping event / failure', 'HBM rows are being retired and remapped to spare rows. <b>64 = remapping failed</b> (no spare rows left), so pull the GPU for RMA.'],
+    ['74', 'mixed', 'NVLink error', 'A link-level error between a GPU and NVSwitch. A one-off can be cleared by a reset; repeated errors mean a bad link or baseboard.'],
+    ['79', 'hw', 'GPU has fallen off the bus', '<b>The GPU stopped responding on PCIe.</b> Severe (power, thermal or hardware). Drain the node, power-cycle it and run diagnostics.'],
+    ['94 / 95', 'hw', 'Contained / uncontained ECC error', '94: the error was contained to one application, which is killed, and the GPU keeps working. <b>95: uncontained, so the GPU must be reset</b> and every process on it is affected.'],
+    ['119 / 120', 'mixed', 'GSP timeout / error', 'The GPU System Processor (on-chip firmware controller) didn\'t respond. Often fixed by a reset or a driver/firmware update; recurring on one GPU means hardware.'],
+  ];
+  const xb = document.getElementById('xidBtns');
+  xb.innerHTML = XID.map((x, i) => `<button data-i="${i}" data-sev="${x[1]}">Xid ${x[0]}</button>`).join('');
+  const pickX = i => {
+    const x = XID[i];
+    Deck.$$('button', xb).forEach(b => b.classList.toggle('on', +b.dataset.i === i));
+    document.getElementById('xidInfo').innerHTML = `<b>Xid ${x[0]}: ${x[2]}</b><br>${x[3]}`;
+  };
+  xb.addEventListener('click', e => { const b = e.target.closest('button'); if (b) pickX(+b.dataset.i); });
+  pickX(6);
+
+  /* blast radius */
+  let killed = false, killT = 0;
+  const drawBlast = t => {
+    const s = clear(document.getElementById('bSvg'));
+    const n = 8, cx = 330, cy = 120, r = 90;
+    svg('circle', { cx, cy, r: 30, style: 'fill:var(--panel-2);stroke:var(--line)' }, s);
+    svg('text', { x: cx, y: cy - 2, 'text-anchor': 'middle', class: 't', style: 'font-size:11px;font-weight:600', text: 'all-reduce' }, s);
+    svg('text', { x: cx, y: cy + 13, 'text-anchor': 'middle', class: 'tm', style: 'font-size:10px', text: killed ? 'waiting…' : 'step ' + Math.floor(t * 2) }, s);
+    const el = killed ? t - killT : 0, timeout = 6;
+    for (let i = 0; i < n; i++) {
+      const a = i / n * Math.PI * 2 - Math.PI / 2, x = cx + Math.cos(a) * r * 1.6, y = cy + Math.sin(a) * r;
+      const dead = killed && i === 5, aborted = killed && el > timeout;
+      const pulse = !killed ? (Math.sin(t * 6 + i) > 0) : false;
+      svg('line', { x1: x, y1: y, x2: cx + Math.cos(a) * 30, y2: cy + Math.sin(a) * 30, style: `stroke:${dead ? 'var(--d)' : killed ? 'var(--b)' : 'var(--a)'};stroke-width:${pulse ? 4 : 2};stroke-dasharray:${dead ? '4 4' : 'none'}` }, s);
+      svg('rect', { x: x - 34, y: y - 18, width: 68, height: 36, rx: 7, style: `fill:${dead ? 'var(--d)' : aborted ? 'var(--faint)' : killed ? 'var(--b)' : 'var(--a)'}` }, s);
+      svg('text', { x, y: y + 4, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11.5px;font-weight:600', text: dead ? '✕ rank 5' : aborted ? 'aborted' : killed ? 'blocked' : 'rank ' + i }, s);
+    }
+    if (killed) {
+      const w = Math.min(1, el / timeout) * 300;
+      svg('rect', { x: 180, y: 232, width: 300, height: 10, rx: 5, class: 'f-panel' }, s);
+      svg('rect', { x: 180, y: 232, width: w, height: 10, rx: 5, style: `fill:${el > timeout ? 'var(--d)' : 'var(--b)'}` }, s);
+      svg('text', { x: 172, y: 241, 'text-anchor': 'end', class: 'tm', style: 'font-size:10.5px', text: 'watchdog' }, s);
+      Deck.out('bState', el > timeout ? '⏱ Timeout: whole job aborts → cordon node → restart from checkpoint' : '7 healthy ranks idle, waiting for rank 5 …');
+    } else Deck.out('bState', 'Healthy: every rank joins every all-reduce');
+  };
+  Deck.enter('s-blast', () => {
+    let tt = 0;
+    document.getElementById('bKill').onclick = () => { if (!killed) { killed = true; killT = tt; } };
+    document.getElementById('bReset').onclick = () => { killed = false; };
+    return Deck.loop(t => { tt = t; drawBlast(t); });
+  });
+  drawBlast(0);
+
+  /* stragglers */
+  Deck.bind(['sS', 'sJ'], () => {
+    const slow = Deck.val('sS') / 100, jit = Deck.val('sJ') / 100;
+    Deck.out('sSo', '+' + (slow * 100).toFixed(0) + '%'); Deck.out('sJo', '±' + (jit * 100).toFixed(0) + '%');
+    const r = rng(7), n = 32, base = 1.0;
+    const t = [...Array(n)].map((_, i) => base * (1 + (r() * 2 - 1) * jit) * (i === 19 ? 1 + slow : 1));
+    const mx = Math.max(...t), mean = t.reduce((a, b) => a + b, 0) / n;
+    const s = clear(document.getElementById('sSvg'));
+    const L = 40, W = 610, B = 200, H = 170, sc = H / 1.7;
+    t.forEach((v, i) => {
+      const x = L + i * (W / n);
+      svg('rect', { x, y: B - v * sc, width: W / n - 3, height: v * sc, style: `fill:${v === mx ? 'var(--d)' : 'var(--a)'};opacity:${v === mx ? 1 : .75}` }, s);
+      svg('rect', { x, y: B - mx * sc, width: W / n - 3, height: (mx - v) * sc, style: 'fill:var(--d-soft)' }, s);
+    });
+    svg('line', { x1: L, x2: L + W, y1: B - mx * sc, y2: B - mx * sc, style: 'stroke:var(--d);stroke-dasharray:5 4;stroke-width:2' }, s);
+    svg('text', { x: L + W, y: B - mx * sc - 6, 'text-anchor': 'end', class: 't', style: 'fill:var(--d);font-size:11px;font-weight:600', text: 'everyone waits until here' }, s);
+    svg('text', { x: L + W / 2, y: B + 18, 'text-anchor': 'middle', class: 'tm', text: 'ranks (shaded = idle waiting at the collective)' }, s);
+    Deck.out('sStep', (mx / base).toFixed(2) + '×');
+    const eff = mean / mx;
+    Deck.out('sEff', (eff * 100).toFixed(0) + '%');
+    Deck.out('sCost', fmt(16384 * 24 * (1 - eff), 0));
+  });
+
+  /* checkpoint */
+  Deck.bind(['cM', 'cD', 'cR', 'cT'], () => {
+    const M = Deck.val('cM') * 60, d = Deck.val('cD'), R = Deck.val('cR'), tau = Deck.val('cT');
+    Deck.out('cMo', Deck.val('cM') + ' h'); Deck.out('cDo', d + ' min'); Deck.out('cRo', R + ' min'); Deck.out('cTo', tau + ' min');
+    const good = x => Math.max(0, (x / (x + d)) * (1 - (R + (x + d) / 2) / M));
+    let best = 5; for (let x = 1; x <= 600; x += 0.5) if (good(x) > good(best)) best = x;
+    Deck.out('cG', (100 * good(tau)).toFixed(1) + '%');
+    Deck.out('cOpt', `${best.toFixed(0)} min · ${(100 * good(best)).toFixed(1)}%`);
+    const s = clear(document.getElementById('cSvg'));
+    const L = 40, Rr = 350, T = 10, B = 180, X = x => L + x / 360 * (Rr - L), Y = g => B - g * (B - T);
+    [0, .25, .5, .75, 1].forEach(g => { svg('line', { x1: L, x2: Rr, y1: Y(g), y2: Y(g), class: 'ln' }, s); svg('text', { x: L - 4, y: Y(g) + 4, 'text-anchor': 'end', class: 'tm tc', style: 'font-size:9.5px', text: (g * 100) + '%' }, s); });
+    [0, 60, 120, 180, 240, 300, 360].forEach(x => svg('text', { x: X(x), y: B + 14, 'text-anchor': 'middle', class: 'tm tc', style: 'font-size:9.5px', text: x }, s));
+    svg('text', { x: (L + Rr) / 2, y: B + 30, 'text-anchor': 'middle', class: 'tm', style: 'font-size:10.5px', text: 'checkpoint interval τ (min)' }, s);
+    let pts = ''; for (let x = 2; x <= 360; x += 2) pts += `${X(x)},${Y(good(x))} `;
+    svg('polyline', { points: pts, fill: 'none', style: 'stroke:var(--a);stroke-width:2.5' }, s);
+    svg('line', { x1: X(best), x2: X(best), y1: T, y2: B, style: 'stroke:var(--e);stroke-dasharray:4 3' }, s);
+    svg('circle', { cx: X(tau), cy: Y(good(tau)), r: 6, style: 'fill:var(--a);stroke:var(--panel);stroke-width:2' }, s);
+    // timeline simulation
+    const tl = clear(document.getElementById('cTl')), r = rng(42), DAY = 1440, sx = 350 / DAY;
+    let t = 0, lastCk = 0, nextFail = -Math.log(1 - r()) * M, sinceCk = 0;
+    const seg = (a, b, c) => svg('rect', { x: 5 + a * sx, y: 14, width: Math.max(.4, (b - a) * sx), height: 36, style: `fill:${c}` }, tl);
+    let fails = 0;
+    while (t < DAY) {
+      const nextCk = t + (tau - sinceCk);
+      if (nextFail < nextCk && nextFail < DAY) {
+        seg(t, nextFail, 'var(--a)');
+        const lostStart = nextFail - (sinceCk + (nextFail - t));
+        seg(Math.max(0, lostStart), nextFail, 'var(--d)');
+        seg(nextFail, Math.min(DAY, nextFail + R), 'var(--faint)');
+        t = nextFail + R; sinceCk = 0; fails++;
+        nextFail = t - Math.log(1 - r()) * M;
+      } else {
+        const end = Math.min(DAY, nextCk);
+        seg(t, end, 'var(--a)'); if (end >= DAY) break;
+        seg(end, Math.min(DAY, end + d), 'var(--c)');
+        t = end + d; sinceCk = 0;
+        if (nextFail < t) { nextFail = t - Math.log(1 - r()) * M; }
+      }
+    }
+    svg('text', { x: 5, y: 68, class: 'tm', style: 'font-size:10px', text: `0 h` }, tl);
+    svg('text', { x: 355, y: 68, 'text-anchor': 'end', class: 'tm', style: 'font-size:10px', text: `24 h · ${fails} failures` }, tl);
+  });
+
+  /* fast recovery */
+  const fx = () => {
+    const on = {}; Deck.$$('#fxT input').forEach(i => on[i.dataset.k] = i.checked);
+    const parts = [
+      ['detect', on.hb ? 1 : 10, 'var(--b)'],
+      ['replace', on.spare ? 3 : 15, 'var(--faint)'],
+      ['load', (on.warm ? 2 : 6) + (on.mem ? 1 : 6), 'var(--c)'],
+      ['recompute', on.async ? 5 : 30, 'var(--d)'],
+    ];
+    const tot = parts.reduce((a, p) => a + p[1], 0);
+    const s = clear(document.getElementById('fxSvg'));
+    const sc = 620 / 80; let x = 20;
+    parts.forEach(([n, v, c]) => {
+      svg('rect', { x, y: 20, width: v * sc, height: 44, style: `fill:${c}` }, s);
+      if (v * sc > 40) svg('text', { x: x + v * sc / 2, y: 47, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11.5px;font-weight:600', text: v + ' min' }, s);
+      x += v * sc;
+    });
+    for (let m = 0; m <= 75; m += 15) svg('text', { x: 20 + m * sc, y: 86, 'text-anchor': 'middle', class: 'tm tc', style: 'font-size:10px', text: m + ' min' }, s);
+    const perDay = 24 / 3, lostH = tot / 60 * perDay;
+    Deck.out('fxPer', tot + ' min');
+    Deck.out('fxDay', fmt(lostH * 16384, 0));
+    Deck.out('fxGood', (100 * (1 - lostH / 24)).toFixed(0) + '%');
+  };
+  Deck.$$('#fxT input').forEach(i => i.addEventListener('change', fx));
+  fx();
+
+  /* SDC */
+  let injected = false;
+  const sdc = () => {
+    const z = Deck.val('sdcZ'); Deck.out('sdcZo', z + 'σ');
+    const r = rng(3), n = 1000, loss = [];
+    for (let i = 0; i < n; i++) {
+      let v = 2.2 + 2.0 * Math.exp(-i / 180) + (r() - .5) * 0.06;
+      if (injected && i >= 600 && i < 606) v += [0.9, 0.5, 0.25, 0.12, 0.06, 0.03][i - 600];
+      if (injected && i >= 606) v += 0.03;
+      loss.push(v);
+    }
+    let flagged = -1;
+    for (let i = 50; i < n; i++) {
+      const w = loss.slice(i - 50, i), m = w.reduce((a, b) => a + b, 0) / 50, sd = Math.sqrt(w.reduce((a, b) => a + (b - m) ** 2, 0) / 50);
+      if ((loss[i] - m) / sd > z) { flagged = i; break; }
+    }
+    const s = clear(document.getElementById('sdcSvg'));
+    const L = 40, R = 650, T = 10, B = 200, X = i => L + i / n * (R - L), Y = v => B - (v - 2) / 2.6 * (B - T);
+    svg('polyline', { points: loss.map((v, i) => `${X(i)},${Y(v)}`).join(' '), fill: 'none', style: 'stroke:var(--a);stroke-width:1.6' }, s);
+    svg('text', { x: (L + R) / 2, y: B + 22, 'text-anchor': 'middle', class: 'tm', text: 'training step' }, s);
+    svg('text', { x: L - 6, y: Y(4) + 4, 'text-anchor': 'end', class: 'tm', style: 'font-size:10px', text: 'loss' }, s);
+    if (injected) svg('line', { x1: X(600), x2: X(600), y1: T, y2: B, style: 'stroke:var(--d);stroke-dasharray:4 3' }, s);
+    const out = document.getElementById('sdcOut');
+    if (!injected) out.innerHTML = 'Clean run. Lower the threshold to see false alarms.';
+    if (flagged >= 0) {
+      svg('circle', { cx: X(flagged), cy: Y(loss[flagged]), r: 8, style: 'fill:none;stroke:var(--d);stroke-width:2.5' }, s);
+      out.innerHTML = injected && flagged >= 600 ? `<span style="color:var(--e)">Detected at step ${flagged}</span> → roll back to the last checkpoint, skip the batch, run a known-answer test on the suspect hosts.`
+        : `<span style="color:var(--b)">False alarm at step ${flagged}</span>: threshold too low, so routine noise triggers a rollback.`;
+    } else if (injected) out.innerHTML = '<span style="color:var(--d)">Not detected</span>: the spike stays below the threshold, and the corruption leaves a small, permanent loss offset.';
+  };
+  document.getElementById('sdcGo').onclick = () => { injected = true; sdc(); };
+  document.getElementById('sdcReset').onclick = () => { injected = false; sdc(); };
+  Deck.bind(['sdcZ'], sdc);
+})();
+</script>
+</body>
+</html>

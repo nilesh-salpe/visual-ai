@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What a GPU Is</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<style>
+  #dieSvg g[data-info], #chipSvg [data-info] { cursor: pointer; }
+  #dieSvg g[data-info]:hover rect, #chipSvg [data-info]:hover { filter: brightness(1.15); }
+  .infobox { min-height: 72px; background: var(--panel-2); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--muted); }
+  .infobox b { color: var(--ink); }
+  .race { display: grid; gap: 10px; margin-top: 8px; }
+  .winner { font: 700 15px 'JetBrains Mono', monospace; }
+  .stack { display: grid; gap: 8px; }
+  .stack .layer { display: grid; grid-template-columns: 180px 1fr; gap: 14px; align-items: center; background: var(--panel-2); border-radius: 10px; padding: 12px 14px; border-left: 4px solid var(--a); }
+  .stack .layer b { font-size: 14px; }
+  .stack .layer span { font-size: 14px; color: var(--muted); }
+  .stack .arrow { text-align: center; color: var(--faint); font-size: 13px; }
+  @media (max-width: 640px) { .stack .layer { grid-template-columns: 1fr; gap: 4px; } }
+</style>
+</head>
+<body data-deck="What a GPU is" data-home="../index.html" data-home-label="GPU">
+
+<!-- 1 · Title -->
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">GPU for GenAI · 01</div>
+    <h1>What a GPU is,<br>and how it thinks</h1>
+    <p class="sub">A CPU is built to finish one task quickly. A GPU is built to finish a huge number of tasks at once. This deck covers the chip, its execution model, and the details interviewers ask about: warps, occupancy, Tensor Cores and wave quantization.</p>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Press <kbd>→</kbd> or <kbd>Space</kbd> to begin.</p>
+  </div>
+</section>
+
+<!-- 2 · Where the transistors go -->
+<section class="slide" id="s-die" data-chapter="Two philosophies">
+  <div class="inner">
+    <div class="label">01 · Two philosophies</div>
+    <h2>Same silicon budget, spent on opposite goals</h2>
+    <hr>
+    <p class="lede">A CPU spends most of its area on making a <em>single</em> thread fast: big caches, branch predictors and out-of-order logic. A GPU spends it on <em>arithmetic units</em>, and keeps just enough control logic to feed them.</p>
+    <div class="visual">
+      <svg id="dieSvg" viewBox="0 0 760 300" role="img" aria-label="CPU and GPU die area comparison"></svg>
+      <div class="infobox" id="dieInfo">Hover or tap a block to see what it does.</div>
+      <div class="legend"><span><i style="background:var(--a)"></i>Arithmetic (ALUs)</span><span><i style="background:var(--b)"></i>Control / scheduling</span><span><i style="background:var(--c)"></i>Cache</span><span><i style="background:var(--faint)"></i>Memory interface</span></div>
+    </div>
+    <p class="caption">Schematic, not to scale. An H100 has 132 active SMs, each with 128 FP32 lanes and 4 Tensor Cores, which comes to roughly 17,000 FP32 lanes. A server CPU has a few dozen cores, each with a 16-lane SIMD unit.</p>
+    <div class="takeaway">A CPU minimizes latency: one thread finishes as fast as possible. A GPU maximizes throughput: the most total work per second, even if each thread is slow.</div>
+  </div>
+</section>
+
+<!-- 3 · Latency vs throughput race -->
+<section class="slide" id="s-race" data-chapter="Two philosophies">
+  <div class="inner">
+    <div class="label">02 · Two philosophies</div>
+    <h2>Small jobs go to the CPU. Big parallel jobs go to the GPU.</h2>
+    <hr>
+    <p class="lede">Every GPU launch has a fixed overhead before any math starts. Drag the slider to change the size of the job and watch where the crossover happens.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Work size (FLOPs) <input type="range" id="raceN" min="3" max="13" step="0.1" value="6"> <output id="raceNo"></output></label>
+      </div>
+      <div class="race" id="raceBars"></div>
+      <p class="winner" id="raceWin"></p>
+    </div>
+    <p class="caption">Illustrative model: CPU at about 4 TFLOPS of FP32 with no launch cost. GPU at about 60 TFLOPS of FP32 (no Tensor Cores) plus about 10 µs of launch and sync overhead. With Tensor Cores the GPU side gets about 15× faster still.</p>
+    <div class="takeaway">This is why small kernels hurt. A transformer step that runs thousands of tiny kernels is limited by launch overhead, not math. CUDA Graphs and <code>torch.compile</code> fusion exist to fix exactly that.</div>
+  </div>
+</section>
+
+<!-- 4 · Anatomy -->
+<section class="slide" id="s-chip" data-chapter="Anatomy">
+  <div class="inner">
+    <div class="label">03 · Anatomy</div>
+    <h2>Inside an H100: GPCs, SMs, L2, and HBM</h2>
+    <hr>
+    <p class="lede">The basic building block is the <b>Streaming Multiprocessor (SM)</b>. SMs are grouped into GPCs, they share one L2 cache, and they read from HBM stacks placed next to the die. Click any part.</p>
+    <div class="grid2">
+      <div class="visual" style="margin-top:0"><svg id="chipSvg" viewBox="0 0 640 380" role="img" aria-label="H100 chip layout"></svg></div>
+      <div class="visual" style="margin-top:0"><svg id="smSvg" viewBox="0 0 400 380" role="img" aria-label="Inside one SM"></svg></div>
+    </div>
+    <div class="infobox" id="chipInfo" style="margin-top:12px"><b>Full GH100 die:</b> 8 GPCs × 9 TPCs × 2 SMs = 144 SMs. The H100 SXM product enables <b>132</b>; the rest are fused off to improve manufacturing yield (shown greyed out).</div>
+    <div class="cite">NVIDIA H100 Tensor Core GPU Architecture whitepaper (2022). Which SMs are disabled varies from chip to chip; the pattern here is illustrative.</div>
+  </div>
+</section>
+
+<!-- 5 · Threads, warps, blocks -->
+<section class="slide" id="s-warps" data-chapter="Programming model">
+  <div class="inner">
+    <div class="label">04 · Programming model</div>
+    <h2>Threads → warps of 32 → blocks → grid</h2>
+    <hr>
+    <p class="lede">You write code for one <b>thread</b>. Threads are grouped into <b>blocks</b>, and each block runs on a single SM. The hardware runs a block as <b>warps</b> of 32 threads that execute in lockstep. Pick a block size and see what the warps look like.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Elements N <input type="range" id="wN" min="100" max="20000" step="100" value="10000"> <output id="wNo"></output></label>
+        <label class="ctl">Threads / block <input type="range" id="wT" min="1" max="1024" step="1" value="200"> <output id="wTo"></output></label>
+      </div>
+      <div class="grid4" style="margin:14px 0">
+        <div class="stat"><div class="num" id="wBlocks"></div><div class="lbl">blocks in grid</div></div>
+        <div class="stat"><div class="num" id="wWarps"></div><div class="lbl">warps per block</div></div>
+        <div class="stat"><div class="num" id="wUtil"></div><div class="lbl">lanes doing work in each block</div></div>
+        <div class="stat"><div class="num" id="wIdle"></div><div class="lbl">idle lanes in last warp</div></div>
+      </div>
+      <svg id="warpSvg" viewBox="0 0 660 220" role="img" aria-label="Warps in one block"></svg>
+      <div class="legend"><span><i style="background:var(--a)"></i>active lane</span><span><i style="background:var(--line)"></i>idle lane (padding)</span></div>
+    </div>
+    <div class="takeaway">Always use block sizes that are multiples of 32, such as 128, 256 or 512. With a size like 200, the last warp of every block leaves lanes idle.</div>
+  </div>
+</section>
+
+<!-- 6 · SIMT divergence -->
+<section class="slide" id="s-div" data-chapter="Programming model">
+  <div class="inner">
+    <div class="label">05 · Programming model</div>
+    <h2>SIMT: one instruction, 32 lanes, and the cost of <code>if</code></h2>
+    <hr>
+    <p class="lede">A warp issues one instruction at a time to all 32 lanes. When lanes take different branches, the warp runs <b>each path in turn</b> with the inactive lanes masked off. This is called divergence.</p>
+    <div class="visual">
+      <div class="seg" id="divSeg">
+        <button data-v="none" class="on">No branch</button>
+        <button data-v="half">if (i % 2)</button>
+        <button data-v="rare">if (i &lt; 4) expensive()</button>
+        <button data-v="four">switch (i % 4)</button>
+      </div>
+      <svg id="divSvg" viewBox="0 0 660 230" style="margin-top:12px" role="img" aria-label="Warp execution passes"></svg>
+      <div class="grid3"><div class="stat"><div class="num" id="divPass"></div><div class="lbl">serialized passes</div></div>
+        <div class="stat"><div class="num" id="divUtil"></div><div class="lbl">lane utilization</div></div>
+        <div class="stat"><div class="num" id="divNote" style="font-size:15px;font-family:Inter"></div><div class="lbl">why</div></div></div>
+    </div>
+    <div class="takeaway">Dense linear algebra rarely branches, which is one reason it suits GPUs so well. Data-dependent control flow, such as MoE routing, sampling or sparse ops, is where divergence and imbalance show up.</div>
+  </div>
+</section>
+
+<!-- 7 · Latency hiding -->
+<section class="slide" id="s-hide" data-chapter="Programming model">
+  <div class="inner">
+    <div class="label">06 · Programming model</div>
+    <h2>GPUs hide memory latency by switching warps</h2>
+    <hr>
+    <p class="lede">A load from HBM takes hundreds of cycles. A CPU covers that wait with big caches and out-of-order execution. A GPU covers it by <b>switching to another warp that is ready to run</b>, which costs no cycles. That only works if enough warps are resident, which is called <b>occupancy</b>.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Resident warps <input type="range" id="hW" min="1" max="16" step="1" value="3"> <output id="hWo"></output></label>
+        <label class="ctl">Memory latency (cycles) <input type="range" id="hL" min="100" max="800" step="20" value="400"> <output id="hLo"></output></label>
+      </div>
+      <svg id="hideSvg" viewBox="0 0 660 300" style="margin-top:12px" role="img" aria-label="Warp scheduling timeline"></svg>
+      <div class="legend"><span><i style="background:var(--a)"></i>issuing math</span><span><i style="background:var(--panel-2);border:1px solid var(--line)"></i>waiting on memory</span><span><i style="background:var(--b)"></i>scheduler busy</span></div>
+      <p class="readout" id="hideOut" style="margin-top:8px"></p>
+    </div>
+    <p class="caption">Model: each warp computes for 40 cycles, then waits <em>L</em> cycles for a load. You need about (40 + L) / 40 warps to keep the scheduler busy. Occupancy is capped by registers (64K 32-bit registers per SM), shared memory per block, and a hard limit of 64 warps per SM.</p>
+    <div class="takeaway">"Why does my kernel use 255 registers per thread and run slowly?" Too many registers per thread means fewer resident warps, and with fewer warps the memory stalls are no longer hidden.</div>
+  </div>
+</section>
+
+<!-- 8 · Tensor cores -->
+<section class="slide" id="s-tc" data-chapter="Tensor Cores">
+  <div class="inner">
+    <div class="label">07 · Tensor Cores</div>
+    <h2>Tensor Cores: hardware that does a matrix multiply in one step</h2>
+    <hr>
+    <p class="lede">A CUDA core does one fused multiply-add per lane per cycle. A Tensor Core does a whole small <b>matrix multiply-accumulate</b>, <code>D = A·B + C</code>, on a tile in a single operation. Almost all of an H100's headline FLOPs come from Tensor Cores.</p>
+    <div class="grid2">
+      <div class="visual" style="margin-top:0">
+        <svg id="mmaSvg" viewBox="0 0 380 220" role="img" aria-label="Matrix multiply accumulate"></svg>
+        <p class="caption" style="margin-top:4px">Each partition of an SM has one Tensor Core; a warp issues an MMA instruction (Hopper adds <code>wgmma</code> across 4 warps) and the tile math happens in hardware.</p>
+      </div>
+      <div class="visual" style="margin-top:0">
+        <div class="seg" id="tcSeg"><button data-v="dense" class="on">Dense</button><button data-v="sparse">2:4 sparse</button></div>
+        <div id="tcBars" style="margin-top:14px"></div>
+        <p class="caption">H100 SXM peak throughput in TFLOPS (TOPS for INT8). Log scale.</p>
+      </div>
+    </div>
+    <div class="takeaway">If your work isn't a matmul in BF16 or FP8, you are using about 7% of the chip. That's why everything in a transformer is arranged around GEMMs.</div>
+    <div class="cite">NVIDIA H100 datasheet (SXM5): FP64 34, FP64 Tensor 67, FP32 67, TF32 Tensor 495, BF16 Tensor 989, FP8 Tensor 1,979, INT8 Tensor 1,979 (dense). The 2:4 structured sparsity numbers are twice these.</div>
+  </div>
+</section>
+
+<!-- 9 · Wave quantization -->
+<section class="slide" id="s-wave" data-chapter="Tensor Cores">
+  <div class="inner">
+    <div class="label">08 · Tensor Cores</div>
+    <h2>A matmul is split into tiles, and the tiles run in waves across 132 SMs</h2>
+    <hr>
+    <p class="lede">A GEMM kernel cuts the output matrix into tiles and gives each tile to one SM (one thread block). If the tile count doesn't divide evenly by 132, the last <b>wave</b> leaves most SMs idle.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">M <input type="range" id="qM" min="128" max="4096" step="128" value="1536"> <output id="qMo"></output></label>
+        <label class="ctl">N <input type="range" id="qN" min="128" max="4096" step="128" value="1536"> <output id="qNo"></output></label>
+        <div class="seg" id="qT"><button data-v="64">tile 64</button><button data-v="128" class="on">tile 128</button><button data-v="256">tile 256</button></div>
+      </div>
+      <div class="grid4" style="margin:14px 0">
+        <div class="stat"><div class="num" id="qTiles"></div><div class="lbl">output tiles</div></div>
+        <div class="stat"><div class="num" id="qWaves"></div><div class="lbl">waves over 132 SMs</div></div>
+        <div class="stat"><div class="num" id="qLast"></div><div class="lbl">SMs busy in last wave</div></div>
+        <div class="stat"><div class="num" id="qEff"></div><div class="lbl">SM utilization</div></div>
+      </div>
+      <svg id="waveSvg" style="max-width:640px;margin:0 auto" viewBox="0 0 660 330" role="img" aria-label="Output tiles colored by wave"></svg>
+      <div class="legend"><span><i style="background:var(--a)"></i>full wave (odd)</span><span><i style="background:var(--c)"></i>full wave (even)</span><span><i style="background:var(--b)"></i>partial last wave</span></div>
+    </div>
+    <div class="takeaway">Try M = N = 1536: that gives 144 tiles, which is 132 + 12, so the chip runs 2 waves and the second one has 120 SMs idle. Choosing dimensions that are multiples of 64 or 128 and fit the SM count can give speedups of 10–40%.</div>
+  </div>
+</section>
+
+<!-- 10 · Software stack -->
+<section class="slide" id="s-stack" data-chapter="Software">
+  <div class="inner">
+    <div class="label">09 · Software</div>
+    <h2>From <code>model(x)</code> to silicon</h2>
+    <hr>
+    <div class="visual stack">
+      <div class="layer"><b>PyTorch / JAX</b><span>The ops in your graph. Eager mode launches each op as its own kernel; <code>torch.compile</code> and XLA fuse ops together.</span></div>
+      <div class="arrow">↓ dispatch</div>
+      <div class="layer" style="border-color:var(--c)"><b>Kernel libraries</b><span>cuBLAS and CUTLASS (GEMMs), cuDNN, FlashAttention, Triton-generated kernels, and NCCL for communication.</span></div>
+      <div class="arrow">↓ launch &lt;&lt;&lt;grid, block&gt;&gt;&gt;</div>
+      <div class="layer" style="border-color:var(--b)"><b>CUDA runtime + driver</b><span>Queues kernels on <b>streams</b>, which run asynchronously. CUDA Graphs record a whole sequence and replay it, avoiding most of the CPU launch overhead.</span></div>
+      <div class="arrow">↓ hardware scheduler</div>
+      <div class="layer" style="border-color:var(--e)"><b>GPU</b><span>The block scheduler assigns thread blocks to SMs; inside each SM, warp schedulers issue instructions to the CUDA cores and Tensor Cores.</span></div>
+    </div>
+    <div class="takeaway">The CPU only enqueues work. If the GPU sits idle between kernels in a profile, the CPU is the bottleneck. The usual fixes are bigger kernels, fusion and CUDA Graphs.</div>
+  </div>
+</section>
+
+<!-- 11 · Questions -->
+<section class="slide" id="s-qa" data-chapter="Interview">
+  <div class="inner">
+    <div class="label">10 · Interview</div>
+    <h2>Questions you'll get</h2>
+    <hr>
+    <details class="qa"><summary>Why does a GPU need tens of thousands of threads in flight?</summary><div class="ans">To <b>hide latency</b>. An HBM access takes hundreds of cycles, and a GPU core has no large caches or out-of-order engine to cover that. Instead, every cycle the warp scheduler picks a warp that is ready to run. With too few resident warps (low occupancy), the units sit idle waiting on memory. By Little's law, the parallelism you need equals latency × throughput.</div></details>
+    <details class="qa"><summary>What is a warp, and why does divergence hurt?</summary><div class="ans">A warp is a group of <b>32 threads that execute one instruction together</b> (SIMT). When threads in a warp take different branches, the paths run one after another with lanes masked off, so utilization drops by the number of distinct paths. Fixes: arrange data so the threads in a warp take the same branch, or use branch-free arithmetic.</div></details>
+    <details class="qa"><summary>A 1536×1536 GEMM gets fewer TFLOPS than a 2048×2048 one. Why?</summary><div class="ans"><b>Wave quantization.</b> With 128×128 tiles there are 144 output tiles. On 132 SMs that means 2 waves, and the second runs only 12 tiles, so about 45% of SM time is wasted. The 2048 case gives 256 tiles, also 2 waves but much better filled. Small matrices also have low arithmetic intensity. Fixes: pad dimensions, use split-K or stream-K kernels, or choose a different tile size.</div></details>
+    <details class="qa"><summary>What's the difference between CUDA cores and Tensor Cores?</summary><div class="ans">CUDA cores are scalar FP32/INT lanes, each doing one FMA per cycle. Tensor Cores are dedicated matrix-multiply-accumulate units working in BF16, FP16, TF32, FP8 and, on Blackwell, FP4. On an H100, BF16 Tensor Core throughput (989 TFLOPS dense) is about <b>15× the FP32 CUDA-core peak</b>. Softmax, layernorm and activation functions run on CUDA cores. That's why fusing them, or overlapping them with GEMMs as FlashAttention-3 does, matters so much.</div></details>
+    <details class="qa"><summary>What limits occupancy, and is higher occupancy always better?</summary><div class="ans">Three things limit it: <b>registers per thread</b> (64K registers per SM, so 128 registers per thread allows at most 512 threads, or 16 warps), <b>shared memory per block</b> (up to 228 KB per SM on H100), and the cap on threads and blocks per SM (64 warps). Higher occupancy is <b>not always better</b>. Well-tuned GEMM and attention kernels often run at low occupancy with big tiles held in registers, and hide latency through instruction-level parallelism and asynchronous copies (TMA) instead.</div></details>
+  </div>
+</section>
+
+<!-- 12 · Take it with you -->
+<section class="slide" id="s-end" data-chapter="Interview">
+  <div class="inner">
+    <div class="label">11 · Take it with you</div>
+    <h2>Four things to remember</h2>
+    <hr>
+    <div class="recap">
+      <div><span><b>A GPU trades per-thread latency for throughput.</b> It has thousands of simple lanes, little cache, and hides latency by switching warps.</span></div>
+      <div><span><b>The hierarchy is grid → block (on one SM) → warp (32 threads in lockstep) → thread.</b> Block sizes should be multiples of 32, and divergence is serialized.</span></div>
+      <div><span><b>Tensor Cores provide nearly all the FLOPs.</b> The work has to be expressed as BF16 or FP8 matmuls to use them.</span></div>
+      <div><span><b>Tile counts and SM counts interact.</b> Wave quantization and launch overhead are the most common causes of "the GPU isn't busy".</span></div>
+    </div>
+    <p class="start-hint">Next: <a href="../02-why-gpus-for-ai/index.html">02 · Why GPUs for AI →</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  /* ---------- die area ---------- */
+  (function die() {
+    const s = document.getElementById('dieSvg');
+    const info = document.getElementById('dieInfo');
+    const block = (g, x, y, w, h, cls, txt) => {
+      svg('rect', { x, y, width: w, height: h, rx: 4, class: cls }, g);
+      if (txt) svg('text', { x: x + w / 2, y: y + h / 2 + 4, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px', text: txt }, g);
+    };
+    const grp = (msg) => { const g = svg('g', { 'data-info': msg }, s); return g; };
+    svg('text', { x: 180, y: 20, 'text-anchor': 'middle', class: 't', style: 'font-weight:700', text: 'CPU (e.g. server x86)' }, s);
+    svg('text', { x: 570, y: 20, 'text-anchor': 'middle', class: 't', style: 'font-weight:700', text: 'GPU (e.g. H100)' }, s);
+    svg('rect', { x: 20, y: 32, width: 320, height: 250, rx: 10, class: 'f-panel s-line', 'stroke-width': 1 }, s);
+    svg('rect', { x: 410, y: 32, width: 330, height: 250, rx: 10, class: 'f-panel s-line', 'stroke-width': 1 }, s);
+    for (let i = 0; i < 8; i++) {
+      const x = 34 + (i % 4) * 76, y = 44 + Math.floor(i / 4) * 78;
+      const g = grp('<b>CPU core</b>: a large out-of-order core. Most of its area is the branch predictor, reorder buffer, decoders and private L1/L2 cache (amber and violet). The SIMD ALU (teal) is a small part of the core.');
+      block(g, x, y, 68, 34, 'f-b', 'control');
+      block(g, x, y + 36, 32, 30, 'f-a', 'ALU');
+      block(g, x + 36, y + 36, 32, 30, 'f-c', 'L2');
+    }
+    const l3 = grp('<b>Shared L3 cache</b>: tens to hundreds of MB, there to keep latency low for a few threads. It often takes up a third of the die.');
+    block(l3, 34, 202, 296, 46, 'f-c', 'L3 cache');
+    const mc = grp('<b>DDR memory controllers</b>: about 8–12 channels, a few hundred GB/s in total, which is roughly 10× less than HBM.');
+    block(mc, 34, 252, 296, 22, '', '');
+    mc.lastChild && mc.lastChild.setAttribute('style', 'fill:var(--faint)');
+    svg('text', { x: 182, y: 267, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px', text: 'DDR5 controllers · ~0.3–0.6 TB/s' }, mc);
+    // GPU
+    const hbmL = grp('<b>HBM stacks</b>: DRAM dies stacked vertically next to the GPU on an interposer. H100 SXM has 5 active stacks, 80 GB at about 3.35 TB/s.');
+    for (let i = 0; i < 3; i++) block(hbmL, 418, 44 + i * 78, 26, 70, '', '');
+    [...hbmL.querySelectorAll('rect')].forEach(r => r.setAttribute('style', 'fill:var(--faint)'));
+    const hbmR = grp(hbmL.getAttribute('data-info'));
+    for (let i = 0; i < 3; i++) block(hbmR, 706, 44 + i * 78, 26, 70, '', '');
+    [...hbmR.querySelectorAll('rect')].forEach(r => r.setAttribute('style', 'fill:var(--faint)'));
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 8; c++) {
+      const x = 452 + c * 31, y = (r === 0 ? 44 : 172);
+      for (let k = 0; k < 4; k++) {
+        const g = grp('<b>Streaming Multiprocessor (SM)</b>: nearly all ALUs and Tensor Cores (teal), with a thin strip of warp schedulers (amber) and a 256 KB L1/shared memory (violet). An H100 has 132 of them.');
+        const yy = y + (k % 2) * 52 + (k > 1 ? 0 : 0);
+        if (k > 1) continue;
+        block(g, x, yy, 27, 6, 'f-b');
+        block(g, x, yy + 7, 27, 34, 'f-a');
+        block(g, x, yy + 42, 27, 7, 'f-c');
+      }
+    }
+    const l2 = grp('<b>L2 cache</b>: 50 MB shared by all SMs. It is small compared with the work in flight; its job is to buffer HBM traffic, not to hold a working set the way a CPU L3 does.');
+    block(l2, 452, 148, 244, 20, 'f-c', 'L2 cache (50 MB)');
+    s.addEventListener('mouseover', e => { const g = e.target.closest('[data-info]'); if (g) info.innerHTML = g.dataset.info; });
+    s.addEventListener('click', e => { const g = e.target.closest('[data-info]'); if (g) info.innerHTML = g.dataset.info; });
+  })();
+
+  /* ---------- race ---------- */
+  Deck.bind(['raceN'], () => {
+    const N = Math.pow(10, Deck.val('raceN'));
+    const cpu = N / 4e12, gpu = 10e-6 + N / 60e12;
+    const t = x => x < 1e-3 ? (x * 1e6).toFixed(x < 1e-5 ? 2 : 0) + ' µs' : x < 1 ? (x * 1e3).toFixed(1) + ' ms' : x.toFixed(2) + ' s';
+    Deck.out('raceNo', fmt(N) + ' FLOPs');
+    Deck.hbars(document.getElementById('raceBars'), [
+      { label: 'CPU', value: cpu, color: 'var(--b)', text: t(cpu) },
+      { label: 'GPU', value: gpu, color: 'var(--a)', text: t(gpu) },
+    ], { max: Math.max(cpu, gpu) });
+    const w = document.getElementById('raceWin');
+    w.textContent = cpu < gpu ? `CPU wins by ${(gpu / cpu).toFixed(1)}×: the job is too small to pay back the launch overhead`
+                              : `GPU wins by ${(cpu / gpu).toFixed(1)}×${N > 1e10 ? ': throughput dominates' : ''}`;
+    w.style.color = cpu < gpu ? 'var(--b)' : 'var(--a)';
+  });
+
+  /* ---------- chip anatomy ---------- */
+  (function chip() {
+    const s = document.getElementById('chipSvg'), info = document.getElementById('chipInfo');
+    const disabled = new Set([5, 17, 23, 40, 52, 59, 76, 88, 95, 112, 124, 131]);
+    const hbmInfo = '<b>HBM3 stack</b>: H100 SXM uses 5 active stacks (a 6th position is not used), each with a 1024-bit interface. Together: <b>80 GB at about 3.35 TB/s</b>. Bandwidth from here is the limit for most LLM inference.';
+    [[8, 30], [8, 140], [8, 250], [600, 30], [600, 140], [600, 250]].forEach(([x, y], i) => {
+      const r = svg('rect', { x, y, width: 32, height: 100, rx: 4, 'data-info': i === 5 ? '<b>Unused HBM position</b>: GH100 has room for 6 stacks; the SXM5 80 GB part enables 5.' : hbmInfo, style: `fill:var(--faint);opacity:${i === 5 ? .35 : 1}` }, s);
+      svg('text', { x: x + 16, y: y + 54, 'text-anchor': 'middle', class: 'tm', style: 'fill:#fff;font-size:10px;pointer-events:none', text: 'HBM' }, s);
+    });
+    svg('rect', { x: 50, y: 20, width: 540, height: 340, rx: 10, class: 'f-panel s-line' }, s);
+    svg('rect', { x: 62, y: 182, width: 516, height: 18, rx: 4, class: 'f-c', 'data-info': '<b>L2 cache: 50 MB</b>, split into two partitions and shared by all SMs. Weights for a single layer often fit here, but a full model does not, so most traffic still goes to HBM.' }, s);
+    svg('text', { x: 320, y: 195, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px;pointer-events:none', text: 'L2 cache · 50 MB' }, s);
+    let id = 0;
+    for (let g = 0; g < 8; g++) {
+      const gx = 62 + (g % 4) * 130, gy = g < 4 ? 30 : 210;
+      svg('rect', { x: gx, y: gy, width: 124, height: 142, rx: 6, class: 'f-bg s-line', 'data-info': `<b>GPC ${g}</b> (Graphics Processing Cluster): 9 TPCs × 2 SMs = 18 SMs on the full die.` }, s);
+      svg('text', { x: gx + 6, y: gy + 13, class: 'tm', style: 'font-size:10px;pointer-events:none', text: 'GPC ' + g }, s);
+      for (let k = 0; k < 18; k++) {
+        const x = gx + 6 + (k % 6) * 19.5, y = gy + 20 + Math.floor(k / 6) * 40;
+        const off = disabled.has(id);
+        const smId = id;
+        const r = svg('rect', { x, y, width: 16, height: 36, rx: 2, class: off ? '' : 'f-a', style: off ? 'fill:var(--line)' : '', 'data-sm': smId, 'data-info': off ? `<b>SM ${smId}: disabled</b>. Fused off at manufacturing to improve yield (144 → 132).` : `<b>SM ${smId}</b> in GPC ${g}: 4 partitions, each with a warp scheduler, 32 FP32 lanes, a 64 KB register file and 1 Tensor Core. Shown on the right.` }, s);
+        id++;
+      }
+    }
+    const pick = e => {
+      const t = e.target.closest('[data-info]'); if (!t) return;
+      info.innerHTML = t.dataset.info;
+      s.querySelectorAll('[data-sm]').forEach(r => r.setAttribute('stroke', 'none'));
+      if (t.dataset.sm) { t.setAttribute('stroke', 'var(--b)'); t.setAttribute('stroke-width', '3'); }
+    };
+    s.addEventListener('click', pick);
+    s.addEventListener('mouseover', pick);
+
+    const m = document.getElementById('smSvg');
+    svg('text', { x: 200, y: 18, 'text-anchor': 'middle', class: 't', style: 'font-weight:700', text: 'One SM (Hopper)' }, m);
+    for (let p = 0; p < 4; p++) {
+      const x = 10 + (p % 2) * 195, y = 30 + Math.floor(p / 2) * 135;
+      svg('rect', { x, y, width: 185, height: 128, rx: 6, class: 'f-panel s-line' }, m);
+      svg('rect', { x: x + 6, y: y + 6, width: 173, height: 18, rx: 3, class: 'f-b' }, m);
+      svg('text', { x: x + 92, y: y + 19, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:10.5px', text: 'Warp scheduler + dispatch' }, m);
+      svg('rect', { x: x + 6, y: y + 28, width: 173, height: 16, rx: 3, style: 'fill:var(--c);opacity:.75' }, m);
+      svg('text', { x: x + 92, y: y + 40, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:10px', text: 'Register file · 64 KB' }, m);
+      for (let i = 0; i < 32; i++) svg('rect', { x: x + 6 + (i % 16) * 7.2, y: y + 50 + Math.floor(i / 16) * 9, width: 6, height: 7, rx: 1, class: 'f-a' }, m);
+      svg('text', { x: x + 6, y: y + 87, class: 'tm', style: 'font-size:9.5px', text: '32 FP32 · 16 INT32 · 16 FP64 lanes' }, m);
+      svg('rect', { x: x + 124, y: y + 48, width: 55, height: 30, rx: 4, class: 'f-e' }, m);
+      svg('text', { x: x + 151, y: y + 64, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:9.5px', text: 'Tensor' }, m);
+      svg('text', { x: x + 151, y: y + 76, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:9.5px', text: 'Core' }, m);
+      svg('rect', { x: x + 6, y: y + 94, width: 173, height: 26, rx: 3, style: 'fill:var(--faint);opacity:.35' }, m);
+      svg('text', { x: x + 92, y: y + 111, 'text-anchor': 'middle', class: 'tm', style: 'font-size:10px', text: 'LD/ST · SFU (exp, sin, rsqrt)' }, m);
+    }
+    svg('rect', { x: 10, y: 302, width: 380, height: 32, rx: 5, class: 'f-c' }, m);
+    svg('text', { x: 200, y: 322, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11.5px', text: '256 KB combined L1 / shared memory (≤228 KB shared)' }, m);
+    svg('rect', { x: 10, y: 340, width: 380, height: 26, rx: 5, style: 'fill:var(--b);opacity:.8' }, m);
+    svg('text', { x: 200, y: 357, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px', text: 'TMA: async bulk copies HBM ↔ shared memory' }, m);
+  })();
+
+  /* ---------- warps ---------- */
+  Deck.bind(['wN', 'wT'], () => {
+    const N = Deck.val('wN'), T = Deck.val('wT');
+    Deck.out('wNo', N.toLocaleString()); Deck.out('wTo', T);
+    const blocks = Math.ceil(N / T), warps = Math.ceil(T / 32), last = T - (warps - 1) * 32;
+    Deck.out('wBlocks', blocks.toLocaleString());
+    Deck.out('wWarps', warps);
+    Deck.out('wUtil', (100 * T / (warps * 32)).toFixed(0) + '%');
+    Deck.out('wIdle', 32 - last);
+    document.getElementById('wUtil').style.color = T % 32 ? 'var(--d)' : 'var(--e)';
+    const s = clear(document.getElementById('warpSvg'));
+    const rows = warps, cell = Math.min(18, 200 / rows);
+    s.setAttribute('viewBox', `0 0 660 ${Math.max(60, rows * cell + 28)}`);
+    svg('text', { x: 0, y: 12, class: 'tm', text: `Block 0: ${warps} warp${warps > 1 ? 's' : ''} × 32 lanes` }, s);
+    for (let w = 0; w < rows; w++) {
+      if (rows <= 16 || w % Math.ceil(rows / 16) === 0 || w === rows - 1)
+        svg('text', { x: 0, y: 22 + w * cell + cell * .75, class: 'tm tc', style: `font-size:${Math.min(11, cell * .8)}px`, text: 'w' + w }, s);
+      for (let l = 0; l < 32; l++) {
+        const active = w * 32 + l < T;
+        svg('rect', { x: 40 + l * 19.4, y: 20 + w * cell, width: 17, height: cell - 2, rx: 2, style: `fill:${active ? 'var(--a)' : 'var(--line)'}` }, s);
+      }
+    }
+  });
+
+  /* ---------- divergence ---------- */
+  const DIV = {
+    none: { note: 'All lanes run the same path', passes: [{ name: 'y = a*x + b', cyc: 10, act: () => true }] },
+    half: { note: 'Odd and even lanes run one after the other', passes: [{ name: 'if-branch (odd i)', cyc: 10, act: i => i % 2 === 1 }, { name: 'else-branch (even i)', cyc: 10, act: i => i % 2 === 0 }] },
+    rare: { note: '4 lanes hold up the other 28', passes: [{ name: 'common code', cyc: 10, act: () => true }, { name: 'expensive() for i < 4', cyc: 60, act: i => i < 4 }] },
+    four: { note: '4 serialized cases, 8 lanes each', passes: [0, 1, 2, 3].map(k => ({ name: `case ${k}`, cyc: 10, act: i => i % 4 === k })) },
+  };
+  Deck.seg('divSeg', v => {
+    const d = DIV[v], s = clear(document.getElementById('divSvg'));
+    const total = d.passes.reduce((a, p) => a + p.cyc, 0);
+    let x = 0, used = 0;
+    const W = 520;
+    svg('text', { x: 0, y: 14, class: 'tm', text: 'lane ↓   time →' }, s);
+    d.passes.forEach((p, k) => {
+      const w = W * p.cyc / total;
+      for (let i = 0; i < 32; i++) {
+        const on = p.act(i); if (on) used += p.cyc;
+        svg('rect', { x: 120 + x + 1, y: 24 + i * 6, width: Math.max(1, w - 2), height: 5, style: `fill:${on ? 'var(--a)' : 'var(--line)'}` }, s);
+      }
+      svg('text', { x: 120 + x + w / 2, y: 222, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: p.name }, s);
+      x += w;
+    });
+    for (let i = 0; i < 32; i += 4) svg('text', { x: 100, y: 29 + i * 6, 'text-anchor': 'end', class: 'tm tc', style: 'font-size:9px', text: i }, s);
+    Deck.out('divPass', d.passes.length);
+    const u = used / (32 * total);
+    Deck.out('divUtil', (100 * u).toFixed(0) + '%');
+    document.getElementById('divUtil').style.color = u > .9 ? 'var(--e)' : u > .4 ? 'var(--b)' : 'var(--d)';
+    Deck.out('divNote', d.note);
+  });
+
+  /* ---------- latency hiding ---------- */
+  Deck.bind(['hW', 'hL'], () => {
+    const W = Deck.val('hW'), L = Deck.val('hL'), C = 40, T = 1600;
+    Deck.out('hWo', W); Deck.out('hLo', L);
+    const ready = Array(W).fill(0), segs = Array.from({ length: W }, () => []), busy = [];
+    let t = 0;
+    while (t < T) {
+      let k = 0; for (let i = 1; i < W; i++) if (ready[i] < ready[k]) k = i;
+      if (ready[k] > t) t = ready[k];
+      if (t >= T) break;
+      segs[k].push([t, Math.min(T, t + C)]); busy.push([t, Math.min(T, t + C)]);
+      ready[k] = t + C + L; t += C;
+    }
+    const s = clear(document.getElementById('hideSvg'));
+    const rowH = Math.min(16, 230 / W), x0 = 60, sc = 590 / T;
+    s.setAttribute('viewBox', `0 0 660 ${W * rowH + 70}`);
+    for (let i = 0; i < W; i++) {
+      const y = 6 + i * rowH;
+      svg('text', { x: 0, y: y + rowH * .75, class: 'tm tc', style: `font-size:${Math.min(11, rowH * .8)}px`, text: 'warp ' + i }, s);
+      svg('rect', { x: x0, y, width: 590, height: rowH - 3, class: 'f-panel' }, s);
+      segs[i].forEach(([a, b]) => svg('rect', { x: x0 + a * sc, y, width: (b - a) * sc, height: rowH - 3, class: 'f-a' }, s));
+    }
+    const by = 14 + W * rowH;
+    svg('text', { x: 0, y: by + 12, class: 'tm', style: 'font-size:11px', text: 'issue' }, s);
+    svg('rect', { x: x0, y: by, width: 590, height: 16, class: 'f-panel' }, s);
+    busy.forEach(([a, b]) => svg('rect', { x: x0 + a * sc, y: by, width: (b - a) * sc, height: 16, class: 'f-b' }, s));
+    svg('text', { x: x0, y: by + 36, class: 'tm tc', style: 'font-size:10px', text: '0' }, s);
+    svg('text', { x: x0 + 590, y: by + 36, 'text-anchor': 'end', class: 'tm tc', style: 'font-size:10px', text: T + ' cycles' }, s);
+    const u = busy.reduce((a, [p, q]) => a + q - p, 0) / T;
+    const need = Math.ceil((C + L) / C);
+    document.getElementById('hideOut').innerHTML = `Scheduler busy <span style="color:${u > .9 ? 'var(--e)' : 'var(--d)'}">${(100 * u).toFixed(0)}%</span> of cycles · needs ≈ ${need} warps to saturate`;
+  });
+
+  /* ---------- tensor cores ---------- */
+  (function mma() {
+    const s = document.getElementById('mmaSvg');
+    const mat = (x, y, n, cls, lab) => {
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) svg('rect', { x: x + j * 14, y: y + i * 14, width: 12, height: 12, rx: 2, class: cls, opacity: .85 }, s);
+      svg('text', { x: x + n * 7, y: y + n * 14 + 18, 'text-anchor': 'middle', class: 't', style: 'font-weight:700', text: lab }, s);
+    };
+    mat(10, 50, 4, 'f-a', 'A'); svg('text', { x: 78, y: 82, class: 't', style: 'font-size:22px', text: '×' }, s);
+    mat(100, 50, 4, 'f-c', 'B'); svg('text', { x: 168, y: 82, class: 't', style: 'font-size:22px', text: '+' }, s);
+    mat(190, 50, 4, 'f-b', 'C'); svg('text', { x: 258, y: 82, class: 't', style: 'font-size:22px', text: '=' }, s);
+    mat(285, 50, 4, 'f-e', 'D');
+    svg('text', { x: 190, y: 30, 'text-anchor': 'middle', class: 'tm', text: 'one MMA instruction: many FMAs in one operation' }, s);
+    svg('text', { x: 190, y: 180, 'text-anchor': 'middle', class: 'tm', text: 'inputs BF16/FP8, accumulate in FP32' }, s);
+  })();
+  Deck.seg('tcSeg', v => {
+    const m = v === 'sparse' ? 2 : 1;
+    Deck.hbars(document.getElementById('tcBars'), [
+      { label: 'FP64 (CUDA)', value: 34, color: 'var(--faint)', text: '34' },
+      { label: 'FP32 (CUDA)', value: 67, color: 'var(--b)', text: '67' },
+      { label: 'TF32 Tensor', value: 495 * m, color: 'var(--c)', text: fmt(495 * m) },
+      { label: 'BF16 Tensor', value: 989 * m, color: 'var(--a)', text: fmt(989 * m) },
+      { label: 'FP8 Tensor', value: 1979 * m, color: 'var(--e)', text: fmt(1979 * m) },
+      { label: 'INT8 Tensor', value: 1979 * m, color: 'var(--e)', text: fmt(1979 * m) },
+    ], { log: true, max: 4000, min: 15 });
+  });
+
+  /* ---------- wave quantization ---------- */
+  let tile = 128;
+  const wave = () => {
+    const M = Deck.val('qM'), N = Deck.val('qN');
+    Deck.out('qMo', M); Deck.out('qNo', N);
+    const tm = Math.ceil(M / tile), tn = Math.ceil(N / tile), tiles = tm * tn, SM = 132;
+    const waves = Math.ceil(tiles / SM), last = tiles - (waves - 1) * SM, eff = tiles / (waves * SM);
+    Deck.out('qTiles', tiles.toLocaleString()); Deck.out('qWaves', waves); Deck.out('qLast', `${last} / 132`);
+    Deck.out('qEff', (100 * eff).toFixed(0) + '%');
+    document.getElementById('qEff').style.color = eff > .9 ? 'var(--e)' : eff > .7 ? 'var(--b)' : 'var(--d)';
+    const s = clear(document.getElementById('waveSvg'));
+    const maxSide = 300, c = Math.min(maxSide / tm, 640 / tn);
+    s.setAttribute('viewBox', `0 0 660 ${tm * c + 20}`);
+    for (let i = 0; i < tm; i++) for (let j = 0; j < tn; j++) {
+      const k = i * tn + j, w = Math.floor(k / SM);
+      const col = w === waves - 1 && last < SM ? 'var(--b)' : (w % 2 ? 'var(--c)' : 'var(--a)');
+      svg('rect', { x: 10 + j * c, y: 10 + i * c, width: Math.max(.5, c - (c > 4 ? 1 : 0)), height: Math.max(.5, c - (c > 4 ? 1 : 0)), style: `fill:${col};opacity:${.55 + .45 * ((w % 3) / 2)}` }, s);
+    }
+  };
+  Deck.seg('qT', v => { tile = +v; if (document.getElementById('qM')) wave(); });
+  Deck.bind(['qM', 'qN'], wave);
+})();
+</script>
+</body>
+</html>
