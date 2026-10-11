@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attention Is All You Need</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="tx.css">
+<style>
+  body { overflow-y: auto; }
+  #map a rect, #map a circle { transition: filter .15s; }
+  #map a:hover rect, #map a:hover circle { filter: brightness(1.15); }
+  .group { margin-top: 34px; }
+  .group h2 { font-size: 22px; margin-bottom: 4px; }
+  .group > p { color: var(--muted); margin: 0; font-size: 14.5px; }
+</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="label" style="margin-top:28px">Visual guide · Vaswani et al., 2017</div>
+  <h1>Attention Is All You Need</h1>
+  <p class="lede">Fourteen standalone visual explainers of the original Transformer paper. Each one answers two questions: <b style="color:var(--d)">What is the problem?</b> and <b style="color:var(--e)">What are the core ideas that solve it?</b> Every figure and number is checked against <a href="https://arxiv.org/abs/1706.03762v7">arXiv:1706.03762v7</a>, and illustrative examples are labelled as such.</p>
+
+  <div class="grid2" style="margin-top:26px;grid-template-columns:1.1fr 1fr;align-items:start">
+    <div class="visual" style="margin-top:0">
+      <h3>Architecture map: click a block</h3>
+      <svg id="map" viewBox="0 0 440 470" role="img" aria-label="Clickable Transformer architecture map"></svg>
+    </div>
+    <div>
+      <div class="visual" style="margin-top:0">
+        <h3>Colour key, used in every deck</h3>
+        <div class="key" style="flex-direction:column;gap:8px;font-size:14px">
+          <span><i style="background:var(--a)"></i>Encoder / source side</span>
+          <span><i style="background:var(--c)"></i>Decoder / target side</span>
+          <span><i style="background:var(--b)"></i>Attention and attention weights</span>
+          <span><i style="background:#3a8fd8"></i>Position-wise feed-forward</span>
+          <span><i style="background:var(--e)"></i>Add &amp; Norm (residual + LayerNorm)</span>
+          <span><i style="background:#c9a227"></i>Positional encoding</span>
+          <span><span class="ill" style="margin:0">illustrative</span>&nbsp;toy numbers or examples, not from the paper</span>
+        </div>
+      </div>
+      <div class="visual">
+        <h3>Suggested reading order</h3>
+        <p class="caption" style="margin-top:4px">01 → 02 for motivation and the big picture · 03 → 06 for the attention mechanism · 07 → 11 for the remaining components · 12 → 14 for how it runs, why it works, and the results.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="group"><h2>Motivation and big picture</h2><p>Why move away from recurrence, and what replaces it.</p>
+    <div class="hub-grid">
+      <a class="hub-card" href="01-sequential-bottleneck/index.html"><div class="n">01</div><h3>Sequential processing bottleneck</h3><p>RNNs process one step at a time, with O(n) paths between distant words. Self-attention needs O(1) of both.</p></a>
+      <a class="hub-card" href="02-transformer-architecture/index.html"><div class="n">02</div><h3>The Transformer architecture</h3><p>Interactive Figure 1: encoder and decoder stacks of attention and FFN sub-layers, N = 6.</p></a>
+    </div>
+  </div>
+  <div class="group"><h2>The attention mechanism</h2><p>From intuition to the exact equations.</p>
+    <div class="hub-grid">
+      <a class="hub-card" href="03-self-attention/index.html"><div class="n">03</div><h3>Self-attention</h3><p>Context-aware representations: "it" draws on "animal". Includes a redraw of the paper's Figures 3–4.</p></a>
+      <a class="hub-card" href="04-queries-keys-values/index.html"><div class="n">04</div><h3>Queries, keys and values</h3><p>Three projections per token, and query-key matching computed live on toy vectors.</p></a>
+      <a class="hub-card" href="05-scaled-dot-product-attention/index.html"><div class="n">05</div><h3>Scaled dot-product attention</h3><p>Why divide by √d<sub>k</sub>: softmax saturation, then Eq. 1 step by step.</p></a>
+      <a class="hub-card" href="06-multi-head-attention/index.html"><div class="n">06</div><h3>Multi-head attention</h3><p>8 heads × 64 dims, Concat → W<sup>O</sup>, and Table 3(A)'s head-count results.</p></a>
+      <a class="hub-card" href="08-encoder-decoder-attention/index.html"><div class="n">08</div><h3>Encoder-decoder attention</h3><p>Q from the decoder, K and V from the encoder: a soft alignment between target and source.</p></a>
+      <a class="hub-card" href="09-masked-self-attention/index.html"><div class="n">09</div><h3>Masked self-attention</h3><p>Shift right plus −∞ masking, so position i can't see the future.</p></a>
+    </div>
+  </div>
+  <div class="group"><h2>The other components</h2><p>Order, stability and per-token processing.</p>
+    <div class="hub-grid">
+      <a class="hub-card" href="07-positional-encoding/index.html"><div class="n">07</div><h3>Positional encoding</h3><p>Attention ignores order. Sinusoids at many frequencies fix that, and offsets become rotations.</p></a>
+      <a class="hub-card" href="10-residual-layernorm/index.html"><div class="n">10</div><h3>Residuals + layer normalization</h3><p>LayerNorm(x + Sublayer(x)): stable flow through 12+ sub-layers.</p></a>
+      <a class="hub-card" href="11-position-wise-ffn/index.html"><div class="n">11</div><h3>Position-wise feed-forward</h3><p>512 → 2048 → 512 with ReLU, applied to each token separately; about 2/3 of each layer's weights.</p></a>
+    </div>
+  </div>
+  <div class="group"><h2>How it runs, why it works, and the results</h2><p>Training vs inference, ablations, and Table 2.</p>
+    <div class="hub-grid">
+      <a class="hub-card" href="12-parallel-training-vs-generation/index.html"><div class="n">12</div><h3>Parallel training vs generation</h3><p>One teacher-forced pass in training, token-by-token decoding with beam size 4.</p></a>
+      <a class="hub-card" href="13-why-it-works/index.html"><div class="n">13</div><h3>Why the Transformer works</h3><p>Four ingredients mapped to four problems, backed by every Table 3 ablation row.</p></a>
+      <a class="hub-card" href="14-experimental-results/index.html"><div class="n">14</div><h3>Experimental results</h3><p>BLEU vs FLOPs (Table 2), how the cost was estimated, and the parsing results (Table 4).</p></a>
+    </div>
+  </div>
+  <p class="cite" style="margin-top:30px">Source of truth: A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, Ł. Kaiser, I. Polosukhin. "Attention Is All You Need." NeurIPS 2017. arXiv:1706.03762v7. These explainers cover only the 2017 architecture and add no later Transformer variants.</p>
+</div>
+<script>
+(() => {
+  const NS = 'http://www.w3.org/2000/svg', s = document.getElementById('map');
+  const el = (tag, a, p) => { const e = document.createElementNS(NS, tag); for (const k in a) k === 'text' ? e.textContent = a[k] : e.setAttribute(k, a[k]); (p || s).appendChild(e); return e; };
+  const link = (href, x, y, w, h, fill, label, title) => {
+    const a = el('a', { href }); el('title', { text: title }, a);
+    el('rect', { x, y, width: w, height: h, rx: 7, style: `fill:${fill}` }, a);
+    label.split('\n').forEach((t, i, arr) => el('text', { x: x + w / 2, y: y + h / 2 + 4 + (i - (arr.length - 1) / 2) * 13, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px;font-weight:600', text: t }, a));
+  };
+  el('rect', { x: 20, y: 150, width: 180, height: 200, rx: 12, style: 'fill:var(--a-soft);stroke:var(--a);stroke-width:2' });
+  el('rect', { x: 240, y: 90, width: 190, height: 260, rx: 12, style: 'fill:var(--c-soft);stroke:var(--c);stroke-width:2' });
+  el('text', { x: 110, y: 145, 'text-anchor': 'middle', class: 't', style: 'fill:var(--a);font-weight:700;font-size:12px', text: 'Encoder ×6' });
+  el('text', { x: 335, y: 85, 'text-anchor': 'middle', class: 't', style: 'fill:var(--c);font-weight:700;font-size:12px', text: 'Decoder ×6' });
+  link('03-self-attention/index.html', 35, 290, 150, 40, 'var(--b)', 'Self-attention\n(multi-head)', '03 Self-attention / 06 Multi-head');
+  link('10-residual-layernorm/index.html', 35, 255, 150, 26, 'var(--e)', 'Add & Norm', '10 Residuals + LayerNorm');
+  link('11-position-wise-ffn/index.html', 35, 205, 150, 40, '#3a8fd8', 'Feed Forward', '11 Position-wise FFN');
+  link('10-residual-layernorm/index.html', 35, 170, 150, 26, 'var(--e)', 'Add & Norm', '10 Residuals + LayerNorm');
+  link('09-masked-self-attention/index.html', 255, 300, 160, 36, 'var(--b)', 'Masked self-attention', '09 Masked self-attention');
+  link('08-encoder-decoder-attention/index.html', 255, 240, 160, 36, 'var(--b)', 'Encoder-decoder\nattention', '08 Encoder-decoder attention');
+  link('11-position-wise-ffn/index.html', 255, 180, 160, 36, '#3a8fd8', 'Feed Forward', '11 Position-wise FFN');
+  link('10-residual-layernorm/index.html', 255, 110, 160, 26, 'var(--e)', 'Add & Norm (after each)', '10 Residuals + LayerNorm');
+  link('12-parallel-training-vs-generation/index.html', 265, 40, 140, 30, 'var(--c)', 'Linear + Softmax', '12 Training vs generation');
+  link('07-positional-encoding/index.html', 60, 370, 100, 30, '#c9a227', '+ Positional enc.', '07 Positional encoding');
+  link('07-positional-encoding/index.html', 285, 370, 100, 30, '#c9a227', '+ Positional enc.', '07 Positional encoding');
+  link('02-transformer-architecture/index.html', 35, 420, 150, 30, 'var(--faint)', 'Input embedding', '02 Architecture');
+  link('09-masked-self-attention/index.html', 255, 420, 160, 30, 'var(--faint)', 'Output emb. (shifted right)', '09 Masked self-attention');
+  el('polyline', { points: '110,150 110,125 225,125 225,258 253,258', fill: 'none', style: 'stroke:var(--a);stroke-width:2.5' });
+  el('text', { x: 168, y: 118, 'text-anchor': 'middle', class: 'tm', style: 'font-size:10px', text: 'K, V' });
+  [[110, 418, 402], [110, 368, 332], [335, 418, 402], [335, 368, 338], [335, 178, 140]].forEach(([x, y1, y2]) => el('line', { x1: x, y1, x2: x, y2, style: 'stroke:var(--muted);stroke-width:1.5' }));
+})();
+</script>
+</body>
+</html>

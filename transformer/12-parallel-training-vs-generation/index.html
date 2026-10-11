@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parallel Training vs Generation</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../tx.css">
+</head>
+<body data-deck="Training vs generation" data-home="../index.html" data-home-label="Transformer">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Attention Is All You Need · 12</div>
+    <h1>Parallel training vs autoregressive generation</h1>
+    <p class="sub">Why the Transformer trains on every target position at once, but still has to generate translations one token at a time.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>An RNN is sequential in both training and inference. Fast training needs every position processed at once, but generated tokens only become known one by one.</div>
+      <div class="c"><b>Core idea</b>In training, feed the whole reference target (shifted right) and use masking, so all m predictions come from one parallel pass. At inference, generate left to right, using beam search.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prob" data-chapter="The problem">
+  <div class="inner">
+    <span class="qtag prob">① What is the problem?</span>
+    <h2>Count the sequential steps for one target sentence</h2>
+    <hr>
+    <p class="lede">For a target of m tokens: an RNN decoder needs m dependent steps <em>even in training</em>. A Transformer decoder needs one parallel pass in training, but m passes when generating, because token t+1 can't be computed until token t is chosen.</p>
+    <div class="visual">
+      <label class="ctl">Target length m <input type="range" id="tM" min="2" max="40" step="1" value="12"> <output id="tMo"></output></label>
+      <svg id="tSvg" viewBox="0 0 660 220" style="margin-top:10px" role="img" aria-label="Sequential steps comparison"></svg>
+    </div>
+    <div class="takeaway">The Transformer makes <b>training</b> parallel. Generation stays sequential. The paper lists "making generation less sequential" as future work (§7).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-train" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Training: one forward pass gives m predictions and m loss terms</h2>
+    <hr>
+    <p class="lede">The decoder input is the reference translation shifted right by one (teacher forcing). Masked self-attention stops each position from seeing later tokens, so every position can be trained <b>at the same time</b>.</p>
+    <div class="visual"><svg id="trSvg" viewBox="0 0 660 270" role="img" aria-label="Parallel training"></svg></div>
+    <p class="caption">Loss: cross-entropy at each position against the next reference token, with label smoothing ε<sub>ls</sub> = 0.1 (§5.4). Batches hold about 25,000 source + 25,000 target tokens.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-gen" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Generation: one token per decoder pass, fed back in</h2>
+    <hr>
+    <p class="lede">The encoder runs <b>once</b> on the source. Then the decoder runs repeatedly: each pass reads the tokens generated so far plus the encoder memory, and predicts the next token, which is appended to the input. Step through it.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><button class="btn primary" id="gStep">Next token →</button><button class="btn" id="gReset">Reset</button><span class="readout" id="gOut"></span></div>
+      <svg id="gSvg" viewBox="0 0 660 250" style="margin-top:10px" role="img" aria-label="Autoregressive generation"></svg>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-beam" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Beam search: keep the 4 best partial translations <span class="ill">toy probabilities</span></h2>
+    <hr>
+    <p class="lede">Instead of greedily keeping only the single best token at each step, the paper keeps a <b>beam of 4</b> hypotheses, extends each, and keeps the 4 highest-scoring by total log-probability. Finished hypotheses are ranked with a length penalty (α = 0.6).</p>
+    <div class="visual">
+      <label class="ctl">Decoding step <input type="range" id="bS" min="1" max="7" step="1" value="1"> <output id="bSo"></output></label>
+      <div class="grid2" style="margin-top:10px">
+        <div><h3>Alive hypotheses (beam = 4)</h3><div id="bAlive"></div></div>
+        <div><h3>Finished (ended with &lt;/s&gt;)</h3><div id="bDone"></div></div>
+      </div>
+    </div>
+    <p class="caption">Toy next-token probabilities, hand-written for illustration. Length penalty lp(Y) = ((5 + |Y|) / 6)<sup>α</sup>, the GNMT form the paper cites [38]; final score = log P(Y) / lp(Y). Maximum output length = input length + 50, with early termination (§6.1).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-paper" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label ppr">In the paper · §3, §6.1, §7</div>
+    <h2>The paper's wording</h2>
+    <hr>
+    <div class="paper"><b>§3:</b> "At each step the model is auto-regressive, consuming the previously generated symbols as additional input when generating the next."</div>
+    <div class="paper"><b>§6.1:</b> "We used beam search with a beam size of 4 and length penalty α = 0.6 … We set the maximum output length during inference to input length + 50, but terminate early when possible." Base models average the last 5 checkpoints and big models the last 20.</div>
+    <div class="paper"><b>§7:</b> "Making generation less sequential is another research goals of ours."</div>
+  </div>
+</section>
+
+<section class="slide" id="s-end" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label">Recap</div>
+    <h2>Training vs generation in two lines</h2>
+    <hr>
+    <div class="recap">
+      <div><span><b>Problem:</b> fast training needs parallelism, but generated tokens only become known one at a time.</span></div>
+      <div><span><b>Core idea:</b> train on all m positions in one masked, teacher-forced pass; generate left to right with beam search (size 4, α = 0.6).</span></div>
+    </div>
+    <p class="start-hint">Next: <a href="../13-why-it-works/index.html">13 · Why the Transformer works →</a> · Previous: <a href="../11-position-wise-ffn/index.html">← 11</a> · <a href="../index.html">All concepts</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../tx.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+
+  /* step counts */
+  Deck.bind(['tM'], () => {
+    const m = Deck.val('tM'); Deck.out('tMo', m);
+    const s = clear(document.getElementById('tSvg'));
+    const rows = [['RNN, training', m, 'var(--d)'], ['Transformer, training', 1, 'var(--e)'], ['Transformer, generation', m, 'var(--b)']];
+    const W = 460, bw = Math.min(30, W / 40);
+    rows.forEach(([lab, k, c], r) => {
+      const y = 20 + r * 66;
+      svg('text', { x: 0, y: y + 22, class: 't', style: 'font-size:12.5px;font-weight:600', text: lab }, s);
+      for (let i = 0; i < k; i++) svg('rect', { x: 190 + i * (bw + 1.5), y: y + 4, width: bw, height: 28, rx: 3, style: `fill:${c}` }, s);
+      if (k === 1) svg('rect', { x: 190, y: y + 4, width: m * (bw + 1.5), height: 28, rx: 3, style: 'fill:var(--e);opacity:.25' }, s);
+      svg('text', { x: 190 + Math.max(k, k === 1 ? m : k) * (bw + 1.5) + 8, y: y + 23, class: 't tc', style: 'font-size:12px;font-weight:700', text: `${k} sequential step${k > 1 ? 's' : ''}` }, s);
+      if (k === 1) svg('text', { x: 196, y: y + 23, class: 't', style: 'fill:#fff;font-size:11px;font-weight:600', text: `all ${m} positions at once` }, s);
+    });
+  });
+
+  /* training diagram */
+  (() => {
+    const s = document.getElementById('trSvg');
+    TX.arrowDefs(s, 'ta', 'var(--muted)');
+    const IN = ['<s>', 'Die', 'Katze', 'saß', 'auf', 'der', 'Matte'], OUT = ['Die', 'Katze', 'saß', 'auf', 'der', 'Matte', '</s>'];
+    svg('text', { x: 4, y: 250, class: 'tm', style: 'font-size:11px', text: 'input' }, s);
+    svg('text', { x: 4, y: 30, class: 'tm', style: 'font-size:11px', text: 'target' }, s);
+    const ip = TX.tokens(s, IN, { x0: 60, width: 590, y: 230, h: 28, color: () => 'var(--c-soft)', textColor: () => 'var(--c)', font: 12 });
+    TX.box(s, 60, 120, 590, 60, 'var(--c)', 'Decoder × 6: masked self-attention · enc-dec attention · FFN\none forward pass over all 7 positions', { fs: 12.5 });
+    ip.forEach(p => TX.arrow(s, p.x, 228, p.x, 184, 'ta', 'var(--muted)', 1.5));
+    const op = TX.tokens(s, OUT, { x0: 60, width: 590, y: 12, h: 28, color: () => 'var(--e)', textColor: () => '#fff', font: 12 });
+    op.forEach((p, i) => {
+      TX.arrow(s, p.x, 118, p.x, 76, 'ta', 'var(--muted)', 1.5);
+      svg('text', { x: p.x, y: 62, 'text-anchor': 'middle', class: 'tm tc', style: 'font-size:10px', text: `loss${i + 1}` }, s);
+    });
+    svg('text', { x: 355, y: 102, 'text-anchor': 'middle', class: 't', style: 'font-size:12px;font-weight:600;fill:var(--e)', text: 'total loss = Σ loss_i, and one backward pass updates everything' }, s);
+  })();
+
+  /* generation stepper */
+  const SEQ = ['Die', 'Katze', 'saß', 'auf', 'der', 'Matte', '</s>'];
+  let k = 0;
+  const gen = () => {
+    const s = clear(document.getElementById('gSvg'));
+    TX.arrowDefs(s, 'ga', 'var(--muted)');
+    TX.box(s, 10, 30, 150, 50, 'var(--a)', 'Encoder (ran once)\n"The cat sat on the mat"', { fs: 11 });
+    TX.box(s, 10, 100, 150, 40, 'var(--a-soft)', 'memory (reused)', { text: 'var(--a)', stroke: 'var(--a)' });
+    const prefix = ['<s>', ...SEQ.slice(0, k)];
+    TX.box(s, 220, 70, 260, 60, 'var(--c)', `Decoder pass #${k + 1}\nreads ${prefix.length} token${prefix.length > 1 ? 's' : ''}`, { fs: 12.5 });
+    svg('polyline', { points: '160,120 190,120 190,100 216,100', fill: 'none', style: 'stroke:var(--a);stroke-width:2.5', 'marker-end': 'url(#ga)' }, s);
+    const ip = TX.tokens(s, prefix, { x0: 220, width: Math.min(420, prefix.length * 62), y: 200, h: 28, color: i => i === prefix.length - 1 && k > 0 ? 'var(--e)' : 'var(--c-soft)', textColor: i => i === prefix.length - 1 && k > 0 ? '#fff' : 'var(--c)', font: 12 });
+    TX.arrow(s, 350, 198, 350, 134, 'ga');
+    svg('text', { x: 220, y: 246, class: 'tm', style: 'font-size:11px', text: 'decoder input = start token + everything generated so far' }, s);
+    const done = k >= SEQ.length;
+    if (!done) {
+      TX.arrow(s, 482, 100, 540, 100, 'ga');
+      TX.box(s, 545, 82, 100, 36, 'var(--e)', SEQ[k]);
+      svg('text', { x: 595, y: 140, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'next token' }, s);
+      svg('path', { d: 'M 595 120 Q 640 180 600 205', fill: 'none', style: 'stroke:var(--e);stroke-width:2;stroke-dasharray:5 4', 'marker-end': 'url(#ga)' }, s);
+      svg('text', { x: 610, y: 185, class: 'tm', style: 'font-size:10px', text: 'append' }, s);
+    } else svg('text', { x: 560, y: 105, 'text-anchor': 'middle', class: 't', style: 'fill:var(--e);font-weight:700', text: 'done: </s>' }, s);
+    Deck.out('gOut', `decoder passes so far: ${Math.min(k + 1, SEQ.length)} · encoder passes: 1`);
+  };
+  document.getElementById('gStep').onclick = () => { if (k < SEQ.length) k++; gen(); };
+  document.getElementById('gReset').onclick = () => { k = 0; gen(); };
+  gen();
+
+  /* beam search */
+  const P = {
+    '<s>': { Die: .55, Der: .30, Eine: .15 }, Die: { Katze: .7, Kater: .2, Matte: .1 }, Der: { Kater: .8, Katze: .2 }, Eine: { Katze: .9, Matte: .1 },
+    Katze: { 'saß': .6, sitzt: .35, '</s>': .05 }, Kater: { 'saß': .5, sitzt: .45, '</s>': .05 }, Matte: { '</s>': .6, 'saß': .4 },
+    'saß': { auf: .9, '</s>': .1 }, sitzt: { auf: .85, '</s>': .15 }, auf: { der: .8, die: .2 }, der: { Matte: .9, Katze: .1 }, die: { Matte: .95, Katze: .05 },
+  };
+  const lp = n => Math.pow((5 + n) / 6, 0.6);
+  const runBeam = steps => {
+    let alive = [{ toks: [], lp: 0 }], done = [];
+    for (let t = 0; t < steps; t++) {
+      const cand = [];
+      alive.forEach(h => {
+        const last = h.toks.length ? h.toks[h.toks.length - 1] : '<s>';
+        Object.entries(P[last] || { '</s>': 1 }).forEach(([w, p]) => cand.push({ toks: [...h.toks, w], lp: h.lp + Math.log(p) }));
+      });
+      cand.sort((a, b) => b.lp - a.lp);
+      alive = [];
+      for (const c of cand) {
+        if (c.toks[c.toks.length - 1] === '</s>') { if (done.length < 8) done.push(c); }
+        else if (alive.length < 4) alive.push(c);
+      }
+    }
+    return { alive, done };
+  };
+  Deck.bind(['bS'], () => {
+    const st = Deck.val('bS'); Deck.out('bSo', st);
+    const { alive, done } = runBeam(st);
+    Deck.hbars(document.getElementById('bAlive'), alive.length ? alive.map(h => ({ label: h.toks.join(' ').replace(/</g, '&lt;'), value: Math.exp(h.lp), color: 'var(--c)', text: 'log P = ' + h.lp.toFixed(2) })) : [{ label: '(all finished)', value: 0, text: '' }], { max: 1 });
+    const ranked = done.map(h => ({ ...h, sc: h.lp / lp(h.toks.length) })).sort((a, b) => b.sc - a.sc);
+    Deck.hbars(document.getElementById('bDone'), ranked.length ? ranked.slice(0, 5).map((h, i) => ({ label: (i === 0 ? '★ ' : '') + h.toks.join(' ').replace(/</g, '&lt;'), value: Math.exp(h.sc), color: i === 0 ? 'var(--e)' : 'var(--faint)', text: 'score ' + h.sc.toFixed(2) })) : [{ label: '(none yet)', value: 0, text: '' }], { max: 1 });
+  });
+})();
+</script>
+</body>
+</html>

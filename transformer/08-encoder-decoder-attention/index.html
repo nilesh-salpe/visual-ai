@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encoder-Decoder Attention</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../tx.css">
+</head>
+<body data-deck="Encoder-decoder attention" data-home="../index.html" data-home-label="Transformer">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Attention Is All You Need · 08</div>
+    <h1>Encoder-decoder attention</h1>
+    <p class="sub">How every target position looks at every source position, connecting the sentence being generated to the sentence being translated.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>While writing each target word, the decoder needs the relevant parts of the source. Compressing the whole source into one fixed-size vector creates a bottleneck.</div>
+      <div class="c"><b>Core idea</b>In the decoder's second sub-layer, queries come from the decoder and keys and values come from the encoder output, so each target position attends over all source positions.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prob" data-chapter="The problem">
+  <div class="inner">
+    <span class="qtag prob">① What is the problem?</span>
+    <h2>The decoder has to see the source, and one summary vector is too narrow</h2>
+    <hr>
+    <p class="lede">A basic encoder-decoder squeezes the whole source sentence into one fixed-size vector c. The longer the sentence, the less room each word gets. Attention-based seq2seq models fixed this by letting the decoder look at <em>all</em> encoder states. The Transformer builds this in as one of its three uses of attention.</p>
+    <div class="visual">
+      <div class="seg" id="bSeg"><button data-v="fixed" class="on">One context vector</button><button data-v="attn">Attend over all source positions</button></div>
+      <label class="ctl" style="margin-top:12px">Source length <input type="range" id="bN" min="3" max="12" step="1" value="6"> <output id="bNo"></output></label>
+      <svg id="bSvg" viewBox="0 0 660 220" style="margin-top:8px" role="img" aria-label="Bottleneck vs attention"></svg>
+    </div>
+    <div class="cite">§3.2.3: this "mimics the typical encoder-decoder attention mechanisms in sequence-to-sequence models", citing Wu et al. 2016, Bahdanau et al. 2014 and Gehring et al. 2017.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-wire" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Q from the decoder; K and V from the encoder output</h2>
+    <hr>
+    <p class="lede">The encoder runs once and produces a memory of n × 512 vectors. In <b>every</b> one of the 6 decoder layers, the second sub-layer projects its own states into queries and projects that same memory into keys and values.</p>
+    <div class="visual"><svg id="wSvg" viewBox="0 0 660 300" role="img" aria-label="Encoder-decoder attention wiring"></svg></div>
+    <div class="key"><span><i style="background:var(--a)"></i>encoder (source)</span><span><i style="background:var(--c)"></i>decoder (target)</span><span><i style="background:var(--b)"></i>attention</span></div>
+  </div>
+</section>
+
+<section class="slide" id="s-align" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Each target word draws on the source words it translates <span class="ill">illustrative weights</span></h2>
+    <hr>
+    <p class="lede">Click a German target word. Its query is matched against the keys of every English source word, and the resulting weights decide which source values it takes in. Together the rows form a soft alignment.</p>
+    <div class="visual">
+      <div class="grid2" style="grid-template-columns:1.2fr 1fr;align-items:center">
+        <svg id="aSvg" viewBox="0 0 400 220" role="img" aria-label="Alignment arcs"></svg>
+        <svg id="hSvg" viewBox="0 0 330 300" role="img" aria-label="Alignment matrix"></svg>
+      </div>
+    </div>
+    <p class="caption">Example sentence pair and weights are illustrative, not taken from a trained model. Rows = target (queries), columns = source (keys and values). Each row sums to 1.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-paper" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label ppr">In the paper · §3.2.3</div>
+    <h2>The first of three uses of attention</h2>
+    <hr>
+    <div class="paper"><b>"In 'encoder-decoder attention' layers,</b> the queries come from the previous decoder layer, and the memory keys and values come from the output of the encoder. This allows every position in the decoder to attend over all positions in the input sequence."</div>
+    <div class="visual scroll-x">
+      <table class="tbl">
+        <tr><th>Attention type</th><th>Queries from</th><th>Keys and values from</th><th>Can see</th></tr>
+        <tr><td>Encoder self-attention</td><td>previous encoder layer</td><td>previous encoder layer</td><td>all source positions</td></tr>
+        <tr><td><b>Encoder-decoder attention</b></td><td><b>previous decoder sub-layer</b></td><td><b>encoder output</b></td><td><b>all source positions</b></td></tr>
+        <tr><td>Masked decoder self-attention</td><td>previous decoder layer</td><td>previous decoder layer</td><td>target positions ≤ current</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-end" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label">Recap</div>
+    <h2>Encoder-decoder attention in two lines</h2>
+    <hr>
+    <div class="recap">
+      <div><span><b>Problem:</b> the decoder needs the relevant source words at every step, and a single context vector is a bottleneck.</span></div>
+      <div><span><b>Core idea:</b> Q = decoder states and K, V = encoder memory, in every decoder layer, so each target position attends over the whole source.</span></div>
+    </div>
+    <p class="start-hint">Next: <a href="../09-masked-self-attention/index.html">09 · Masked self-attention →</a> · Previous: <a href="../07-positional-encoding/index.html">← 07</a> · <a href="../index.html">All concepts</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../tx.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+
+  /* bottleneck */
+  let mode = 'fixed';
+  const bott = () => {
+    const n = Deck.val('bN'); Deck.out('bNo', n);
+    const s = clear(document.getElementById('bSvg'));
+    TX.arrowDefs(s, 'ba', 'var(--muted)');
+    const w = Math.min(46, 300 / n);
+    for (let i = 0; i < n; i++) {
+      const x = 20 + i * (w + 4);
+      svg('rect', { x, y: 150, width: w, height: 30, rx: 5, class: 'f-a' }, s);
+      svg('text', { x: x + w / 2, y: 170, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:10px', text: 'h' + (i + 1) }, s);
+    }
+    svg('text', { x: 20, y: 205, class: 'tm', style: 'font-size:11px', text: 'encoder states (source)' }, s);
+    for (let j = 0; j < 4; j++) { svg('rect', { x: 470 + j * 44, y: 150, width: 40, height: 30, rx: 5, class: 'f-c' }, s); svg('text', { x: 490 + j * 44, y: 170, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:10px', text: 'y' + (j + 1) }, s); }
+    svg('text', { x: 470, y: 205, class: 'tm', style: 'font-size:11px', text: 'decoder (target)' }, s);
+    if (mode === 'fixed') {
+      const lx = 20 + (n - 1) * (w + 4) + w / 2;
+      TX.arrow(s, lx, 148, 395, 70, 'ba', 'var(--d)', 2);
+      svg('rect', { x: 395, y: 45, width: 50, height: 50, rx: 8, style: 'fill:var(--d)' }, s);
+      svg('text', { x: 420, y: 75, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:700', text: 'c' }, s);
+      for (let j = 0; j < 4; j++) TX.arrow(s, 445, 70, 490 + j * 44, 148, 'ba', 'var(--d)', 1.5);
+      svg('text', { x: 420, y: 30, 'text-anchor': 'middle', class: 't', style: 'fill:var(--d);font-size:12px;font-weight:600', text: `${n} words → 1 fixed vector (≈ ${(100 / n).toFixed(0)}% of its capacity per word)` }, s);
+    } else {
+      for (let i = 0; i < n; i++) for (let j = 0; j < 4; j++) {
+        const x1 = 20 + i * (w + 4) + w / 2, x2 = 490 + j * 44;
+        svg('path', { d: `M ${x1} 148 Q ${(x1 + x2) / 2} ${40 + j * 8} ${x2} 148`, fill: 'none', style: `stroke:var(--b);stroke-width:${j === 1 ? 1.8 : .8};opacity:${j === 1 ? .9 : .3}` }, s);
+      }
+      svg('text', { x: 330, y: 24, 'text-anchor': 'middle', class: 't', style: 'fill:var(--e);font-size:12px;font-weight:600', text: 'each target step reads all source states directly, at any length' }, s);
+    }
+  };
+  Deck.seg('bSeg', v => { mode = v; if (document.getElementById('bN')) bott(); });
+  Deck.bind(['bN'], bott);
+
+  /* wiring diagram */
+  (() => {
+    const s = document.getElementById('wSvg');
+    TX.arrowDefs(s, 'wa', 'var(--muted)'); TX.arrowDefs(s, 'wk', 'var(--a)'); TX.arrowDefs(s, 'wq', 'var(--c)');
+    svg('rect', { x: 10, y: 20, width: 220, height: 260, rx: 12, style: 'fill:var(--a-soft);stroke:var(--a)' }, s);
+    svg('text', { x: 120, y: 42, 'text-anchor': 'middle', class: 't', style: 'fill:var(--a);font-weight:700', text: 'Encoder × 6 (runs once)' }, s);
+    TX.box(s, 40, 220, 160, 34, 'var(--faint)', 'source + PE');
+    TX.box(s, 40, 160, 160, 40, 'var(--a)', 'encoder layers 1…6');
+    TX.arrow(s, 120, 220, 120, 202, 'wa');
+    TX.box(s, 40, 80, 160, 50, 'var(--a)', 'memory\nn × 512');
+    TX.arrow(s, 120, 160, 120, 132, 'wa');
+    svg('rect', { x: 290, y: 20, width: 360, height: 260, rx: 12, style: 'fill:var(--c-soft);stroke:var(--c)' }, s);
+    svg('text', { x: 470, y: 42, 'text-anchor': 'middle', class: 't', style: 'fill:var(--c);font-weight:700', text: 'One decoder layer (× 6)' }, s);
+    TX.box(s, 400, 225, 180, 34, 'var(--b)', 'masked self-attention + Add&Norm');
+    TX.box(s, 400, 150, 180, 44, 'var(--b)', 'Encoder-decoder\nattention + Add&Norm');
+    TX.box(s, 400, 70, 180, 34, '#3a8fd8', 'Feed-forward + Add&Norm');
+    TX.arrow(s, 490, 225, 490, 196, 'wq', 'var(--c)', 2.5);
+    svg('text', { x: 498, y: 214, class: 't', style: 'fill:var(--c);font-weight:700;font-size:12px', text: 'Q' }, s);
+    TX.arrow(s, 490, 150, 490, 106, 'wa');
+    svg('polyline', { points: '200,105 330,105 330,172 396,172', fill: 'none', style: 'stroke:var(--a);stroke-width:3', 'marker-end': 'url(#wk)' }, s);
+    svg('text', { x: 338, y: 160, class: 't', style: 'fill:var(--a);font-weight:700;font-size:12px', text: 'K, V' }, s);
+    svg('text', { x: 470, y: 272, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'the same memory feeds K, V in all 6 decoder layers' }, s);
+  })();
+
+  /* alignment */
+  const SRC = ['The', 'cat', 'sat', 'on', 'the', 'mat'], TGT = ['Die', 'Katze', 'saß', 'auf', 'der', 'Matte'];
+  const A = [
+    [.80, .12, .02, .02, .02, .02], [.08, .84, .03, .01, .02, .02], [.02, .10, .82, .03, .01, .02],
+    [.01, .02, .06, .85, .04, .02], [.02, .01, .02, .08, .80, .07], [.01, .02, .02, .03, .10, .82],
+  ];
+  let sel = 1;
+  const align = () => {
+    const s = clear(document.getElementById('aSvg'));
+    const src = TX.tokens(s, SRC, { y: 20, h: 30, width: 380, font: 12, color: () => 'var(--a)', textColor: () => '#fff' });
+    const tgt = TX.tokens(s, TGT, { y: 170, h: 30, width: 380, font: 12, click: true, color: i => i === sel ? 'var(--c)' : 'var(--c-soft)', textColor: i => i === sel ? '#fff' : 'var(--c)' });
+    A[sel].forEach((w, j) => svg('line', { x1: tgt[sel].x, y1: 168, x2: src[j].x, y2: 52, style: `stroke:var(--b);stroke-width:${1 + 10 * w};opacity:${.2 + .8 * w}` }, s));
+    svg('text', { x: 6, y: 112, class: 'tm', style: 'font-size:10.5px', text: 'K, V (source)  ↑   Q (target) ↓' }, s);
+    const h = clear(document.getElementById('hSvg'));
+    TX.heat(h, A, { x: 70, y: 70, cell: 40, rows: TGT, cols: SRC, rotate: true, fmt: v => (v * 100).toFixed(0), color: 'var(--b)' });
+    svg('rect', { x: 69, y: 70 + sel * 40 - 1, width: 6 * 40 + 1, height: 40, style: 'fill:none;stroke:var(--ink);stroke-width:2' }, h);
+  };
+  document.getElementById('aSvg').addEventListener('click', e => { const g = e.target.closest('[data-tok]'); if (g && g.getAttribute('data-tok') !== null && +g.querySelector('rect').getAttribute('y') > 100) { sel = +g.dataset.tok; align(); } });
+  align();
+})();
+</script>
+</body>
+</html>

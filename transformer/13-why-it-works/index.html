@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why the Transformer Works</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../tx.css">
+<style>#mapSvg [data-i] { cursor: pointer; }</style>
+</head>
+<body data-deck="Why it works" data-home="../index.html" data-home-label="Transformer">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Attention Is All You Need · 13</div>
+    <h1>Why the Transformer works</h1>
+    <p class="sub">How four ingredients together address the limits of recurrent sequence models: direct token-to-token connections, multiple heads, positional information, and stacked layers.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Recurrent models are slow to train (sequential), struggle with long-range dependencies (long paths), and capture all relationships through one hidden state.</div>
+      <div class="c"><b>Core idea</b>Each ingredient fixes one limit. The paper's ablations (Table 3) measure how much each design choice matters.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prob" data-chapter="The problem">
+  <div class="inner">
+    <span class="qtag prob">① What is the problem?</span>
+    <h2>Three criteria that recurrent layers score poorly on</h2>
+    <hr>
+    <p class="lede">§4 compares layer types on three criteria. For translation-length sequences (n &lt; d), recurrence loses on all three.</p>
+    <div class="grid3">
+      <div class="card d"><h3>Parallelism</h3><p>Sequential operations per layer: <b>RNN O(n)</b> vs self-attention O(1). Training time grows with sequence length.</p></div>
+      <div class="card d"><h3>Long-range paths</h3><p>Maximum path length: <b>RNN O(n)</b> vs self-attention O(1). Distant dependencies are harder to learn.</p></div>
+      <div class="card b"><h3>Compute per layer</h3><p><b>RNN O(n·d²)</b> vs self-attention O(n²·d). Self-attention is cheaper when n &lt; d, as in sentence-level translation with BPE.</p></div>
+    </div>
+    <div class="takeaway">Attention fixes parallelism and path length, but on its own it brings two new problems: it is <b>order-blind</b>, and averaging <b>blurs</b> distinct relationships. The other ingredients address those.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-map" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Four ingredients, each solving a specific problem</h2>
+    <hr>
+    <p class="lede">Click an ingredient to see which problem it addresses and the evidence in the paper.</p>
+    <div class="grid2" style="grid-template-columns:1.3fr 1fr;align-items:center">
+      <div class="visual" style="margin-top:0"><svg id="mapSvg" viewBox="0 0 520 330" role="img" aria-label="Ingredients to problems map"></svg></div>
+      <div class="infobox" id="mapInfo" style="margin-top:0;min-height:200px"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-abl" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>The evidence: Table 3 model variations</h2>
+    <hr>
+    <p class="lede">Each row changes one thing relative to the base model and reports BLEU and perplexity on the EN-DE development set (newstest2013). Pick a group.</p>
+    <div class="visual">
+      <div class="seg" id="aSeg"><button data-v="A" class="on">(A) heads</button><button data-v="B">(B) key size</button><button data-v="C">(C) model size</button><button data-v="D">(D) regularization</button><button data-v="E">(E) positions</button><button data-v="big">big</button></div>
+      <div class="grid2" style="margin-top:14px">
+        <div><h3>BLEU (dev), higher is better</h3><div id="aBleu"></div></div>
+        <div><h3>PPL (dev), lower is better</h3><div id="aPpl"></div></div>
+      </div>
+      <p class="readout" id="aNote" style="margin-top:10px"></p>
+    </div>
+    <div class="cite">Table 3, arXiv:1706.03762v7. Beam search as in §6.1 but no checkpoint averaging. Perplexities are per word-piece. Bars are drawn relative to the base model (grey line = base).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-interp" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>A side benefit: you can look inside</h2>
+    <hr>
+    <p class="lede">Attention weights can be visualized directly. The paper reports that different heads learn different jobs, many related to the structure of the sentence.</p>
+    <div class="grid3">
+      <div class="card a"><h3>Figure 3</h3><p>Layer 5 of 6: many heads link "making" to the distant "more difficult", a long-range dependency handled in one hop.</p></div>
+      <div class="card c"><h3>Figure 4</h3><p>Two heads apparently doing anaphora resolution: very sharp attention from "its" to "Law" and "application".</p></div>
+      <div class="card e"><h3>Figure 5</h3><p>Two heads with different, structure-related patterns over the same sentence: "The heads clearly learned to perform different tasks."</p></div>
+    </div>
+    <div class="cite">See deck 03 for a redraw of Figures 3 and 4.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-paper" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label ppr">In the paper · §4, §6.2, §7</div>
+    <h2>The paper's own conclusions</h2>
+    <hr>
+    <div class="paper"><b>§6.2 (A):</b> "While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads."</div>
+    <div class="paper"><b>§6.2 (B):</b> "Reducing the attention key size d<sub>k</sub> hurts model quality. This suggests that determining compatibility is not easy and that a more sophisticated compatibility function than dot product may be beneficial."</div>
+    <div class="paper"><b>§6.2 (C, D, E):</b> "Bigger models are better, and dropout is very helpful in avoiding over-fitting." Replacing sinusoids with learned positional embeddings gives "nearly identical results".</div>
+    <div class="paper"><b>§7:</b> the Transformer is "the first sequence transduction model based entirely on attention", and "can be trained significantly faster than architectures based on recurrent or convolutional layers."</div>
+  </div>
+</section>
+
+<section class="slide" id="s-end" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label">Recap</div>
+    <h2>Why it works, in two lines</h2>
+    <hr>
+    <div class="recap">
+      <div><span><b>Problem:</b> recurrence is sequential, uses long paths between distant tokens, and squeezes all relationships into one state.</span></div>
+      <div><span><b>Core idea:</b> direct attention (parallel, O(1) paths) + multiple heads (several relationships) + positional encoding (order) + stacked residual layers with FFNs (depth), each backed by the Table 3 ablations.</span></div>
+    </div>
+    <p class="start-hint">Next: <a href="../14-experimental-results/index.html">14 · Experimental results →</a> · Previous: <a href="../12-parallel-training-vs-generation/index.html">← 12</a> · <a href="../index.html">All concepts</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../tx.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+
+  /* ingredient map */
+  const ING = [
+    ['Direct attention connections', 'var(--b)', [0, 1], '<b>Self-attention</b> connects every pair of positions with O(1) sequential operations and O(1) path length (Table 1), so the whole sequence is processed in parallel and long-range links are one hop.', '03-self-attention'],
+    ['Multiple heads', '#3a8fd8', [2], '<b>Multi-head attention</b> counteracts the "reduced effective resolution due to averaging" (§2). Evidence: 1 head is 0.9 BLEU worse than the best setting (Table 3A).', '06-multi-head-attention'],
+    ['Positional encoding', '#c9a227', [3], '<b>Sinusoidal PE</b> gives the order-blind attention mechanism information about token positions. Learned embeddings performed the same (Table 3E: 25.7 vs 25.8).', '07-positional-encoding'],
+    ['Stacked layers: residual + LN + FFN', 'var(--e)', [4], '<b>N = 6 layers</b>, each LayerNorm(x + Sublayer(x)), with a position-wise FFN for per-token transformation. Depth matters: N = 2 drops to 23.7 BLEU and N = 8 reaches 25.5 (Table 3C); a wider FFN helps (26.2).', '10-residual-layernorm'],
+  ];
+  const PROB = ['Sequential computation', 'Long paths between distant tokens', 'Averaging blurs relationships', 'No sense of word order', 'Need for depth and per-token processing'];
+  let sel = 0;
+  const drawMap = () => {
+    const s = clear(document.getElementById('mapSvg'));
+    PROB.forEach((p, j) => {
+      const on = ING[sel][2].includes(j), y = 20 + j * 62;
+      TX.box(s, 300, y, 210, 44, on ? 'var(--d)' : 'var(--panel-2)', p, { text: on ? '#fff' : 'var(--muted)', fs: 11.5, stroke: 'var(--line)' });
+    });
+    ING.forEach(([n, c, targets], i) => {
+      const y = 30 + i * 76, on = i === sel;
+      targets.forEach(j => svg('line', { x1: 230, y1: y + 22, x2: 298, y2: 42 + j * 62, style: `stroke:${c};stroke-width:${on ? 4 : 1.5};opacity:${on ? 1 : .35}` }, s));
+      const g = TX.box(s, 10, y, 220, 44, c, n, { fs: 11.5, attrs: { 'data-i': i } });
+      if (!on) g.style.opacity = .55;
+    });
+    const [, , , txt, deck] = ING[sel];
+    document.getElementById('mapInfo').innerHTML = txt + `<br><br><a href="../${deck}/index.html">Open the deck →</a>`;
+  };
+  document.getElementById('mapSvg').addEventListener('click', e => { const g = e.target.closest('[data-i]'); if (g) { sel = +g.dataset.i; drawMap(); } });
+  drawMap();
+
+  /* Table 3 */
+  const BASE = { n: 'base', ppl: 4.92, bleu: 25.8 };
+  const T3 = {
+    A: { rows: [['h = 1, d_k = 512', 5.29, 24.9], ['h = 4, d_k = 128', 5.00, 25.5], ['h = 16, d_k = 32', 4.91, 25.8], ['h = 32, d_k = 16', 5.01, 25.4]], note: 'Computation held constant. One head is 0.9 BLEU worse than the best; too many heads also hurts.' },
+    B: { rows: [['d_k = 16', 5.16, 25.1], ['d_k = 32', 5.01, 25.4]], note: 'Smaller keys hurt: "determining compatibility is not easy".' },
+    C: { rows: [['N = 2', 6.11, 23.7], ['N = 4', 5.19, 25.3], ['N = 8', 4.88, 25.5], ['d_model = 256', 5.75, 24.5], ['d_model = 1024', 4.66, 26.0], ['d_ff = 1024', 5.12, 25.4], ['d_ff = 4096', 4.75, 26.2]], note: '"Bigger models are better." Depth, width and FFN size all matter.' },
+    D: { rows: [['P_drop = 0.0', 5.77, 24.6], ['P_drop = 0.2', 4.95, 25.5], ['ε_ls = 0.0', 4.67, 25.3], ['ε_ls = 0.2', 5.47, 25.7]], note: 'Dropout is very helpful. Label smoothing raises perplexity but improves BLEU (§5.4).' },
+    E: { rows: [['learned positional embedding', 4.92, 25.7]], note: 'Nearly identical to sinusoids; sinusoids were kept for possible length extrapolation.' },
+    big: { rows: [['big (d_model 1024, d_ff 4096, h 16, P_drop 0.3, 300K steps)', 4.33, 26.4]], note: 'The big configuration: 213M parameters, best dev results in the table.' },
+  };
+  Deck.seg('aSeg', v => {
+    const g = T3[v], rows = [[BASE.n, BASE.ppl, BASE.bleu], ...g.rows];
+    Deck.hbars(document.getElementById('aBleu'), rows.map(([n, , b]) => ({ label: n, value: b - 23, color: n === 'base' ? 'var(--faint)' : b > BASE.bleu ? 'var(--e)' : b < BASE.bleu ? 'var(--d)' : 'var(--a)', text: b.toFixed(1) })), { max: 3.6 });
+    Deck.hbars(document.getElementById('aPpl'), rows.map(([n, p]) => ({ label: n, value: p - 4, color: n === 'base' ? 'var(--faint)' : p < BASE.ppl ? 'var(--e)' : p > BASE.ppl ? 'var(--d)' : 'var(--a)', text: p.toFixed(2) })), { max: 2.2 });
+    document.getElementById('aNote').textContent = g.note;
+  });
+})();
+</script>
+</body>
+</html>

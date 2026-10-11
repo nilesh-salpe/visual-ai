@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Experimental Results</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../tx.css">
+</head>
+<body data-deck="Experimental results" data-home="../index.html" data-home-label="Transformer">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Attention Is All You Need · 14</div>
+    <h1>Experimental results</h1>
+    <p class="sub">Translation quality (BLEU) against training cost (FLOPs) on WMT 2014, plus training time and a transfer test on English constituency parsing. All figures are from the paper.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>The best translation systems of 2016–17 needed large ensembles and 10<sup>19</sup>–10<sup>21</sup> FLOPs of training to reach state-of-the-art BLEU.</div>
+      <div class="c"><b>Core idea</b>The Transformer (big) set a new state of the art on EN-DE (28.4 BLEU) and EN-FR (41.8), at a fraction of the training cost: 3.5 days on 8 P100 GPUs.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prior" data-chapter="The problem">
+  <div class="inner">
+    <span class="qtag prob">① What is the problem?</span>
+    <h2>Before: better BLEU cost much more compute</h2>
+    <hr>
+    <p class="lede">Each dot is a published model from Table 2: translation quality (BLEU on newstest2014) against estimated training cost. The best results came from <b>ensembles</b> at 10<sup>20</sup>–10<sup>21</sup> FLOPs. Turn on the Transformer to compare.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <div class="seg" id="lSeg"><button data-v="de" class="on">EN → DE</button><button data-v="fr">EN → FR</button></div>
+        <div class="seg" id="tSeg"><button data-v="0" class="on">Prior work only</button><button data-v="1">+ Transformer</button></div>
+      </div>
+      <svg id="scSvg" viewBox="0 0 660 340" style="margin-top:10px" role="img" aria-label="BLEU vs training FLOPs"></svg>
+      <div class="key"><span><i style="background:var(--faint)"></i>single model</span><span><i style="background:var(--c)"></i>ensemble</span><span><i style="background:var(--e)"></i>Transformer</span></div>
+    </div>
+    <div class="cite">Table 2. Only models with both a BLEU score and a FLOPs estimate for the selected pair are plotted (ByteNet has no FLOPs entry; Deep-Att has EN-FR only). The paper lists the Transformer's FLOPs once for both language pairs.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-table" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Table 2: higher BLEU, lower training cost</h2>
+    <hr>
+    <div class="visual scroll-x">
+      <table class="tbl">
+        <tr><th>Model</th><th>BLEU EN-DE</th><th>BLEU EN-FR</th><th>FLOPs EN-DE</th><th>FLOPs EN-FR</th></tr>
+        <tr><td>ByteNet</td><td>23.75</td><td></td><td></td><td></td></tr>
+        <tr><td>Deep-Att + PosUnk</td><td></td><td>39.2</td><td></td><td>1.0·10²⁰</td></tr>
+        <tr><td>GNMT + RL</td><td>24.6</td><td>39.92</td><td>2.3·10¹⁹</td><td>1.4·10²⁰</td></tr>
+        <tr><td>ConvS2S</td><td>25.16</td><td>40.46</td><td>9.6·10¹⁸</td><td>1.5·10²⁰</td></tr>
+        <tr><td>MoE</td><td>26.03</td><td>40.56</td><td>2.0·10¹⁹</td><td>1.2·10²⁰</td></tr>
+        <tr><td>Deep-Att + PosUnk Ensemble</td><td></td><td>40.4</td><td></td><td>8.0·10²⁰</td></tr>
+        <tr><td>GNMT + RL Ensemble</td><td>26.30</td><td>41.16</td><td>1.8·10²⁰</td><td>1.1·10²¹</td></tr>
+        <tr><td>ConvS2S Ensemble</td><td>26.36</td><td>41.29</td><td>7.7·10¹⁹</td><td>1.2·10²¹</td></tr>
+        <tr style="background:var(--e-soft)"><td><b>Transformer (base)</b></td><td><b>27.3</b></td><td>38.1</td><td colspan="2" style="text-align:center"><b>3.3·10¹⁸</b></td></tr>
+        <tr style="background:var(--e-soft)"><td><b>Transformer (big)</b></td><td><b>28.4</b></td><td><b>41.8</b></td><td colspan="2" style="text-align:center">2.3·10¹⁹</td></tr>
+      </table>
+    </div>
+    <div class="grid3" style="margin-top:14px">
+      <div class="stat"><div class="num" style="color:var(--e)">+2.0</div><div class="lbl">BLEU over the best previous EN-DE result, including ensembles (28.4 vs 26.36)</div></div>
+      <div class="stat"><div class="num" style="color:var(--e)">27.3</div><div class="lbl">EN-DE BLEU of the <b>base</b> model, already above every earlier model and ensemble</div></div>
+      <div class="stat"><div class="num" style="color:var(--e)">&lt; ¼</div><div class="lbl">the training cost of the previous state of the art on EN-FR (big model, §6.1)</div></div>
+    </div>
+    <div class="cite">Metric: BLEU on WMT 2014 newstest2014 (case and tokenization as in the paper). On EN-FR the abstract and Table 2 report 41.8, while §6.1's text says 41.0; this deck uses the table value.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-cost" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Where the training-cost numbers come from</h2>
+    <hr>
+    <p class="lede">The paper estimates FLOPs as <b>training time × number of GPUs × sustained single-precision throughput per GPU</b>, using 9.5 TFLOPS for a P100 (footnote 5). You can reproduce the Table 2 values below.</p>
+    <div class="visual">
+      <div class="seg" id="cSeg"><button data-v="base" class="on">Base model</button><button data-v="big">Big model</button></div>
+      <div class="eq" id="cEq"></div>
+      <div class="grid3" style="margin-top:8px">
+        <div class="stat"><div class="num" id="cT"></div><div class="lbl">wall-clock time</div></div>
+        <div class="stat"><div class="num">8 × P100</div><div class="lbl">one machine (§5.2)</div></div>
+        <div class="stat"><div class="num" id="cF" style="color:var(--e)"></div><div class="lbl">estimated training FLOPs</div></div>
+      </div>
+    </div>
+    <div class="cite">§5.2 and §6.1, footnote 5: "We used values of 2.8, 3.7, 6.0 and 9.5 TFLOPS for K80, K40, M40 and P100, respectively."</div>
+  </div>
+</section>
+
+<section class="slide" id="s-parse" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Does it generalize? English constituency parsing (Table 4)</h2>
+    <hr>
+    <p class="lede">A 4-layer Transformer (d<sub>model</sub> = 1024) trained on the WSJ portion of the Penn Treebank (~40K sentences), and in a semi-supervised setting (~17M sentences), with little task-specific tuning. Metric: F1 on WSJ section 23.</p>
+    <div class="visual">
+      <div class="seg" id="pSeg"><button data-v="wsj" class="on">WSJ only</button><button data-v="semi">Semi-supervised / other</button></div>
+      <div id="pBars" style="margin-top:14px"></div>
+    </div>
+    <div class="takeaway">It beat all previously reported models except the Recurrent Neural Network Grammar, and unlike RNN seq2seq models it outperformed the BerkeleyParser even with only the 40K WSJ sentences (§6.3).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-paper" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label ppr">In the paper · Abstract, §6.1</div>
+    <h2>The headline claims</h2>
+    <hr>
+    <div class="paper"><b>Abstract:</b> 28.4 BLEU on WMT 2014 English-to-German, "improving over the existing best results, including ensembles, by over 2 BLEU", and a new single-model state of the art of 41.8 BLEU on English-to-French "after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature."</div>
+    <div class="paper"><b>Setup (§5):</b> WMT 2014 EN-DE, ~4.5M sentence pairs with a shared BPE vocabulary of ~37K; EN-FR, 36M sentences with a 32K word-piece vocabulary. Adam (β₁ = 0.9, β₂ = 0.98, ε = 10⁻⁹) with 4,000 warmup steps, then inverse-square-root decay.</div>
+    <div class="paper"><b>Decoding (§6.1):</b> beam size 4, length penalty α = 0.6, checkpoint averaging (last 5 for base, last 20 for big).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-end" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label">Recap</div>
+    <h2>Results in two lines</h2>
+    <hr>
+    <div class="recap">
+      <div><span><b>Problem:</b> state-of-the-art translation needed large ensembles and 10<sup>20</sup>+ FLOPs of training.</span></div>
+      <div><span><b>Result:</b> Transformer (big) 28.4 BLEU EN-DE and 41.8 EN-FR at 2.3·10¹⁹ FLOPs (3.5 days, 8 P100s). Base 27.3 EN-DE in 12 hours. Generalizes to parsing (92.7 F1 semi-supervised).</span></div>
+    </div>
+    <p class="start-hint">You've finished the guide. <a href="../index.html">← Back to all concepts</a> · Previous: <a href="../13-why-it-works/index.html">← 13</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../tx.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+  // [name, bleuDE, bleuFR, flopsDE, flopsFR, ensemble, transformer]
+  const T2 = [
+    ['ByteNet', 23.75, null, null, null, 0, 0],
+    ['Deep-Att + PosUnk', null, 39.2, null, 1.0e20, 0, 0],
+    ['GNMT + RL', 24.6, 39.92, 2.3e19, 1.4e20, 0, 0],
+    ['ConvS2S', 25.16, 40.46, 9.6e18, 1.5e20, 0, 0],
+    ['MoE', 26.03, 40.56, 2.0e19, 1.2e20, 0, 0],
+    ['Deep-Att + PosUnk Ens.', null, 40.4, null, 8.0e20, 1, 0],
+    ['GNMT + RL Ens.', 26.30, 41.16, 1.8e20, 1.1e21, 1, 0],
+    ['ConvS2S Ens.', 26.36, 41.29, 7.7e19, 1.2e21, 1, 0],
+    ['Transformer (base)', 27.3, 38.1, 3.3e18, 3.3e18, 0, 1],
+    ['Transformer (big)', 28.4, 41.8, 2.3e19, 2.3e19, 0, 1],
+  ];
+  let lang = 'de', showT = false;
+  const scatter = () => {
+    const s = clear(document.getElementById('scSvg'));
+    const bi = lang === 'de' ? 1 : 2, fi = lang === 'de' ? 3 : 4;
+    const pts = T2.filter(r => r[bi] != null && r[fi] != null && (showT || !r[6]));
+    const [ylo, yhi] = lang === 'de' ? [23.5, 29] : [37.5, 42.5];
+    const L = 70, R = 640, T = 20, B = 290;
+    const X = f => L + (Math.log10(f) - 18) / 3.3 * (R - L), Y = b => B - (b - ylo) / (yhi - ylo) * (B - T);
+    for (let e = 18; e <= 21; e++) {
+      svg('line', { x1: X(10 ** e), x2: X(10 ** e), y1: T, y2: B, class: 'ln' }, s);
+      svg('text', { x: X(10 ** e), y: B + 16, 'text-anchor': 'middle', class: 'tm tc', text: `10^${e}` }, s);
+    }
+    for (let b = Math.ceil(ylo); b <= yhi; b++) {
+      svg('line', { x1: L, x2: R, y1: Y(b), y2: Y(b), class: 'ln', 'stroke-dasharray': '2 4' }, s);
+      svg('text', { x: L - 6, y: Y(b) + 4, 'text-anchor': 'end', class: 'tm tc', style: 'font-size:10.5px', text: b }, s);
+    }
+    svg('text', { x: (L + R) / 2, y: B + 36, 'text-anchor': 'middle', class: 'tm', text: 'training cost (FLOPs, log scale), lower is better' }, s);
+    svg('text', { x: 14, y: (T + B) / 2, 'text-anchor': 'middle', class: 'tm', transform: `rotate(-90 14 ${(T + B) / 2})`, text: `BLEU ${lang === 'de' ? 'EN-DE' : 'EN-FR'} (newstest2014), higher is better` }, s);
+    pts.forEach(r => {
+      const x = X(r[fi]), y = Y(r[bi]), c = r[6] ? 'var(--e)' : r[5] ? 'var(--c)' : 'var(--faint)';
+      svg('circle', { cx: x, cy: y, r: r[6] ? 9 : 7, style: `fill:${c};stroke:var(--panel);stroke-width:2` }, s);
+      const right = x < 520;
+      const dy = r[0].startsWith('GNMT + RL Ens') ? 20 : r[0].startsWith('ConvS2S Ens') ? -10 : r[0].startsWith('Deep-Att + PosUnk Ens') ? 18 : 4;
+      svg('text', { x: x + (right ? 12 : -12), y: y + dy, 'text-anchor': right ? 'start' : 'end', class: 't', style: `font-size:11.5px;font-weight:${r[6] ? 700 : 500};fill:${r[6] ? 'var(--e)' : 'var(--ink)'}`, text: `${r[0]} · ${r[bi]}` }, s);
+    });
+    if (showT) svg('text', { x: L + 8, y: T + 14, class: 't', style: 'fill:var(--e);font-size:12px;font-weight:600', text: '↖ better and cheaper' }, s);
+  };
+  Deck.seg('lSeg', v => { lang = v; scatter(); });
+  Deck.seg('tSeg', v => { showT = v === '1'; scatter(); });
+
+  /* cost derivation */
+  Deck.seg('cSeg', v => {
+    const base = v === 'base', t = base ? 12 * 3600 : 3.5 * 86400, F = t * 8 * 9.5e12;
+    const m = F.toExponential(2).split('e+');
+    document.getElementById('cEq').innerHTML = `${base ? '12 hours' : '3.5 days'} = ${t.toLocaleString()} s &nbsp;×&nbsp; 8 GPUs &nbsp;×&nbsp; 9.5·10¹² FLOP/s &nbsp;=&nbsp; <b>${m[0]}·10^${m[1]}</b>`;
+    Deck.out('cT', base ? '12 h (100K steps × ~0.4 s)' : '3.5 days (300K steps × 1.0 s)');
+    Deck.out('cF', (base ? '3.3·10¹⁸' : '2.3·10¹⁹') + ' ✓ Table 2');
+  });
+
+  /* parsing */
+  const P4 = {
+    wsj: [['Vinyals & Kaiser et al. (2014)', 88.3], ['Petrov et al. (2006)', 90.4], ['Zhu et al. (2013)', 90.4], ['Dyer et al. (2016)', 91.7], ['Transformer (4 layers)', 91.3]],
+    semi: [['Zhu et al. (2013), semi-sup.', 91.3], ['Huang & Harper (2009), semi-sup.', 91.3], ['McClosky et al. (2006), semi-sup.', 92.1], ['Vinyals & Kaiser (2014), semi-sup.', 92.1], ['Transformer (4 layers), semi-sup.', 92.7], ['Luong et al. (2015), multi-task', 93.0], ['Dyer et al. (2016), generative', 93.3]],
+  };
+  Deck.seg('pSeg', v => {
+    Deck.hbars(document.getElementById('pBars'), P4[v].map(([n, f]) => ({ label: n, value: f - 87, color: n.startsWith('Transformer') ? 'var(--e)' : 'var(--faint)', text: f.toFixed(1) + ' F1' })), { max: 7 });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scaled Dot-Product Attention</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../tx.css">
+</head>
+<body data-deck="Scaled dot-product attention" data-home="../index.html" data-home-label="Transformer">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Attention Is All You Need · 05</div>
+    <h1>Scaled dot-product attention</h1>
+    <p class="sub"><code>Attention(Q, K, V) = softmax(QKᵀ / √d<sub>k</sub>) V</code>: how the scores are computed, scaled, normalized and used to take weighted sums.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Dot products of d<sub>k</sub>-dimensional vectors grow with d<sub>k</sub>. Large scores push the softmax into a near one-hot regime where its gradients are tiny.</div>
+      <div class="c"><b>Core idea</b>Divide the scores by √d<sub>k</sub> so their variance stays near 1 whatever the dimension, then apply softmax and take weighted sums of V, all as matrix multiplications.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prob" data-chapter="The problem">
+  <div class="inner">
+    <span class="qtag prob">① What is the problem?</span>
+    <h2>Bigger d<sub>k</sub> → bigger dot products → saturated softmax</h2>
+    <hr>
+    <p class="lede">If the components of q and k are independent with mean 0 and variance 1, then q·k has <b>variance d<sub>k</sub></b>. With d<sub>k</sub> = 64 the scores spread over roughly ±8, the softmax puts nearly all its weight on one key, and its gradients become very small. Drag d<sub>k</sub>.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">d<sub>k</sub> <input type="range" id="pD" min="0" max="10" step="1" value="6"> <output id="pDo"></output></label>
+        <div class="seg" id="pScale"><button data-v="0" class="on">Unscaled q·k</button><button data-v="1">Scaled q·k / √d<sub>k</sub></button></div>
+        <button class="btn" id="pResample">Resample q, k</button>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div><h3>Scores for 8 keys</h3><svg id="pScores" viewBox="0 0 320 200" role="img" aria-label="Scores"></svg></div>
+        <div><h3>Softmax weights</h3><svg id="pSoft" viewBox="0 0 320 200" role="img" aria-label="Softmax weights"></svg></div>
+      </div>
+      <div class="grid3">
+        <div class="stat"><div class="num" id="pStd"></div><div class="lbl">std of scores (theory: √d<sub>k</sub> unscaled, 1 scaled)</div></div>
+        <div class="stat"><div class="num" id="pMax"></div><div class="lbl">largest weight</div></div>
+        <div class="stat"><div class="num" id="pGrad"></div><div class="lbl">largest softmax gradient term max pᵢ(1−pᵢ)</div></div>
+      </div>
+    </div>
+    <div class="cite">§3.2.1 and footnote 4. The paper states this as the reason it <em>suspects</em> unscaled dot products underperform for large d<sub>k</sub>. Random q, k are drawn from N(0, 1).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-steps" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Equation 1, one step at a time</h2>
+    <hr>
+    <div class="eq">Attention(Q, K, V) = softmax( Q Kᵀ / √d<sub>k</sub> ) · V</div>
+    <div class="visual">
+      <div class="steps" id="eqSteps"></div>
+      <svg id="eqSvg" viewBox="0 0 660 250" style="margin-top:10px" role="img" aria-label="Matrices at each step"></svg>
+      <div class="infobox" id="eqInfo"></div>
+    </div>
+    <p class="caption">Toy example: n = 4 tokens, d<sub>k</sub> = d<sub>v</sub> = 4, random values with a fixed seed. Every number is computed in the page.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Why dot products, and why the scaling?</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Dot-product attention</h3><p>Compatibility = q·k. It's fast and memory-efficient "since it can be implemented using highly optimized matrix multiplication code" (§3.2.1). The paper's version is identical to this except for the 1/√d<sub>k</sub> factor.</p></div>
+      <div class="card b"><h3>Additive attention</h3><p>Compatibility is computed by a feed-forward network with one hidden layer. Its theoretical complexity is similar, but it is slower in practice.</p></div>
+      <div class="card e"><h3>Small d<sub>k</sub></h3><p>The two mechanisms perform similarly.</p></div>
+      <div class="card d"><h3>Large d<sub>k</sub></h3><p>Additive attention outperforms <em>unscaled</em> dot-product attention. The paper attributes this to large dot products saturating the softmax, so it scales by 1/√d<sub>k</sub>.</p></div>
+    </div>
+    <div class="takeaway">Scaling keeps the fast matrix-multiply form of dot-product attention and avoids its large-d<sub>k</sub> problem.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-paper" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label ppr">In the paper · §3.2.1, Eq. 1, footnote 4</div>
+    <h2>The exact statement</h2>
+    <hr>
+    <div class="eq">Attention(Q, K, V) = softmax( QKᵀ / √d<sub>k</sub> ) V &nbsp;&nbsp; (1)</div>
+    <div class="paper"><b>Inputs:</b> queries and keys of dimension d<sub>k</sub>, values of dimension d<sub>v</sub>. Compute the dot products of the query with all keys, divide each by √d<sub>k</sub>, and apply a softmax to obtain the weights on the values.</div>
+    <div class="paper"><b>Footnote 4:</b> if the components of q and k are independent random variables with mean 0 and variance 1, then q·k = Σ<sub>i</sub> q<sub>i</sub>k<sub>i</sub> has mean 0 and variance d<sub>k</sub>.</div>
+    <div class="paper"><b>Masking (used in the decoder):</b> illegal connections are masked out by setting their softmax inputs to −∞ (§3.2.3; Figure 2's optional "Mask" step). See deck 09.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-end" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label">Recap</div>
+    <h2>Scaled dot-product attention in two lines</h2>
+    <hr>
+    <div class="recap">
+      <div><span><b>Problem:</b> raw dot products have variance d<sub>k</sub>, so the softmax saturates and gradients shrink as d<sub>k</sub> grows.</span></div>
+      <div><span><b>Core idea:</b> scores = QKᵀ / √d<sub>k</sub>, then a row-wise softmax gives weights, then weights × V gives outputs. That is two matrix multiplications and a softmax.</span></div>
+    </div>
+    <p class="start-hint">Next: <a href="../06-multi-head-attention/index.html">06 · Multi-head attention →</a> · Previous: <a href="../04-queries-keys-values/index.html">← 04</a> · <a href="../index.html">All concepts</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../tx.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+
+  /* saturation demo */
+  let scaled = false, seed = 11;
+  const bars = (s, vals, o) => {
+    clear(s);
+    const n = vals.length, bw = 300 / n, mid = o.signed ? 100 : 180, sc = o.signed ? 80 / o.max : 160 / o.max;
+    if (o.signed) svg('line', { x1: 10, x2: 310, y1: mid, y2: mid, class: 'ln' }, s);
+    vals.forEach((v, i) => {
+      const h = Math.abs(v) * sc, y = o.signed ? (v >= 0 ? mid - h : mid) : mid - h;
+      svg('rect', { x: 12 + i * bw, y, width: bw - 6, height: Math.max(1, h), rx: 3, style: `fill:${o.color(v, i)}` }, s);
+      svg('text', { x: 12 + i * bw + (bw - 6) / 2, y: o.signed ? (v >= 0 ? y - 4 : y + h + 12) : y - 4, 'text-anchor': 'middle', class: 'tm tc', style: 'font-size:9.5px', text: o.fmt(v) }, s);
+    });
+  };
+  const demo = () => {
+    const dk = Math.pow(2, Deck.val('pD')); Deck.out('pDo', dk);
+    const r = TX.rng(seed), q = [...Array(dk)].map(() => TX.randn(r)), ks = [...Array(8)].map(() => [...Array(dk)].map(() => TX.randn(r)));
+    let sc = ks.map(k => TX.dot(q, k)); if (scaled) sc = sc.map(x => x / Math.sqrt(dk));
+    const p = TX.softmax(sc), mx = Math.max(...sc.map(Math.abs), 1);
+    bars(document.getElementById('pScores'), sc, { signed: true, max: mx, color: v => v >= 0 ? 'var(--a)' : 'var(--d)', fmt: v => v.toFixed(1) });
+    bars(document.getElementById('pSoft'), p, { max: 1, color: (v) => v > .9 ? 'var(--d)' : 'var(--b)', fmt: v => (v * 100).toFixed(0) + '%' });
+    const theoryStd = scaled ? 1 : Math.sqrt(dk);
+    Deck.out('pStd', `≈ ${theoryStd.toFixed(1)}`);
+    const pm = Math.max(...p), g = Math.max(...p.map(x => x * (1 - x)));
+    Deck.out('pMax', (pm * 100).toFixed(1) + '%'); Deck.out('pGrad', g.toFixed(3));
+    document.getElementById('pMax').style.color = pm > .9 ? 'var(--d)' : 'var(--e)';
+    document.getElementById('pGrad').style.color = g < .05 ? 'var(--d)' : 'var(--e)';
+  };
+  Deck.seg('pScale', v => { scaled = v === '1'; if (document.getElementById('pD')) demo(); });
+  document.getElementById('pResample').onclick = () => { seed++; demo(); };
+  Deck.bind(['pD'], demo);
+
+  /* equation stepper */
+  const r = TX.rng(5), R1 = M => M.map(row => row.map(x => Math.round(x * 10) / 10));
+  const Q = R1(TX.randMat(4, 4, r)), K = R1(TX.randMat(4, 4, r)), V = R1(TX.randMat(4, 4, r));
+  const S = TX.matMul(Q, TX.T(K)), Ss = S.map(row => row.map(x => x / 2)), A = Ss.map(TX.softmax), O = TX.matMul(A, V);
+  const toks = ['t1', 't2', 't3', 't4'];
+  const STEPS = [
+    ['1 · Q and K', [[Q, 'Q (n × d_k)', 'var(--c)'], [TX.T(K), 'Kᵀ (d_k × n)', 'var(--b)']], 'Each row of Q is one token\'s query, and each column of Kᵀ is one token\'s key.'],
+    ['2 · QKᵀ', [[S, 'QKᵀ scores (n × n)', 'var(--b)']], 'Entry (i, j) = q<sub>i</sub>·k<sub>j</sub>: how compatible token i\'s query is with token j\'s key. Every pair in one matrix multiplication.'],
+    ['3 · ÷ √d_k', [[Ss, 'QKᵀ / √4 = QKᵀ / 2', 'var(--b)']], 'Scale by 1/√d<sub>k</sub> (here √4 = 2) so the scores keep about unit variance whatever the dimension.'],
+    ['4 · softmax', [[A, 'softmax by row: weights A', 'var(--e)']], 'Softmax along each row turns scores into positive weights that <b>sum to 1</b> across the keys: token i\'s attention distribution.'],
+    ['5 · × V', [[A, 'A', 'var(--e)'], [V, 'V (n × d_v)', 'var(--a)'], [O, 'output = AV', 'var(--a)']], 'Each output row is a weighted average of the value rows, using that row\'s attention weights. Shape n × d<sub>v</sub>.'],
+  ];
+  const st = document.getElementById('eqSteps');
+  st.innerHTML = STEPS.map((x, i) => `<button data-i="${i}">${x[0]}</button>`).join('');
+  const pick = i => {
+    Deck.$$('button', st).forEach(b => b.classList.toggle('on', +b.dataset.i === i));
+    const s = clear(document.getElementById('eqSvg')), mats = STEPS[i][1];
+    let x = 30;
+    mats.forEach(([M, lab, c], k) => {
+      svg('text', { x, y: 22, class: 't tc', style: `font-weight:700;fill:${c};font-size:12px`, text: lab }, s);
+      TX.heat(s, M, { x, y: 50, cell: 40, color: c, neg: true, rows: k === 0 ? toks : null, cols: lab.startsWith('Kᵀ') || lab.includes('n × n') || lab.startsWith('QKᵀ') || lab.startsWith('softmax') || lab === 'A' ? toks : null });
+      if (i === 3) A.forEach((row, ri) => svg('text', { x: x + 4 * 40 + 6, y: 50 + ri * 40 + 24, class: 'tm tc', style: 'font-size:10px', text: 'Σ=' + row.reduce((a, b) => a + b, 0).toFixed(2) }, s));
+      x += 4 * 40 + (i === 3 ? 70 : 50);
+      if (k < mats.length - 1) svg('text', { x: x - 34, y: 140, class: 't', style: 'font-size:20px;fill:var(--muted)', text: i === 4 && k === 1 ? '=' : i === 4 ? '×' : ' ' }, s);
+    });
+    document.getElementById('eqInfo').innerHTML = STEPS[i][2];
+  };
+  st.addEventListener('click', e => { const b = e.target.closest('button'); if (b) pick(+b.dataset.i); });
+  pick(0);
+})();
+</script>
+</body>
+</html>

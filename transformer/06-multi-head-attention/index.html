@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-Head Attention</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../tx.css">
+<style>#mhSvg [data-h] { cursor: pointer; }</style>
+</head>
+<body data-deck="Multi-head attention" data-home="../index.html" data-home-label="Transformer">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Attention Is All You Need · 06</div>
+    <h1>Multi-head attention</h1>
+    <p class="sub">Eight attention functions run in parallel, each in its own 64-dimensional subspace, and their outputs are concatenated and projected.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>One attention distribution per token has to average over every kind of relationship (who "it" refers to, what describes it, its neighbours), which blurs them together.</div>
+      <div class="c"><b>Core idea</b>Project Q, K and V h = 8 times into smaller subspaces (d<sub>k</sub> = 64), attend in each separately, then concatenate and apply W<sup>O</sup>. The total cost is about the same as one full-width head.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prob" data-chapter="The problem">
+  <div class="inner">
+    <span class="qtag prob">① What is the problem?</span>
+    <h2>One head has to blend different relationships into one average <span class="ill">illustrative weights</span></h2>
+    <hr>
+    <p class="lede">To understand "<b>it</b>", a model might want three things at once: what it <span style="color:var(--a);font-weight:600">refers to</span> ("animal"), what is <span style="color:var(--b);font-weight:600">said about it</span> ("tired") and its <span style="color:var(--c);font-weight:600">local syntax</span> ("was"). A single softmax spreads one budget of 100% across all of them.</p>
+    <div class="visual">
+      <div class="seg" id="pSeg"><button data-v="1" class="on">1 head (averaged)</button><button data-v="3">3 heads (separate)</button></div>
+      <svg id="pSvg" viewBox="0 0 660 240" style="margin-top:8px" role="img" aria-label="Single vs multiple heads"></svg>
+    </div>
+    <div class="takeaway">The paper puts it this way: "With a single attention head, averaging inhibits this" (§3.2.2). §2 also names the cost of attention's averaging: "reduced effective resolution".</div>
+  </div>
+</section>
+
+<section class="slide" id="s-arch" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>h = 8 heads in parallel, then concatenate and project</h2>
+    <hr>
+    <p class="lede">Each head i has its own projections W<sub>i</sub><sup>Q</sup>, W<sub>i</sub><sup>K</sup>, W<sub>i</sub><sup>V</sup> (512 → 64) and runs scaled dot-product attention on its own. The eight 64-dim outputs are concatenated back to 512 and mixed by W<sup>O</sup>. Click a head to see the kind of pattern a head can learn.</p>
+    <div class="visual">
+      <svg id="mhSvg" viewBox="0 0 660 270" role="img" aria-label="Multi-head attention diagram"></svg>
+      <svg id="headSvg" viewBox="0 0 660 150" style="margin-top:4px" role="img" aria-label="Pattern of the selected head"></svg>
+      <p class="caption" id="headCap"></p>
+    </div>
+    <div class="cite">Head patterns are illustrative. The paper reports that individual heads "clearly learn to perform different tasks", with behaviour related to the syntactic and semantic structure of sentences (§4, Figures 3–5).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-heads" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Same budget, split differently: the paper's head-count experiment</h2>
+    <hr>
+    <p class="lede">Table 3, row (A) changes h while keeping h · d<sub>k</sub> = 512, so <b>computation stays constant</b>. Pick h to see the per-head width and the measured result on newstest2013 (the EN-DE development set).</p>
+    <div class="visual">
+      <div class="seg" id="hSeg"><button data-v="1">h = 1</button><button data-v="4">h = 4</button><button data-v="8" class="on">h = 8 (base)</button><button data-v="16">h = 16</button><button data-v="32">h = 32</button></div>
+      <svg id="splitSvg" viewBox="0 0 660 70" style="margin-top:12px" role="img" aria-label="512 dims split into heads"></svg>
+      <div class="grid2" style="margin-top:10px">
+        <div><h3>BLEU (dev), higher is better</h3><div id="bleuBars"></div></div>
+        <div><h3>Perplexity (dev), lower is better</h3><div id="pplBars"></div></div>
+      </div>
+    </div>
+    <div class="takeaway">Single-head attention is 0.9 BLEU worse than the best setting, and quality also drops with too many heads (h = 32, d<sub>k</sub> = 16). The paper's §6.2 says both.</div>
+    <div class="cite">Table 3 rows (A) and base. Perplexities are per word-piece and are not comparable with per-word perplexities.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-paper" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label ppr">In the paper · §3.2.2</div>
+    <h2>The equations</h2>
+    <hr>
+    <div class="eq">MultiHead(Q, K, V) = Concat(head<sub>1</sub>, …, head<sub>h</sub>) W<sup>O</sup></div>
+    <div class="eq">head<sub>i</sub> = Attention(Q W<sub>i</sub><sup>Q</sup>, K W<sub>i</sub><sup>K</sup>, V W<sub>i</sub><sup>V</sup>)</div>
+    <div class="paper"><b>Shapes:</b> W<sub>i</sub><sup>Q</sup> ∈ ℝ<sup>d<sub>model</sub>×d<sub>k</sub></sup>, W<sub>i</sub><sup>K</sup> ∈ ℝ<sup>d<sub>model</sub>×d<sub>k</sub></sup>, W<sub>i</sub><sup>V</sup> ∈ ℝ<sup>d<sub>model</sub>×d<sub>v</sub></sup>, W<sup>O</sup> ∈ ℝ<sup>hd<sub>v</sub>×d<sub>model</sub></sup>. With h = 8 and d<sub>k</sub> = d<sub>v</sub> = d<sub>model</sub>/h = 64.</div>
+    <div class="paper"><b>Why:</b> "Multi-head attention allows the model to jointly attend to information from different representation subspaces at different positions." Because each head is smaller, the total computational cost is similar to single-head attention with full dimensionality.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-end" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label">Recap</div>
+    <h2>Multi-head attention in two lines</h2>
+    <hr>
+    <div class="recap">
+      <div><span><b>Problem:</b> one softmax per token averages different relationships together and loses resolution.</span></div>
+      <div><span><b>Core idea:</b> 8 heads × 64 dims attend in parallel, in different subspaces, then Concat → W<sup>O</sup>. Same cost, and measurably better than 1 head (Table 3A).</span></div>
+    </div>
+    <p class="start-hint">Next: <a href="../07-positional-encoding/index.html">07 · Positional encoding →</a> · Previous: <a href="../05-scaled-dot-product-attention/index.html">← 05</a> · <a href="../index.html">All concepts</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../tx.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+  const TOK = ['The', 'animal', "didn't", 'cross', 'the', 'street', 'because', 'it', 'was', 'too', 'tired'];
+  const norm = w => { const s = w.reduce((a, b) => a + b, 0); return w.map(x => x / s); };
+  const oneHotish = (n, peaks) => { const w = Array(n).fill(0.01); peaks.forEach(([j, v]) => w[j] += v); return norm(w); };
+
+  /* problem: blend vs separate */
+  Deck.seg('pSeg', v => {
+    const s = clear(document.getElementById('pSvg'));
+    const pos = TX.tokens(s, TOK, { y: 190, h: 30, font: 12, sel: 7 });
+    if (v === '1') {
+      const w = oneHotish(11, [[1, .3], [10, .3], [8, .3]]);
+      TX.arcs(s, pos, 7, w, { color: 'var(--faint)', maxH: 90, norm: true });
+      svg('text', { x: 330, y: 22, 'text-anchor': 'middle', class: 't', style: 'font-size:12.5px', text: 'one distribution: ~1/3 each, so no single relationship is sharp' }, s);
+    } else {
+      [[1, 'var(--a)'], [10, 'var(--b)'], [8, 'var(--c)']].forEach(([j, c]) => TX.arcs(s, pos, 7, oneHotish(11, [[j, .9]]), { color: c, maxH: 90, min: .2 }));
+      svg('text', { x: 330, y: 22, 'text-anchor': 'middle', class: 't', style: 'font-size:12.5px', text: 'three heads, each with its own sharp distribution' }, s);
+    }
+  });
+
+  /* architecture */
+  const PAT = [
+    ['previous token', i => oneHotish(11, [[Math.max(0, i - 1), 1]])],
+    ['next token', i => oneHotish(11, [[Math.min(10, i + 1), 1]])],
+    ['pronoun → referent', i => i === 7 ? oneHotish(11, [[1, 1]]) : oneHotish(11, [[i, .6]])],
+    ['subject ↔ predicate', i => i === 7 || i === 1 ? oneHotish(11, [[10, 1]]) : oneHotish(11, [[i, .6]])],
+    ['verb → its arguments', i => i === 3 || i === 7 ? oneHotish(11, [[1, .5], [5, .5]]) : oneHotish(11, [[3, .5]])],
+    ['broad average', () => Array(11).fill(1 / 11)],
+    ['itself', i => oneHotish(11, [[i, 1]])],
+    ['clause boundary', () => oneHotish(11, [[6, 1]])],
+  ];
+  let head = 2;
+  const drawArch = () => {
+    const s = clear(document.getElementById('mhSvg'));
+    TX.arrowDefs(s, 'ma');
+    TX.box(s, 10, 110, 90, 50, 'var(--faint)', 'X\nn × 512');
+    for (let h = 0; h < 8; h++) {
+      const y = 8 + h * 32, on = h === head;
+      TX.arrow(s, 102, 135, 140, y + 13, 'ma', 'var(--line)', 1.2);
+      const g = TX.box(s, 145, y, 160, 26, TX.HEADS[h], `head ${h + 1} · Q,K,V → 64`, { attrs: { 'data-h': h }, fs: 11, stroke: on ? 'var(--ink)' : null });
+      if (on) g.firstChild.setAttribute('style', g.firstChild.getAttribute('style') + 'stroke-width:3;');
+      svg('rect', { x: 330, y: y + 2, width: 64, height: 22, rx: 3, 'data-h': h, style: `fill:${TX.HEADS[h]};opacity:${on ? 1 : .55}` }, s);
+      svg('text', { x: 362, y: y + 17, 'text-anchor': 'middle', class: 't tc', style: 'fill:#fff;font-size:10px;pointer-events:none', text: 'n×64' }, s);
+      TX.arrow(s, 307, y + 13, 326, y + 13, 'ma', 'var(--muted)', 1.2);
+    }
+    svg('text', { x: 225, y: 268, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'attention per head' }, s);
+    svg('text', { x: 405, y: 268, class: 'tm', style: 'font-size:11px', text: 'concat → n × 512' }, s);
+    TX.arrow(s, 398, 135, 440, 135, 'ma', 'var(--muted)', 2);
+    TX.box(s, 445, 110, 90, 50, 'var(--b)', 'W^O\n512 × 512');
+    TX.arrow(s, 537, 135, 565, 135, 'ma', 'var(--muted)', 2);
+    TX.box(s, 570, 110, 80, 50, 'var(--a)', 'output\nn × 512');
+    const hs = clear(document.getElementById('headSvg'));
+    const pos = TX.tokens(hs, TOK, { y: 110, h: 30, font: 12, sel: 7 });
+    TX.arcs(hs, pos, 7, PAT[head][1](7), { color: TX.HEADS[head], maxH: 70, norm: true, min: .03 });
+    document.getElementById('headCap').innerHTML = `<b style="color:${TX.HEADS[head]}">Head ${head + 1}</b>: a "${PAT[head][0]}" pattern, shown from the token "it".`;
+  };
+  document.getElementById('mhSvg').addEventListener('click', e => { const g = e.target.closest('[data-h]'); if (g) { head = +g.dataset.h; drawArch(); } });
+  drawArch();
+
+  /* Table 3 (A) */
+  const T3A = { 1: [512, 5.29, 24.9], 4: [128, 5.00, 25.5], 8: [64, 4.92, 25.8], 16: [32, 4.91, 25.8], 32: [16, 5.01, 25.4] };
+  Deck.seg('hSeg', v => {
+    const h = +v, [dk] = T3A[h];
+    const s = clear(document.getElementById('splitSvg'));
+    const w = 620 / h;
+    for (let i = 0; i < h; i++) svg('rect', { x: 20 + i * w, y: 10, width: Math.max(1, w - (h > 16 ? 1 : 3)), height: 30, rx: 3, style: `fill:${TX.HEADS[i % 8]}` }, s);
+    svg('text', { x: 330, y: 62, 'text-anchor': 'middle', class: 't tc', style: 'font-size:12px', text: `${h} head${h > 1 ? 's' : ''} × d_k = ${dk}  =  512 dims (constant compute)` }, s);
+    const keys = [1, 4, 8, 16, 32];
+    Deck.hbars(document.getElementById('bleuBars'), keys.map(k => ({ label: `h = ${k} (d_k ${T3A[k][0]})`, value: T3A[k][2] - 24, color: k === h ? 'var(--a)' : 'var(--line)', text: T3A[k][2].toFixed(1) })), { max: 2 });
+    Deck.hbars(document.getElementById('pplBars'), keys.map(k => ({ label: `h = ${k}`, value: T3A[k][1] - 4.8, color: k === h ? 'var(--b)' : 'var(--line)', text: T3A[k][1].toFixed(2) })), { max: .5 });
+  });
+})();
+</script>
+</body>
+</html>

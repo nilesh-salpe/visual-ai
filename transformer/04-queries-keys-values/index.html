@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Queries, Keys and Values</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../tx.css">
+</head>
+<body data-deck="Queries, keys, values" data-home="../index.html" data-home-label="Transformer">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Attention Is All You Need · 04</div>
+    <h1>Queries, keys and values</h1>
+    <p class="sub">How query-key compatibility produces attention weights, and how those weights combine value vectors into a context-aware output.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A token must decide <em>which</em> tokens are relevant and <em>what</em> to take from them. One embedding vector can't serve all three roles well: asking, being matched, and supplying content.</div>
+      <div class="c"><b>Core idea</b>Project each token three ways: a query (what I'm looking for), a key (what I can be matched on) and a value (what I contribute). Query·key gives the weights, and the weights combine the values.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prob" data-chapter="The problem">
+  <div class="inner">
+    <span class="qtag prob">① What is the problem?</span>
+    <h2>Searching needs a question, an index and the content itself</h2>
+    <hr>
+    <p class="lede">Think of a library. You arrive with a <b>question</b>, you compare it with each book's <b>label</b>, and you take <b>content</b> from the books that match. If a token's raw embedding had to be the question, the label and the content all at once, it couldn't specialize for any of those roles.</p>
+    <div class="visual"><svg id="libSvg" viewBox="0 0 660 230" role="img" aria-label="Library metaphor for query key value"></svg></div>
+    <div class="takeaway">"it" should <b>ask</b> for an animate referent, "animal" should be <b>findable</b> as animate, and what "animal" <b>passes on</b> can be different again. These are three different jobs.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-proj" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Three learned projections of the same token: q = xW<sup>Q</sup>, k = xW<sup>K</sup>, v = xW<sup>V</sup></h2>
+    <hr>
+    <p class="lede">Every token's vector x is multiplied by three learned matrices. The toy model below has d<sub>model</sub> = 4 and d<sub>k</sub> = 3; the paper uses 512 and 64. All numbers are computed live. Pick a token.</p>
+    <div class="visual">
+      <div class="seg" id="tokSeg"><button data-v="0">animal</button><button data-v="1">street</button><button data-v="2" class="on">it</button><button data-v="3">tired</button></div>
+      <svg id="projSvg" viewBox="0 0 660 250" style="margin-top:10px" role="img" aria-label="Projection into q k v"></svg>
+    </div>
+    <p class="caption">Toy features of x: [animate, place, pronoun, state]. The projection weights are hand-set so the example is readable; in the paper they are learned.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-match" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>Compatibility → weights → weighted sum of values</h2>
+    <hr>
+    <p class="lede">The query of the selected token is compared with <b>every key</b> by dot product. The scores are scaled by 1/√d<sub>k</sub> and passed through a softmax to give weights that sum to 1. The output is the <b>weighted sum of the values</b>.</p>
+    <div class="visual">
+      <div class="seg" id="qSeg"><button data-v="0">query: animal</button><button data-v="1">query: street</button><button data-v="2" class="on">query: it</button><button data-v="3">query: tired</button></div>
+      <svg id="matchSvg" viewBox="0 0 660 300" style="margin-top:10px" role="img" aria-label="Query key matching"></svg>
+    </div>
+    <div class="takeaway">Because q(it) is aligned with k(animal), "it" ends up taking most of its output from v(animal). That is the attention function from §3.2, computed live.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-matrix" data-chapter="The core idea">
+  <div class="inner">
+    <span class="qtag core">② Core idea</span>
+    <h2>All tokens at once, in matrix form</h2>
+    <hr>
+    <p class="lede">Stack the token vectors into X (n × d<sub>model</sub>). Then Q = XW<sup>Q</sup>, K = XW<sup>K</sup> and V = XW<sup>V</sup> are three matrix multiplications, and every query is matched against every key in one product, QKᵀ.</p>
+    <div class="visual"><svg id="matSvg" viewBox="0 0 660 240" role="img" aria-label="Matrix form of Q K V"></svg></div>
+    <div class="paper"><b>Shapes in the paper (per head):</b> X: n × 512 · W<sup>Q</sup>, W<sup>K</sup>: 512 × 64 · W<sup>V</sup>: 512 × 64 · Q, K, V: n × 64 · QKᵀ: n × n. Deck 06 shows how 8 such heads run side by side.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-paper" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label ppr">In the paper · §3.2, §3.2.1</div>
+    <h2>The paper's wording</h2>
+    <hr>
+    <div class="paper"><b>§3.2:</b> "An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors. The output is computed as a weighted sum of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key."</div>
+    <div class="paper"><b>§3.2.1:</b> the input is queries and keys of dimension d<sub>k</sub> and values of dimension d<sub>v</sub>. In practice the queries are packed into a matrix Q, and the keys and values into matrices K and V.</div>
+    <div class="paper"><b>Where Q, K, V come from (§3.2.3):</b> in self-attention, all three come from the same previous layer. In encoder-decoder attention, Q comes from the decoder while K and V come from the encoder output (deck 08).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-end" data-chapter="In the paper">
+  <div class="inner">
+    <div class="label">Recap</div>
+    <h2>Q, K, V in two lines</h2>
+    <hr>
+    <div class="recap">
+      <div><span><b>Problem:</b> one embedding can't play all three roles: asking, being matched, and supplying content.</span></div>
+      <div><span><b>Core idea:</b> learned projections give each token a query, a key and a value. softmax(q·k / √d<sub>k</sub>) weights the values to produce the output.</span></div>
+    </div>
+    <p class="start-hint">Next: <a href="../05-scaled-dot-product-attention/index.html">05 · Scaled dot-product attention →</a> · Previous: <a href="../03-self-attention/index.html">← 03</a> · <a href="../index.html">All concepts</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../tx.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+  const T = ['animal', 'street', 'it', 'tired'];
+  const X = [[1, 0, 0, 0.2], [0, 1, 0, 0], [0.1, 0.1, 1, 0], [0.3, 0, 0, 1]];
+  const WQ = [[0, 0, 0.2], [0, 0, 0], [1.5, 0.3, 0], [1.0, 0, 0]];
+  const WK = [[1.5, 0, 0], [0, 1.2, 0], [0, 0, 0.5], [0.2, 0, 0.8]];
+  const WV = [[1, 0, 0], [0, 1, 0], [0, 0, 0.2], [0, 0, 1]];
+  const Q = TX.matMul(X, WQ), K = TX.matMul(X, WK), V = TX.matMul(X, WV);
+  const COL = ['var(--a)', 'var(--b)', 'var(--c)', 'var(--e)'];
+
+  /* library metaphor */
+  (() => {
+    const s = document.getElementById('libSvg');
+    TX.arrowDefs(s, 'la');
+    TX.box(s, 20, 80, 150, 70, 'var(--c)', 'Query\n"who am I about?"', { fs: 12 });
+    svg('text', { x: 95, y: 170, 'text-anchor': 'middle', class: 'tm', text: 'from "it"' }, s);
+    [['animal', 'animate', 'var(--a)'], ['street', 'place', 'var(--b)'], ['tired', 'state', 'var(--e)']].forEach(([n, lab, c], i) => {
+      const y = 20 + i * 70;
+      TX.box(s, 290, y, 120, 50, 'var(--panel-2)', `Key: "${lab}"`, { text: 'var(--ink)', stroke: c });
+      TX.box(s, 450, y, 180, 50, c, `Value: content of "${n}"`);
+      TX.arrow(s, 172, 115, 286, y + 25, 'la', i === 0 ? 'var(--c)' : 'var(--line)', i === 0 ? 3 : 1.5);
+    });
+    svg('text', { x: 230, y: 70, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'compare' }, s);
+    svg('text', { x: 540, y: 222, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'take a blend, mostly from the best match' }, s);
+  })();
+
+  /* projections */
+  Deck.seg('tokSeg', v => {
+    const i = +v, s = clear(document.getElementById('projSvg'));
+    TX.arrowDefs(s, 'pa');
+    svg('text', { x: 20, y: 24, class: 't', style: 'font-weight:700', text: `x("${T[i]}")` }, s);
+    TX.vec(s, X[i], { x: 20, y: 34, cell: 40, vals: true, vertical: true });
+    ['animate', 'place', 'pronoun', 'state'].forEach((f, k) => svg('text', { x: 66, y: 58 + k * 40, class: 'tm', style: 'font-size:10.5px', text: f }, s));
+    [[WQ, Q, 'W^Q → q', 'query', 'var(--c)'], [WK, K, 'W^K → k', 'key', 'var(--b)'], [WV, V, 'W^V → v', 'value', 'var(--a)']].forEach(([W, R, lab, name, c], r) => {
+      const y = 20 + r * 76;
+      TX.arrow(s, 130, 100, 228, y + 28, 'pa', c, 2);
+      svg('text', { x: 236, y: y + 14, class: 't tc', style: `fill:${c};font-weight:700;font-size:12px`, text: lab }, s);
+      TX.heat(s, W, { x: 236, y: y + 20, cell: 13, vals: false, color: c });
+      TX.arrow(s, 290, y + 46, 330, y + 46, 'pa', c, 2);
+      TX.vec(s, R[i], { x: 340, y: y + 30, cell: 42, vals: true, color: c });
+      svg('text', { x: 480, y: y + 56, class: 't', style: `fill:${c};font-weight:600`, text: `${name}("${T[i]}")` }, s);
+    });
+  });
+
+  /* matching */
+  Deck.seg('qSeg', v => {
+    const qi = +v, s = clear(document.getElementById('matchSvg'));
+    const dk = 3, scores = K.map(k => TX.dot(Q[qi], k)), scaled = scores.map(x => x / Math.sqrt(dk)), w = TX.softmax(scaled);
+    const out = [0, 1, 2].map(d => w.reduce((a, wj, j) => a + wj * V[j][d], 0));
+    svg('text', { x: 10, y: 18, class: 't', style: 'font-weight:700', text: `q("${T[qi]}")` }, s);
+    TX.vec(s, Q[qi], { x: 10, y: 26, cell: 38, vals: true, color: 'var(--c)' });
+    const cols = ['key', 'q·k', '÷√3', 'softmax', 'value'];
+    cols.forEach((c, k) => svg('text', { x: [70, 230, 300, 380, 520][k], y: 92, class: 'tm', style: 'font-size:11px;font-weight:600', text: c }, s));
+    T.forEach((t, j) => {
+      const y = 104 + j * 40;
+      svg('text', { x: 10, y: y + 18, class: 't', style: 'font-size:12px;font-weight:600', text: t }, s);
+      TX.vec(s, K[j], { x: 70, y, cell: 28, vals: true, color: 'var(--b)' });
+      svg('text', { x: 230, y: y + 18, class: 't tc', style: 'font-size:12px', text: TX.f2(scores[j]) }, s);
+      svg('text', { x: 300, y: y + 18, class: 't tc', style: 'font-size:12px', text: TX.f2(scaled[j]) }, s);
+      svg('rect', { x: 380, y: y + 4, width: 110 * w[j], height: 18, rx: 3, style: `fill:${COL[j]}` }, s);
+      svg('text', { x: 384 + 110 * w[j], y: y + 18, class: 't tc', style: 'font-size:11.5px;font-weight:700', text: (w[j] * 100).toFixed(0) + '%' }, s);
+      TX.vec(s, V[j], { x: 520, y, cell: 28, vals: true, color: 'var(--a)' });
+    });
+    svg('text', { x: 380, y: 284, class: 't', style: 'font-weight:700', text: 'output = Σ weight × value =' }, s);
+    TX.vec(s, out, { x: 556, y: 266, cell: 34, vals: true, color: 'var(--a)' });
+  });
+
+  /* matrix form */
+  (() => {
+    const s = document.getElementById('matSvg');
+    const blocks = [[X, 'X', 'n × d_model', 'var(--faint)'], [Q, 'Q = XW^Q', 'n × d_k', 'var(--c)'], [K, 'K = XW^K', 'n × d_k', 'var(--b)'], [V, 'V = XW^V', 'n × d_v', 'var(--a)']];
+    blocks.forEach(([M, lab, sh, c], b) => {
+      const x = 20 + b * 160;
+      svg('text', { x, y: 20, class: 't tc', style: `font-weight:700;fill:${c}`, text: lab }, s);
+      TX.heat(s, M, { x, y: 32, cell: 30, vals: true, color: c, neg: true });
+      svg('text', { x, y: 170, class: 'tm tc', style: 'font-size:11px', text: sh }, s);
+      T.forEach((t, i) => b === 0 && svg('text', { x: x - 4, y: 52 + i * 30, 'text-anchor': 'end', class: 'tm', style: 'font-size:10px', text: '' }, s));
+    });
+    svg('text', { x: 20, y: 205, class: 't', text: 'rows = tokens (animal, street, it, tired). One matrix product QKᵀ scores every query against every key at once.' }, s);
+  })();
+})();
+</script>
+</body>
+</html>
