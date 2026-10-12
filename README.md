@@ -38,4 +38,38 @@ Fourteen standalone explainers, each following the same 9 beats: Problem → Lim
 | 13 | [Why the Transformer works](transformer/13-why-it-works/) |
 | 14 | [Experimental results](transformer/14-experimental-results/) |
 
+## Tokenization for LLMs
+
+Ten 9-beat decks plus a [live tokenizer playground](tokenization/playground/) that runs the real `gpt2`, `cl100k_base` and `o200k_base` encodings in the browser (js-tiktoken). Real token examples in the decks are generated with OpenAI's tiktoken.
+
+| # | Deck |
+|---|------|
+| 01 | [Why tokenize?](tokenization/01-why-tokenize/) |
+| 02 | [BPE from scratch](tokenization/02-bpe-from-scratch/) |
+| 03 | [Byte-level BPE](tokenization/03-byte-level-bpe/) |
+| 04 | [WordPiece and unigram LM](tokenization/04-wordpiece-unigram/) |
+| 05 | [SentencePiece](tokenization/05-sentencepiece/) |
+| 06 | [One text, many tokenizations](tokenization/06-many-tokenizations/) |
+| 07 | [Vocabulary size trade-offs](tokenization/07-vocabulary-size/) |
+| 08 | [Tokenizers in real LLMs](tokenization/08-tokenizers-in-llms/) |
+| 09 | [Multilingual cost](tokenization/09-multilingual-cost/) |
+| 10 | [Tokenization quirks](tokenization/10-tokenization-quirks/) |
+
+## Tokenization for LLMs
+
+Ten 9-beat decks plus a [live tokenizer playground](tokenization/playground/) that runs the real `gpt2`, `cl100k_base` and `o200k_base` encodings in the browser (js-tiktoken). Real token examples in the decks are generated with OpenAI's tiktoken.
+
+| # | Deck |
+|---|------|
+| 01 | [Why tokenize?](tokenization/01-why-tokenize/) |
+| 02 | [BPE from scratch](tokenization/02-bpe-from-scratch/) |
+| 03 | [Byte-level BPE](tokenization/03-byte-level-bpe/) |
+| 04 | [WordPiece and unigram LM](tokenization/04-wordpiece-unigram/) |
+| 05 | [SentencePiece](tokenization/05-sentencepiece/) |
+| 06 | [One text, many tokenizations](tokenization/06-many-tokenizations/) |
+| 07 | [Vocabulary size trade-offs](tokenization/07-vocabulary-size/) |
+| 08 | [Tokenizers in real LLMs](tokenization/08-tokenizers-in-llms/) |
+| 09 | [Multilingual cost](tokenization/09-multilingual-cost/) |
+| 10 | [Tokenization quirks](tokenization/10-tokenization-quirks/) |
+
 These are static HTML files with no build step. Open `index.html` in a browser. Keyboard controls: ←/→ or Space to move between slides, F for full screen.

@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Many Tokenizations</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+<link rel="stylesheet" href="../tk.css">
+
+</head>
+<body data-deck="One text, many tokenizations" data-home="../index.html" data-home-label="Tokenization">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Tokenization for LLMs · 06</div>
+    <h1>One text, many tokenizations</h1>
+    <p class="sub">The same string can be written as many different token sequences. Subword regularization (Kudo, 2018) and BPE-dropout (Provilkov et al., 2020) turn that ambiguity into training noise that makes models more robust.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>With one vocabulary, a sentence can be split many ways, and the model treats each split as a completely different input. A deterministic tokenizer only ever shows it one.</div>
+      <div class="c"><b>Core idea</b>During training, <b>sample</b> a different valid segmentation each time a sentence is used: from a unigram LM, or by randomly dropping BPE merges.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Same text, same vocabulary, different ids</h2>
+    <hr>
+    <p class="lede">From Kudo (2018), Table 1: five ways to encode "Hello World" with the same vocabulary. To the model these are five unrelated id sequences.</p>
+    <div class="visual"><div id="helloRows"></div></div>
+    <div class="cite">Kudo 2018, Table 1 (▁ marks a space). The ids are the paper's.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>A deterministic tokenizer hides this from the model</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>One view of each sentence</h3><p>BPE and Viterbi always pick the same split, so the model never learns that different splits mean the same thing.</p></div>
+      <div class="card b"><h3>Brittle to noise</h3><p>Typos, unusual spacing and other domains create splits the model rarely saw. Kudo argues that multiple candidates make a model "robust to noise and segmentation errors".</p></div>
+      <div class="card c"><h3>Compositionality left implicit</h3><p>Seeing "books" sometimes as "book" + "s" helps a model learn how words are built (§1).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Make the model robust to segmentation</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">How could training make a model robust to different segmentations of the same text?</p>
+      <div class="opts">
+      <button>A. Use several tokenizers at inference and vote</button>
+      <button data-ok>B. Sample a different valid segmentation every time a sentence is used in training</button>
+      <button>C. Use a bigger vocabulary</button>
+      <button>D. Lowercase everything</button>
+      </div>
+      <div class="why"><b>B.</b> This is data augmentation for text: the content stays the same and only the segmentation changes. Kudo samples from a unigram LM; BPE-dropout randomly skips merges. Inference still uses one deterministic segmentation.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Two ways to sample segmentations</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card e"><h3>Subword regularization (Kudo, 2018)</h3><p>Uses the unigram LM, which can score every segmentation. For each parameter update, sample one segmentation from P(x|X), smoothed by α over the l-best candidates (or all of them, with FFBS).</p></div>
+      <div class="card a"><h3>BPE-dropout (Provilkov et al., 2020)</h3><p>Keeps ordinary BPE but, while segmenting training data, randomly <b>drops</b> some merges, so the same word comes out in different splits. Standard BPE is used at inference.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Subword regularization: sample from the unigram LM <span class="ill">toy probabilities</span></h2>
+    <hr>
+    <p class="lede">P(x<sub>i</sub>|X) ≅ P(x<sub>i</sub>)<sup>α</sup> / Σ<sub>j</sub> P(x<sub>j</sub>)<sup>α</sup> over the l best segmentations. A small α spreads probability over many splits; a large α concentrates it on the Viterbi split.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">α <input type="range" id="srA" min="0" max="1" step="0.05" value="0.2"> <output id="srAo"></output></label>
+        <label class="ctl">l (candidates) <input type="range" id="srL" min="1" max="12" step="1" value="8"> <output id="srLo"></output></label>
+        <button class="btn primary" id="srS">Sample 6 epochs</button>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div><h3>P(segmentation | "tokenizers")</h3><div id="srBars"></div></div>
+        <div><h3>What the model sees, epoch by epoch</h3><div id="srSamples"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>BPE-dropout: randomly skip merges <span class="ill">toy merges</span></h2>
+    <hr>
+    <p class="lede">The merges are learned from a toy corpus (low ×5, lower ×2, newest ×6, widest ×3, lowest ×3). With dropout p, each merge application is skipped with probability p. p = 0 is ordinary BPE, and a larger p gives finer, more varied splits.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">dropout p <input type="range" id="bdP" min="0" max="0.6" step="0.05" value="0.1"> <output id="bdPo"></output></label>
+        <button class="btn primary" id="bdS">Resample</button>
+      </div>
+      <div id="bdOut" style="margin-top:12px"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works, and the measured gains</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card e"><h3>Data augmentation</h3><p>Each sentence is seen under many segmentations, much like random crops and flips for images, which the paper uses as its own analogy.</p></div>
+      <div class="card a"><h3>Reversible, so usable on both sides</h3><p>Segmentation can be undone exactly, so it can be applied to source <em>and</em> target. Table 6 shows both sides together beat either side alone.</p></div>
+      <div class="card b"><h3>Realistic noise</h3><p>Sampling guided by the LM beats uniform sampling: α = 0 (uniform) hurt BLEU (Kudo §5.5).</p></div>
+      <div class="card c"><h3>Results (machine translation)</h3><p>Subword regularization: about +1 to 2 BLEU on most pairs, and +2 or more out of domain (Kudo). BPE-dropout: up to <b>+3 BLEU</b> over BPE and up to <b>+0.9</b> over subword regularization (Provilkov et al.).</p></div>
+    </div>
+    <div class="paper"><b>Scope note:</b> both papers evaluate machine translation. The LLM tokenizers covered in this guide (GPT-2/tiktoken, Llama 2, Llama 3) are documented as deterministic BPE, and their papers don't describe stochastic segmentation during pretraining.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Sampling happens at inference too."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is a <b>training-time</b> regularizer. Kudo decodes from the best (or n-best) segmentation, and BPE-dropout uses standard BPE at inference.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"BPE can only ever produce one segmentation."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Standard BPE is deterministic, but <b>BPE-dropout</b> makes it stochastic by randomly skipping merges during training.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Fully random segmentation is the best noise."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Kudo found α = 0 (uniform sampling, ignoring the LM) <b>hurt</b> performance. Noise that resembles real segmentation variation works better.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">Which method needs a unigram language model?</p>
+      <div class="opts">
+      <button>A. BPE-dropout</button>
+      <button data-ok>B. Subword regularization (Kudo)</button>
+      <button>C. Byte-level BPE</button>
+      <button>D. WordPiece</button>
+      </div>
+      <div class="why"><b>Subword regularization</b> samples from P(x|X), which the unigram LM provides. BPE-dropout works with ordinary BPE.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">What does a larger α do in Kudo's sampling?</p>
+      <div class="opts">
+      <button>A. Makes sampling more uniform</button>
+      <button data-ok>B. Concentrates samples on the Viterbi (best) segmentation</button>
+      <button>C. Increases vocabulary size</button>
+      <button>D. Disables sampling</button>
+      </div>
+      <div class="why">A larger α moves toward the <b>Viterbi</b> segmentation; a smaller α moves toward uniform.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why does it matter that segmentation is reversible?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Because the original text can always be recovered, the noise can be applied to the <b>target</b> side as well as the input, which Kudo shows helps (Table 6).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">A sentence has many valid tokenizations. Sampling them during training, via subword regularization or BPE-dropout, acts as data augmentation and makes models more robust.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>With a fixed vocabulary, the same text can be split many ways, and each split is a different id sequence to the model. Kudo's subword regularization samples a segmentation from a unigram LM, smoothed by α, every time a sentence is used in training. BPE-dropout does the same with ordinary BPE by randomly skipping merges. Both are training-time only and use deterministic segmentation at inference. They gave +1 to 3 BLEU in machine translation, with larger gains out of domain.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> deterministic tokenization shows one split of each sentence, which makes models brittle to segmentation variation.</span></div><div><span><b>Core idea:</b> sample segmentations during training (unigram LM with α, or BPE with dropped merges).</span></div></div>
+    <p class="start-hint">Next: <a href="../07-vocabulary-size/index.html">07 · Vocabulary size trade-offs →</a> · Previous: <a href="../05-sentencepiece/index.html">← 05</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../data/examples.js"></script>
+<script src="../tk.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const H = [['▁Hell/o/▁world', '13586 137 255'], ['▁H/ello/▁world', '320 7363 255'], ['▁He/llo/▁world', '579 10115 255'], ['▁/He/l/l/o/▁world', '7 18085 356 356 137 255'], ['▁H/el/l/o/▁/world', '320 585 356 137 7 12295']];
+  document.getElementById('helloRows').innerHTML = H.map(([s, ids]) => { const p = s.split('/'), q = ids.split(' '); const el = document.createElement('div'); TK.render(el, p.map((t, i) => ({ text: t, id: q[i] })), { ids: true }); return `<div class="tokrow"><div class="lab">split</div>${el.outerHTML}<div class="cnt">${p.length}</div></div>`; }).join('');
+  const W = 'tokenizers';
+  const PROBS = { t: .02, o: .02, k: .01, e: .03, n: .02, i: .02, z: .005, r: .02, s: .03, token: .04, tok: .01, en: .02, izer: .01, izers: .004, iz: .006, er: .02, ers: .01, ize: .01, to: .015, ken: .008 };
+  const cands = TK.segmentations(W, PROBS);
+  let rnd = Math.random;
+  const sr = () => {
+    const a = Deck.val('srA'), l = Deck.val('srL'); Deck.out('srAo', a.toFixed(2)); Deck.out('srLo', l);
+    const dist = TK.smoothed(cands, a, l);
+    Deck.hbars(document.getElementById('srBars'), dist.slice(0, 8).map((d, i) => ({ label: d.pieces.join(' | '), value: d.p, color: i === 0 ? 'var(--e)' : 'var(--a)', text: (d.p * 100).toFixed(0) + '%' })), { max: 1 });
+    document.getElementById('srSamples').innerHTML = [1, 2, 3, 4, 5, 6].map(e => { const s = TK.sample(dist, rnd); const el = document.createElement('div'); TK.render(el, s.pieces.map(t => ({ text: t }))); return `<div class="tokrow"><div class="lab">epoch ${e}</div>${el.outerHTML}<div class="cnt">${s.pieces.length}</div></div>`; }).join('');
+  };
+  document.getElementById('srS').onclick = sr;
+  Deck.bind(['srA', 'srL'], sr);
+  const merges = TK.bpeTrain([['low', 5], ['lower', 2], ['newest', 6], ['widest', 3], ['lowest', 3]], 14).map(s => [s.a, s.b]);
+  const bd = () => {
+    const p = Deck.val('bdP'); Deck.out('bdPo', p.toFixed(2));
+    document.getElementById('bdOut').innerHTML = ['lowest', 'newest', 'lowest', 'widest', 'lowest', 'newest'].map(w => { const el = document.createElement('div'); const sy = TK.bpeEncode(w, merges, p); TK.render(el, sy.map(t => ({ text: t }))); return `<div class="tokrow"><div class="lab">${w}</div>${el.outerHTML}<div class="cnt">${sy.length}</div></div>`; }).join('');
+  };
+  document.getElementById('bdS').onclick = bd;
+  Deck.bind(['bdP'], bd);
+
+})();
+</script>
+</body>
+</html>

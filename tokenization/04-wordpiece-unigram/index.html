@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WordPiece and Unigram</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+<link rel="stylesheet" href="../tk.css">
+
+</head>
+<body data-deck="WordPiece and unigram LM" data-home="../index.html" data-home-label="Tokenization">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Tokenization for LLMs · 04</div>
+    <h1>WordPiece and the unigram language model</h1>
+    <p class="sub">Tokenizers that choose subwords by likelihood instead of raw frequency. The unigram LM (Kudo, 2018) also gives every segmentation a probability.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>BPE merges greedily by frequency and gives exactly one segmentation, with no score for how good it is.</div>
+      <div class="c"><b>Core idea</b>Use a probabilistic model of subwords. WordPiece picks merges by likelihood; the unigram LM starts large, prunes by likelihood, and segments with Viterbi.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>What makes one segmentation better than another?</h2>
+    <hr>
+    <p class="lede">"tokenizers" could be token|izers, token|izer|s, tok|en|izers, or t|o|k|e|n|i|z|e|r|s. BPE always returns the same one because it replays fixed merges. It never <em>scores</em> the options.</p>
+    <div class="visual"><div id="p1Opts"></div></div>
+    <p class="caption">Candidate segmentations are <span class="ill">illustrative</span>.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>BPE's limits, as Kudo describes them</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Greedy</h3><p>BPE is "based on a greedy and deterministic symbol replacement". Early merges are fixed and never reconsidered.</p></div>
+      <div class="card b"><h3>No probabilities</h3><p>It "can not provide multiple segmentations with probabilities" (Kudo 2018, §3.1).</p></div>
+      <div class="card c"><h3>Frequency, not fit</h3><p>Merges are chosen by raw pair counts, not by how well the resulting vocabulary explains the data.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Choose the vocabulary differently</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Instead of merging the most frequent pair, how else could you choose which subwords go into the vocabulary?</p>
+      <div class="opts">
+      <button>A. At random</button>
+      <button data-ok>B. Choose subwords that maximize the likelihood of the training text under a language model</button>
+      <button>C. Alphabetically</button>
+      <button>D. Keep the longest substrings</button>
+      </div>
+      <div class="why"><b>B.</b> This is the idea behind both <b>WordPiece</b> (BPE-like merges, but each merge chosen by likelihood) and the <b>unigram LM</b> (start large and remove the subwords whose loss hurts likelihood least).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Two likelihood-based tokenizers</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>WordPiece</h3><p>Builds the vocabulary incrementally like BPE, but "uses a likelihood instead of frequency" to choose merges (Kudo 2018, footnotes 1–2; Schuster &amp; Nakajima, 2012). BERT uses "WordPiece embeddings with a 30,000 token vocabulary".</p></div>
+      <div class="card e"><h3>Unigram language model</h3><p>Each subword has a probability p(x), and a segmentation's probability is the product: <b>P(x) = Π p(x<sub>i</sub>)</b>. The best segmentation is found by Viterbi. The vocabulary is learned by starting big and pruning (Kudo, 2018).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Unigram LM: score every segmentation, pick the best <span class="ill">toy probabilities</span></h2>
+    <hr>
+    <p class="lede">With P(x) = Π p(x<sub>i</sub>), each way of splitting "tokenizers" gets a probability. Viterbi finds the most probable one in linear time. Drag the probability of the piece "token" and watch the winner change.</p>
+    <div class="visual">
+      <label class="ctl">p("token") <input type="range" id="ugP" min="-5" max="-1" step="0.1" value="-1.4"> <output id="ugPo"></output></label>
+      <div id="ugBars" style="margin-top:12px"></div>
+      <p class="readout" id="ugBest" style="margin-top:8px"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Learning the unigram vocabulary: EM, then prune</h2>
+    <hr>
+    <p class="lede">The vocabulary itself is unknown, so the unigram method (Kudo §3.2) starts from a large seed vocabulary and repeatedly removes the least useful pieces. Step through the rounds <span class="ill">toy loss values</span>.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><button class="btn primary" id="prStep">Next pruning round →</button><button class="btn" id="prReset">Reset</button><span class="readout" id="prOut"></span></div>
+      <div id="prChips" style="margin-top:12px"></div>
+    </div>
+    <div class="grid3" style="margin-top:12px">
+      <div class="card a"><h3>(a) EM</h3><p>Fix the vocabulary and estimate p(x) with expectation-maximization.</p></div>
+      <div class="card b"><h3>(b) Loss</h3><p>For each subword, compute how much the likelihood drops if it is removed.</p></div>
+      <div class="card e"><h3>(c) Keep top η%</h3><p>Keep the top η = 80% by loss. Single characters are always kept, so nothing becomes unknown.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why likelihood-based tokenizers help</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card e"><h3>Principled segmentation</h3><p>Viterbi returns the single most probable split under the model, not just the result of replaying merges.</p></div>
+      <div class="card a"><h3>Probabilities for alternatives</h3><p>The unigram LM can output several segmentations with probabilities, which deck 06 uses to sample them during training.</p></div>
+      <div class="card b"><h3>An entropy-coding view</h3><p>Kudo frames the unigram model as an entropy encoder: the optimal code length for a symbol s is −log p<sub>s</sub>, so likely pieces get short codes (§3.4).</p></div>
+      <div class="card c"><h3>No unknowns</h3><p>All characters stay in the vocabulary, so character-level segmentation is always one of the candidates.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"WordPiece and the unigram LM are the same algorithm."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">WordPiece <b>grows</b> a vocabulary by likelihood-chosen merges, BPE-style. The unigram LM <b>shrinks</b> a large seed vocabulary by pruning, then segments with Viterbi.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Unigram tokenization picks the longest matching piece first."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It picks the segmentation with the <b>highest product of probabilities</b>, found by Viterbi, which isn't always the one with the longest pieces.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Pruning can remove characters and create unknowns."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Subwords consisting of a single character are <b>always kept</b> (§3.2), so every string stays encodable.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">What vocabulary does BERT use?</p>
+      <div class="opts">
+      <button>A. Byte-level BPE, 50,257</button>
+      <button data-ok>B. WordPiece, 30,000 tokens</button>
+      <button>C. Unigram LM, 32,000</button>
+      <button>D. Words, 100,000</button>
+      </div>
+      <div class="why"><b>WordPiece with a 30,000-token vocabulary</b> (BERT, §3).</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">In the unigram LM, how is the best segmentation found?</p>
+      <div class="opts">
+      <button>A. Greedy longest match</button>
+      <button>B. Replaying merges</button>
+      <button data-ok>C. The Viterbi algorithm</button>
+      <button>D. Random sampling</button>
+      </div>
+      <div class="why"><b>Viterbi</b>: x* = argmax P(x) over all candidate segmentations (Eq. 7).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">In one pruning round, what fraction of subwords does Kudo's example keep, and which are always kept?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The top <b>η = 80%</b> by loss. Single-character subwords are always kept.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Likelihood-based tokenizers score segmentations: WordPiece chooses merges by likelihood, and the unigram LM prunes a big vocabulary with EM and segments with Viterbi.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>BPE merges by raw frequency and replays merges greedily, so it gives one segmentation with no probability. WordPiece, used by BERT with 30,000 tokens, grows the vocabulary like BPE but chooses merges by likelihood. The unigram LM gives each subword a probability, scores a segmentation as the product of its pieces' probabilities, finds the best with Viterbi, and learns the vocabulary by running EM and pruning the 20% of pieces whose removal hurts likelihood least. Single characters are always kept.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> BPE is greedy and deterministic, with no probabilities.</span></div><div><span><b>Core idea:</b> model subwords probabilistically: WordPiece merges by likelihood; the unigram LM uses EM, pruning and Viterbi.</span></div></div>
+    <p class="start-hint">Next: <a href="../05-sentencepiece/index.html">05 · SentencePiece →</a> · Previous: <a href="../03-byte-level-bpe/index.html">← 03</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../data/examples.js"></script>
+<script src="../tk.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const W = 'tokenizers';
+  const BASE = { t: .02, o: .02, k: .01, e: .03, n: .02, i: .02, z: .005, r: .02, s: .03, token: .04, tok: .01, en: .02, izer: .01, izers: .004, iz: .006, er: .02, ers: .01, ize: .01, to: .015, ken: .008 };
+  const p1 = TK.segmentations(W, BASE).filter(s => ['token|izers', 'token|izer|s', 'tok|en|izers', 't|o|k|e|n|i|z|e|r|s'].includes(s.pieces.join('|')));
+  document.getElementById('p1Opts').innerHTML = p1.map(s => { const el = document.createElement('div'); TK.render(el, s.pieces.map(t => ({ text: t }))); return `<div class="tokrow"><div class="lab">option</div>${el.outerHTML}<div class="cnt">?</div></div>`; }).join('');
+  Deck.bind(['ugP'], () => {
+    const lp = Deck.val('ugP'), probs = { ...BASE, token: Math.pow(10, lp) };
+    Deck.out('ugPo', probs.token.toExponential(1));
+    const segs = TK.segmentations(W, probs).slice(0, 6), best = TK.viterbi(W, probs);
+    Deck.hbars(document.getElementById('ugBars'), segs.map(s => ({ label: s.pieces.join(' | '), value: s.logp + 40, color: s.pieces.join('|') === best.pieces.join('|') ? 'var(--e)' : 'var(--line)', text: 'log P = ' + s.logp.toFixed(1) })), { max: 40 });
+    document.getElementById('ugBest').innerHTML = `Viterbi best: <b>${best.pieces.join(' | ')}</b> (log P = ${best.logp.toFixed(2)}). Six most probable of ${TK.segmentations(W, probs).length} candidates shown.`;
+  });
+  const SEED = [['token', 9], ['izers', 7], ['izer', 8], ['er', 6], ['ers', 3], ['tok', 2], ['en', 4], ['ken', 1.5], ['ize', 2.5], ['iz', 1], ['to', 1.2], ['zers', .6], ['oken', .4], ['niz', .3], ['keni', .2]];
+  const CHARS = ['t', 'o', 'k', 'e', 'n', 'i', 'z', 'r', 's'];
+  let alive = SEED.slice(), round = 0;
+  const pr = () => {
+    const removed = SEED.filter(s => !alive.includes(s));
+    document.getElementById('prChips').innerHTML = '<div class="toks">' +
+      alive.map((s, i) => `<span class="tok c${i % 6}" title="loss ${s[1]}">${s[0]} <small style="color:var(--muted)">${s[1]}</small></span>`).join('') +
+      removed.map(s => `<span class="tok" style="text-decoration:line-through;opacity:.4">${s[0]}</span>`).join('') +
+      CHARS.map(c => `<span class="tok" style="background:var(--panel-2);border:1px solid var(--line)" title="single character: always kept">${c}</span>`).join('') + '</div>';
+    Deck.out('prOut', `round ${round}: ${alive.length} multi-character pieces + ${CHARS.length} characters (always kept)`);
+  };
+  document.getElementById('prStep').onclick = () => { if (alive.length > 3) { alive = alive.slice().sort((a, b) => b[1] - a[1]).slice(0, Math.max(3, Math.ceil(alive.length * .8))); round++; } pr(); };
+  document.getElementById('prReset').onclick = () => { alive = SEED.slice(); round = 0; pr(); };
+  pr();
+
+})();
+</script>
+</body>
+</html>

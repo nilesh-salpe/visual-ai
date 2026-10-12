@@ -1,0 +1,23 @@
+/* Token rendering for the tokenization decks and playground */
+.toks { display: flex; flex-wrap: wrap; gap: 4px; font: 500 15px/1.4 'JetBrains Mono', monospace; align-items: flex-start; }
+.tok { padding: 3px 6px; border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; color: var(--ink); position: relative; }
+.tok.c0 { background: rgba(13,132,135,.18); } .tok.c1 { background: rgba(217,115,26,.2); } .tok.c2 { background: rgba(106,79,211,.18); }
+.tok.c3 { background: rgba(46,125,50,.18); } .tok.c4 { background: rgba(207,63,85,.16); } .tok.c5 { background: rgba(58,143,216,.2); }
+.tok.partial { outline: 1.5px dashed var(--d); }
+.tok .hex { font-size: 12px; color: var(--d); }
+.tok .ws { color: var(--faint); }
+.toks.with-ids .tok { display: inline-flex; flex-direction: column; align-items: center; }
+.tok .id { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.tokrow { display: grid; grid-template-columns: 120px 1fr 70px; gap: 12px; align-items: start; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.tokrow:last-child { border-bottom: 0; }
+.tokrow .lab { font: 600 13px 'JetBrains Mono', monospace; color: var(--muted); padding-top: 4px; }
+.tokrow .cnt { font: 700 15px 'JetBrains Mono', monospace; text-align: right; padding-top: 3px; }
+@media (max-width: 640px) { .tokrow { grid-template-columns: 1fr auto; } .tokrow .toks { grid-column: 1 / -1; } }
+.bytes { display: flex; flex-wrap: wrap; gap: 6px; }
+.bytes .ch { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; text-align: center; background: var(--panel); }
+.bytes .ch b { display: block; font-size: 18px; }
+.bytes .ch span { font: 500 11px 'JetBrains Mono', monospace; color: var(--muted); }
+textarea.tk-in { width: 100%; min-height: 90px; font: 15px/1.5 'JetBrains Mono', monospace; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical; }
+input.tk-in { font: 15px 'JetBrains Mono', monospace; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+.mergelist { font: 13px/1.7 'JetBrains Mono', monospace; max-height: 260px; overflow: auto; }
+.mergelist .on { color: var(--a); font-weight: 700; }

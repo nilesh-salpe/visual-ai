@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tokenization Quirks</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+<link rel="stylesheet" href="../tk.css">
+
+</head>
+<body data-deck="Tokenization quirks" data-home="../index.html" data-home-label="Tokenization">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Tokenization for LLMs · 10</div>
+    <h1>Tokenization quirks in LLMs</h1>
+    <p class="sub">Letter counting, arithmetic, leading spaces, prompts that end mid-token, and glitch tokens: many odd LLM behaviours become obvious once you look at the tokens.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>LLMs show surprising failures on tasks that look trivial to people, such as spelling, counting letters, adding numbers, or continuing a prompt that ends in a colon.</div>
+      <div class="c"><b>Core idea</b>The model sees <b>token ids, not characters</b>. Character-level facts must be learned indirectly, and unusual token boundaries put inputs outside what the model was trained on.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Trivial for people, surprisingly hard for models</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Spelling and counting letters</h3><p>"How many r's are in strawberry?"</p></div>
+      <div class="card b"><h3>Arithmetic</h3><p>Multi-digit numbers arrive in irregular chunks.</p></div>
+      <div class="card c"><h3>Prompt endings</h3><p>A trailing space or a cut-off "http:" changes the completion.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>The model never sees letters</h2>
+    <hr>
+    <p class="lede">After tokenization, " strawberry" is a <b>single id</b>. Nothing in that integer says which letters it contains. Any knowledge of its spelling has to be learned indirectly from training data.</p>
+    <div class="visual"><div id="limRows"></div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Why is letter counting hard?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Why might a model struggle to count the r's in "strawberry"?</p>
+      <div class="opts">
+      <button>A. Models can't count</button>
+      <button data-ok>B. The model sees one to three tokens, not ten letters</button>
+      <button>C. The tokenizer deletes the letter r</button>
+      <button>D. The word never appears in training data</button>
+      </div>
+      <div class="why"><b>B.</b> In cl100k_base, "strawberry" is <code>str|aw|berry</code> (3 tokens) and " strawberry" is a single token. The letters are hidden inside opaque ids, so counting them means recalling each token's spelling, which is learned only indirectly.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Look at the tokens first</h2>
+    <hr>
+    <div class="takeaway">When an LLM fails on something character-level, number-level or boundary-sensitive, check how the input was tokenized before blaming "reasoning".</div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="card a"><h3>Ids hide characters</h3><p>Spelling, rhyme, letter counts and character edits all need knowledge the ids don't carry.</p></div>
+      <div class="card b"><h3>Boundaries carry meaning</h3><p>Training text was tokenized greedily, so an unusual split tells the model something it rarely saw, and that something is misleading.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Quirk explorer: real tokens</h2>
+    <hr>
+    <div class="visual">
+      <div class="seg" id="qSeg"><button data-v="spell" class="on">Spelling</button><button data-v="num">Numbers</button><button data-v="space">Spaces &amp; case</button><button data-v="boundary">Prompt boundary</button><button data-v="glitch">Glitch tokens</button></div>
+      <div id="qRows" style="margin-top:12px"></div>
+      <div class="infobox" id="qInfo"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Token healing: fixing prompt boundaries</h2>
+    <hr>
+    <p class="lede">The prompt-boundary problem, from the Guidance project's notebook: in training data URLs are tokenized as <code>http</code> + <code>://</code>. A prompt ending in <code>http:</code> ends with a lone <code>:</code> token, which the model almost never saw followed by <code>//</code>. Their example model then produced <code>http: //www…</code>, an invalid URL with a space.</p>
+    <div class="visual">
+      <div class="steps" id="thSteps"><button data-i="0" class="on">1 · Prompt "http:"</button><button data-i="1">2 · Back up one token</button><button data-i="2">3 · Constrain the next token</button></div>
+      <div id="thOut" style="margin-top:12px"></div>
+      <div class="infobox" id="thInfo"></div>
+    </div>
+    <div class="cite">guidance-ai/guidance, "Prompt boundaries and token healing" notebook. Token healing "automatically backs up the generation process by one token before the end of the prompt", then constrains the first generated token to start with the removed text.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why each quirk happens</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Spelling</h3><p>The ids are opaque, so character knowledge exists only to the extent the model learned each token's spelling.</p></div>
+      <div class="card b"><h3>Arithmetic</h3><p>Digits come in irregular chunks (gpt2: 123|45|678; cl100k: 123|456|78), so place value isn't aligned across numbers. Llama 1/2 split every digit, and cl100k/o200k cap groups at 3.</p></div>
+      <div class="card c"><h3>Spaces and case</h3><p>"hello", " hello" and "Hello" are different ids with separately learned embeddings. Whitespace is part of the token.</p></div>
+      <div class="card e"><h3>Glitch tokens</h3><p>The tokenizer is trained separately from the model, so some vocabulary tokens barely appear in model training. Their embeddings stay under-trained and inputs containing them can trigger strange outputs (Land &amp; Bartolo, 2024).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"LLMs read text letter by letter."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They read <b>token ids</b>. In cl100k_base, " strawberry" is a single id.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"A trailing space in a prompt is harmless."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">In GPT-style tokenizers a space usually starts the <b>next</b> token. A trailing space leaves the model with an unusual lone-space token, which changes what it predicts.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Every token in the vocabulary was well trained."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Some tokens are <b>under-trained</b>: present in the vocabulary but nearly absent from model training. " SolidGoldMagikarp" is the famous example, a single token in GPT-2's tokenizer.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">How does cl100k_base tokenize "12345678"?</p>
+      <div class="opts">
+      <button>A. 1|2|3|4|5|6|7|8</button>
+      <button data-ok>B. 123|456|78</button>
+      <button>C. 12345678</button>
+      <button>D. 1234|5678</button>
+      </div>
+      <div class="why"><b>123|456|78</b>: its pre-tokenizer splits numbers into groups of at most 3 digits.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">What does token healing do?</p>
+      <div class="opts">
+      <button>A. Fixes typos in the prompt</button>
+      <button data-ok>B. Removes the last prompt token and constrains the next generated token to start with that text</button>
+      <button>C. Retrains bad tokens</button>
+      <button>D. Adds spaces</button>
+      </div>
+      <div class="why">It <b>backs up one token</b> and constrains generation to start with the removed text, so the model can produce its natural token (e.g. "://").</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why do under-trained ("glitch") tokens exist at all?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The tokenizer is built <b>separately</b> from model training, on different data, so some vocabulary entries are rare or absent in the model's training data and their embeddings are barely trained (Land &amp; Bartolo, 2024).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">LLMs see token ids, not characters. Spelling, arithmetic, spacing and prompt-boundary quirks, and glitch tokens, all follow from how text was tokenized.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>A model receives token ids, so character-level facts like spelling or letter counts are hidden inside opaque tokens: in cl100k_base, " strawberry" is one id. Numbers are chunked irregularly, leading spaces and capitalization change ids, and a prompt that ends mid-token (like "http:") puts the model at a boundary it rarely saw, which token healing fixes by backing up a token and constraining the next. Some tokens, such as GPT-2's " SolidGoldMagikarp", are under-trained because the tokenizer was built on different data from the model.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> surprising failures on character-, number- and boundary-sensitive inputs.</span></div><div><span><b>Core idea:</b> the model sees ids, not characters; inspect the tokens and fix boundaries (e.g. token healing).</span></div></div>
+    <p class="start-hint">You've finished the series. <a href="../playground/index.html">Try the live tokenizer playground →</a> · Previous: <a href="../09-multilingual-cost/index.html">← 09</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../data/examples.js"></script>
+<script src="../tk.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const rows = (key, opts = {}) => Object.keys(TK.ENC).map(enc => { const el = document.createElement('div'); TK.render(el, TK.get(key, enc), opts); return `<div class="tokrow"><div class="lab">${enc}</div>${el.outerHTML}<div class="cnt">${TK.get(key, enc).length}</div></div>`; }).join('');
+
+  const multi = (keys, opts = { ids: true }) => keys.map(k => `<div style="margin-bottom:10px"><div class="lab" style="font:600 13px 'JetBrains Mono';color:var(--muted);margin-bottom:4px">"${TK.vis(TK.text(k))}"</div>${rows(k, opts)}</div>`).join('');
+  document.getElementById('limRows').innerHTML = multi(['straw', 'straw_sp']);
+  const Q = {
+    spell: [['straw', 'straw_sp', 'straw_cap'], 'The same word splits differently depending on a leading space and capitalization. None of these ids say "three r\'s".'],
+    num: [['num', 'arith'], 'GPT-2\'s regex keeps a run of digits together and BPE merges it unevenly (123|45|678). cl100k and o200k pre-split into groups of up to 3 digits from the left (123|456|78). Neither lines up place value across different numbers.'],
+    space: [['hello', 'hello_sp', 'Hello', 'HELLO'], '"hello", " hello" and "Hello" are three different ids, and "HELLO" is not even a single token. The model must learn that they are related.'],
+    boundary: [['http_full', 'http_colon'], 'A URL in training text tokenizes as <code>http</code> + <code>://</code>. A prompt ending in <code>http:</code> leaves a lone <code>:</code> token, an unusual boundary that misleads the next prediction (see token healing).'],
+    glitch: [['magikarp'], '" SolidGoldMagikarp" is a <b>single token</b> in GPT-2\'s tokenizer but splits into ordinary pieces in newer encodings. Tokens like it were nearly absent from the model\'s training data, leaving their embeddings under-trained (Land &amp; Bartolo, 2024).'],
+  };
+  Deck.seg('qSeg', v => { document.getElementById('qRows').innerHTML = multi(Q[v][0]); document.getElementById('qInfo').innerHTML = Q[v][1]; });
+  const full = TK.get('http_full', 'cl100k_base'), colon = TK.get('http_colon', 'cl100k_base');
+  const TH = [
+    [() => { const a = document.createElement('div'); TK.render(a, colon, { ids: true }); return '<div class="lab" style="font:600 12px Inter;color:var(--muted)">prompt tokens</div>' + a.outerHTML; }, 'The prompt ends with the lone token ":". In training data, ":" is rarely followed by "//" as separate tokens, because URLs were tokenized as "://".'],
+    [() => { const a = document.createElement('div'); TK.render(a, colon.slice(0, -1), { ids: true }); return '<div class="lab" style="font:600 12px Inter;color:var(--muted)">prompt after backing up</div>' + a.outerHTML + '<p class="readout" style="margin-top:6px">removed text: <code>:</code></p>'; }, 'Token healing removes the last token from the prompt and remembers its text (":").'],
+    [() => { const a = document.createElement('div'); TK.render(a, full, { ids: true }); return '<div class="lab" style="font:600 12px Inter;color:var(--muted)">allowed first token must start with ":". The model can pick "://"</div>' + a.outerHTML; }, 'The first generated token is constrained to start with ":", so the model can choose its natural token "://" and produce a valid URL.'],
+  ];
+  const ts = document.getElementById('thSteps');
+  const pickT = i => { Deck.$$('button', ts).forEach(b => b.classList.toggle('on', +b.dataset.i === i)); document.getElementById('thOut').innerHTML = TH[i][0](); document.getElementById('thInfo').innerHTML = TH[i][1]; };
+  ts.addEventListener('click', e => { const b = e.target.closest('button'); if (b) pickT(+b.dataset.i); });
+  pickT(0);
+
+})();
+</script>
+</body>
+</html>

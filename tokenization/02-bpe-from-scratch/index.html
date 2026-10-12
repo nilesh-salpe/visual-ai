@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BPE From Scratch</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+<link rel="stylesheet" href="../tk.css">
+
+</head>
+<body data-deck="BPE from scratch" data-home="../index.html" data-home-label="Tokenization">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Tokenization for LLMs · 02</div>
+    <h1>Byte-pair encoding, from scratch</h1>
+    <p class="sub">The algorithm behind most LLM tokenizers: start from characters and repeatedly merge the most frequent adjacent pair (Sennrich, Haddow and Birch, 2016).</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Translation and language modelling are open-vocabulary problems, and a fixed word list can't cover rare words, names and compounds.</div>
+      <div class="c"><b>Core idea</b>Learn a vocabulary of frequent character sequences by repeatedly merging the most frequent pair of symbols. Rare words are then spelled with those pieces.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Rare words are everywhere</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>Names</h3><p>New people, places and products appear constantly. Many can just be copied or transliterated piece by piece.</p></div>
+      <div class="card b"><h3>Compounds</h3><p>German builds words like <b>Abwasserbehandlungsanlage</b> ("sewage water treatment plant"), the paper's own example. It's unlikely to be in any word list, but its parts are common.</p></div>
+      <div class="card c"><h3>Cognates and loanwords</h3><p>Words shared across languages often translate through regular character-level patterns.</p></div>
+    </div>
+    <div class="takeaway">The paper's observation: many rare words can be translated through units <em>smaller than words</em>.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Before BPE: shortlists, unknown tokens and back-off dictionaries</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Fixed word vocabulary</h3><p>Models used a shortlist of frequent words; everything else became an unknown token.</p></div>
+      <div class="card b"><h3>Back-off dictionary</h3><p>Unknown words were looked up in a separate dictionary after translation, outside the neural model. This was the paper's baseline.</p></div>
+      <div class="card c"><h3>Characters only</h3><p>Fully open, but sequences become much longer, which hurts efficiency and makes information travel further.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which pair merges first?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Training corpus (the one in the paper's Algorithm 1): <code>low ×5, lower ×2, newest ×6, widest ×3</code>, each word split into characters plus an end-of-word marker ·. Which pair does BPE merge first?</p>
+      <div class="opts">
+      <button>A. l + o</button>
+      <button data-ok>B. e + s</button>
+      <button>C. w + i</button>
+      <button>D. n + e</button>
+      </div>
+      <div class="why"><b>e + s</b>, with 9 occurrences (newest ×6 + widest ×3). s + t and t + · are also 9, and the tie goes to the pair counted first. l + o has 7, n + e has 6, w + i has 3. Then "es + t" and "est + ·" follow. Check it in the trainer two slides on.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Merge the most frequent pair, repeat</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>1. Start from characters</h3><p>Each word is a sequence of characters plus an end-of-word symbol ·, so the original spacing can be restored.</p></div>
+      <div class="card b"><h3>2. Count adjacent pairs</h3><p>Count every pair of neighbouring symbols, weighted by word frequency. Pairs never cross word boundaries.</p></div>
+      <div class="card e"><h3>3. Merge the top pair</h3><p>Replace every occurrence of the most frequent pair (A, B) with a new symbol AB and record the merge.</p></div>
+      <div class="card c"><h3>4. Repeat</h3><p>Stop after a chosen number of merges. Final vocabulary = initial characters + merges, and the number of merges is "the only hyperparameter".</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Train BPE yourself</h2>
+    <hr>
+    <p class="lede">Edit the corpus (<code>word:count</code>) and step through merges. The trainer is a direct JavaScript port of the paper's Algorithm 1.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <input class="tk-in" id="bpeCorpus" style="flex:1;min-width:260px" value="low:5, lower:2, newest:6, widest:3">
+        <label class="ctl">Merges <input type="range" id="bpeN" min="0" max="15" step="1" value="3"> <output id="bpeNo"></output></label>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div><h3>Corpus after merges</h3><div id="bpeVocab"></div><h3 style="margin-top:12px">Next candidate pairs</h3><div id="bpePairs"></div></div>
+        <div><h3>Learned merges, in order</h3><div class="mergelist" id="bpeMerges"></div>
+          <h3 style="margin-top:12px">Encode a new word</h3>
+          <div class="controls" style="margin-top:4px"><input class="tk-in" id="bpeWord" value="lowest" style="width:160px"></div>
+          <div id="bpeEnc" style="margin-top:8px"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Encoding an unseen word: the paper's Figure 1</h2>
+    <hr>
+    <p class="lede">At test time, split the word into characters and apply the learned merges <b>in the order they were learned</b>. Figure 1 lists four merges learned from the dictionary {low, lowest, newer, wider}. The unseen word "lower" then comes out as <b>low er·</b>.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><button class="btn primary" id="f1Step">Apply next merge →</button><button class="btn" id="f1Reset">Reset</button><span class="readout" id="f1Out"></span></div>
+      <div id="f1Toks" style="margin-top:14px"></div>
+      <div class="mergelist" id="f1List" style="margin-top:12px"></div>
+    </div>
+    <div class="cite">Sennrich et al. (2016), Figure 1 and §3.2.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why BPE works</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Frequency decides granularity</h3><p>Frequent strings are merged early, so common words become single symbols. Rare words remain split into smaller units.</p></div>
+      <div class="card e"><h3>No shortlist, no back-off</h3><p>Any word made of known characters can be encoded, so the model handles rare and unseen words itself.</p></div>
+      <div class="card b"><h3>Compression</h3><p>It comes from a data-compression algorithm (Gage, 1994): fewer symbols are needed to encode the text.</p></div>
+      <div class="card c"><h3>Measured gains</h3><p>On WMT 15, subword models improved over the back-off dictionary baseline by <b>1.1 BLEU</b> (EN→DE) and <b>1.3 BLEU</b> (EN→RU) (abstract).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"BPE finds the shortest or most likely segmentation of a word."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It replays merges <b>greedily, in learned order</b>. That is fast and deterministic, but not an optimization over all segmentations (compare the unigram LM in deck 04).</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"You choose the vocabulary size directly."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">In the original algorithm you choose the <b>number of merges</b>; vocabulary = characters + merges. Toolkits such as SentencePiece let you specify the final vocabulary size instead (deck 05).</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"BPE merges can join two words."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Not in the paper: "we do not consider pairs that cross word boundaries". LLM tokenizers enforce this with pre-tokenization (deck 03).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">Using the paper's Figure 1 merges, how is the unseen word "lower" segmented?</p>
+      <div class="opts">
+      <button>A. l o w e r ·</button>
+      <button data-ok>B. low er·</button>
+      <button>C. lower·</button>
+      <button>D. lo wer·</button>
+      </div>
+      <div class="why"><b>low er·</b> (§3.2).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">What is the only hyperparameter of the original BPE algorithm?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The <b>number of merge operations</b>. The final symbol vocabulary is the initial characters plus the merges.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">What is the end-of-word symbol for?</p>
+      <div class="opts">
+      <button>A. To mark rare words</button>
+      <button data-ok>B. To restore the original tokenization after translation</button>
+      <button>C. To count frequencies</button>
+      <button>D. To pad sequences</button>
+      </div>
+      <div class="why">It lets you <b>restore the original word boundaries</b> after processing (§3.2).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">BPE starts from characters and repeatedly merges the most frequent adjacent pair. Replaying those merges in order turns any word into known subword units.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Byte-pair encoding, adapted to NLP by Sennrich et al. (2016), learns a subword vocabulary from data. Every word starts as characters plus an end-of-word marker; you repeatedly count adjacent symbol pairs and merge the most frequent one, and the number of merges is the only hyperparameter. Frequent words end up as single symbols and rare words split into pieces, so there are no unknown words. To encode new text you replay the merges in learned order.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> a fixed word vocabulary can't cover rare words, names and compounds.</span></div><div><span><b>Core idea:</b> learn merges of frequent symbol pairs; encode any word by replaying them in order.</span></div></div>
+    <p class="start-hint">Next: <a href="../03-byte-level-bpe/index.html">03 · Byte-level BPE →</a> · Previous: <a href="../01-why-tokenize/index.html">← 01</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../data/examples.js"></script>
+<script src="../tk.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const draw = () => {
+    const n = Deck.val('bpeN'); Deck.out('bpeNo', n);
+    const corpus = TK.parseCorpus(document.getElementById('bpeCorpus').value);
+    const steps = TK.bpeTrain(corpus, 15), cur = steps.slice(0, n), merges = cur.map(s => [s.a, s.b]);
+    const vocab = n ? cur[n - 1].vocab : corpus.map(([w, c]) => [[...w, TK.EOW], c]);
+    document.getElementById('bpeVocab').innerHTML = vocab.map(([sy, c]) => { const el = document.createElement('div'); TK.render(el, sy.map(s => ({ text: s }))); return `<div class="tokrow"><div class="lab">×${c}</div>${el.outerHTML}<div class="cnt">${sy.length}</div></div>`; }).join('');
+    document.getElementById('bpeMerges').innerHTML = steps.map((s, i) => `<div class="${i === n - 1 ? 'on' : ''}" style="opacity:${i < n ? 1 : .35}">${i + 1}. ${TK.esc(s.a)} + ${TK.esc(s.b)} → ${TK.esc(s.a + s.b)} <span style="color:var(--faint)">(${s.count})</span></div>`).join('') || '<i>no pairs left</i>';
+    const next = steps[n] ? [...steps[n].counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6) : [];
+    Deck.hbars(document.getElementById('bpePairs'), next.length ? next.map(([k, v], i) => ({ label: TK.esc(k.replace('\u0000', ' + ')), value: v, color: i === 0 ? 'var(--a)' : 'var(--line)', text: v })) : [{ label: '(done)', value: 0, text: '' }]);
+    const w = document.getElementById('bpeWord').value.trim() || 'lowest';
+    TK.render(document.getElementById('bpeEnc'), TK.bpeEncode(w, merges).map(s => ({ text: s })));
+  };
+  ['bpeCorpus', 'bpeWord'].forEach(id => document.getElementById(id).addEventListener('input', draw));
+  Deck.bind(['bpeN'], draw);
+  // Figure 1
+  const F1 = [['r', '·'], ['l', 'o'], ['lo', 'w'], ['e', 'r·']];
+  let k = 0;
+  const f1 = () => {
+    const sy = TK.bpeEncode('lower', F1.slice(0, k));
+    TK.render(document.getElementById('f1Toks'), sy.map(s => ({ text: s })));
+    document.getElementById('f1List').innerHTML = F1.map((m, i) => `<div class="${i === k - 1 ? 'on' : ''}" style="opacity:${i < k ? 1 : .4}">${i + 1}. ${m[0]} + ${m[1]} → ${m[0] + m[1]}</div>`).join('');
+    Deck.out('f1Out', k === F1.length ? 'Done: "lower" → low er·' : `${k} of ${F1.length} merges applied`);
+  };
+  document.getElementById('f1Step').onclick = () => { if (k < F1.length) k++; f1(); };
+  document.getElementById('f1Reset').onclick = () => { k = 0; f1(); };
+  f1();
+
+})();
+</script>
+</body>
+</html>

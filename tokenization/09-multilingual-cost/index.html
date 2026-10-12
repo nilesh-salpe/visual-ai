@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multilingual Cost</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+<link rel="stylesheet" href="../tk.css">
+
+</head>
+<body data-deck="Multilingual cost" data-home="../index.html" data-home-label="Tokenization">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Tokenization for LLMs · 09</div>
+    <h1>The multilingual token tax</h1>
+    <p class="sub">The same sentence can cost very different numbers of tokens depending on its language, which affects price, latency and how much fits in context (Petrov et al., 2023).</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Tokenizers trained mostly on English text split other languages, especially non-Latin scripts, into many more tokens.</div>
+      <div class="c"><b>Core idea</b>Measure the <b>tokenization premium</b> (tokens needed relative to English for the same content) and reduce it with multilingual tokenizer training and vocabulary.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Same meaning, different bill</h2>
+    <hr>
+    <p class="lede">"The weather is nice today." in nine languages, tokenized for real with GPT-2's tokenizer. Many models charge per token, generate one token at a time, and have a fixed token budget.</p>
+    <div class="visual"><div id="p1Bars"></div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Byte-level coverage isn't the same as efficiency</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>English-heavy training</h3><p>Merges are learned from the tokenizer's training data, so frequent English strings become single tokens and rarer scripts stay split into byte-level pieces.</p></div>
+      <div class="card b"><h3>Up to 15× more tokens</h3><p>Petrov et al. found the same text translated into different languages can differ in token length by <b>up to 15×</b>.</p></div>
+      <div class="card c"><h3>Bytes aren't fair either</h3><p>Even character- and byte-level models show <b>over 4×</b> differences in encoding length for some language pairs, because scripts use different numbers of bytes per character.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Predict the most expensive language</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">With GPT-2's tokenizer, which of these translations of "The weather is nice today." needs the most tokens?</p>
+      <div class="opts">
+      <button>A. Spanish</button>
+      <button>B. German</button>
+      <button data-ok>C. Hindi</button>
+      <button>D. Chinese</button>
+      </div>
+      <div class="why"><b>Hindi: 27 tokens</b>, against 6 for English, 10 for Spanish, 11 for German and 11 for Chinese. Devanagari takes 3 bytes per character in UTF-8, and GPT-2's merges rarely cover it, so most tokens are single bytes or short byte pieces.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>The tokenization premium</h2>
+    <hr>
+    <div class="eq">premium(L) = tokens(text in L) ÷ tokens(same text in English)</div>
+    <div class="grid3" style="margin-top:14px">
+      <div class="card d"><h3>Cost</h3><p>Pay-per-token APIs charge the premium directly.</p></div>
+      <div class="card b"><h3>Latency</h3><p>Generation is one token per step, so more tokens means slower responses.</p></div>
+      <div class="card c"><h3>Context</h3><p>A fixed token window holds less content.</p></div>
+    </div>
+    <div class="cite">Petrov et al. (NeurIPS 2023) argue these disparities lead to unequal cost, latency and context room, and recommend multilingually fair tokenizers.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Explore the premium by tokenizer</h2>
+    <hr>
+    <div class="visual">
+      <div class="seg" id="mlEnc"><button data-v="gpt2">gpt2</button><button data-v="cl100k_base" class="on">cl100k_base</button><button data-v="o200k_base">o200k_base</button></div>
+      <div id="mlBars" style="margin-top:12px"></div>
+      <p class="readout" id="mlOut" style="margin-top:8px"></p>
+    </div>
+    <p class="caption">Measured on one short sentence per language, so it illustrates the effect rather than measuring it. Petrov et al. use large parallel corpora.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>How much fits in the same context window?</h2>
+    <hr>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><div class="seg" id="cxEnc"><button data-v="gpt2">gpt2</button><button data-v="cl100k_base" class="on">cl100k_base</button><button data-v="o200k_base">o200k_base</button></div>
+        <label class="ctl">Context window <select id="cxW"><option value="4096">4K</option><option value="8192" selected>8K</option><option value="32768">32K</option><option value="131072">128K</option></select></label>
+      </div>
+      <div id="cxBars" style="margin-top:12px"></div>
+    </div>
+    <p class="caption">Copies of the sample sentence that fit in the window, estimated as window ÷ tokens per sentence.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it happens, and what reduces it</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card d"><h3>Merges follow the data</h3><p>BPE merges the most frequent pairs in its training data. If most of that data is English, most merges serve English.</p></div>
+      <div class="card b"><h3>Scripts cost different numbers of bytes</h3><p>UTF-8 uses 1 byte per ASCII character but 2–3 for many other scripts, so byte-level fallback is uneven.</p></div>
+      <div class="card e"><h3>Fix: multilingual vocabulary</h3><p>Llama 3 added 28K non-English tokens, improving compression and downstream performance with no effect on English. In this sample, o200k_base brings every language to 5–6 tokens.</p></div>
+      <div class="card a"><h3>Fix: balanced tokenizer training</h3><p>Train the tokenizer on balanced multilingual data and target parity, as Petrov et al. recommend.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Byte-level BPE treats all languages equally."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It guarantees <b>coverage</b>, not efficiency. Petrov et al. found even byte-level models differ by over 4× across some language pairs.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"The premium is only about price."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It also means <b>higher latency</b> (more decoding steps) and <b>less usable context</b> for the same content.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"A language's premium is a fixed property of the language."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It depends on the <b>tokenizer</b>: the Hindi sample costs 27 tokens with gpt2, 21 with cl100k_base and 5 with o200k_base.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">What maximum disparity did Petrov et al. report?</p>
+      <div class="opts">
+      <button>A. 1.5×</button>
+      <button>B. 4×</button>
+      <button data-ok>C. Up to 15×</button>
+      <button>D. 100×</button>
+      </div>
+      <div class="why"><b>Up to 15×</b> more tokens for the same text in some languages.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Using this guide's sample, what is Hindi's premium in gpt2 (27 tokens vs 6 for English)?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">27 ÷ 6 = <b>4.5×</b>. With o200k_base it is 5 ÷ 6 ≈ 0.8×, slightly <em>fewer</em> tokens than English on this one sentence.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Give two consequences of a high tokenization premium besides price.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why"><b>Higher latency</b> (more tokens to generate) and <b>less content per context window</b>.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">The same content can cost several times more tokens outside English. That premium is set by the tokenizer, and it shows up as price, latency and lost context.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Tokenizers learn merges from their training data, so English-heavy data gives English compact tokens while other scripts fall back to byte pieces. Petrov et al. found up to 15× differences in token count for the same text, which means higher cost, slower generation and less content per context window. The premium depends on the tokenizer: in this guide's Hindi sample it drops from 27 tokens (gpt2) to 5 (o200k_base). Multilingual tokenizer training and vocabulary, like Llama 3's extra 28K tokens, reduce it.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> English-centric tokenizers need many more tokens for other languages.</span></div><div><span><b>Core idea:</b> measure the premium against English and reduce it with multilingual tokenizer data and vocabulary.</span></div></div>
+    <p class="start-hint">Next: <a href="../10-tokenization-quirks/index.html">10 · Tokenization quirks →</a> · Previous: <a href="../08-tokenizers-in-llms/index.html">← 08</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../data/examples.js"></script>
+<script src="../tk.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const L = TOK.ml, en = e => TK.get('ml_English', e).length;
+  const bars = (el, enc) => Deck.hbars(el, L.map(l => { const n = TK.get('ml_' + l, enc).length; return { label: `${l} <span style="color:var(--faint)">${TK.esc(TK.text('ml_' + l))}</span>`, value: n, color: l === 'English' ? 'var(--faint)' : n / en(enc) > 2 ? 'var(--d)' : n / en(enc) > 1.3 ? 'var(--b)' : 'var(--e)', text: `${n} tok · ${(n / en(enc)).toFixed(1)}×` }; }), { max: 28 });
+  bars(document.getElementById('p1Bars'), 'gpt2');
+  Deck.seg('mlEnc', enc => {
+    bars(document.getElementById('mlBars'), enc);
+    const pr = L.map(l => TK.get('ml_' + l, enc).length / en(enc)), mx = Math.max(...pr), worst = L[pr.indexOf(mx)];
+    document.getElementById('mlOut').innerHTML = `${enc}: highest premium is <b>${worst} at ${mx.toFixed(1)}×</b> English.`;
+  });
+  let cxe = 'cl100k_base';
+  const cx = () => { const w = +Deck.val('cxW'); Deck.hbars(document.getElementById('cxBars'), L.map(l => { const n = TK.get('ml_' + l, cxe).length, k = Math.floor(w / n); return { label: l, value: k, color: l === 'English' ? 'var(--a)' : 'var(--c)', text: fmt(k, 0) + ' sentences' }; })); };
+  Deck.seg('cxEnc', e => { cxe = e; if (document.getElementById('cxW')) cx(); });
+  Deck.bind(['cxW'], cx);
+
+})();
+</script>
+</body>
+</html>

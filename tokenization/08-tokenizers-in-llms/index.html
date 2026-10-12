@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tokenizers in Real LLMs</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+<link rel="stylesheet" href="../tk.css">
+
+</head>
+<body data-deck="Tokenizers in real LLMs" data-home="../index.html" data-home-label="Tokenization">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Tokenization for LLMs · 08</div>
+    <h1>Tokenizers in real LLMs</h1>
+    <p class="sub">What GPT-2, GPT-4, GPT-4o, Llama, BERT and T5 actually use: algorithm, vocabulary size, pre-tokenization rules and special tokens. Every row is checked against the model's paper or the tokenizer source.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Every model family ships its own tokenizer, so token counts, costs and behaviour differ, and ids mean nothing outside their own model.</div>
+      <div class="c"><b>Core idea</b>A tokenizer is part of the model: a vocabulary (merges or scored pieces), a pre-tokenization rule, normalization, and special tokens, all frozen at training time.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Same text, three tokenizers, three answers</h2>
+    <hr>
+    <p class="lede">Real output from three OpenAI encodings on one sentence. Token boundaries, counts and ids all differ.</p>
+    <div class="visual"><div id="cmpRows"></div></div>
+    <p class="caption">Hover any token for its id. Try your own text in the <a href="../playground/index.html">live playground</a>.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>You can't swap a tokenizer after training</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Ids index the embeddings</h3><p>Id 1234 is a specific learned row in this model's embedding matrix. In another tokenizer, id 1234 is a different string.</p></div>
+      <div class="card b"><h3>Rules are baked in</h3><p>How digits, spaces and code are split determines what patterns the model learned to read.</p></div>
+      <div class="card c"><h3>Special tokens are reserved</h3><p>End-of-text, padding and chat-role markers are specific ids the model was trained to treat specially.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Mismatched ids</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">You feed Llama 3 a prompt tokenized with GPT-4's cl100k_base ids. What happens?</p>
+      <div class="opts">
+      <button>A. It works fine, since both use BPE</button>
+      <button data-ok>B. Garbage: each id selects an unrelated embedding row</button>
+      <button>C. Slightly worse quality</button>
+      <button>D. It runs faster</button>
+      </div>
+      <div class="why"><b>B.</b> Ids are only meaningful with the tokenizer the model was trained with. Even though Llama 3's vocabulary includes 100K tokens taken from tiktoken, its id assignments and its extra 28K tokens are its own. Always use the model's own tokenizer.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>What a tokenizer actually consists of</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Vocabulary</h3><p>BPE merge ranks (tiktoken: about 100K–200K byte sequences with ranks), or scored pieces (a SentencePiece unigram model).</p></div>
+      <div class="card b"><h3>Pre-tokenization</h3><p>A regex or rule that splits text into chunks before subword merging: words with their leading space, digit groups, punctuation.</p></div>
+      <div class="card c"><h3>Normalization</h3><p>Optional Unicode normalization (SentencePiece defaults to NFKC). Byte-level BPE keeps raw bytes.</p></div>
+      <div class="card e"><h3>Special tokens</h3><p>Reserved ids for document boundaries, padding, fill-in-the-middle or chat structure, never produced from ordinary text.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>The tokenizers of well-known models</h2>
+    <hr>
+    <div class="visual scroll-x">
+      <table class="tbl">
+        <tr><th>Model</th><th>Algorithm</th><th>Vocabulary</th><th>Notable rules</th><th>Source</th></tr>
+        <tr><td>GPT-2</td><td>Byte-level BPE</td><td>50,257</td><td>256 bytes + 50,000 merges + &lt;|endoftext|&gt;; no merges across character categories</td><td>GPT-2 §2.2; tiktoken</td></tr>
+        <tr><td>GPT-4 (cl100k_base)</td><td>Byte-level BPE</td><td>100,277 ids</td><td>Numbers split into ≤3-digit groups; FIM special tokens</td><td>tiktoken source</td></tr>
+        <tr><td>GPT-4o (o200k_base)</td><td>Byte-level BPE</td><td>200,019 ids</td><td>Different regex and merges; ≤3-digit number groups</td><td>tiktoken source</td></tr>
+        <tr><td>Llama 1 / 2</td><td>BPE via SentencePiece</td><td>32K</td><td>Numbers split into <b>individual digits</b>; bytes for unknown UTF-8 characters</td><td>Llama 2 §2.2</td></tr>
+        <tr><td>Llama 3</td><td>BPE (tiktoken-based)</td><td>128K</td><td>100K tiktoken tokens + 28K non-English tokens</td><td>Llama 3 §3.2</td></tr>
+        <tr><td>BERT</td><td>WordPiece</td><td>30,000</td><td>[CLS] starts every sequence; [SEP] separates segments</td><td>BERT §3</td></tr>
+        <tr><td>T5</td><td>SentencePiece (wordpieces)</td><td>32,000</td><td>Shared input/output vocabulary; covers EN, DE, FR, RO</td><td>T5 §3.1.3</td></tr>
+      </table>
+    </div>
+    <p class="caption">"ids" counts include special tokens: tiktoken's n_vocab for cl100k_base is 100,277 and for o200k_base 200,019; the rest of the ids are mergeable byte sequences.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Number handling differs a lot</h2>
+    <hr>
+    <p class="lede">"12345678" tokenized for real. GPT-2's pattern keeps a whole run of digits as one chunk and lets BPE merge it however it learned; cl100k and o200k pre-split numbers into groups of at most 3 digits; Llama 1/2 split every digit.</p>
+    <div class="visual"><div id="numRows"></div>
+      <div class="tokrow"><div class="lab">Llama 1/2 rule</div><div class="toks"><span class="tok c0">1</span><span class="tok c1">2</span><span class="tok c2">3</span><span class="tok c3">4</span><span class="tok c4">5</span><span class="tok c5">6</span><span class="tok c0">7</span><span class="tok c1">8</span></div><div class="cnt">8</div></div>
+    </div>
+    <p class="caption">The Llama row applies the documented rule ("split all numbers into individual digits") rather than running the Llama tokenizer.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how3" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Special tokens are reserved ids, not text</h2>
+    <hr>
+    <div class="visual scroll-x">
+      <table class="tbl">
+        <tr><th>Tokenizer</th><th>Special tokens (id)</th></tr>
+        <tr><td>gpt2</td><td><code>&lt;|endoftext|&gt;</code> 50256</td></tr>
+        <tr><td>cl100k_base</td><td><code>&lt;|endoftext|&gt;</code> 100257 · <code>&lt;|fim_prefix|&gt;</code> 100258 · <code>&lt;|fim_middle|&gt;</code> 100259 · <code>&lt;|fim_suffix|&gt;</code> 100260 · <code>&lt;|endofprompt|&gt;</code> 100276</td></tr>
+        <tr><td>o200k_base</td><td><code>&lt;|endoftext|&gt;</code> 199999 · <code>&lt;|endofprompt|&gt;</code> 200018</td></tr>
+        <tr><td>BERT</td><td><code>[CLS]</code>, <code>[SEP]</code></td></tr>
+        <tr><td>SentencePiece</td><td><code>&lt;unk&gt;</code>, <code>&lt;s&gt;</code>, <code>&lt;/s&gt;</code>, <code>&lt;pad&gt;</code>, plus user-defined ones such as <code>&lt;2ja&gt;</code></td></tr>
+      </table>
+    </div>
+    <div class="paper"><b>Safety detail:</b> by default, tiktoken's <code>encode()</code> <b>raises an error</b> if ordinary text contains a special-token string such as <code>&lt;|endoftext|&gt;</code> (checked with tiktoken 0.14). This stops user-supplied text from silently turning into a control token.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why tokenizers differ</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Different data</h3><p>Tokenizers are trained on their model's data mix. More code and multilingual text in training produces tokens for those.</p></div>
+      <div class="card b"><h3>Different goals</h3><p>Splitting digits individually (Llama) or into groups of three (cl100k/o200k) gives numbers a consistent structure. GPT-2's unbounded digit chunks don't.</p></div>
+      <div class="card c"><h3>Different eras</h3><p>Vocabularies grew from about 30K (BERT, T5, Llama 2) to 100K–200K (GPT-4, Llama 3, GPT-4o) as models grew and multilingual use mattered more.</p></div>
+      <div class="card e"><h3>Tooling</h3><p>SentencePiece (raw text, ▁) and tiktoken (byte-level BPE, regex pre-split) are the two families most LLMs build on.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Token ids are universal across models."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They're <b>model-specific</b>. The same id maps to different strings in different tokenizers, and even shared merges get different id assignments.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Typing "<|endoftext|>" in a prompt ends the document."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Special tokens are <b>reserved ids</b>. With tiktoken's defaults the literal string raises an error instead of being encoded as the control token.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"o200k_base is cl100k_base with more tokens added."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is a <b>separate encoding</b>: its own merge ranks and its own pre-tokenization pattern (tiktoken source).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">How do Llama 1 and 2 tokenize numbers?</p>
+      <div class="opts">
+      <button>A. As whole numbers</button>
+      <button>B. In groups of up to 3 digits</button>
+      <button data-ok>C. As individual digits</button>
+      <button>D. As words</button>
+      </div>
+      <div class="why"><b>Individual digits</b> (Llama 2 paper §2.2, same as Llama 1).</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">What is &lt;|endoftext|&gt;'s id in gpt2?</p>
+      <div class="opts">
+      <button>A. 0</button>
+      <button data-ok>B. 50256</button>
+      <button>C. 100257</button>
+      <button>D. 199999</button>
+      </div>
+      <div class="why"><b>50256</b>, the last id in GPT-2's 50,257-entry vocabulary.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Name the four parts that make up a tokenizer.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">A <b>vocabulary</b> (merges or scored pieces), a <b>pre-tokenization</b> rule, optional <b>normalization</b>, and <b>special tokens</b>.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Each LLM's tokenizer (vocabulary, pre-tokenization, normalization and special tokens) is part of the model. Ids, counts and number handling differ between models and don't transfer.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>GPT-2 uses byte-level BPE with 50,257 tokens; GPT-4's cl100k_base and GPT-4o's o200k_base are larger byte-level BPE encodings that split numbers into groups of up to three digits. Llama 1 and 2 use SentencePiece BPE with 32K tokens and individual digits; Llama 3 uses 128K tokens (100K from tiktoken plus 28K multilingual). BERT uses 30,000 WordPieces and T5 32,000 SentencePiece pieces. Special tokens are reserved ids, and ids only make sense with the model's own tokenizer.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> tokenizers differ per model, so counts, costs and ids don't transfer.</span></div><div><span><b>Core idea:</b> tokenizer = vocabulary + pre-tokenization + normalization + special tokens, frozen with the model.</span></div></div>
+    <p class="start-hint">Next: <a href="../09-multilingual-cost/index.html">09 · Multilingual cost →</a> · Previous: <a href="../07-vocabulary-size/index.html">← 07</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../data/examples.js"></script>
+<script src="../tk.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const rows = (key, opts = {}) => Object.keys(TK.ENC).map(enc => { const el = document.createElement('div'); TK.render(el, TK.get(key, enc), opts); return `<div class="tokrow"><div class="lab">${enc}</div>${el.outerHTML}<div class="cnt">${TK.get(key, enc).length}</div></div>`; }).join('');
+
+  document.getElementById('cmpRows').innerHTML = rows('compare', { ids: false });
+  document.getElementById('numRows').innerHTML = rows('num', { ids: true });
+
+})();
+</script>
+</body>
+</html>

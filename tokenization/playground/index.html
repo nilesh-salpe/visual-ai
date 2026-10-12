@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tokenizer Playground</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../tk.css">
+<style>
+  body { overflow-y: auto; }
+  .pg { max-width: 1080px; margin: 0 auto; padding: 32px 16px 64px; }
+  .pg h1 { font-size: clamp(30px, 4.6vw, 48px); margin: 8px 0 6px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-top: 14px; }
+  .chk { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); cursor: pointer; }
+  .chk input { accent-color: var(--a); }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .status { font: 500 13px 'JetBrains Mono', monospace; color: var(--muted); }
+  .status.err { color: var(--d); }
+  #ids { width: 100%; min-height: 60px; font: 12.5px/1.5 'JetBrains Mono', monospace; background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); border-radius: 10px; padding: 10px; resize: vertical; }
+  .cmp .tokrow { grid-template-columns: 130px 1fr 80px; }
+</style>
+</head>
+<body>
+<div class="pg">
+  <a class="brand" href="../index.html">← Tokenization for LLMs</a>
+  <div class="label" style="margin-top:22px">Live tool</div>
+  <h1>Tokenizer playground</h1>
+  <p class="lede">Type anything and see exactly how OpenAI's real tokenizers split it, running in your browser with <a href="https://github.com/dqbd/tiktoken">js-tiktoken</a> (a port of tiktoken). Nothing you type leaves the page. Each encoding's vocabulary (a few MB) loads the first time you select it.</p>
+
+  <div class="visual">
+    <div class="bar" style="margin-top:0">
+      <div class="seg" id="encSeg"><button data-v="gpt2">gpt2 (GPT-2)</button><button data-v="cl100k_base" class="on">cl100k_base (GPT-4)</button><button data-v="o200k_base">o200k_base (GPT-4o)</button><button data-v="all">Compare all</button></div>
+      <span class="status" id="status"></span>
+    </div>
+    <textarea class="tk-in" id="txt" style="margin-top:12px" spellcheck="false">Tokenizers turn text into integers: 12345, naïve café 👋 and def f(x): return x</textarea>
+    <div class="bar">
+      <div class="presets" id="presets"></div>
+    </div>
+    <div class="bar">
+      <label class="chk"><input type="checkbox" id="optIds"> show ids</label>
+      <label class="chk"><input type="checkbox" id="optSpecial"> allow special tokens (e.g. &lt;|endoftext|&gt;)</label>
+    </div>
+  </div>
+
+  <div class="visual" id="single">
+    <div class="grid4">
+      <div class="stat"><div class="num" id="sTok">–</div><div class="lbl">tokens</div></div>
+      <div class="stat"><div class="num" id="sChr">–</div><div class="lbl">characters</div></div>
+      <div class="stat"><div class="num" id="sByt">–</div><div class="lbl">UTF-8 bytes</div></div>
+      <div class="stat"><div class="num" id="sCpt">–</div><div class="lbl">characters per token</div></div>
+    </div>
+    <div id="out" style="margin-top:16px"></div>
+    <p class="caption">Colours alternate per token. <span class="ws">·</span> = space, ↵ = newline. A <span style="outline:1.5px dashed var(--d);padding:0 4px;border-radius:4px">dashed</span> token holds incomplete UTF-8 bytes, part of a character split across tokens.</p>
+    <h3 style="margin-top:14px">Token ids</h3>
+    <textarea id="ids" readonly></textarea>
+  </div>
+
+  <div class="visual cmp" id="compare" style="display:none">
+    <div id="cmpRows"></div>
+    <p class="caption">The same text in all three encodings. Counts include every token.</p>
+  </div>
+
+  <p class="cite" style="margin-top:18px">Encodings: <code>gpt2</code> (50,257 tokens), <code>cl100k_base</code> (100,277 ids), <code>o200k_base</code> (200,019 ids), as published in OpenAI's tiktoken. Loaded from jsDelivr: js-tiktoken@1.0.20. Learn the concepts in the <a href="../index.html">10-deck guide</a>.</p>
+</div>
+
+<script src="../tk.js"></script>
+<script type="module">
+const CDN = 'https://cdn.jsdelivr.net/npm/js-tiktoken@1.0.20';
+const ENCS = ['gpt2', 'cl100k_base', 'o200k_base'];
+const PRESETS = {
+  'English': 'Large language models never see raw text. Every prompt is first split into tokens.',
+  'Code': 'def fibonacci(n):\n    if n < 2:\n        return n\n    return fibonacci(n - 1) + fibonacci(n - 2)',
+  'Numbers': '12345678 + 87654321 = 99999999\nPi is 3.14159265358979',
+  'Multilingual': 'The weather is nice today.\nHoy hace buen tiempo.\n今天天气很好。\nआज मौसम अच्छा है।\nСегодня хорошая погода.',
+  'Emoji': '👋 🎉 👨‍👩‍👧 🇮🇳 ❤️',
+  'strawberry': 'strawberry  Strawberry  STRAWBERRY',
+  'Spaces': 'hello\n hello\n  hello\nHello\nHELLO',
+  'Special token': 'Before <|endoftext|> after',
+};
+let cur = 'cl100k_base';
+const cache = {};
+let liteP = null;
+const $ = id => document.getElementById(id);
+const status = (t, err) => { const s = $('status'); s.textContent = t; s.className = 'status' + (err ? ' err' : ''); };
+
+async function getEnc(name) {
+  if (cache[name]) return cache[name];
+  liteP = liteP || import(`${CDN}/lite/+esm`);
+  status(`loading ${name}…`);
+  const [{ Tiktoken }, ranks] = await Promise.all([liteP, import(`${CDN}/ranks/${name}/+esm`).then(m => m.default)]);
+  cache[name] = new Tiktoken(ranks);
+  status(`${name} ready`);
+  return cache[name];
+}
+function tokensOf(enc, text) {
+  const allow = $('optSpecial').checked ? 'all' : [];
+  const ids = enc.encode(text, allow);
+  return ids.map(id => {
+    let b = enc.textMap && enc.textMap.get(id);
+    if (!b) { const sp = enc.inverseSpecialTokens && enc.inverseSpecialTokens[id]; b = sp ? (typeof sp === 'string' ? new TextEncoder().encode(sp) : sp) : new TextEncoder().encode(enc.decode([id])); }
+    return [id, [...b]];
+  });
+}
+let seq = 0;
+async function run() {
+  const my = ++seq, text = $('txt').value;
+  try {
+    if (cur === 'all') {
+      $('single').style.display = 'none'; $('compare').style.display = '';
+      const rows = [];
+      for (const n of ENCS) {
+        const enc = await getEnc(n); if (my !== seq) return;
+        const t = tokensOf(enc, text), el = document.createElement('div');
+        TK.render(el, t, { ids: $('optIds').checked });
+        rows.push(`<div class="tokrow"><div class="lab">${n}</div>${el.outerHTML}<div class="cnt">${t.length}</div></div>`);
+      }
+      $('cmpRows').innerHTML = rows.join('');
+      status('compared 3 encodings');
+    } else {
+      $('single').style.display = ''; $('compare').style.display = 'none';
+      const enc = await getEnc(cur); if (my !== seq) return;
+      const t = tokensOf(enc, text);
+      TK.render($('out'), t, { ids: $('optIds').checked });
+      const chars = [...text].length, bytes = new TextEncoder().encode(text).length;
+      $('sTok').textContent = t.length.toLocaleString(); $('sChr').textContent = chars.toLocaleString();
+      $('sByt').textContent = bytes.toLocaleString(); $('sCpt').textContent = t.length ? (chars / t.length).toFixed(2) : '–';
+      $('ids').value = JSON.stringify(t.map(x => x[0]));
+      status(`${cur}: ${t.length} tokens`);
+    }
+  } catch (e) {
+    const msg = String(e && e.message || e);
+    if (/special token/i.test(msg)) status('Text contains a special token. Tick "allow special tokens" to encode it as a control token.', true);
+    else status('Could not load the tokenizer (are you offline?): ' + msg.slice(0, 80), true);
+  }
+}
+$('presets').innerHTML = Object.keys(PRESETS).map(k => `<button class="btn" data-k="${k}">${k}</button>`).join('');
+$('presets').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (b) { $('txt').value = PRESETS[b.dataset.k]; run(); } });
+$('encSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; [...$('encSeg').children].forEach(x => x.classList.toggle('on', x === b)); cur = b.dataset.v; run(); });
+let tmr; $('txt').addEventListener('input', () => { clearTimeout(tmr); tmr = setTimeout(run, 120); });
+['optIds', 'optSpecial'].forEach(id => $(id).addEventListener('change', run));
+try { const t = localStorage.getItem('tk-playground-text'); if (t) $('txt').value = t; } catch (e) {}
+$('txt').addEventListener('input', () => { try { localStorage.setItem('tk-playground-text', $('txt').value); } catch (e) {} });
+run();
+</script>
+</body>
+</html>

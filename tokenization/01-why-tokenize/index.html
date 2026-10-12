@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why Tokenize</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+<link rel="stylesheet" href="../tk.css">
+
+</head>
+<body data-deck="Why tokenize?" data-home="../index.html" data-home-label="Tokenization">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Tokenization for LLMs · 01</div>
+    <h1>Why tokenize?</h1>
+    <p class="sub">A language model can only process numbers. Tokenization decides how text becomes a sequence of integer ids, and that choice affects vocabulary size, sequence length, cost, and what the model can "see".</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Characters make sequences very long. Whole words leave rare and new words unknown.</div>
+      <div class="c"><b>Core idea</b>Use <b>subwords</b>: common words stay whole, rare words split into known pieces, so any text fits a fixed vocabulary.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>A model never sees text, only integer ids</h2>
+    <hr>
+    <p class="lede">Before an LLM does anything, the input string is cut into <b>tokens</b>, and each token is replaced by its id in a fixed vocabulary. The model's first layer looks up one embedding row per id. Below is a real tokenization with <code>cl100k_base</code> (GPT-4's encoding).</p>
+    <div class="visual">
+      <h3>"Tokenization turns text into numbers."</h3>
+      <div id="introToks" style="margin-top:10px"></div>
+      <p class="caption">Hover a token for its id. <span class="ws">·</span> marks a space, which belongs to the token that follows it.</p>
+      <div class="paper" style="margin-top:14px"><b>Next step inside the model:</b> each id selects one row of the embedding matrix (vocabulary size V × model width d). The model's output layer then scores all V ids to predict the next token.</div>
+    </div>
+    <div class="takeaway">Everything the model learns, it learns over these ids. How text is split decides what each id means.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>The two obvious units both break</h2>
+    <hr>
+    <p class="lede">Split by <b>characters</b> and the vocabulary is tiny, but sequences get long, and attention cost grows with the square of the length. Split by <b>words</b> and sequences are short, but any word outside the vocabulary becomes an unknown token. Pick a sentence.</p>
+    <div class="visual">
+      <div class="seg" id="limSeg"><button data-v="s_animal" class="on">Everyday sentence</button><button data-v="s_rare">Rare word + number</button><button data-v="s_code">Code</button></div>
+      <div id="limRows" style="margin-top:12px"></div>
+      <p class="caption">Characters and words are split in the browser. The word row uses a <span class="ill">toy</span> vocabulary of about 100 common English words, and anything else becomes [UNK]. The subword row is the real <code>cl100k_base</code> output.</p>
+    </div>
+    <div class="cite">Sennrich et al. (2016) put the trade-off this way: an increase in text length "reduces efficiency and increases the distances over which neural models need to pass information", while large vocabularies cost time and space.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Pick the unit</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Which unit gives a fixed, modest vocabulary, reasonably short sequences, and no unknown words?</p>
+      <div class="opts">
+      <button>A. Whole words</button>
+      <button>B. Single characters</button>
+      <button data-ok>C. Subwords: frequent strings kept whole, rare ones split into known pieces</button>
+      <button>D. Whole sentences</button>
+      </div>
+      <div class="why"><b>C.</b> Words (A) leave rare words unknown, characters (B) make sequences long, and sentences (D) would need an infinite vocabulary. Subwords sit in between: common words become single tokens, and anything rare is spelled out with smaller pieces that are in the vocabulary.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Subwords: common words stay whole, rare words split</h2>
+    <hr>
+    <p class="lede">Real tokenizer output. Note the leading space: in these tokenizers a word and the space before it usually form one token.</p>
+    <div class="visual">
+      <div class="seg" id="coreEnc"><button data-v="gpt2">gpt2</button><button data-v="cl100k_base" class="on">cl100k_base</button><button data-v="o200k_base">o200k_base</button></div>
+      <div id="coreRows" style="margin-top:12px"></div>
+    </div>
+    <div class="takeaway">The vocabulary is fixed (about 100K tokens for cl100k_base), yet any word can still be written, from "the" to "Abwasserbehandlungsanlage" (Sennrich et al.'s example of a German compound).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>The tokenization pipeline, end to end</h2>
+    <hr>
+    <p class="lede">Tokenizers differ in detail, but most follow the same stages. Below, one sentence goes through them with real GPT-2-style pre-tokenization and real <code>cl100k_base</code> tokens.</p>
+    <div class="visual">
+      <div class="steps" id="pipeSteps"></div>
+      <div id="pipeOut" style="margin-top:14px"></div>
+      <div class="infobox" id="pipeInfo"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why subwords work</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Compression</h3><p>tiktoken's README puts typical BPE compression at about <b>4 bytes per token</b>. On this guide's 408-character English sample, <code>cl100k_base</code> uses 79 tokens, about 5.2 characters per token.</p></div>
+      <div class="card b"><h3>Fixed output layer</h3><p>The model predicts one of V ids at every step. A fixed V (50K–200K) keeps that softmax bounded.</p></div>
+      <div class="card c"><h3>Open vocabulary</h3><p>Rare words are spelled with smaller pieces, and byte-level tokenizers (deck 03) can encode any string at all.</p></div>
+      <div class="card e"><h3>Shorter sequences</h3><p>Fewer tokens means less attention compute (it grows with n²) and more text in a fixed context window (deck 07).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"A token is a word."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Often it is a <b>piece</b> of a word, and it usually includes the space before it: " strawberry" is one token in cl100k_base, but "strawberry" without the space is three (deck 10).</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Every model counts tokens the same way."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Each model has its own tokenizer. The sentence on the "Characters or words?" slide gets different token counts in gpt2, cl100k_base and o200k_base (deck 08).</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Tokenization throws information away."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Modern BPE tokenizers are <b>reversible and lossless</b> (tiktoken README): concatenating the tokens' bytes gives back the original text exactly.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">Roughly how many bytes of text does one BPE token cover on average, according to tiktoken's README?</p>
+      <div class="opts">
+      <button>A. 1</button>
+      <button data-ok>B. About 4</button>
+      <button>C. About 40</button>
+      <button>D. One whole sentence</button>
+      </div>
+      <div class="why"><b>About 4 bytes per token</b> in practice. It varies with language and content.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why not just use characters as tokens?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Sequences become several times longer, and attention cost grows with the square of the length, so compute rises and less text fits in the context window.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">A subword tokenizer meets a word it has never seen. What happens?</p>
+      <div class="opts">
+      <button>A. It outputs [UNK]</button>
+      <button data-ok>B. It splits the word into smaller known pieces</button>
+      <button>C. It skips the word</button>
+      <button>D. It raises an error</button>
+      </div>
+      <div class="why"><b>It splits the word into known pieces</b>, down to single characters or bytes if needed.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Tokenization maps text to integer ids from a fixed vocabulary. Subwords keep common words whole and spell rare ones in pieces, balancing vocabulary size against sequence length.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Models work on integers, so text is split into tokens and each token becomes an id from a fixed vocabulary. Characters give tiny vocabularies but long sequences, and words give short sequences but unknown words. Subword tokenizers keep frequent strings as single tokens and split rare words into known pieces. The pipeline is normalize, pre-tokenize, apply the subword model, then map to ids, and decoding reverses it losslessly.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> characters make sequences long; words leave rare words unknown.</span></div><div><span><b>Core idea:</b> subword tokens: a fixed vocabulary where any text is spelled with known pieces, about 4 bytes per token.</span></div></div>
+    <p class="start-hint">Next: <a href="../02-bpe-from-scratch/index.html">02 · BPE from scratch →</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../data/examples.js"></script>
+<script src="../tk.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  TK.render(document.getElementById('introToks'), TK.get('intro', 'cl100k_base'), { ids: true });
+  const KNOWN = new Set("the a an and or but because it is was were be to of in on at for with as by from this that these those i you he she we they not did didn't do does cross street animal tired cat sat mat dog man day time year people way good new first last long great little own other old right big high different small large next early young important few public bad same able handled litres for in range print if else return def class import".split(' '));
+  const words = t => t.match(/[\p{L}\p{N}']+|[^\s\p{L}\p{N}]/gu) || [];
+  const row = (lab, toksHTML, n) => `<div class="tokrow"><div class="lab">${lab}</div><div>${toksHTML}</div><div class="cnt">${n}</div></div>`;
+  const chips = arr => '<div class="toks">' + arr.map((t, i) => `<span class="tok c${i % 6}">${TK.vis(t)}</span>`).join('') + '</div>';
+  Deck.seg('limSeg', v => {
+    const t = TK.text(v), ch = [...t], ws = words(t), sub = TK.get(v, 'cl100k_base');
+    const wHTML = '<div class="toks">' + ws.map((w, i) => KNOWN.has(w.toLowerCase()) || /^[^\p{L}\p{N}]$/u.test(w) ? `<span class="tok c${i % 6}">${TK.vis(w)}</span>` : `<span class="tok" style="background:var(--d-soft);color:var(--d)" title="${TK.esc(w)}">[UNK]</span>`).join('') + '</div>';
+    const unk = ws.filter(w => !(KNOWN.has(w.toLowerCase()) || /^[^\p{L}\p{N}]$/u.test(w))).length;
+    const el = document.createElement('div'); TK.render(el, sub);
+    const cost = n => (n * n / (sub.length * sub.length)).toFixed(1) + '× attention cost';
+    document.getElementById('limRows').innerHTML =
+      row('characters', chips(ch), ch.length + '<div class="tm" style="font:500 10.5px Inter">' + cost(ch.length) + '</div>') +
+      row('words', wHTML, ws.length + `<div style="font:500 10.5px Inter;color:var(--d)">${unk} unknown</div>`) +
+      row('subwords', el.outerHTML, sub.length + '<div class="tm" style="font:500 10.5px Inter">1.0× (reference)</div>');
+  });
+  const CORE = [['w_the', 'common word'], ['w_tok', 'common-ish'], ['w_unbel', 'longer word'], ['w_abw', 'rare compound']];
+  Deck.seg('coreEnc', enc => {
+    document.getElementById('coreRows').innerHTML = CORE.map(([k, lab]) => { const el = document.createElement('div'); TK.render(el, TK.get(k, enc), { ids: true }); return `<div class="tokrow"><div class="lab">${lab}</div>${el.outerHTML}<div class="cnt">${TK.get(k, enc).length}</div></div>`; }).join('');
+  });
+  // pipeline
+  const T = TK.text('s_rare');
+  const PAT = /'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+/gu;
+  const chunks = T.match(PAT), toks = TK.get('s_rare', 'cl100k_base');
+  const decoded = new TextDecoder().decode(new Uint8Array(toks.flatMap(t => t[1])));
+  const STEPS = [
+    ['1 · Raw text', () => `<div class="toks"><span class="tok c0">${TK.vis(T)}</span></div>`, 'The input is just a string of Unicode characters.'],
+    ['2 · Normalize', () => `<div class="toks"><span class="tok c0">${TK.vis(T.normalize('NFKC'))}</span></div>`, 'Some tokenizers first normalize Unicode (SentencePiece applies NFKC by default; deck 05). Byte-level BPE tokenizers such as tiktoken\'s skip this and keep the raw bytes.'],
+    ['3 · Pre-tokenize', () => chips(chunks), 'A regular expression splits the text into chunks: words with their leading space, runs of digits, punctuation. Merges never cross chunk boundaries. This is GPT-2\'s pattern (deck 03).'],
+    ['4 · Subword model', () => { const el = document.createElement('div'); TK.render(el, toks); return el.outerHTML; }, 'Inside each chunk, BPE applies its learned merges (deck 02). These are the real cl100k_base tokens. Note that cl100k splits numbers into groups of at most 3 digits.'],
+    ['5 · Ids', () => { const el = document.createElement('div'); TK.render(el, toks, { ids: true }); return el.outerHTML; }, 'Each token becomes its integer id, and this list of integers is what the model receives.'],
+    ['6 · Decode', () => `<div class="toks"><span class="tok c3">${TK.vis(decoded)}</span></div><p class="readout" style="margin-top:8px">${decoded === T ? '<span class="em-e">✓ identical to the input</span>: concatenating the tokens\' bytes is lossless.' : 'differs'}</p>`, 'Decoding concatenates each token\'s bytes and gives back exactly the original text.'],
+  ];
+  const ps = document.getElementById('pipeSteps');
+  ps.innerHTML = STEPS.map((s, i) => `<button data-i="${i}">${s[0]}</button>`).join('');
+  const pick = i => { Deck.$$('button', ps).forEach(b => b.classList.toggle('on', +b.dataset.i === i)); document.getElementById('pipeOut').innerHTML = STEPS[i][1](); document.getElementById('pipeInfo').innerHTML = STEPS[i][2]; };
+  ps.addEventListener('click', e => { const b = e.target.closest('button'); if (b) pick(+b.dataset.i); });
+  pick(0);
+
+})();
+</script>
+</body>
+</html>

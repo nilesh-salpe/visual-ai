@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Byte-Level BPE</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+<link rel="stylesheet" href="../tk.css">
+
+</head>
+<body data-deck="Byte-level BPE" data-home="../index.html" data-home-label="Tokenization">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Tokenization for LLMs · 03</div>
+    <h1>Byte-level BPE</h1>
+    <p class="sub">How GPT-2 made BPE work on any string at all (emoji, every script, code) with a base vocabulary of only 256 symbols (Radford et al., 2019, §2.2).</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A general language model should be able to give a probability to, and generate, any string. Character-level BPE either needs a huge base vocabulary or produces unknown tokens.</div>
+      <div class="c"><b>Core idea</b>Run BPE over the UTF-8 <b>bytes</b> of the text instead of Unicode characters. The base vocabulary is 256 bytes, so nothing is ever unknown.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>An LLM must handle any string</h2>
+    <hr>
+    <p class="lede">The GPT-2 paper sets the requirement: "A general language model (LM) should be able to compute the probability of (and also generate) any string." Real input includes accented letters, emoji, dozens of scripts, code, and stray control characters.</p>
+    <div class="visual"><div class="bytes" id="p1Chars"></div></div>
+    <div class="takeaway">Lowercasing, word-level tokenization and unknown tokens all <b>restrict which strings the model can represent</b> (§2.2).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>BPE over Unicode characters needs a huge base vocabulary</h2>
+    <hr>
+    <p class="lede">Reference BPE implementations of the time worked on Unicode code points. Covering every possible string that way would need "a base vocabulary of over 130,000 before any multi-symbol tokens are added", far larger than the 32,000–64,000-token vocabularies typically used with BPE.</p>
+    <div class="visual"><div id="limBars"></div></div>
+    <div class="cite">GPT-2 paper §2.2. The alternative, an unknown token for rare characters, gives up the "any string" requirement.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Cover everything with a small base</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">How can BPE cover every possible string while keeping the base vocabulary small?</p>
+      <div class="opts">
+      <button>A. Include all Unicode characters in the base vocabulary</button>
+      <button data-ok>B. Run BPE over the 256 possible UTF-8 byte values</button>
+      <button>C. Keep ASCII only and map everything else to [UNK]</button>
+      <button>D. Use whole words</button>
+      </div>
+      <div class="why"><b>B.</b> Every string is a sequence of UTF-8 bytes, and there are only 256 byte values. Starting BPE from bytes makes the base vocabulary 256 and leaves no unknown symbols. Option A needs more than 130,000 base symbols, and C gives up coverage.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>BPE on bytes: 256 base symbols, then merges</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>Base = 256 bytes</h3><p>Any text is first encoded as UTF-8, a sequence of bytes 0–255. That's the starting alphabet.</p></div>
+      <div class="card b"><h3>Merges on top</h3><p>BPE merges frequent byte sequences into tokens. Common English words become single tokens, and rarer scripts use more, shorter tokens.</p></div>
+      <div class="card e"><h3>GPT-2's numbers</h3><p>Vocabulary 50,257 = <b>256 bytes + 50,000 merges + 1 special token</b> (&lt;|endoftext|&gt;), checked with tiktoken.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>From characters to bytes: try it</h2>
+    <hr>
+    <p class="lede">Type anything. Each character becomes 1 to 4 UTF-8 bytes. ASCII takes 1 byte, accented Latin letters 2, Devanagari and Japanese 3, and most emoji 4.</p>
+    <div class="visual">
+      <input class="tk-in" id="byIn" value="héllo 👋 नमस्ते" style="width:100%">
+      <div class="bytes" id="byOut" style="margin-top:12px"></div>
+      <p class="readout" id="byCnt" style="margin-top:8px"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Real byte-level tokens, including partial characters</h2>
+    <hr>
+    <p class="lede">Real output from three tiktoken encodings. A token can end <b>in the middle of a character</b>. Tokens with a dashed red outline hold incomplete UTF-8 bytes, which only become a character when joined with their neighbours.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <div class="seg" id="exSeg"><button data-v="hello_emoji" class="on">héllo 👋</button><button data-v="hindi">नमस्ते दुनिया</button><button data-v="jp">こんにちは世界。</button></div>
+      </div>
+      <div id="exRows" style="margin-top:12px"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how3" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Pre-tokenization: no merges across character categories</h2>
+    <hr>
+    <p class="lede">Applied naively, byte-level BPE wasted vocabulary on variants such as <code>dog.</code>, <code>dog!</code> and <code>dog?</code>. GPT-2 therefore stops BPE from merging across character categories. A regular expression first splits text into chunks (letters, numbers, punctuation), with an exception that lets a space attach to the following word.</p>
+    <div class="visual">
+      <h3>Pre-tokenized chunks (GPT-2 pattern)</h3><div id="dogChunks" style="margin-top:6px"></div>
+      <h3 style="margin-top:14px">Final tokens (gpt2)</h3><div id="dogToks" style="margin-top:6px"></div>
+    </div>
+    <div class="cite">§2.2: "We observed BPE including many versions of common words like dog since they occur in many variations such as dog. dog! dog?" Pattern shown is GPT-2's (tiktoken r50k), minus regex features JavaScript lacks.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Nothing is ever unknown</h3><p>Every string is a byte sequence and all 256 bytes are in the vocabulary, so any input can be encoded.</p></div>
+      <div class="card e"><h3>Any string gets a probability</h3><p>"Since our approach can assign a probability to any Unicode string," GPT-2 could be evaluated on any dataset "regardless of pre-processing, tokenization, or vocab size" (§2.2).</p></div>
+      <div class="card b"><h3>Word-level efficiency where it counts</h3><p>Merges make frequent strings single tokens, combining "the empirical benefits of word-level LMs with the generality of byte-level approaches".</p></div>
+      <div class="card c"><h3>Vocabulary spent well</h3><p>The category rule stops near-duplicate tokens like "dog." and "dog!" from using up vocabulary slots.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Byte-level means one token per byte."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Bytes are only the <b>base</b>. Merges build multi-byte tokens, so a common English word with its leading space is usually a single token.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Every token decodes to valid text."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">A token can hold a <b>partial</b> UTF-8 character: the 👋 emoji above is split across two tokens. Streaming output has to buffer bytes until a character is complete.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"The space between words is its own token."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">In GPT-2-style pre-tokenization a single space attaches to the <b>following</b> word: " dog" is one token.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">How big is the base vocabulary of byte-level BPE?</p>
+      <div class="opts">
+      <button>A. 26</button>
+      <button data-ok>B. 256</button>
+      <button>C. 50,257</button>
+      <button>D. 130,000+</button>
+      </div>
+      <div class="why"><b>256</b>, one symbol per byte value.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">What makes up GPT-2's 50,257-token vocabulary?</p>
+      <div class="opts">
+      <button>A. 50,257 words</button>
+      <button data-ok>B. 256 bytes + 50,000 merges + 1 special token</button>
+      <button>C. 130,000 characters pruned to 50K</button>
+      <button>D. 50,000 bytes + 257 merges</button>
+      </div>
+      <div class="why"><b>256 + 50,000 + 1</b>. The special token is &lt;|endoftext|&gt; (id 50256).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why can a byte-level BPE tokenizer never output an unknown token?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Every possible input is a sequence of bytes, and every byte value is a base token, so the worst case is simply one token per byte.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Byte-level BPE runs BPE over UTF-8 bytes: a 256-symbol base means any string can be encoded with no unknowns, while merges keep common text compact.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>GPT-2 wanted a model that could assign a probability to any string. BPE over Unicode characters would need a base vocabulary of more than 130,000 symbols, so GPT-2 runs BPE over UTF-8 bytes instead: 256 base symbols plus 50,000 merges plus one special token gives 50,257. A regex pre-tokenizer stops merges across letters, digits and punctuation, so near-duplicates like "dog." and "dog!" don't waste vocabulary. Tokens can hold partial characters, so decoding has to buffer bytes.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> any-string coverage with character BPE needs 130K+ base symbols, or [UNK].</span></div><div><span><b>Core idea:</b> BPE over bytes: a base of 256, nothing unknown, merges for efficiency, regex pre-tokenization.</span></div></div>
+    <p class="start-hint">Next: <a href="../04-wordpiece-unigram/index.html">04 · WordPiece and unigram LM →</a> · Previous: <a href="../02-bpe-from-scratch/index.html">← 02</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../data/examples.js"></script>
+<script src="../tk.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const charBox = (c) => { const b = [...new TextEncoder().encode(c)]; return `<div class="ch"><b>${TK.esc(c === ' ' ? '·' : c)}</b><span>${b.map(x => x.toString(16).toUpperCase().padStart(2, '0')).join(' ')}</span></div>`; };
+  document.getElementById('p1Chars').innerHTML = [...'café 👋 नम 東京 {x}'].map(charBox).join('');
+  Deck.hbars(document.getElementById('limBars'), [
+    { label: 'Unicode code points (base, before merges)', value: 130000, color: 'var(--d)', text: '130,000+' },
+    { label: 'Typical BPE vocabulary', value: 64000, color: 'var(--b)', text: '32K–64K' },
+    { label: 'Byte-level base', value: 256, color: 'var(--e)', text: '256' },
+  ], { log: true, min: 100, max: 200000 });
+  const by = () => {
+    const t = document.getElementById('byIn').value, cs = [...t];
+    document.getElementById('byOut').innerHTML = cs.map(charBox).join('');
+    const nb = new TextEncoder().encode(t).length;
+    document.getElementById('byCnt').innerHTML = `${cs.length} characters → <b>${nb} bytes</b>. Byte-level BPE starts from these ${nb} byte symbols and then merges.`;
+  };
+  document.getElementById('byIn').addEventListener('input', by); by();
+  Deck.seg('exSeg', v => {
+    document.getElementById('exRows').innerHTML = Object.keys(TK.ENC).map(enc => { const el = document.createElement('div'); TK.render(el, TK.get(v, enc)); return `<div class="tokrow"><div class="lab">${enc}</div>${el.outerHTML}<div class="cnt">${TK.get(v, enc).length}</div></div>`; }).join('');
+  });
+  const PAT = /'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+/gu;
+  const d = TK.text('dog');
+  TK.render(document.getElementById('dogChunks'), d.match(PAT).map(t => ({ text: t })));
+  TK.render(document.getElementById('dogToks'), TK.get('dog', 'gpt2'), { ids: true });
+
+})();
+</script>
+</body>
+</html>

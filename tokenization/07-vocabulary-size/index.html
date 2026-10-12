@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vocabulary Size</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+<link rel="stylesheet" href="../tk.css">
+
+</head>
+<body data-deck="Vocabulary size trade-offs" data-home="../index.html" data-home-label="Tokenization">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Tokenization for LLMs · 07</div>
+    <h1>Vocabulary size trade-offs</h1>
+    <p class="sub">How many tokens should a vocabulary have? Bigger vocabularies make sequences shorter but add parameters, and the benefit depends heavily on the language.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>The vocabulary size V sets sequence length, embedding and output-layer size, and how well each language is covered, all at once.</div>
+      <div class="c"><b>Core idea</b>Choose V to balance <b>compression</b> (characters per token) against <b>parameters</b> (V × d), and measure it on the languages you care about.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>One number, many consequences</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Sequence length</h3><p>Fewer, longer tokens mean shorter sequences: less attention compute and more text in the context window.</p></div>
+      <div class="card b"><h3>Parameters</h3><p>The input embedding and the output layer each have V × d weights.</p></div>
+      <div class="card c"><h3>Coverage</h3><p>Which languages, scripts and domains get compact tokens depends on what the vocabulary was trained on.</p></div>
+      <div class="card e"><h3>Training signal</h3><p>Every token in the vocabulary needs enough training examples to learn a good embedding.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Both extremes hurt</h2>
+    <hr>
+    <div class="vs">
+      <div class="card d"><h3>Too small</h3><p>Text is split into many short tokens: longer sequences, more compute per sentence, and less text per context window, especially for languages the vocabulary under-serves (deck 09).</p></div>
+      <div class="card b"><h3>Too large</h3><p>Embedding and output matrices grow with V, and rare tokens get few training updates. Under-trained tokens that are nearly absent from training data can make models misbehave ("glitch tokens", Land &amp; Bartolo 2024; deck 10).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What did Llama 3 gain?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Llama 3 moved from Llama 2's 32K-token vocabulary to 128K tokens. What benefit does the paper report?</p>
+      <div class="opts">
+      <button>A. Fewer total parameters</button>
+      <button data-ok>B. Better compression (more characters per token), so the model "reads" more text for the same compute</button>
+      <button>C. A faster softmax</button>
+      <button>D. No need for BPE any more</button>
+      </div>
+      <div class="why"><b>B.</b> On a sample of English data, characters per token rose from <b>3.17 to 3.94</b>, which "enables the model to 'read' more text for the same amount of training compute". Adding 28K non-English tokens also improved compression and downstream performance in those languages (Llama 3 paper, §3.2).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Compression vs parameters</h2>
+    <hr>
+    <div class="eq">embedding params = V × d &nbsp;&nbsp;(×2 if the output layer isn't tied to the input embedding)</div>
+    <div class="eq">tokens for a text ≈ characters ÷ (characters per token)</div>
+    <div class="takeaway">A larger V raises characters per token, but with diminishing returns once common words are already single tokens. Its cost in parameters grows linearly.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Measured: does a bigger vocabulary compress better?</h2>
+    <hr>
+    <p class="lede">Real token counts from three tiktoken encodings (about 50K, 100K and 200K tokens) on this guide's sample texts: a 408-character English paragraph and one short Hindi sentence.</p>
+    <div class="visual">
+      <div class="grid2">
+        <div><h3>English paragraph: characters per token</h3><div id="enBars"></div></div>
+        <div><h3>Hindi sentence: characters per token</h3><div id="hiBars"></div></div>
+      </div>
+      <p class="readout" id="cmpOut" style="margin-top:10px"></p>
+    </div>
+    <p class="caption">Measured on two small samples, so this illustrates the trend rather than serving as a benchmark. The Hindi sentence is "आज मौसम अच्छा है।" ("The weather is nice today.").</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>The parameter bill</h2>
+    <hr>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Vocabulary V <input type="range" id="vV" min="13" max="18" step="0.05" value="17"> <output id="vVo"></output></label>
+        <label class="ctl">Model width d <select id="vD"><option>768</option><option>2048</option><option selected>4096</option><option>8192</option></select></label>
+        <label class="ctl">Total model <select id="vT"><option value="1e9">1B</option><option value="8e9" selected>8B</option><option value="70e9">70B</option></select></label>
+        <div class="seg" id="vTie"><button data-v="1">tied in/out</button><button data-v="2" class="on">separate in/out</button></div>
+      </div>
+      <div class="grid3" style="margin-top:14px">
+        <div class="stat"><div class="num" id="vPar"></div><div class="lbl">embedding + output parameters</div></div>
+        <div class="stat"><div class="num" id="vPct"></div><div class="lbl">share of the total model</div></div>
+        <div class="stat"><div class="num" id="vCtx"></div><div class="lbl">English characters per 8K-token context (est.)</div></div>
+      </div>
+    </div>
+    <p class="caption">Characters per token are interpolated from the measured English points (gpt2, cl100k, o200k) and are approximate. Parameter counts are exact arithmetic for the chosen V and d.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why the trade-off resolves the way it does</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card e"><h3>Compression buys effective data and context</h3><p>Llama 3: 3.17 → 3.94 characters per token on English lets the model "read" more text for the same compute.</p></div>
+      <div class="card a"><h3>Parameters are cheap at scale</h3><p>V × d is a large share of a small model but a small share of a large one. That's why large models can afford 100K–200K vocabularies.</p></div>
+      <div class="card b"><h3>Where to spend tokens</h3><p>Llama 3 added 28K tokens for non-English languages, which improved their compression with no effect on English tokenization.</p></div>
+      <div class="card c"><h3>Diminishing returns in English</h3><p>On the guide's sample, going from 50K to 200K tokens barely changes English, while the Hindi sentence shrinks from 27 tokens to 5.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"A bigger vocabulary is free."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Each of the embedding and output matrices has V × d weights. At V = 128,000 and d = 4,096 that is about <b>524M parameters</b> per matrix.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Doubling the vocabulary halves the token count."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Returns diminish fast. On the English sample: 81 tokens (gpt2) → 79 (cl100k_base) → 79 (o200k_base). Most of the gain lands on under-served languages.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Vocabulary size only matters for English text."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It matters <b>most</b> for other languages and scripts (Llama 3's +28K multilingual tokens; deck 09).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">GPT-2 small has d = 768 and V = 50,257. How many input-embedding parameters is that?</p>
+      <div class="opts">
+      <button>A. ≈ 3.9M</button>
+      <button data-ok>B. ≈ 38.6M</button>
+      <button>C. ≈ 386M</button>
+      <button>D. ≈ 3.9B</button>
+      </div>
+      <div class="why">50,257 × 768 ≈ <b>38.6M</b>.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">How is Llama 3's 128K vocabulary made up?</p>
+      <div class="opts">
+      <button>A. 128K SentencePiece unigram pieces</button>
+      <button data-ok>B. 100K tiktoken tokens + 28K extra non-English tokens</button>
+      <button>C. 32K Llama 2 tokens × 4</button>
+      <button>D. Bytes only</button>
+      </div>
+      <div class="why"><b>100K tokens from tiktoken plus 28K additional tokens</b> for non-English languages (§3.2).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why does better compression effectively lengthen the context window?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The window is measured in <b>tokens</b>. More characters per token means more text fits into the same number of tokens.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Vocabulary size trades compression against parameters. Large models can afford 100K–200K tokens, and the extra tokens help non-English text far more than English.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Vocabulary size V sets how many characters each token covers and how big the embedding and output layers are (V × d each, unless tied). Too small means long sequences, more compute and less text per context window. Too large adds parameters and rarely seen, under-trained tokens. Llama 3 went from 32K to 128K tokens (100K from tiktoken plus 28K multilingual) and improved English compression from 3.17 to 3.94 characters per token. In my measurements, larger vocabularies mostly help under-served languages.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> V controls sequence length, parameter count and language coverage all at once.</span></div><div><span><b>Core idea:</b> balance characters per token against V × d, and measure on your target languages.</span></div></div>
+    <p class="start-hint">Next: <a href="../08-tokenizers-in-llms/index.html">08 · Tokenizers in real LLMs →</a> · Previous: <a href="../06-many-tokenizations/index.html">← 06</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../data/examples.js"></script>
+<script src="../tk.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const cpt = (k, e) => TK.text(k).length / TK.get(k, e).length;
+  const V = { gpt2: 50257, cl100k_base: 100277, o200k_base: 200019 };
+  Deck.hbars(document.getElementById('enBars'), Object.keys(V).map(e => ({ label: `${e} (${(V[e] / 1000).toFixed(0)}K)`, value: cpt('para', e), color: 'var(--a)', text: cpt('para', e).toFixed(2) + ` (${TK.get('para', e).length} tok)` })), { max: 6 });
+  Deck.hbars(document.getElementById('hiBars'), Object.keys(V).map(e => ({ label: `${e} (${(V[e] / 1000).toFixed(0)}K)`, value: cpt('ml_Hindi', e), color: 'var(--b)', text: cpt('ml_Hindi', e).toFixed(2) + ` (${TK.get('ml_Hindi', e).length} tok)` })), { max: 4 });
+  document.getElementById('cmpOut').innerHTML = `From 50K to 200K: English improves ${(100 * (cpt('para', 'o200k_base') / cpt('para', 'gpt2') - 1)).toFixed(0)}%, while the Hindi sentence improves ${(cpt('ml_Hindi', 'o200k_base') / cpt('ml_Hindi', 'gpt2')).toFixed(1)}×.`;
+  const pts = Object.keys(V).map(e => [Math.log2(V[e]), cpt('para', e)]);
+  const interp = lv => { if (lv <= pts[0][0]) return pts[0][1] - (pts[0][0] - lv) * 0.12; for (let i = 1; i < pts.length; i++) if (lv <= pts[i][0]) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i]; return y0 + (y1 - y0) * (lv - x0) / (x1 - x0); } return pts[pts.length - 1][1]; };
+  let tie = 2;
+  const vc = () => {
+    const lv = Deck.val('vV'), v = Math.round(Math.pow(2, lv)), d = +Deck.val('vD'), T = +Deck.val('vT');
+    Deck.out('vVo', fmt(v, 0));
+    const p = v * d * tie;
+    Deck.out('vPar', fmt(p)); Deck.out('vPct', (100 * p / T).toFixed(1) + '%');
+    document.getElementById('vPct').style.color = p / T > .2 ? 'var(--d)' : 'var(--ink)';
+    Deck.out('vCtx', '≈ ' + fmt(8192 * interp(lv), 0));
+  };
+  Deck.seg('vTie', x => { tie = +x; if (document.getElementById('vV')) vc(); });
+  Deck.bind(['vV', 'vD', 'vT'], vc);
+
+})();
+</script>
+</body>
+</html>
