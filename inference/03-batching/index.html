@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Continuous Batching</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="Batching" data-home="../index.html" data-home-label="Inference">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">LLM Inference &amp; Serving · 03</div>
+    <h1>Continuous batching</h1>
+    <p class="sub">Iteration-level scheduling (Orca, OSDI 2022): admit and retire requests at every decode step instead of running fixed batches to completion.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Decode at batch 1 wastes the GPU. Static batches, though, hold every slot until the longest request finishes, and new arrivals have to wait.</div>
+      <div class="c"><b>Core idea</b>Schedule at the granularity of <b>one iteration</b>: finished requests leave and waiting requests join between every decode step.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>One sequence at a time leaves the GPU idle</h2>
+    <hr>
+    <p class="lede">A decode step reads all the weights to produce one token per sequence. With one sequence, that read serves one token. Batching lets the same read serve many sequences, which is why servers batch.</p>
+    <div class="takeaway">Batching is how decode gets from memory-bound toward compute-bound (GPU deck 02, the roofline).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Static batching wastes slots and makes requests wait</h2>
+    <hr>
+    <p class="lede">Static (request-level) batching groups requests and runs the group until its <b>longest</b> member finishes. Short requests sit idle in their slots, and new arrivals can't join a running batch.</p>
+    <div class="grid2">
+      <div class="card d"><h3>Finished but still occupying a slot</h3><p>Requests produce different numbers of tokens. Early finishers can't be replaced until the whole batch ends.</p></div>
+      <div class="card b"><h3>Queueing delay</h3><p>A request arriving just after a batch starts waits for the whole batch to finish.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Choose the scheduling granularity</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">At what granularity should the scheduler decide which requests run?</p>
+      <div class="opts">
+      <button>A. Per request: run each batch to completion</button>
+      <button data-ok>B. Per iteration: re-decide at every decode step</button>
+      <button>C. Once per minute</button>
+      <button>D. Per layer</button>
+      </div>
+      <div class="why"><b>B.</b> Orca's <b>iteration-level scheduling</b> re-forms the batch at every model iteration. A request that finishes returns immediately and a waiting request takes its slot on the next step.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Iteration-level scheduling + selective batching</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Iteration-level scheduling</h3><p>Between every decode iteration, retire finished sequences and admit new ones, up to the batch or memory limit.</p></div>
+      <div class="card c"><h3>Selective batching</h3><p>Requests at different positions have different lengths. Orca batches the operations that don't depend on length (the linear layers) and handles attention per request.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Static vs continuous, simulated</h2>
+    <hr>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Max batch <input type="range" id="cbB" min="2" max="8" step="1" value="4"> <output id="cbBo"></output></label>
+        <button class="btn" id="cbNew">New requests</button>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <div><h3>Static batching</h3><svg id="stSvg" viewBox="0 0 320 200" role="img" aria-label="Static batching slots"></svg><p class="readout" id="stOut"></p></div>
+        <div><h3>Continuous batching</h3><svg id="ctSvg" viewBox="0 0 320 200" role="img" aria-label="Continuous batching slots"></svg><p class="readout" id="ctOut"></p></div>
+      </div>
+      <div class="legend"><span><i style="background:var(--a)"></i>generating tokens</span><span><i style="background:var(--d-soft);border:1px solid var(--d)"></i>slot held but idle (static)</span></div>
+    </div>
+    <p class="caption">Each row is a batch slot over time; each coloured bar is one request. The simulation uses the same rules as Build-it notebook 05.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card e"><h3>No idle slots</h3><p>A slot is refilled on the very next iteration, so the batch stays full whenever requests are waiting.</p></div>
+      <div class="card a"><h3>Less queueing</h3><p>New requests start within one iteration instead of waiting for a batch to drain.</p></div>
+      <div class="card b"><h3>Measured</h3><p>On GPT-3 175B, Orca reported a <b>36.9×</b> throughput improvement over NVIDIA FasterTransformer at the same latency.</p></div>
+      <div class="card c"><h3>Foundation for what follows</h3><p>Paged KV (05) and chunked prefill (04) both build on per-iteration scheduling.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Continuous batching just means a bigger batch."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The batch size limit can be the same. What changes is <b>when</b> membership changes: at every iteration rather than per batch.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Batched requests must have the same length."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Iteration-level scheduling mixes requests at different positions. Orca's selective batching handles the length-dependent attention part.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Batching always increases user latency."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Each step gets a little slower, but removing queueing usually <b>lowers</b> end-to-end latency, as the simulation shows.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">What problem of static batching does iteration-level scheduling fix?</p>
+      <div class="opts">
+      <button>A. Too much KV memory</button>
+      <button data-ok>B. Slots held by finished requests and new requests waiting</button>
+      <button>C. Low prefill speed</button>
+      <button>D. Quantization error</button>
+      </div>
+      <div class="why">Finished requests <b>free their slots immediately</b> and new ones join at the next iteration.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">What did Orca report on GPT-3 175B versus FasterTransformer at the same latency?</p>
+      <div class="opts">
+      <button>A. 2×</button>
+      <button>B. 5.6×</button>
+      <button data-ok>C. 36.9×</button>
+      <button>D. 100×</button>
+      </div>
+      <div class="why"><b>36.9×</b> throughput (Orca, OSDI '22).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why does continuous batching need careful memory management?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Requests join and leave constantly, with KV caches of unpredictable length. That calls for dynamic allocation, which PagedAttention provides (deck 05).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Continuous batching re-forms the batch at every decode iteration: finished requests leave and new ones join immediately, so slots never sit idle.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Decode needs batching to use the GPU, but static batching runs each batch until its longest request finishes, wasting slots and making new requests wait. Orca introduced iteration-level scheduling: the server re-decides the batch between every decode step, with selective batching for the length-dependent attention. It reported 36.9× throughput over FasterTransformer at the same latency on GPT-3 175B, and it's now standard in LLM servers.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> static batches hold finished requests' slots and make new arrivals wait.</span></div><div><span><b>Core idea:</b> iteration-level scheduling: admit and retire requests at every decode step.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/05_continuous_batching.ipynb" target="_blank" rel="noopener">05 · Continuous (iteration-level) batching</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/05_continuous_batching.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../04-chunked-prefill/index.html">04 · Chunked prefill →</a> · Previous: <a href="../02-kv-cache/index.html">← 02</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  let seed = 3;
+  const rng = s => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const mk = () => { const r = rng(seed); let t = 0; return [...Array(14)].map((_, i) => { t += Math.floor(r() * 4); return { id: i, arrival: t, out: 3 + Math.floor(r() * r() * 22) }; }); };
+  const staticSim = (reqs, B) => { const res = {}; let t = 0; for (let i = 0; i < reqs.length; i += B) { const g = reqs.slice(i, i + B), st = Math.max(t, ...g.map(q => q.arrival)), mx = Math.max(...g.map(q => q.out)); g.forEach((q, k) => res[q.id] = { slot: k, s: st, e: st + q.out, hold: st + mx }); t = st + mx; } return res; };
+  const contSim = (reqs, B) => { const res = {}, q = reqs.slice(), slots = Array(B).fill(-1); let t = 0, done = 0; while (done < reqs.length) { for (let k = 0; k < B; k++) if (slots[k] >= 0 && res[slots[k]].e <= t) { slots[k] = -1; done++; } for (let k = 0; k < B; k++) if (slots[k] < 0 && q.length && q[0].arrival <= t) { const r = q.shift(); slots[k] = r.id; res[r.id] = { slot: k, s: t, e: t + r.out, hold: t + r.out }; } if (slots.every(x => x < 0)) { if (q.length) t = q[0].arrival; else break; continue; } t++; } return res; };
+  const draw = (el, res, reqs, B, T) => {
+    const s = clear(el), w = 300 / T, h = Math.min(30, 180 / B);
+    for (let k = 0; k < B; k++) svg('rect', { x: 10, y: 10 + k * h, width: 300, height: h - 3, style: 'fill:var(--panel-2)' }, s);
+    reqs.forEach(q => { const r = res[q.id]; if (r.hold > r.e) svg('rect', { x: 10 + r.e * w, y: 10 + r.slot * h, width: (r.hold - r.e) * w, height: h - 3, style: 'fill:var(--d-soft);stroke:var(--d);stroke-width:.5' }, s); svg('rect', { x: 10 + r.s * w, y: 10 + r.slot * h, width: Math.max(1, q.out * w - 1), height: h - 3, rx: 2, style: `fill:${['var(--a)', 'var(--b)', 'var(--c)', 'var(--e)', '#3a8fd8', '#c9a227'][q.id % 6]}` }, s); });
+    el.setAttribute('viewBox', `0 0 320 ${20 + B * h}`);
+  };
+  const run = () => {
+    const B = Deck.val('cbB'); Deck.out('cbBo', B);
+    const reqs = mk(), st = staticSim(reqs, B), ct = contSim(reqs, B);
+    const T = Math.max(...Object.values(st).map(r => r.hold), ...Object.values(ct).map(r => r.e)) + 1;
+    draw(document.getElementById('stSvg'), st, reqs, B, T); draw(document.getElementById('ctSvg'), ct, reqs, B, T);
+    const m = res => { const fin = Math.max(...Object.values(res).map(r => r.e)); const lat = reqs.map(q => res[q.id].e - q.arrival); return `done at step <b>${fin}</b> · mean latency <b>${(lat.reduce((a, b) => a + b, 0) / lat.length).toFixed(1)}</b> steps`; };
+    document.getElementById('stOut').innerHTML = m(st); document.getElementById('ctOut').innerHTML = m(ct);
+  };
+  document.getElementById('cbNew').onclick = () => { seed++; run(); };
+  Deck.bind(['cbB'], run);
+
+})();
+</script>
+</body>
+</html>

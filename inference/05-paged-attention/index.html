@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PagedAttention and Prefix Caching</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="PagedAttention and prefix caching" data-home="../index.html" data-home-label="Inference">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">LLM Inference &amp; Serving · 05</div>
+    <h1>PagedAttention and prefix caching</h1>
+    <p class="sub">Managing the KV cache like virtual memory (vLLM, SOSP 2023), and reusing the KV of shared prompt prefixes (SGLang's RadixAttention).</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>KV caches grow token by token to unknown final lengths. Reserving contiguous memory wastes most of it, and identical prompt prefixes get stored and recomputed again and again.</div>
+      <div class="c"><b>Core idea</b>Store KV in fixed-size <b>blocks</b> mapped by a per-sequence <b>block table</b>, with reference counts and copy-on-write for sharing. Index cached prefixes in a <b>tree</b> so later requests can reuse them.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>The KV cache is dynamic and unpredictable</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>Grows every step</h3><p>Each generated token appends K and V to every layer's cache.</p></div>
+      <div class="card b"><h3>Unknown final length</h3><p>Nobody knows in advance whether a reply will be 10 tokens or 2,000.</p></div>
+      <div class="card c"><h3>Lots of sharing</h3><p>Parallel samples, beam search and common system prompts all start from the same prefix.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Contiguous reservations waste memory and duplicate shared data</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card d"><h3>Fragmentation</h3><p>Reserving max-length buffers leaves most slots unused. Uneven sizes also leave gaps between buffers. The vLLM paper calls this waste from "fragmentation and redundant duplication", and it limits batch size.</p></div>
+      <div class="card b"><h3>Duplication</h3><p>Each sample of the same prompt gets its own copy of identical K and V. Every request with the same system prompt recomputes it during prefill.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Borrow an idea from operating systems</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Which operating-system idea fits the "growing, unpredictable, shareable memory" problem best?</p>
+      <div class="opts">
+      <button>A. Swapping whole processes to disk</button>
+      <button data-ok>B. Paging: fixed-size pages, a page table per process, copy-on-write for shared pages</button>
+      <button>C. A bigger contiguous heap</button>
+      <button>D. Garbage collection</button>
+      </div>
+      <div class="why"><b>B.</b> PagedAttention stores each sequence's KV in fixed-size <b>blocks</b> (vLLM's default is 16 tokens) that need not be contiguous. A <b>block table</b> maps logical positions to physical blocks, and shared blocks are reference-counted and copied on write, just like OS pages.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Blocks, block tables, and copy-on-write</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>Fixed-size blocks</h3><p>KV for B tokens per block. vLLM sets the default block size to <b>16</b>, as a balance between GPU efficiency and internal fragmentation.</p></div>
+      <div class="card b"><h3>Block table</h3><p>Per sequence: logical block i → physical block id. The attention kernel reads K and V through this table.</p></div>
+      <div class="card e"><h3>Share and copy on write</h3><p>Forked sequences point at the same blocks (refcount &gt; 1). The first write to a shared, partly filled block copies it.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Watch the allocator <span class="ill">block size 4 for readability</span></h2>
+    <hr>
+    <div class="visual">
+      <div class="steps" id="paSteps"></div>
+      <div class="grid2" style="margin-top:12px;grid-template-columns:1.3fr 1fr">
+        <div><h3>Physical blocks</h3><svg id="paSvg" viewBox="0 0 420 150" role="img" aria-label="Physical KV blocks"></svg></div>
+        <div><h3>Block tables</h3><div id="paTables" class="mergelist" style="font-size:13px"></div></div>
+      </div>
+      <div class="infobox" id="paInfo"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Prefix caching: reuse shared prompts</h2>
+    <hr>
+    <p class="lede">Many requests begin with the same tokens: a system prompt, few-shot examples, earlier chat turns. Keep their KV after a request finishes, index it in a tree keyed by tokens, and the next request skips prefill for the longest cached prefix. SGLang's <b>RadixAttention</b> uses a radix tree with LRU eviction.</p>
+    <div class="visual">
+      <div class="steps" id="pcSteps"></div>
+      <div id="pcOut" style="margin-top:12px"></div>
+      <div class="infobox" id="pcInfo"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card e"><h3>Near-zero waste</h3><p>Only the last block of each sequence can be partly empty, so waste is under one block per sequence. Build-it notebook 04 measures <b>0.6%</b> vs <b>48%</b> for contiguous max-length reservation on random lengths.</p></div>
+      <div class="card a"><h3>Bigger batches</h3><p>Freed memory holds more sequences. vLLM reported <b>2–4×</b> throughput over FasterTransformer and Orca at the same latency.</p></div>
+      <div class="card b"><h3>Free sharing</h3><p>Parallel sampling and beam search share prompt blocks through reference counts.</p></div>
+      <div class="card c"><h3>Prefix reuse</h3><p>Shared prefixes skip prefill entirely. SGLang reported up to <b>6.4×</b> higher throughput on structured LLM programs.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"PagedAttention makes attention compute faster."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Its main win is <b>memory</b>: less waste and more sharing allow bigger batches, which raises throughput. The kernel has to read through the block table.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Bigger blocks are always better."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Larger blocks are more GPU-efficient but waste more in each sequence's last block. vLLM picked 16 as the balance.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Prefix caching only helps identical prompts."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It reuses the <b>longest shared prefix</b>, so different requests with the same system prompt still benefit.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">What is vLLM's default KV block size?</p>
+      <div class="opts">
+      <button>A. 1 token</button>
+      <button data-ok>B. 16 tokens</button>
+      <button>C. 256 tokens</button>
+      <button>D. one whole sequence</button>
+      </div>
+      <div class="why"><b>16 tokens</b>.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Two samples share a prompt whose last block is half full. What happens when sample 2 generates its next token?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">That block is <b>shared</b> (refcount 2) and partly filled, so the allocator copies it on write: sample 2 gets a fresh block, and the old block's refcount drops to 1.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">What throughput gain did vLLM report over FasterTransformer and Orca at the same latency?</p>
+      <div class="opts">
+      <button>A. 1.2×</button>
+      <button data-ok>B. 2–4×</button>
+      <button>C. 36.9×</button>
+      <button>D. 93%</button>
+      </div>
+      <div class="why"><b>2–4×</b>, with larger gains for longer sequences and larger models.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">PagedAttention manages the KV cache like virtual memory, with blocks, block tables and copy-on-write, and prefix caching reuses the KV of shared prompts.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>KV caches grow token by token to unknown lengths, so contiguous max-length reservations waste most of the memory and duplicate shared prompts. vLLM's PagedAttention stores KV in fixed blocks (16 tokens by default) mapped through a per-sequence block table, with reference counts and copy-on-write so forks share memory. Waste drops to under one block per sequence, batches get bigger, and vLLM reported 2–4× throughput. Prefix caching, such as SGLang's RadixAttention, keeps shared prefixes in a tree so later requests skip their prefill.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> dynamic KV sizes cause fragmentation, and shared prefixes get duplicated and recomputed.</span></div><div><span><b>Core idea:</b> paged blocks plus block tables plus copy-on-write; a token tree for prefix reuse.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/07_paged_kv_allocator.ipynb" target="_blank" rel="noopener">07 · A paged KV-cache allocator</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/07_paged_kv_allocator.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/08_prefix_cache.ipynb" target="_blank" rel="noopener">08 · Prefix caching with a token trie (RadixAttention-style)</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/08_prefix_cache.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../06-speculative-decoding/index.html">06 · Speculative decoding →</a> · Previous: <a href="../04-chunked-prefill/index.html">← 04</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  class BM { constructor(n, bs) { this.bs = bs; this.free = [...Array(n).keys()].reverse(); this.ref = Array(n).fill(0); this.t = {}; this.k = {}; this.owner = Array(n).fill(null); }
+    al(o) { const b = this.free.pop(); this.ref[b] = 1; this.owner[b] = o; return b; } rel(b) { if (--this.ref[b] === 0) { this.free.push(b); this.owner[b] = null; } }
+    add(s) { this.t[s] = []; this.k[s] = 0; }
+    app(s, n) { for (let i = 0; i < n; i++) { const t = this.t[s], k = this.k[s]; if (k % this.bs === 0) t.push(this.al(s)); else if (this.ref[t[t.length - 1]] > 1) { const nb = this.al(s); this.rel(t[t.length - 1]); t[t.length - 1] = nb; } this.k[s]++; } }
+    fork(p, c) { this.t[c] = this.t[p].slice(); this.k[c] = this.k[p]; this.t[c].forEach(b => this.ref[b]++); }
+    freeSeq(s) { this.t[s].forEach(b => this.rel(b)); delete this.t[s]; delete this.k[s]; } }
+  const OPS = [
+    ['1 · A: 10-token prompt', m => { m.add('A'); m.app('A', 10); }, 'A needs ceil(10/4) = 3 blocks. They needn\'t be contiguous, and the last one is half full.'],
+    ['2 · B: 6-token prompt', m => { m.add('B'); m.app('B', 6); }, 'B gets 2 blocks from the free pool, with no reservation for its future length.'],
+    ['3 · A generates 3 tokens', m => m.app('A', 3), 'A fills its last block (2 slots), then needs one new block for the 3rd token.'],
+    ['4 · Fork A → A′ (parallel sample)', m => m.fork('A', "A'"), 'A′ shares all of A\'s blocks (refcount 2, outlined). No memory is copied.'],
+    ['5 · A′ generates 1 token', m => m.app("A'", 1), 'A′ writes into the shared, partly filled last block, so it gets copied on write. The full blocks stay shared.'],
+    ['6 · B finishes', m => m.freeSeq('B'), 'B\'s blocks return to the pool immediately for the next request.'],
+  ];
+  const COL = { A: 'var(--a)', B: 'var(--b)', "A'": 'var(--c)' };
+  const ps = document.getElementById('paSteps'); ps.innerHTML = OPS.map((o, i) => `<button data-i="${i}">${o[0]}</button>`).join('');
+  const pick = i => {
+    Deck.$$('button', ps).forEach(b => b.classList.toggle('on', +b.dataset.i === i));
+    const m = new BM(16, 4); OPS.slice(0, i + 1).forEach(o => o[1](m));
+    const s = clear(document.getElementById('paSvg'));
+    for (let b = 0; b < 16; b++) {
+      const x = 10 + (b % 8) * 51, y = 10 + Math.floor(b / 8) * 66, used = m.ref[b] > 0, shared = m.ref[b] > 1;
+      let fill = 0; Object.keys(m.t).forEach(sq => { const idx = m.t[sq].indexOf(b); if (idx >= 0) fill = Math.max(fill, Math.min(4, m.k[sq] - idx * 4)); });
+      svg('rect', { x, y, width: 46, height: 54, rx: 5, style: `fill:var(--panel-2);stroke:${shared ? 'var(--ink)' : 'var(--line)'};stroke-width:${shared ? 2.5 : 1}` }, s);
+      if (used) for (let k = 0; k < fill; k++) svg('rect', { x: x + 4, y: y + 42 - k * 12, width: 38, height: 10, rx: 2, style: `fill:${COL[m.owner[b]] || 'var(--faint)'}` }, s);
+      svg('text', { x: x + 23, y: y + 66 > 140 ? y + 64 : y + 64, 'text-anchor': 'middle', class: 'tm tc', style: 'font-size:9px', text: '#' + b + (shared ? ' ×' + m.ref[b] : '') }, s);
+    }
+    document.getElementById('paTables').innerHTML = Object.keys(m.t).map(sq => `<div><b style="color:${COL[sq]}">${sq}</b> (${m.k[sq]} tok): [${m.t[sq].join(', ')}]</div>`).join('') + `<div style="margin-top:6px;color:var(--muted)">free blocks: ${m.free.length} / 16</div>`;
+    document.getElementById('paInfo').innerHTML = OPS[i][2];
+  };
+  ps.addEventListener('click', e => { const b = e.target.closest('button'); if (b) pick(+b.dataset.i); }); pick(0);
+  const SYS = ['<sys>', 'You', 'are', 'a', 'helpful', 'assistant', '.'];
+  const REQ = [['User', ':', 'hi'], ['User', ':', 'summarize', 'this'], ['User', ':', 'hi', 'again']];
+  const pcs = document.getElementById('pcSteps'); pcs.innerHTML = REQ.map((r, i) => `<button data-i="${i}">Request ${i + 1}</button>`).join('');
+  const pc = i => {
+    Deck.$$('button', pcs).forEach(b => b.classList.toggle('on', +b.dataset.i === i));
+    const cached = new Set(); let html = '';
+    for (let k = 0; k <= i; k++) {
+      const toks = SYS.concat(REQ[k]); let hit = 0;
+      for (let j = 0; j < toks.length; j++) { const key = toks.slice(0, j + 1).join('\u0001'); if (cached.has(key) && hit === j) hit++; }
+      if (k === i) html = `<div class="toks">${toks.map((t, j) => `<span class="tok" style="background:${j < hit ? 'var(--e-soft)' : 'var(--b-soft)'};outline:${j < hit ? '1.5px solid var(--e)' : 'none'}">${t}</span>`).join('')}</div>`
+        + `<p class="readout" style="margin-top:8px"><span style="color:var(--e)">${hit} cached</span> · <span style="color:var(--b)">${toks.length - hit} to prefill</span></p>`;
+      toks.forEach((_, j) => cached.add(toks.slice(0, j + 1).join('\u0001')));
+    }
+    document.getElementById('pcOut').innerHTML = html;
+    document.getElementById('pcInfo').innerHTML = ['The first request has nothing cached, so the whole prompt is prefilled and stays in the cache.', 'The 7-token system prompt plus "User :" (9 tokens) is reused, and only the new suffix is prefilled.', 'Request 3 shares even more with request 1, "… User : hi", so 10 tokens are reused.'][i];
+  };
+  pcs.addEventListener('click', e => { const b = e.target.closest('button'); if (b) pc(+b.dataset.i); }); pc(0);
+
+})();
+</script>
+</body>
+</html>

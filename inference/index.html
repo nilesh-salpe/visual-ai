@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM Inference and Serving</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body { overflow-y: auto; }</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="label" style="margin-top:28px">Visual guide · 10 decks + 12 Colab notebooks</div>
+  <h1>LLM Inference and Serving</h1>
+  <p class="lede">How production systems serve large language models fast and cheaply: the prefill/decode split, the KV cache, batching and scheduling, memory management, speculative decoding, quantization, parallelism and disaggregation. Every deck follows the 9-beat template, figures are checked against the source papers, and each concept has a hands-on Colab notebook.</p>
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: 12 Colab notebooks</h3><p class="caption" style="margin:0">Implement a KV cache, a continuous-batching scheduler, a paged allocator, speculative sampling, SmoothQuant, FP8 rounding and tensor-parallel layers in NumPy. Built-in tests, hidden solutions, no GPU needed.</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>
+  <div class="hub-grid"><a class="hub-card" href="01-inference-workload/index.html"><div class="n">01</div><h3>The inference workload</h3><p>Prefill vs decode, TTFT, TPOT and goodput under SLOs.</p></a><a class="hub-card" href="02-kv-cache/index.html"><div class="n">02</div><h3>KV cache</h3><p>Exact caching of K and V; memory maths; GQA, MQA and MLA.</p></a><a class="hub-card" href="03-batching/index.html"><div class="n">03</div><h3>Continuous batching</h3><p>Iteration-level scheduling (Orca): no idle slots.</p></a><a class="hub-card" href="04-chunked-prefill/index.html"><div class="n">04</div><h3>Chunked prefill</h3><p>Token budgets: decodes first, prefill chunks after (Sarathi-Serve).</p></a><a class="hub-card" href="05-paged-attention/index.html"><div class="n">05</div><h3>PagedAttention and prefix caching</h3><p>Blocks, block tables, copy-on-write; RadixAttention prefix reuse.</p></a><a class="hub-card" href="06-speculative-decoding/index.html"><div class="n">06</div><h3>Speculative decoding</h3><p>Draft, verify, exact rejection sampling; speedup maths.</p></a><a class="hub-card" href="07-quantization/index.html"><div class="n">07</div><h3>Quantization</h3><p>Scales, outliers, SmoothQuant, GPTQ/AWQ, FP8.</p></a><a class="hub-card" href="08-parallelism/index.html"><div class="n">08</div><h3>Parallelism for inference</h3><p>Megatron TP, two all-reduces per layer, why it stays on NVLink.</p></a><a class="hub-card" href="09-disaggregated-serving/index.html"><div class="n">09</div><h3>Disaggregated serving</h3><p>Separate prefill and decode pools, KV transfer (DistServe, Splitwise).</p></a><a class="hub-card" href="10-putting-it-together/index.html"><div class="n">10</div><h3>Putting it together</h3><p>Symptom → cause → fix playbook; how engines combine the pieces.</p></a></div>
+  <p class="cite" style="margin-top:26px">Sources: Orca (OSDI '22); vLLM / PagedAttention (SOSP '23); SGLang (2023/24); Sarathi-Serve (2024); Leviathan et al. (ICML '23); Chen et al. (2023); DistServe (OSDI '24); Splitwise (2023/24); SmoothQuant (ICML '23); GPTQ (ICLR '23); AWQ (MLSys '24); Micikevicius et al., FP8 formats (2022); GQA (EMNLP '23); DeepSeek-V2 (2024); NVIDIA TensorRT-LLM README.</p>
+</div>
+</body>
+</html>

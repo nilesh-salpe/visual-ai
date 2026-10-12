@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Putting It Together</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="Putting it together" data-home="../index.html" data-home-label="Inference">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">LLM Inference &amp; Serving · 10</div>
+    <h1>Putting it together: diagnosing a serving system</h1>
+    <p class="sub">How the techniques combine in real engines, and a symptom → cause → fix playbook for the questions you'll actually face.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A production server has dozens of knobs, and turning the wrong one wastes GPUs or breaks SLOs.</div>
+      <div class="c"><b>Core idea</b>Measure first (TTFT, TPOT, goodput, KV utilization, batch size, queue length), identify the bottleneck <b>phase and resource</b>, then apply the matching technique.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Every technique fixes one bottleneck</h2>
+    <hr>
+    <div class="visual scroll-x"><table class="tbl">
+      <tr><th>Technique</th><th>Fixes</th><th>Main cost</th><th>Deck</th></tr>
+      <tr><td>KV cache</td><td>Quadratic recompute</td><td>Memory</td><td>02</td></tr>
+      <tr><td>Continuous batching</td><td>Idle slots, queueing</td><td>Dynamic memory management</td><td>03</td></tr>
+      <tr><td>Chunked prefill</td><td>Decode stalls from prefill</td><td>Higher TTFT for long prompts</td><td>04</td></tr>
+      <tr><td>PagedAttention / prefix cache</td><td>Fragmentation, duplicated prefixes</td><td>Indirection in the kernel</td><td>05</td></tr>
+      <tr><td>Speculative decoding</td><td>Sequential decode latency</td><td>Draft compute, depends on α</td><td>06</td></tr>
+      <tr><td>Quantization</td><td>Bytes per step, memory fit</td><td>Accuracy risk, calibration</td><td>07</td></tr>
+      <tr><td>Tensor parallelism</td><td>Fit, per-token latency</td><td>All-reduce on the critical path</td><td>08</td></tr>
+      <tr><td>Disaggregation</td><td>Prefill-decode interference</td><td>KV transfer, complexity</td><td>09</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Tuning without measuring goes wrong</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Wrong knob</h3><p>Adding GPUs when the problem is queueing, or quantizing when the problem is prefill compute.</p></div>
+      <div class="card b"><h3>Averages</h3><p>Tuning mean latency while the p99 TPOT breaks the SLO.</p></div>
+      <div class="card c"><h3>One phase</h3><p>Fixing TTFT by enlarging prefill iterations, which spikes everyone's TPOT.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Diagnose this</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">TTFT is high and rising with load. TPOT is fine. KV memory is only 40% used and requests are queueing. What's the most likely fix?</p>
+      <div class="opts">
+      <button>A. Quantize the weights to INT4</button>
+      <button data-ok>B. Add prefill capacity or admit more prompts per iteration, e.g. a bigger chunk budget or more prefill GPUs</button>
+      <button>C. Enable speculative decoding</button>
+      <button>D. Reduce the batch size</button>
+      </div>
+      <div class="why"><b>B.</b> Rising TTFT with fine TPOT and spare KV memory points at <b>prefill throughput or queueing</b>. Speculative decoding and quantization mainly help decode. Smaller batches would make queueing worse.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Measure, locate, fix</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Measure</h3><p>TTFT and TPOT percentiles, goodput at the SLO, running batch size, queue length, KV-cache utilization, prefix-cache hit rate, GPU compute and bandwidth utilization.</p></div>
+      <div class="card b"><h3>Locate</h3><p>Which <b>phase</b> (prefill or decode)? Which <b>resource</b> (compute, HBM bandwidth, KV capacity, interconnect, scheduler)?</p></div>
+      <div class="card e"><h3>Fix</h3><p>Apply the technique matched to that phase and resource (table on the first slide).</p></div>
+      <div class="card c"><h3>Verify</h3><p>Re-measure goodput at the SLO, not just mean throughput.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>The playbook: symptom → cause → fix</h2>
+    <hr>
+    <p class="lede">Decide the cause before revealing.</p>
+    <div class="quiz ">
+      <p class="qq">TPOT spikes whenever long prompts arrive; TTFT is fine.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why"><b>Prefill interfering with decode.</b> Use chunked prefill with a token budget (04), or disaggregate (09).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Batch size stays small although many requests are queued; KV memory is "full".</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why"><b>KV fragmentation or over-reservation, or KV too large.</b> Use paged KV (05), GQA-class models (02), FP8 KV (07), or shorter maximum context.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Single-user latency is too slow even at batch 1; GPUs aren't compute-bound.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why"><b>Memory-bound sequential decode.</b> Use speculative decoding (06), weight quantization (07), or more TP within NVLink (08).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Many requests share a long system prompt, and TTFT is high.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why"><b>Recomputing the same prefix.</b> Turn on prefix caching (05).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">After moving to 16-way TP across two nodes, TPOT got worse.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why"><b>All-reduce over the network is on the critical path.</b> Keep TP within the NVLink domain and use pipeline or data parallelism across nodes (08).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>How the published engines describe themselves</h2>
+    <hr>
+    <div class="visual scroll-x"><table class="tbl">
+      <tr><th>Engine</th><th>What its source says it does</th><th>Source</th></tr>
+      <tr><td>vLLM</td><td>PagedAttention: near-zero KV waste, flexible KV sharing; 2–4× throughput over FasterTransformer and Orca at the same latency</td><td>Kwon et al., SOSP 2023</td></tr>
+      <tr><td>SGLang</td><td>RadixAttention for KV-cache reuse; compressed finite-state machines for structured output; up to 6.4× throughput</td><td>Zheng et al., 2023/24</td></tr>
+      <tr><td>TensorRT-LLM</td><td>Custom attention, GEMM and MoE kernels; prefill-decode disaggregation, wide expert parallelism, speculative decoding; FP8/FP4 quantization; prefix caching, chunked context, CUDA graphs</td><td>NVIDIA/TensorRT-LLM README</td></tr>
+    </table></div>
+    <p class="caption">Feature lists are taken from each project's paper or README. This guide doesn't benchmark engines against each other.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why a phase-and-resource view works</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card e"><h3>The physics is simple</h3><p>Prefill is compute-bound and decode is bandwidth- and capacity-bound (GPU deck 02 roofline). Almost every symptom maps to one of a few resources.</p></div>
+      <div class="card a"><h3>Techniques compose</h3><p>Continuous batching, paged KV, chunked prefill, quantization and speculative decoding stack, because each targets a different bottleneck.</p></div>
+      <div class="card b"><h3>Goodput keeps you honest</h3><p>Measuring throughput only within the SLO stops you from "optimizing" by breaking latency.</p></div>
+      <div class="card c"><h3>Interviews test exactly this</h3><p>"Our TTFT doubled after launch: what do you check?" is a phase-and-resource question.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"One engine or setting is best for every workload."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The right configuration depends on prompt and output lengths, sharing, SLOs, model size and interconnect. Measure goodput on <b>your</b> traffic.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Higher GPU utilization means the server is healthy."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Utilization can be high while queues grow and SLOs fail. Track <b>goodput and tail latency</b>.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Optimizations are independent, so stack them all."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Some trade against each other: bigger chunk budgets raise TPOT, more TP raises communication, speculative decoding uses compute that big batches also want.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">TPOT spikes only when long prompts arrive. Which technique targets that first?</p>
+      <div class="opts">
+      <button>A. Prefix caching</button>
+      <button data-ok>B. Chunked prefill</button>
+      <button>C. INT4 weights</button>
+      <button>D. More DP replicas</button>
+      </div>
+      <div class="why"><b>Chunked prefill</b> (or disaggregation).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Name four metrics you'd check first on a struggling LLM server.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">TTFT and TPOT <b>percentiles</b>, <b>goodput</b> at the SLO, running <b>batch size and queue length</b>, and <b>KV-cache utilization</b>. Prefix-hit rate and GPU bandwidth utilization are good next ones.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why might speculative decoding help less at very high batch sizes?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">At large batch, decode moves toward <b>compute-bound</b>, so spare compute for verifying drafts shrinks. Speculative decoding exploits the memory-bound regime.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Diagnose by phase and resource: measure TTFT, TPOT, goodput, batch, queue and KV, find whether prefill or decode is short of compute, bandwidth or memory, then apply the matching technique.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Each serving technique fixes one bottleneck: KV cache for recompute, continuous batching for idle slots, chunked prefill and disaggregation for prefill-decode interference, paging and prefix caching for KV memory, speculative decoding, quantization and tensor parallelism for decode latency. In practice you measure tail TTFT and TPOT, goodput at the SLO, batch size, queue length and KV utilization; decide whether prefill or decode is limited by compute, bandwidth, memory or interconnect; then apply the matching fix and re-measure goodput.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> many knobs; tuning without measurement breaks SLOs or wastes GPUs.</span></div><div><span><b>Core idea:</b> measure → locate the phase and resource → apply the matching technique → re-check goodput.</span></div></div>
+    <p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../09-disaggregated-serving/index.html">← 09</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+})();
+</script>
+</body>
+</html>

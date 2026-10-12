@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Inference Workload</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="The inference workload" data-home="../index.html" data-home-label="Inference">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">LLM Inference &amp; Serving · 01</div>
+    <h1>The inference workload</h1>
+    <p class="sub">What happens when a request hits an LLM server: the two phases, the metrics users feel and the ones operators pay for, and why a single "tokens per second" number misleads.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Users care about latency, operators care about throughput, and the two pull in opposite directions.</div>
+      <div class="c"><b>Core idea</b>Separate the work into <b>prefill</b> (the whole prompt at once) and <b>decode</b> (one token at a time). Measure TTFT, TPOT, and <b>goodput</b>: throughput that still meets latency targets.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>One request, two very different phases</h2>
+    <hr>
+    <p class="lede">A chat request has a prompt of P tokens and generates O output tokens. The server first processes the whole prompt in one pass, which is <b>prefill</b>. Then it generates output tokens one at a time, each depending on the last, which is <b>decode</b>.</p>
+    <div class="visual"><svg id="p1Svg" viewBox="0 0 660 150" role="img" aria-label="Prefill then decode timeline"></svg></div>
+    <div class="takeaway">Time to first token comes from prefill. The steady stream of tokens after that comes from decode. They are limited by different resources (see the roofline in GPU deck 02).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why "tokens per second" isn't enough</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Throughput hides latency</h3><p>A huge batch maximizes tokens/s for the server while each user waits longer per token.</p></div>
+      <div class="card b"><h3>Averages hide tails</h3><p>A good mean latency can coexist with a p99 that breaks the product experience.</p></div>
+      <div class="card c"><h3>Two phases, one number</h3><p>Prefill speed (prompt tokens/s) and decode speed (output tokens/s) behave differently and need different fixes.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Pick the right metric</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Which metric captures "how much load the server handles while still meeting its latency targets"?</p>
+      <div class="opts">
+      <button>A. Peak tokens per second</button>
+      <button data-ok>B. Goodput: requests per second served within the TTFT and TPOT SLOs</button>
+      <button>C. GPU utilization</button>
+      <button>D. Average end-to-end latency</button>
+      </div>
+      <div class="why"><b>B.</b> DistServe defines <b>goodput</b> as the request rate a system can serve while meeting its time-to-first-token and time-per-output-token targets. Peak tokens/s ignores latency, utilization can be high while users wait, and averages hide tails.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>The four numbers that describe a serving system</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>TTFT: time to first token</h3><p>Queueing plus prefill of the prompt. Grows with prompt length. Users feel it as "how long until it starts typing".</p></div>
+      <div class="card b"><h3>TPOT: time per output token</h3><p>Time per decode step, also called inter-token latency. Users feel it as streaming speed.</p></div>
+      <div class="card c"><h3>Throughput</h3><p>Tokens (or requests) per second across all users. This is what the operator pays for.</p></div>
+      <div class="card e"><h3>Goodput</h3><p>Throughput counted only while TTFT and TPOT stay within their SLOs. It's the metric that matters (DistServe, OSDI '24).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Batching trades TPOT for throughput <span class="ill">illustrative step-time model</span></h2>
+    <hr>
+    <p class="lede">A decode step reads all the weights once whatever the batch size, so batching raises throughput. Each step also gets a little slower as the batch grows. Set a TPOT SLO and find the largest batch that still meets it.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">TPOT SLO <input type="range" id="sloT" min="20" max="80" step="1" value="40"> <output id="sloTo"></output></label>
+        <label class="ctl">Batch <input type="range" id="bB" min="0" max="8" step="0.1" value="5"> <output id="bBo"></output></label>
+      </div>
+      <svg id="gpSvg" viewBox="0 0 660 260" style="margin-top:10px" role="img" aria-label="Throughput vs batch with SLO"></svg>
+      <div class="grid4">
+        <div class="stat"><div class="num" id="kT"></div><div class="lbl">TPOT at this batch</div></div>
+        <div class="stat"><div class="num" id="kX"></div><div class="lbl">throughput (tokens/s)</div></div>
+        <div class="stat"><div class="num" id="kB"></div><div class="lbl">largest batch within SLO</div></div>
+        <div class="stat"><div class="num" id="kG" style="color:var(--e)"></div><div class="lbl">goodput (tokens/s)</div></div>
+      </div>
+    </div>
+    <p class="caption">Toy model: step time = 18 ms + 0.12 ms × batch. Real curves come from the roofline: memory-bound at small batch, then compute-bound (GPU deck 02).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>One request's latency, end to end</h2>
+    <hr>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Prompt tokens <input type="range" id="rP" min="7" max="15" step="0.5" value="11"> <output id="rPo"></output></label>
+        <label class="ctl">Output tokens <input type="range" id="rO" min="4" max="11" step="0.5" value="8"> <output id="rOo"></output></label>
+        <label class="ctl">Prefill speed <select id="rS"><option value="5000">5K tok/s</option><option value="20000" selected>20K tok/s</option><option value="80000">80K tok/s</option></select></label>
+        <label class="ctl">TPOT <select id="rD"><option value="15">15 ms</option><option value="30" selected>30 ms</option><option value="60">60 ms</option></select></label>
+      </div>
+      <svg id="rSvg" viewBox="0 0 660 90" style="margin-top:10px" role="img" aria-label="Latency breakdown"></svg>
+      <p class="readout" id="rOut"></p>
+    </div>
+    <p class="caption">Illustrative speeds. TTFT ≈ prompt ÷ prefill speed (ignoring queueing), and total ≈ TTFT + output tokens × TPOT.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why splitting the metrics pays off: each one has its own fixes</h2>
+    <hr>
+    <div class="visual scroll-x"><table class="tbl">
+      <tr><th>Symptom</th><th>Bottleneck</th><th>Techniques (deck)</th></tr>
+      <tr><td>Low throughput at small batch</td><td>Decode is memory-bound, so GPU compute sits idle</td><td>Continuous batching (03), quantization (07)</td></tr>
+      <tr><td>Can't fit enough requests</td><td>KV-cache memory</td><td>GQA/MLA (02), PagedAttention (05), FP8 KV (07)</td></tr>
+      <tr><td>TPOT spikes when long prompts arrive</td><td>Prefill interferes with decode</td><td>Chunked prefill (04), disaggregation (09)</td></tr>
+      <tr><td>High TTFT on repeated prompts</td><td>Recomputing shared prefixes</td><td>Prefix caching (05)</td></tr>
+      <tr><td>TPOT too slow even at batch 1</td><td>Sequential decode</td><td>Speculative decoding (06), tensor parallelism (08)</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Tokens per second tells you how good a server is."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Not on its own. Without latency targets it rewards huge batches that make each user wait. Use <b>goodput under SLOs</b>.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"A bigger batch is always better."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Throughput rises, but so does TPOT. Past the SLO limit, extra batch size adds no goodput.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"TTFT and TPOT have the same bottleneck."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">TTFT is mostly <b>prefill compute</b> plus queueing. TPOT is mostly <b>memory bandwidth</b> per decode step. They need different fixes.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz ">
+      <p class="qq">Prompt 2,000 tokens at a prefill speed of 20,000 tokens/s, then 500 output tokens at 30 ms TPOT. Roughly what are TTFT and total latency?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">TTFT ≈ 2,000 / 20,000 = <b>0.1 s</b>. Decode ≈ 500 × 0.03 = 15 s, so the total is about <b>15.1 s</b>. Decode dominates long answers.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">Which definition of goodput does DistServe use?</p>
+      <div class="opts">
+      <button>A. Peak tokens/s</button>
+      <button data-ok>B. Request rate served while meeting TTFT and TPOT SLOs</button>
+      <button>C. GPU FLOPs utilization</button>
+      <button>D. Requests per GPU</button>
+      </div>
+      <div class="why"><b>Request rate within the latency SLOs</b>.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why does batching help decode throughput so much?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Each decode step must read <b>all the weights</b> anyway. A larger batch reuses that one read for many sequences, moving decode from memory-bound toward compute-bound.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Serving is two workloads, a compute-bound prefill and a memory-bound decode, judged by TTFT, TPOT and goodput under SLOs.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>An LLM request has a prefill phase that processes the whole prompt in one pass, which sets the time to first token, and a decode phase that generates one token per step, which sets the time per output token. Throughput is what operators pay for, but bigger batches slow each step, so the right metric is goodput: the load you can serve while TTFT and TPOT stay within their SLOs. Each later technique targets one of these bottlenecks.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> latency and throughput conflict, and a single tokens/s number hides that.</span></div><div><span><b>Core idea:</b> separate prefill and decode, measure TTFT, TPOT and goodput, then fix each bottleneck.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/01_tiny_gpt_forward.ipynb" target="_blank" rel="noopener">01 · A tiny GPT forward pass in NumPy</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/01_tiny_gpt_forward.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../02-kv-cache/index.html">02 · KV cache →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  (() => {
+    const s = document.getElementById('p1Svg');
+    svg('rect', { x: 20, y: 40, width: 150, height: 40, rx: 6, class: 'f-a' }, s);
+    svg('text', { x: 95, y: 65, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:700', text: 'prefill (P tokens)' }, s);
+    for (let i = 0; i < 14; i++) svg('rect', { x: 178 + i * 32, y: 40, width: 28, height: 40, rx: 4, style: 'fill:var(--b)' }, s);
+    svg('text', { x: 400, y: 100, 'text-anchor': 'middle', class: 'tm', text: 'decode: one token per step, each step reads all weights + KV cache' }, s);
+    svg('line', { x1: 172, x2: 172, y1: 26, y2: 92, style: 'stroke:var(--d);stroke-width:2;stroke-dasharray:4 3' }, s);
+    svg('text', { x: 172, y: 20, 'text-anchor': 'middle', class: 't', style: 'fill:var(--d);font-size:11px;font-weight:600', text: 'first token (TTFT)' }, s);
+    svg('text', { x: 210, y: 130, class: 'tm', style: 'font-size:11px', text: '↔ TPOT = time between tokens' }, s);
+  })();
+  const step = b => 18 + 0.12 * b;
+  const gp = () => {
+    const slo = Deck.val('sloT'), b = Math.round(Math.pow(2, Deck.val('bB')));
+    Deck.out('sloTo', slo + ' ms'); Deck.out('bBo', b);
+    const bmax = Math.max(0, Math.floor((slo - 18) / 0.12));
+    Deck.out('kT', step(b).toFixed(1) + ' ms'); Deck.out('kX', fmt(b / step(b) * 1000, 0));
+    Deck.out('kB', bmax ? bmax : 'none'); Deck.out('kG', bmax ? fmt(Math.min(b, bmax) / step(Math.min(b, bmax)) * 1000, 0) : '0');
+    document.getElementById('kT').style.color = step(b) <= slo ? 'var(--e)' : 'var(--d)';
+    const s = clear(document.getElementById('gpSvg')), L = 60, R = 640, T = 14, B = 220;
+    const X = x => L + Math.log2(x) / 8 * (R - L), ymax = 256 / step(256) * 1000 * 1.1, Y = v => B - v / ymax * (B - T);
+    if (bmax < 256) svg('rect', { x: X(Math.max(1, bmax)), y: T, width: R - X(Math.max(1, bmax)), height: B - T, style: 'fill:var(--d-soft)' }, s);
+    [1, 4, 16, 64, 256].forEach(v => { svg('line', { x1: X(v), x2: X(v), y1: T, y2: B, class: 'ln' }, s); svg('text', { x: X(v), y: B + 16, 'text-anchor': 'middle', class: 'tm tc', text: v }, s); });
+    let pts = ''; for (let v = 1; v <= 256; v *= 1.05) pts += `${X(v)},${Y(v / step(v) * 1000)} `;
+    svg('polyline', { points: pts, fill: 'none', style: 'stroke:var(--a);stroke-width:3' }, s);
+    svg('circle', { cx: X(b), cy: Y(b / step(b) * 1000), r: 7, style: `fill:${step(b) <= slo ? 'var(--a)' : 'var(--d)'};stroke:var(--panel);stroke-width:2` }, s);
+    svg('text', { x: (L + R) / 2, y: B + 34, 'text-anchor': 'middle', class: 'tm', text: 'batch size (red zone violates the TPOT SLO)' }, s);
+    svg('text', { x: 14, y: (T + B) / 2, 'text-anchor': 'middle', class: 'tm', transform: `rotate(-90 14 ${(T + B) / 2})`, text: 'tokens / s' }, s);
+  };
+  Deck.bind(['sloT', 'bB'], gp);
+  const lat = () => {
+    const P = Math.round(Math.pow(2, Deck.val('rP'))), O = Math.round(Math.pow(2, Deck.val('rO'))), sp = +Deck.val('rS'), d = +Deck.val('rD');
+    Deck.out('rPo', P.toLocaleString()); Deck.out('rOo', O.toLocaleString());
+    const ttft = P / sp, dec = O * d / 1000, tot = ttft + dec;
+    const s = clear(document.getElementById('rSvg')), W = 620;
+    svg('rect', { x: 20, y: 20, width: Math.max(2, W * ttft / tot), height: 34, rx: 4, class: 'f-a' }, s);
+    svg('rect', { x: 20 + W * ttft / tot, y: 20, width: W * dec / tot, height: 34, rx: 4, style: 'fill:var(--b)' }, s);
+    svg('text', { x: 20, y: 76, class: 'tm', style: 'font-size:11px', text: `prefill ${(ttft * 1000).toFixed(0)} ms` }, s);
+    svg('text', { x: 640, y: 76, 'text-anchor': 'end', class: 'tm', style: 'font-size:11px', text: `decode ${dec.toFixed(2)} s` }, s);
+    document.getElementById('rOut').innerHTML = `TTFT ≈ <b>${(ttft * 1000).toFixed(0)} ms</b> · total ≈ <b>${tot.toFixed(2)} s</b> · decode is ${(100 * dec / tot).toFixed(0)}% of the time`;
+  };
+  Deck.bind(['rP', 'rO', 'rS', 'rD'], lat);
+
+})();
+</script>
+</body>
+</html>

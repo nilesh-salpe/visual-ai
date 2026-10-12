@@ -55,4 +55,21 @@ Ten 9-beat decks plus a [live tokenizer playground](tokenization/playground/) th
 | 09 | [Multilingual cost](tokenization/09-multilingual-cost/) |
 | 10 | [Tokenization quirks](tokenization/10-tokenization-quirks/) |
 
+## LLM Inference and Serving
+
+Ten 9-beat decks plus 12 hands-on [Colab notebooks](build-it/) (NumPy, built-in tests, hidden solutions).
+
+| # | Deck |
+|---|------|
+| 01 | [The inference workload](inference/01-inference-workload/) |
+| 02 | [KV cache](inference/02-kv-cache/) |
+| 03 | [Continuous batching](inference/03-batching/) |
+| 04 | [Chunked prefill](inference/04-chunked-prefill/) |
+| 05 | [PagedAttention and prefix caching](inference/05-paged-attention/) |
+| 06 | [Speculative decoding](inference/06-speculative-decoding/) |
+| 07 | [Quantization](inference/07-quantization/) |
+| 08 | [Parallelism for inference](inference/08-parallelism/) |
+| 09 | [Disaggregated serving](inference/09-disaggregated-serving/) |
+| 10 | [Putting it together](inference/10-putting-it-together/) |
+
 These are static HTML files with no build step. Open `index.html` in a browser. Keyboard controls: ←/→ or Space to move between slides, F for full screen.

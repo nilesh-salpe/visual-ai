@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speculative Decoding</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="Speculative decoding" data-home="../index.html" data-home-label="Inference">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">LLM Inference &amp; Serving · 06</div>
+    <h1>Speculative decoding</h1>
+    <p class="sub">Draft several tokens with a small model, verify them all in one pass of the large model, and keep exactly the large model's output distribution (Leviathan et al., ICML 2023; Chen et al., 2023).</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Decode produces one token per full read of the model's weights. The GPU waits on memory while its compute sits mostly idle, and tokens can't be generated in parallel because each depends on the last.</div>
+      <div class="c"><b>Core idea</b>A cheap <b>draft</b> model proposes γ tokens; the target model <b>scores all of them in one forward pass</b>; a modified rejection rule accepts a prefix of them, so the output distribution is unchanged.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Decode is slow for a reason that has nothing to do with compute</h2>
+    <hr>
+    <p class="lede">At batch 1, every decode step reads all the weights, about 140 GB for a 70B model in BF16, to produce <b>one</b> token. Scoring several tokens in the same pass costs almost the same, because the memory read is the bottleneck, not the math (GPU deck 02).</p>
+    <div class="takeaway">If we knew which tokens to score, we could check several of them for about the price of one step.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>The obvious shortcuts break something</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Just use a small model</h3><p>Fast, but the quality is the small model's, not the large one's.</p></div>
+      <div class="card b"><h3>Generate in parallel</h3><p>Impossible directly: token t+1 depends on token t (autoregression).</p></div>
+      <div class="card c"><h3>Bigger batches</h3><p>Help throughput across users, but don't make <em>one</em> user's stream faster.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Faster, without changing the output</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">How can a large model generate faster without changing what it would output?</p>
+      <div class="opts">
+      <button>A. Replace it with a distilled small model</button>
+      <button data-ok>B. Let a small model draft several tokens and have the large model verify them all in one parallel pass</button>
+      <button>C. Skip every other layer</button>
+      <button>D. Use greedy decoding only</button>
+      </div>
+      <div class="why"><b>B.</b> Verification of γ drafted positions happens in <b>one</b> target forward pass. With the modified rejection rule, the accepted tokens are distributed exactly as if the target had sampled them itself.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Draft, verify, accept or reject</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>1. Draft</h3><p>The draft model q samples γ tokens autoregressively. It's cheap because it's small (often about two orders of magnitude smaller, per Leviathan et al.).</p></div>
+      <div class="card b"><h3>2. Verify</h3><p>The target model p scores all γ positions plus one extra in a single forward pass.</p></div>
+      <div class="card e"><h3>3. Accept or reject</h3><p>Accept draft x with probability min(1, p(x)/q(x)). On the first rejection, sample a replacement from norm(max(0, p − q)) and stop.</p></div>
+      <div class="card c"><h3>4. Bonus token</h3><p>If all γ are accepted, sample one more token from p for free. Each pass yields 1 to γ+1 tokens.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>One verification step, by hand <span class="ill">illustrative probabilities</span></h2>
+    <hr>
+    <div class="visual">
+      <div class="seg" id="exSeg"><button data-v="a" class="on">Example 1</button><button data-v="b">Example 2</button></div>
+      <div class="scroll-x" style="margin-top:10px"><table class="tbl" id="exTbl"></table></div>
+      <p class="readout" id="exOut" style="margin-top:8px"></p>
+    </div>
+    <p class="caption">u is the uniform random number drawn for each draft token. Accept if u &lt; min(1, p/q).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>How many tokens per target pass, and how much faster?</h2>
+    <hr>
+    <p class="lede">If each draft token is accepted with probability α, the expected tokens per target pass is <b>(1 − α<sup>γ+1</sup>) / (1 − α)</b> (Leviathan et al., eq. 1). With draft cost c relative to the target, the wall-clock improvement is that divided by <b>(γc + 1)</b> (Theorem 3.8).</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">α (acceptance) <input type="range" id="sA" min="0.3" max="0.95" step="0.01" value="0.8"> <output id="sAo"></output></label>
+        <label class="ctl">γ (draft length) <input type="range" id="sG" min="1" max="12" step="1" value="4"> <output id="sGo"></output></label>
+        <label class="ctl">c (draft cost) <input type="range" id="sC" min="0" max="0.3" step="0.01" value="0.05"> <output id="sCo"></output></label>
+      </div>
+      <svg id="sSvg" viewBox="0 0 660 230" style="margin-top:10px" role="img" aria-label="Speedup vs gamma"></svg>
+      <div class="grid3">
+        <div class="stat"><div class="num" id="sE"></div><div class="lbl">expected tokens per target pass</div></div>
+        <div class="stat"><div class="num" id="sS" style="color:var(--e)"></div><div class="lbl">expected wall-clock speedup</div></div>
+        <div class="stat"><div class="num" id="sO"></div><div class="lbl">best γ for this α and c</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card e"><h3>Exactness</h3><p>The rejection rule makes the output distribution identical to the target's. Leviathan et al. report <b>identical outputs</b>, and Chen et al. preserve it "within hardware numerics". Build-it notebook 09 checks this by Monte Carlo.</p></div>
+      <div class="card a"><h3>Spare compute</h3><p>Decode is memory-bound, so verifying γ+1 positions costs about one step. Accepted drafts are close to free tokens.</p></div>
+      <div class="card b"><h3>Measured</h3><p><b>2–3×</b> on T5-XXL (Leviathan et al.); <b>2–2.5×</b> on Chinchilla 70B (Chen et al.).</p></div>
+      <div class="card c"><h3>Limit</h3><p>Even with a free draft (c ≈ 0), the speedup is bounded by 1/(1 − α), so the acceptance rate matters most.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Speculative decoding trades quality for speed."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The output distribution is <b>exactly</b> the target model's. Only latency changes.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"It only works with greedy decoding."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The modified rejection sampling works for <b>sampling</b> too, which is the setting both papers address.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"A longer draft (bigger γ) is always faster."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Each extra draft token costs c and is less likely to be accepted. The best γ depends on α and c.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">With α = 0.8 and γ = 4, what is the expected number of tokens per target pass?</p>
+      <div class="opts">
+      <button>A. 1.8</button>
+      <button data-ok>B. 3.36</button>
+      <button>C. 4</button>
+      <button>D. 5</button>
+      </div>
+      <div class="why">(1 − 0.8⁵) / 0.2 = <b>3.36</b>.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">What is the maximum possible speedup as γ → ∞ with a free draft model (c = 0)?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why"><b>1 / (1 − α)</b>, e.g. 5× for α = 0.8. Throughput per target pass is capped by the acceptance rate.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">On rejecting draft x at position i, what is the replacement token sampled from?</p>
+      <div class="opts">
+      <button>A. The draft q</button>
+      <button>B. The target p</button>
+      <button data-ok>C. norm(max(0, p − q))</button>
+      <button>D. Uniform</button>
+      </div>
+      <div class="why">The <b>residual distribution</b> norm(max(0, p − q)), which corrects for what the draft over-proposed.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Speculative decoding drafts γ tokens with a cheap model and verifies them in one target pass. A modified rejection rule keeps the output exactly the target's, and speedup ≈ (1 − α^(γ+1)) / ((1 − α)(γc + 1)).</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Decode is memory-bound: each step reads all the weights to make one token, so scoring several tokens costs about the same as scoring one. Speculative decoding lets a small draft model propose γ tokens, then the target model scores them all in one pass and accepts each with probability min(1, p/q), resampling from max(0, p − q) on the first rejection. The output distribution is exactly the target's. Expected tokens per pass is (1 − α^(γ+1))/(1 − α), and the papers reported 2–3× speedups.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> one token per full weight read; autoregression blocks parallel generation.</span></div><div><span><b>Core idea:</b> draft cheaply, verify in parallel, accept or reject exactly; speedup is set by α, γ and c.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/09_speculative_sampling.ipynb" target="_blank" rel="noopener">09 · Speculative sampling</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/09_speculative_sampling.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../07-quantization/index.html">07 · Quantization →</a> · Previous: <a href="../05-paged-attention/index.html">← 05</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const EX = {
+    a: [['the', .40, .50, .31], ['cat', .30, .25, .74], ['sat', .55, .60, .52], ['on', .45, .40, .12]],
+    b: [['the', .40, .50, .31], ['dog', .05, .30, .44], ['ran', .20, .30, .10], ['to', .30, .30, .20]],
+  };
+  Deck.seg('exSeg', v => {
+    const rows = EX[v]; let out = [], stop = false;
+    const html = rows.map(([tok, p, q, u], i) => {
+      if (stop) return `<tr style="opacity:.35"><td>${i + 1}</td><td><code>${tok}</code></td><td>${p}</td><td>${q}</td><td>–</td><td>–</td><td>not checked</td></tr>`;
+      const a = Math.min(1, p / q), ok = u < a;
+      if (ok) out.push(tok); else { out.push('⟨resample⟩'); stop = true; }
+      return `<tr><td>${i + 1}</td><td><code>${tok}</code></td><td>${p}</td><td>${q}</td><td>${a.toFixed(2)}</td><td>${u}</td><td style="color:${ok ? 'var(--e)' : 'var(--d)'};font-weight:700">${ok ? 'accept' : 'reject → sample from norm(max(0, p−q))'}</td></tr>`;
+    }).join('');
+    if (!stop) out.push('⟨bonus from p⟩');
+    document.getElementById('exTbl').innerHTML = '<tr><th>#</th><th>draft x</th><th>p(x)</th><th>q(x)</th><th>min(1, p/q)</th><th>u</th><th>decision</th></tr>' + html;
+    document.getElementById('exOut').innerHTML = `This target pass yields <b>${out.length}</b> token${out.length > 1 ? 's' : ''}: ${out.map(t => `<code>${t}</code>`).join(' ')}`;
+  });
+  const E = (a, g) => (1 - Math.pow(a, g + 1)) / (1 - a), S = (a, g, c) => E(a, g) / (g * c + 1);
+  Deck.bind(['sA', 'sG', 'sC'], () => {
+    const a = Deck.val('sA'), g = Deck.val('sG'), c = Deck.val('sC');
+    Deck.out('sAo', a.toFixed(2)); Deck.out('sGo', g); Deck.out('sCo', c.toFixed(2));
+    let best = 1; for (let k = 1; k <= 20; k++) if (S(a, k, c) > S(a, best, c)) best = k;
+    Deck.out('sE', E(a, g).toFixed(2)); Deck.out('sS', S(a, g, c).toFixed(2) + '×'); Deck.out('sO', best + ` (${S(a, best, c).toFixed(2)}×)`);
+    const s = clear(document.getElementById('sSvg')), L = 50, R = 640, T = 10, B = 190, ymax = Math.max(1 / (1 - a), 2) * 1.05;
+    const X = k => L + (k - 1) / 19 * (R - L), Y = v => B - v / ymax * (B - T);
+    [1, 5, 10, 15, 20].forEach(k => { svg('line', { x1: X(k), x2: X(k), y1: T, y2: B, class: 'ln' }, s); svg('text', { x: X(k), y: B + 16, 'text-anchor': 'middle', class: 'tm tc', text: k }, s); });
+    svg('line', { x1: L, x2: R, y1: Y(1), y2: Y(1), style: 'stroke:var(--faint);stroke-dasharray:4 3' }, s);
+    svg('text', { x: R, y: Y(1) - 4, 'text-anchor': 'end', class: 'tm', style: 'font-size:10px', text: 'no speedup' }, s);
+    svg('line', { x1: L, x2: R, y1: Y(1 / (1 - a)), y2: Y(1 / (1 - a)), style: 'stroke:var(--d);stroke-dasharray:4 3' }, s);
+    svg('text', { x: R, y: Y(1 / (1 - a)) - 4, 'text-anchor': 'end', class: 'tm', style: 'font-size:10px;fill:var(--d)', text: 'cap 1/(1−α)' }, s);
+    let pe = '', ps = ''; for (let k = 1; k <= 20; k++) { pe += `${X(k)},${Y(E(a, k))} `; ps += `${X(k)},${Y(S(a, k, c))} `; }
+    svg('polyline', { points: pe, fill: 'none', style: 'stroke:var(--a);stroke-width:2;opacity:.6' }, s);
+    svg('polyline', { points: ps, fill: 'none', style: 'stroke:var(--e);stroke-width:3' }, s);
+    svg('circle', { cx: X(g), cy: Y(S(a, g, c)), r: 7, style: 'fill:var(--e);stroke:var(--panel);stroke-width:2' }, s);
+    svg('text', { x: (L + R) / 2, y: B + 34, 'text-anchor': 'middle', class: 'tm', text: 'γ: teal = tokens per target pass, green = wall-clock speedup' }, s);
+  });
+
+})();
+</script>
+</body>
+</html>

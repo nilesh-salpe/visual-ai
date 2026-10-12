@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disaggregated Serving</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="Disaggregated serving" data-home="../index.html" data-home-label="Inference">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">LLM Inference &amp; Serving · 09</div>
+    <h1>Disaggregated prefill and decode</h1>
+    <p class="sub">Running prefill and decode on separate GPU pools, each sized and configured for its phase, and moving the KV cache between them (DistServe, OSDI 2024; Splitwise, 2024).</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Prefill (compute-heavy) and decode (memory-heavy) interfere when they share GPUs, and one configuration can't be optimal for both.</div>
+      <div class="c"><b>Core idea</b><b>Split the phases</b> across machines. Prefill GPUs compute the prompt and its KV, the KV moves to decode GPUs, and each pool gets its own parallelism and scale to maximize <b>goodput</b> under SLOs.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Two phases with opposite needs</h2>
+    <hr>
+    <div class="vs">
+      <div class="card a"><h3>Prefill: "prompt computation"</h3><p>Compute-intensive: many tokens per pass. Sets TTFT.</p></div>
+      <div class="card b"><h3>Decode: "token generation"</h3><p>Memory-intensive: one token per sequence per step. Sets TPOT.</p></div>
+    </div>
+    <div class="cite">Splitwise describes these as a compute-intensive prompt phase and a memory-intensive token-generation phase.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Colocation forces compromises</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Interference</h3><p>A new prompt's prefill shares iterations with ongoing decodes and slows them, or waits behind them (deck 04).</p></div>
+      <div class="card b"><h3>One configuration for two jobs</h3><p>The best parallelism and batch size for prefill and for decode differ, but colocation forces a single choice.</p></div>
+      <div class="card c"><h3>Coupled scaling</h3><p>You can't add prefill capacity without also adding decode capacity, even if only one is short.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Remove the interference</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">What removes prefill-decode interference entirely while letting each phase be configured separately?</p>
+      <div class="opts">
+      <button>A. A bigger token budget</button>
+      <button data-ok>B. Run prefill and decode on different GPUs and transfer the KV cache between them</button>
+      <button>C. Use only one phase</button>
+      <button>D. Quantize harder</button>
+      </div>
+      <div class="why"><b>B.</b> DistServe "assigns prefill and decoding computation to different GPUs", and Splitwise runs the phases on separate machines, transferring state over the cluster interconnect. Each pool is then tuned for its own SLO.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Prefill pool → KV transfer → decode pool</h2>
+    <hr>
+    <div class="visual"><svg id="dSvg" viewBox="0 0 660 150" role="img" aria-label="Disaggregated serving pipeline"></svg></div>
+    <div class="grid3" style="margin-top:12px">
+      <div class="card a"><h3>Prefill pool</h3><p>Sized and parallelized for TTFT, batching prompts for compute efficiency.</p></div>
+      <div class="card c"><h3>KV transfer</h3><p>The prompt's KV cache moves to a decode GPU. Placement and interconnect bandwidth decide how much this costs.</p></div>
+      <div class="card b"><h3>Decode pool</h3><p>Sized for TPOT and KV capacity, running large continuous batches.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>What does moving the KV cost?</h2>
+    <hr>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <select id="xM"><option value="131072">8B-shaped (128 KB/token)</option><option value="327680" selected>70B-shaped (320 KB/token)</option></select>
+        <label class="ctl">Prompt tokens <input type="range" id="xP" min="9" max="17" step="0.5" value="12"> <output id="xPo"></output></label>
+        <div class="seg" id="xL"><button data-v="450" class="on">NVLink 450 GB/s</button><button data-v="50">400G NIC 50 GB/s</button><button data-v="400">8× NICs 400 GB/s</button></div>
+      </div>
+      <div class="grid3" style="margin-top:14px">
+        <div class="stat"><div class="num" id="xB"></div><div class="lbl">KV to transfer</div></div>
+        <div class="stat"><div class="num" id="xT" style="color:var(--c)"></div><div class="lbl">transfer time (bandwidth only)</div></div>
+        <div class="stat"><div class="num" id="xF"></div><div class="lbl">vs prefill at 20K tok/s (illustrative)</div></div>
+      </div>
+    </div>
+    <p class="caption">KV bytes = prompt × per-token KV (BF16). Transfer can be overlapped layer by layer with prefill. This is a bandwidth estimate, not a measured system.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works, and what it costs</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card e"><h3>No interference</h3><p>Long prompts never stall decode iterations, and decode batches never slow prefill.</p></div>
+      <div class="card a"><h3>Independent tuning</h3><p>Each pool picks its own parallelism, batch size and GPU count for its own SLO, so goodput goes up.</p></div>
+      <div class="card b"><h3>Measured</h3><p>DistServe: <b>7.4×</b> more requests or <b>12.6×</b> tighter SLOs. Splitwise: <b>1.4×</b> throughput at <b>20%</b> lower cost, or <b>2.35×</b> throughput at the same cost and power.</p></div>
+      <div class="card d"><h3>Cost</h3><p>KV transfer needs fast interconnect and smart placement, and the pools add operational complexity.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Disaggregation is always better than chunked prefill."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It adds KV transfer and operational complexity. Chunked prefill (deck 04) also reduces interference on shared GPUs. Which wins depends on workload, scale and interconnect.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Prefill and decode pools must use the same hardware."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Splitwise explicitly provisions <b>different machines</b> for each phase, and heterogeneous pools are part of the appeal.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"The KV transfer is negligible."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">For long prompts on large models it is gigabytes per request. It needs NVLink/RDMA-class links or overlapping with prefill.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">What does DistServe optimize?</p>
+      <div class="opts">
+      <button>A. Peak FLOPs</button>
+      <button data-ok>B. Goodput under TTFT and TPOT SLOs</button>
+      <button>C. Model size</button>
+      <button>D. Tokens per watt only</button>
+      </div>
+      <div class="why"><b>Goodput</b>: requests served within the TTFT and TPOT SLOs.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Roughly how much KV must move for a 4,096-token prompt on a 70B-shaped model (320 KB/token, BF16)?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">4,096 × 320 KB ≈ <b>1.34 GB</b>, about 3 ms over NVLink at 450 GB/s, or about 27 ms over a single 50 GB/s NIC.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">What did Splitwise report at the same cost and power budget?</p>
+      <div class="opts">
+      <button>A. 1.1×</button>
+      <button data-ok>B. 2.35× throughput</button>
+      <button>C. 7.4× requests</button>
+      <button>D. 36.9×</button>
+      </div>
+      <div class="why"><b>2.35×</b> more throughput.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Disaggregated serving runs prefill and decode on separate, separately tuned GPU pools and moves the KV cache between them. That removes interference and raises goodput, at the price of fast KV transfer.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Prefill is compute-bound and decode is memory-bound, and sharing GPUs makes them interfere and forces one configuration onto both. DistServe and Splitwise run the phases on different machines: the prefill pool computes the prompt and its KV cache, the KV moves over a fast interconnect, and the decode pool streams tokens. Each pool is sized for its own SLO. DistServe reported 7.4× more requests or 12.6× tighter SLOs, and Splitwise 1.4× throughput at 20% lower cost. The cost is gigabytes of KV transfer for long prompts.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> prefill and decode interfere and want different configurations.</span></div><div><span><b>Core idea:</b> separate pools plus KV transfer, each pool tuned for goodput.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/06_chunked_prefill.ipynb" target="_blank" rel="noopener">06 · Chunked prefill with a token budget</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/06_chunked_prefill.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/04_kv_memory_calculator.ipynb" target="_blank" rel="noopener">04 · KV-cache memory calculator</a> <span style="color:var(--faint)">· 20 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/04_kv_memory_calculator.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../10-putting-it-together/index.html">10 · Putting it together →</a> · Previous: <a href="../08-parallelism/index.html">← 08</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  (() => {
+    const s = document.getElementById('dSvg');
+    const b = (x, w, c, t1, t2) => { svg('rect', { x, y: 30, width: w, height: 70, rx: 10, style: `fill:${c}` }, s); svg('text', { x: x + w / 2, y: 60, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:700', text: t1 }, s); svg('text', { x: x + w / 2, y: 80, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px', text: t2 }, s); };
+    svg('text', { x: 10, y: 70, class: 'tm', text: 'prompts →' }, s);
+    b(80, 200, 'var(--a)', 'Prefill pool', 'compute-bound · sets TTFT');
+    svg('line', { x1: 285, x2: 375, y1: 65, y2: 65, style: 'stroke:var(--c);stroke-width:5' }, s);
+    svg('text', { x: 330, y: 55, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'KV cache' }, s);
+    b(380, 200, 'var(--b)', 'Decode pool', 'memory-bound · sets TPOT');
+    svg('text', { x: 590, y: 70, class: 'tm', text: '→ tokens' }, s);
+    svg('text', { x: 330, y: 135, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'each pool: its own GPU count, parallelism, batch size' }, s);
+  })();
+  let link = 450;
+  const xf = () => {
+    const per = +Deck.val('xM'), P = Math.round(Math.pow(2, Deck.val('xP'))); Deck.out('xPo', P.toLocaleString());
+    const bytes = P * per, t = bytes / (link * 1e9) * 1000, pre = P / 20000 * 1000;
+    Deck.out('xB', (bytes / 1e9).toFixed(2) + ' GB'); Deck.out('xT', t.toFixed(1) + ' ms'); Deck.out('xF', `${(100 * t / pre).toFixed(0)}% of ${pre.toFixed(0)} ms`);
+  };
+  Deck.seg('xL', v => { link = +v; if (document.getElementById('xM')) xf(); });
+  Deck.bind(['xM', 'xP'], xf);
+
+})();
+</script>
+</body>
+</html>

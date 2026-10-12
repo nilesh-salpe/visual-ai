@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KV Cache</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="KV cache" data-home="../index.html" data-home-label="Inference">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">LLM Inference &amp; Serving · 02</div>
+    <h1>The KV cache</h1>
+    <p class="sub">Why every LLM server stores past keys and values, how much memory that takes, and how GQA and MLA shrink it.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Without caching, generating token t re-runs attention over all t previous tokens, so total work grows quadratically.</div>
+      <div class="c"><b>Core idea</b>Store each layer's <b>K and V</b> for every past token. A new token computes only its own q, k and v and attends over the cache. The result is exact, but memory grows with context × batch.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Naive generation redoes almost all of its work</h2>
+    <hr>
+    <p class="lede">Generating token <i>t</i> needs attention between the new token and all <i>t</i> previous tokens. A naive loop re-runs the full forward pass over the whole prefix for every new token.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Prompt <input type="range" id="nP" min="16" max="2048" step="16" value="512"> <output id="nPo"></output></label>
+        <label class="ctl">New tokens <input type="range" id="nN" min="16" max="2048" step="16" value="512"> <output id="nNo"></output></label>
+      </div>
+      <div id="nBars" style="margin-top:12px"></div>
+    </div>
+    <p class="caption">Token positions processed by the forward pass: naive = Σ (prompt + i) for i &lt; n; cached = prompt + n.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Recomputing is pure waste</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Same K and V every time</h3><p>Past tokens' keys and values don't change when a new token arrives, because causal masking means earlier positions never see later ones.</p></div>
+      <div class="card b"><h3>Quadratic total work</h3><p>Generating n tokens costs about n²/2 token-passes, so long answers get disproportionately slow.</p></div>
+      <div class="card c"><h3>Latency grows each step</h3><p>Every step is slower than the one before it, so TPOT keeps rising throughout the answer.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What should be cached?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">To avoid recomputation during decoding, which tensors from past tokens should be stored?</p>
+      <div class="opts">
+      <button>A. The final logits</button>
+      <button>B. The queries (Q)</button>
+      <button data-ok>C. The keys and values (K, V) of every layer</button>
+      <button>D. The attention weights</button>
+      </div>
+      <div class="why"><b>C.</b> A new token needs <em>its own</em> query and <em>everyone's</em> keys and values. Past queries are never used again, and attention weights change with every new token.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Cache K and V per layer; compute only the new token</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>Prefill</h3><p>Run the prompt once and store K and V for every layer and position.</p></div>
+      <div class="card b"><h3>Decode step</h3><p>Compute q, k and v for the new token only, append k and v to the cache, then attend q over the cache.</p></div>
+      <div class="card e"><h3>Exact</h3><p>The logits are identical to full recomputation. The cache trades compute for <b>memory</b>.</p></div>
+    </div>
+    <div class="eq">KV bytes = 2 × layers × kv_heads × head_dim × bytes/element × tokens × batch</div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>KV-cache memory calculator</h2>
+    <hr>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <select id="mM"><option value="32,8,128,16">8B-shaped (32 layers, 8 KV heads)</option><option value="80,8,128,140" selected>70B-shaped (80 layers, 8 KV heads)</option><option value="80,64,128,140">70B-shaped without GQA (64 KV heads)</option></select>
+        <label class="ctl">Context <input type="range" id="mC" min="10" max="17" step="1" value="13"> <output id="mCo"></output></label>
+        <label class="ctl">Batch <input type="range" id="mB" min="0" max="8" step="1" value="5"> <output id="mBo"></output></label>
+        <div class="seg" id="mD"><button data-v="2" class="on">BF16</button><button data-v="1">FP8</button></div>
+      </div>
+      <div class="grid3" style="margin-top:14px">
+        <div class="stat"><div class="num" id="mTok"></div><div class="lbl">KV per token</div></div>
+        <div class="stat"><div class="num" id="mTot" style="color:var(--b)"></div><div class="lbl">total KV cache</div></div>
+        <div class="stat"><div class="num" id="mW"></div><div class="lbl">weights (BF16) for comparison</div></div>
+      </div>
+      <div id="mBars" style="margin-top:12px"></div>
+    </div>
+    <p class="caption">Shapes match Llama-3-8B and 70B (head_dim 128). At long context or large batch the cache exceeds the weights.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Shrinking the cache: MQA, GQA and MLA</h2>
+    <hr>
+    <p class="lede">The cache scales with the number of <b>key/value heads</b>. Let several query heads share one KV head.</p>
+    <div class="visual">
+      <div class="seg" id="gSeg"><button data-v="8">MHA (8 KV heads)</button><button data-v="2" class="on">GQA (2 KV heads)</button><button data-v="1">MQA (1 KV head)</button></div>
+      <svg id="gSvg" viewBox="0 0 660 170" style="margin-top:10px" role="img" aria-label="Query heads sharing KV heads"></svg>
+      <p class="readout" id="gOut"></p>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div class="card a"><h3>GQA (Ainslie et al., EMNLP 2023)</h3><p>Between MHA and MQA. Quality close to MHA at speeds comparable to MQA, and MHA checkpoints can be "uptrained" with about 5% of the original pre-training compute.</p></div>
+      <div class="card c"><h3>MLA (DeepSeek-V2, 2024)</h3><p>Compresses K and V into a latent vector: <b>93.3%</b> smaller KV cache and <b>5.76×</b> max generation throughput compared with DeepSeek 67B.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why the KV cache shapes everything else</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card e"><h3>Compute becomes cheap</h3><p>Each step does work for one token, so decode is dominated by <b>reading</b> weights and cache.</p></div>
+      <div class="card d"><h3>Memory becomes the limit</h3><p>Batch size × context is capped by KV memory, so concurrency depends on the cache's size.</p></div>
+      <div class="card b"><h3>It drives later techniques</h3><p>Paging (05), prefix sharing (05), FP8 KV (07), and moving KV between pools (09) all manage this cache.</p></div>
+      <div class="card c"><h3>Architecture responds</h3><p>GQA, MQA and MLA are architecture changes made largely to shrink this cache.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Using a KV cache changes the model's outputs."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is <b>exact</b>: logits match full recomputation, because causal attention never lets past positions see the future.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"You should cache the queries too."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Queries are needed only for the <b>current</b> token. Past queries are never reused.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"The KV cache is small compared with the weights."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">At long context it isn't: a 70B-shaped model with GQA needs <b>40 GiB per sequence at 128K tokens</b> in BF16.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">KV bytes per token for 80 layers, 8 KV heads, head_dim 128, BF16?</p>
+      <div class="opts">
+      <button>A. 32 KB</button>
+      <button data-ok>B. 320 KB</button>
+      <button>C. 3.2 MB</button>
+      <button>D. 2.6 MB</button>
+      </div>
+      <div class="why">2 × 80 × 8 × 128 × 2 = <b>327,680 bytes ≈ 320 KB</b>.</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">64 query heads sharing 8 KV heads makes the cache how much smaller than MHA?</p>
+      <div class="opts">
+      <button>A. 2×</button>
+      <button data-ok>B. 8×</button>
+      <button>C. 64×</button>
+      <button>D. No change</button>
+      </div>
+      <div class="why"><b>8×</b>: the cache scales with KV heads (64 / 8).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why can't you avoid the cache by just making attention faster?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Without a cache, every step reprocesses the whole prefix (quadratic total work). A faster kernel speeds up each pass but doesn't remove that redundant work.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">The KV cache stores past keys and values so each decode step computes only one new token. It is exact, but its memory (2 × layers × kv_heads × head_dim × bytes × tokens × batch) becomes the main serving constraint.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Without a cache, generating each token reprocesses the whole prefix, so total work is quadratic. The KV cache stores every layer's keys and values for past tokens; a new token computes its own q, k and v and attends over the cache, giving identical logits. Its size is 2 × layers × KV heads × head_dim × bytes × tokens × batch, about 320 KB per token for a 70B-shaped model, so at long context it limits concurrency. GQA, MQA and MLA shrink it; MLA reported a 93.3% reduction.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> naive decoding recomputes the whole prefix every step.</span></div><div><span><b>Core idea:</b> cache K and V; exact, linear work per step, memory grows with context × batch; shrink it with GQA or MLA.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/02_kv_cache.ipynb" target="_blank" rel="noopener">02 · KV-cache decoding</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/02_kv_cache.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/03_gqa_mqa.ipynb" target="_blank" rel="noopener">03 · Grouped-query attention (GQA) and multi-query attention (MQA)</a> <span style="color:var(--faint)">· 25 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/03_gqa_mqa.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/04_kv_memory_calculator.ipynb" target="_blank" rel="noopener">04 · KV-cache memory calculator</a> <span style="color:var(--faint)">· 20 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/04_kv_memory_calculator.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../03-batching/index.html">03 · Batching →</a> · Previous: <a href="../01-inference-workload/index.html">← 01</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  Deck.bind(['nP', 'nN'], () => {
+    const p = Deck.val('nP'), n = Deck.val('nN'); Deck.out('nPo', p); Deck.out('nNo', n);
+    const naive = n * p + n * (n - 1) / 2, cached = p + n;
+    Deck.hbars(document.getElementById('nBars'), [
+      { label: 'naive (recompute prefix)', value: naive, color: 'var(--d)', text: fmt(naive) + ' positions' },
+      { label: 'KV cache', value: cached, color: 'var(--e)', text: fmt(cached) + ' positions · ' + (naive / cached).toFixed(0) + '× less' },
+    ], { log: true, min: 10 });
+  });
+  let dt = 2;
+  const kv = () => {
+    const [L, H, d, w] = Deck.val('mM').split(',').map(Number), C = 2 ** Deck.val('mC'), B = 2 ** Deck.val('mB');
+    Deck.out('mCo', C >= 1024 ? C / 1024 + 'K' : C); Deck.out('mBo', B);
+    const per = 2 * L * H * d * dt, tot = per * C * B;
+    Deck.out('mTok', Deck.bytes(per)); Deck.out('mTot', Deck.bytes(tot)); Deck.out('mW', w + ' GB');
+    Deck.hbars(document.getElementById('mBars'), [{ label: 'weights', value: w * 1e9, color: 'var(--faint)', text: w + ' GB' }, { label: 'KV cache', value: tot, color: tot > w * 1e9 ? 'var(--d)' : 'var(--b)', text: (tot / 1e9).toFixed(1) + ' GB' }], { log: true, min: 1e8 });
+  };
+  Deck.seg('mD', v => { dt = +v; if (document.getElementById('mM')) kv(); });
+  Deck.bind(['mM', 'mC', 'mB'], kv);
+  Deck.seg('gSeg', v => {
+    const hk = +v, s = clear(document.getElementById('gSvg')), H = 8;
+    for (let h = 0; h < H; h++) {
+      const x = 40 + h * 75, g = Math.floor(h / (H / hk)), gx = 40 + (g + .5) * (600 / hk) - 30;
+      svg('line', { x1: x + 25, y1: 50, x2: gx + 30, y2: 110, style: `stroke:${['var(--a)', 'var(--b)', 'var(--c)', 'var(--e)', 'var(--d)', '#3a8fd8', '#c9a227', '#8a6d3b'][g]};stroke-width:2;opacity:.7` }, s);
+      svg('rect', { x, y: 18, width: 50, height: 32, rx: 6, class: 'f-a' }, s);
+      svg('text', { x: x + 25, y: 39, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px;font-weight:600', text: 'Q' + h }, s);
+    }
+    for (let g = 0; g < hk; g++) {
+      const gx = 40 + (g + .5) * (600 / hk) - 30;
+      svg('rect', { x: gx, y: 110, width: 60, height: 34, rx: 6, style: `fill:${['var(--a)', 'var(--b)', 'var(--c)', 'var(--e)', 'var(--d)', '#3a8fd8', '#c9a227', '#8a6d3b'][g]}` }, s);
+      svg('text', { x: gx + 30, y: 132, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px;font-weight:600', text: 'KV' + g }, s);
+    }
+    document.getElementById('gOut').innerHTML = `${H} query heads share <b>${hk}</b> KV head${hk > 1 ? 's' : ''} → KV cache is <b>${H / hk}×</b> smaller than MHA`;
+  });
+
+})();
+</script>
+</body>
+</html>

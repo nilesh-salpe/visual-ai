@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parallelism for Inference</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="Parallelism for inference" data-home="../index.html" data-home-label="Inference">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">LLM Inference &amp; Serving · 08</div>
+    <h1>Parallelism for inference</h1>
+    <p class="sub">Splitting a model across GPUs to serve it: tensor parallelism for latency and fit, pipeline and data parallelism for throughput, expert parallelism for MoE, and why the communication pattern decides where each one runs.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A large model may not fit in one GPU's memory, and even when it fits, one GPU's memory bandwidth limits how fast each decode step can be.</div>
+      <div class="c"><b>Core idea</b><b>Tensor parallelism</b> splits every matmul so each GPU reads only its share of the weights per token, at the cost of one all-reduce per block, which must stay on NVLink.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Fit and speed both hit a single-GPU wall</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card d"><h3>Fit</h3><p>A 70B model in BF16 is about 140 GB of weights, more than one 80 GB GPU, before any KV cache.</p></div>
+      <div class="card b"><h3>Speed</h3><p>At batch 1, one decode step must read all the weights. At 3.35 TB/s (H100 HBM), 140 GB takes at least about 42 ms per token.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Not every split helps latency</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card b"><h3>Pipeline (layers across GPUs)</h3><p>Fits the model, but a single request still visits every stage in turn, so per-token latency doesn't improve.</p></div>
+      <div class="card c"><h3>Data parallel (replicas)</h3><p>More throughput, but each replica must hold the whole model, and per-request latency is unchanged.</p></div>
+      <div class="card d"><h3>Naive splits</h3><p>Splitting carelessly forces communication after every matmul.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Lower per-token latency</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Which kind of parallelism reduces per-token decode latency for a single request?</p>
+      <div class="opts">
+      <button>A. Data parallelism (more replicas)</button>
+      <button data-ok>B. Tensor parallelism: split each weight matrix so every GPU reads 1/n of the weights per token</button>
+      <button>C. Pipeline parallelism across nodes</button>
+      <button>D. Larger batch size</button>
+      </div>
+      <div class="why"><b>B.</b> With TP of degree n, each GPU streams only 1/n of the weights each step, so the memory-bound step time drops roughly n× (minus communication). Pipeline and data parallelism help capacity and throughput, not one request's latency.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Megatron-style tensor parallelism</h2>
+    <hr>
+    <div class="visual"><svg id="tpSvg" viewBox="0 0 660 200" role="img" aria-label="Column then row parallel MLP"></svg></div>
+    <div class="grid3" style="margin-top:12px">
+      <div class="card a"><h3>Column-parallel first</h3><p>Split W₁ by output columns. Each GPU computes its slice, and GELU stays local because it's elementwise.</p></div>
+      <div class="card b"><h3>Row-parallel second</h3><p>Split W₂ by input rows to match. Each GPU holds a partial sum.</p></div>
+      <div class="card e"><h3>One all-reduce</h3><p>Sum the partials once per MLP (and once per attention block). That's two all-reduces per layer.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>TP degree vs latency and communication <span class="ill">bandwidth-only model</span></h2>
+    <hr>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <select id="tM"><option value="16,4096,32">8B-shaped (16 GB, d=4096, 32 layers)</option><option value="140,8192,80" selected>70B-shaped (140 GB, d=8192, 80 layers)</option></select>
+        <div class="seg" id="tN"><button data-v="1">TP 1</button><button data-v="2">TP 2</button><button data-v="4">TP 4</button><button data-v="8" class="on">TP 8</button></div>
+        <div class="seg" id="tL"><button data-v="450" class="on">NVLink (450 GB/s)</button><button data-v="50">400G network (50 GB/s)</button></div>
+      </div>
+      <div class="grid4" style="margin-top:14px">
+        <div class="stat"><div class="num" id="tW"></div><div class="lbl">weights per GPU</div></div>
+        <div class="stat"><div class="num" id="tR"></div><div class="lbl">weight-read time per step (≥)</div></div>
+        <div class="stat"><div class="num" id="tC"></div><div class="lbl">all-reduce time per step</div></div>
+        <div class="stat"><div class="num" id="tT" style="color:var(--a)"></div><div class="lbl">≈ TPOT lower bound (batch 1)</div></div>
+      </div>
+    </div>
+    <p class="caption">Per step: read weights ÷ n at 3.35 TB/s (H100 HBM), plus 2 all-reduces per layer of d BF16 values × 2(n−1)/n over the link. Latency per message is ignored, and in practice it makes off-node TP even worse.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why TP lives inside the NVLink domain</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card e"><h3>Less to read per GPU</h3><p>Decode is bound by bytes. Splitting weights n ways cuts each GPU's per-step read about n×.</p></div>
+      <div class="card d"><h3>Small, frequent, blocking messages</h3><p>Two all-reduces per layer per step sit on the critical path, so they need NVLink-class bandwidth and latency (GPU decks 04 and 05).</p></div>
+      <div class="card b"><h3>Combine strategies</h3><p>TP within a node; pipeline across nodes for very large models; data-parallel replicas for throughput.</p></div>
+      <div class="card c"><h3>MoE: expert parallelism</h3><p>Experts live on different GPUs and tokens travel by all-to-all. TensorRT-LLM, for example, lists "Wide Expert Parallelism" as a runtime feature.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"More TP always means lower latency."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Weight reads shrink as 1/n, but all-reduce cost does not. Beyond the NVLink domain, communication can dominate.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Pipeline parallelism speeds up a single request."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">A request still passes through every stage in order. Pipelining helps fit and throughput, not one request's latency.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"TP needs communication after every matmul."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The column-then-row (Megatron) arrangement needs <b>one</b> all-reduce per MLP or attention block.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">How many all-reduces per transformer layer does Megatron-style TP need in the forward pass?</p>
+      <div class="opts">
+      <button>A. 0</button>
+      <button>B. 1</button>
+      <button data-ok>C. 2</button>
+      <button>D. one per matmul</button>
+      </div>
+      <div class="why"><b>Two</b>: one after attention, one after the MLP.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why is GELU between the two MLP matmuls "free" under TP?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">After the column-parallel W₁ each GPU holds complete columns of the hidden activation, and GELU is <b>elementwise</b>, so it runs locally with no communication.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Roughly what is the minimum per-token decode time for 140 GB of weights on one H100 (3.35 TB/s), and with TP 8?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">140 / 3,350 ≈ <b>42 ms</b>. With TP 8 each GPU reads 17.5 GB, about <b>5.2 ms</b>, plus all-reduce time.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Tensor parallelism splits every weight matrix so each GPU reads 1/n of the weights per token, cutting latency and fitting big models, at the cost of two small all-reduces per layer that must stay on NVLink.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>One GPU may not hold a large model, and at batch 1 a decode step is bounded by reading all the weights: about 42 ms for 140 GB at H100 bandwidth. Tensor parallelism splits each matmul Megatron-style (column-parallel then row-parallel), so each GPU reads 1/n of the weights and only one all-reduce is needed per attention or MLP block. Those all-reduces are small but on the critical path, so TP stays inside the NVLink domain. Pipeline and data parallelism add capacity and throughput, and expert parallelism spreads MoE experts across GPUs.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> single-GPU memory capacity and bandwidth limit both fit and per-token latency.</span></div><div><span><b>Core idea:</b> column → row TP: 1/n of the weights per GPU, two all-reduces per layer, kept on NVLink.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/12_tensor_parallel.ipynb" target="_blank" rel="noopener">12 · Tensor-parallel linear layers (Megatron-style)</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/12_tensor_parallel.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../09-disaggregated-serving/index.html">09 · Disaggregated serving →</a> · Previous: <a href="../07-quantization/index.html">← 07</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  (() => {
+    const s = document.getElementById('tpSvg');
+    const box = (x, y, w, h, c, t) => { svg('rect', { x, y, width: w, height: h, rx: 6, style: `fill:${c}` }, s); svg('text', { x: x + w / 2, y: y + h / 2 + 4, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px;font-weight:600', text: t }, s); };
+    box(10, 80, 60, 40, 'var(--faint)', 'X');
+    for (let g = 0; g < 4; g++) { const y = 10 + g * 46; box(110, y, 110, 36, 'var(--a)', `GPU${g}: X·W₁[:, ${g}]`); box(240, y, 70, 36, 'var(--a)', 'GELU'); box(330, y, 130, 36, 'var(--b)', `·W₂[${g}, :] → partial`); svg('line', { x1: 70, y1: 100, x2: 110, y2: y + 18, class: 's-line', 'stroke-width': 1.5 }, s); svg('line', { x1: 460, y1: y + 18, x2: 500, y2: 100, class: 's-line', 'stroke-width': 1.5 }, s); }
+    box(500, 75, 80, 50, 'var(--e)', 'all-reduce Σ'); box(600, 80, 50, 40, 'var(--faint)', 'Y');
+    svg('text', { x: 285, y: 196, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'no communication until the single all-reduce' }, s);
+  })();
+  let n = 8, bw = 450;
+  const tp = () => {
+    const [w, d, L] = Deck.val('tM').split(',').map(Number);
+    const read = w / n / 3350 * 1000, comm = n > 1 ? 2 * L * d * 2 * (2 * (n - 1) / n) / (bw * 1e9) * 1000 : 0;
+    Deck.out('tW', (w / n).toFixed(1) + ' GB'); Deck.out('tR', read.toFixed(1) + ' ms'); Deck.out('tC', comm.toFixed(2) + ' ms'); Deck.out('tT', (read + comm).toFixed(1) + ' ms');
+    document.getElementById('tW').style.color = w / n > 80 ? 'var(--d)' : 'var(--ink)';
+  };
+  Deck.seg('tN', v => { n = +v; tp(); }); Deck.seg('tL', v => { bw = +v; tp(); }); Deck.bind(['tM'], tp);
+
+})();
+</script>
+</body>
+</html>
