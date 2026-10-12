@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mixture of Experts</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="Mixture of Experts" data-home="../index.html" data-home-label="Architecture">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">The Modern LLM · 10</div>
+    <h1>Mixture of Experts (MoE)</h1>
+    <p class="sub">Replace the dense FFN with many expert FFNs and a router that sends each token to a few of them: more parameters without more compute per token, and the balancing problems that come with it.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>In a dense model every token uses every parameter, so adding parameters (more knowledge) adds FLOPs to every token in training and serving.</div>
+      <div class="c"><b>Core idea</b>Swap the FFN for <b>N experts</b> plus a <b>router</b>. Each token is processed by its <b>top-k</b> experts, weighted by the router. Parameters scale with N; compute scales with k. An auxiliary loss keeps the experts evenly used.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Parameters vs compute per token</h2>
+    <hr>
+    <p class="lede">Total parameters (what must be stored) vs active parameters per token (roughly what each token computes with), from the papers. In a dense model they are equal; in an MoE they come apart.</p>
+    <div class="visual"><div id="mBars"></div></div>
+    <p class="caption">Mixtral 8x7B: 47B total, 13B active. DeepSeek-V2: 236B total, 21B active. Llama 3 70B: dense, so total = active.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not just make the dense model bigger?</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Every FLOP is paid by every token</h3><p>Doubling a dense model roughly doubles the training and inference compute per token, even for easy tokens.</p></div>
+      <div class="card b"><h3>Knowledge needs parameters</h3><p>Many capabilities improve with parameter count, but most tokens only need a small part of the model's knowledge at a time.</p></div>
+      <div class="card c"><h3>Serving cost scales with active compute</h3><p>Decode time per token is driven by the weights each token touches. Fewer active parameters means cheaper tokens, though the memory to hold all experts remains.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which costs does MoE cut?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Mixtral has 47B total parameters and 13B active per token. Compared with a dense 47B model, what does it save?</p>
+      <div class="opts">
+      <button>A. GPU memory for weights</button>
+      <button data-ok>B. FLOPs per token</button>
+      <button>C. Both equally</button>
+      <button>D. Neither</button>
+      </div>
+      <div class="why"><b>B.</b> Each token runs through only 2 of 8 experts per layer, so compute per token is like a ~13B model. But all 47B parameters must still be held in memory, and routing adds communication when experts are spread over GPUs.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Router + experts</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>Experts</h3><p>N independent FFNs (SwiGLU in Mixtral) replace the single FFN in each layer. Attention stays shared and dense.</p></div>
+      <div class="card b"><h3>Router</h3><p>A linear layer gives each token a logit per expert. Mixtral: G(x) = Softmax(TopK(x·W_g)), keeping the top 2 logits and softmaxing over just those. Switch Transformer routes to <b>one</b> expert (k = 1).</p></div>
+      <div class="card e"><h3>Combine</h3><p>y = Σ over the top-k experts of G(x)ᵢ · Eᵢ(x). Different tokens, even in the same sequence, use different experts, and the choice can change at every layer.</p></div>
+    </div>
+    <div class="deep"><h4>DeepSeekMoE: many small experts plus shared ones</h4><p>DeepSeek-V2 splits experts more finely and isolates some as <b>shared</b> experts that every token uses: each MoE layer has <b>2 shared + 160 routed</b> experts, with <b>6</b> routed experts active per token (236B total, 21B active). Fine-grained experts give the router more combinations to choose from; shared experts hold common knowledge so routed ones don't each have to duplicate it.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Routing six tokens</h2>
+    <hr>
+    <p class="lede">Each token's router picks its top-k experts; the gate weights are printed on the token and drawn as line thickness. Switch between top-1 (Switch Transformer) and top-2 (Mixtral). The bars show how many tokens each expert receives: that load is what has to be balanced.</p>
+    <div class="visual">
+      <div class="seg" id="kSeg"><button data-v="1">top-1</button><button data-v="2" class="on">top-2</button></div>
+      <svg id="rSvg" viewBox="0 0 660 250" style="margin-top:10px" role="img" aria-label="Token to expert routing"></svg>
+    </div>
+    <p class="caption">Illustrative router logits (fixed random values), 8 experts.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Load balancing and capacity</h2>
+    <hr>
+    <p class="lede">4,096 tokens, 8 experts, top-1 routing. Increase the router's skew towards some experts and watch three things: each expert's share of tokens, the Switch auxiliary loss, and the tokens dropped when each expert has a fixed capacity of 1.25 × (tokens / experts).</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><label class="ctl">Router skew <input type="range" id="bS" min="0" max="3" step="0.1" value="1.5"> <output id="bSo"></output></label></div>
+      <div id="bBars" style="margin-top:12px"></div>
+      <div class="grid3" style="margin-top:12px">
+        <div class="stat"><div class="num" id="bL"></div><div class="lbl">aux loss α·N·Σ fᵢPᵢ (min 0.010)</div></div>
+        <div class="stat"><div class="num" id="bM"></div><div class="lbl">busiest expert's share</div></div>
+        <div class="stat"><div class="num" id="bD" style="color:var(--d)"></div><div class="lbl">tokens dropped</div></div>
+      </div>
+    </div>
+    <div class="deep"><h4>The Switch Transformer loss</h4><p>loss = α · N · Σᵢ fᵢ · Pᵢ, where fᵢ is the fraction of tokens whose top-1 expert is i and Pᵢ is the average router probability for expert i. Both should be 1/N, and the loss is minimized under uniform routing. The paper uses α = 10⁻²: "sufficiently large to ensure load balancing while small enough to not to overwhelm the primary cross-entropy objective". Expert capacity = (tokens per batch / number of experts) × capacity factor; overflow tokens skip the expert through the residual connection.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why MoE works, and what it costs</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Parameters without FLOPs</h3><p>Switch Transformer reports up to <b>7×</b> faster pre-training than T5-Base/Large at the same compute, and a 4× speedup over T5-XXL with its trillion-parameter model.</p></div>
+      <div class="card e"><h3>Experts specialize, just not by topic</h3><p>Mixtral's analysis: expert choice "appears to be more aligned with the syntax rather than the domain", especially in the first and last layers. Don't expect a "math expert".</p></div>
+      <div class="card d"><h3>Memory and communication</h3><p>All experts must be in memory. Spread across GPUs (expert parallelism), every MoE layer needs an all-to-all exchange to send tokens to their experts and back.</p></div>
+      <div class="card b"><h3>Balance and stability</h3><p>Without a balancing loss the router collapses onto a few experts. Fixed capacity drops tokens when routing is uneven, and Switch needed extra tricks to train stably in bfloat16.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Each expert is a domain specialist: one for code, one for maths."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Mixtral's routing analysis found no obvious topic-based assignment. Routing follows <b>syntax</b> and token-level patterns more than domains.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"A 47B MoE with 13B active parameters runs like a 13B model."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Compute per token is close to 13B, but memory must hold <b>all 47B</b>, and expert routing adds communication. On memory-bound hardware it does not behave like a 13B model.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"MoE replaces the whole Transformer layer."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Usually only the <b>FFN</b> becomes experts. Attention, norms and embeddings stay dense and shared.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">In Mixtral, how are the gate weights computed?</p>
+      <div class="opts">
+      <button>A. Softmax over all 8 logits</button>
+      <button data-ok>B. Softmax over the top-2 logits only</button>
+      <button>C. Uniform 0.5 each</button>
+      <button>D. Sigmoid of each logit</button>
+      </div>
+      <div class="why"><b>Softmax over the top-2 logits</b>: G(x) = Softmax(TopK(x·W_g)).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">What value does the Switch auxiliary loss take under perfectly uniform routing, and under total collapse onto one expert?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Uniform: fᵢ = Pᵢ = 1/N, so the loss = α·N·N·(1/N²) = <b>α</b>. Collapse: f = P = 1 for one expert, so the loss = <b>α·N</b>.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why do MoE models drop tokens, and what happens to a dropped token?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Each expert has a fixed buffer (capacity = tokens/experts × capacity factor) so shapes stay static. Tokens routed to a full expert are dropped from that layer's FFN and carried forward by the residual connection.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">MoE swaps the FFN for many experts and a top-k router: parameters grow with the number of experts, compute with k, and a balancing loss keeps the experts evenly used.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>In a dense model every token uses every parameter. A Mixture-of-Experts layer replaces the FFN with N expert FFNs and a router that sends each token to its top k, weighting their outputs by a softmax over the selected logits. Mixtral has 8 experts with top-2 routing, 47 billion parameters in total but about 13 billion active per token; DeepSeek-V2 uses 160 fine-grained routed experts plus 2 shared ones. Compute per token drops, but all experts must sit in memory and tokens are exchanged between GPUs. Routers tend to collapse, so Switch Transformer adds an auxiliary loss, alpha times N times the sum of f-i times P-i, that is minimized by uniform routing. Fixed expert capacity drops overflow tokens.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> dense models pay for every parameter on every token.</span></div><div><span><b>Core idea:</b> router + N experts, top-k per token; params ∝ N, FLOPs ∝ k.</span></div><div><span><b>Costs:</b> all experts in memory, all-to-all communication, balancing loss and capacity.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/09_moe_router.ipynb" target="_blank" rel="noopener">09 · Mixture-of-Experts: router, dispatch and load balancing</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/architecture/09_moe_router.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../11-putting-it-together/index.html">11 · Putting it together →</a> · Previous: <a href="../09-flash-attention/index.html">← 09</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Fedus et al. 2022, "Switch Transformers" (eq. 3–6, α = 10⁻²); Jiang et al. 2024, "Mixtral of Experts" (§2.1, Fig. 8); DeepSeek-AI 2024, DeepSeek-V2 (§2.2, DeepSeekMoE); Shazeer et al. 2017 (sparsely-gated MoE).</p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  Deck.hbars(document.getElementById('mBars'), [
+    { label: 'Mixtral 8x7B total', value: 47, color: 'var(--faint)', text: '47B' }, { label: 'Mixtral active / token', value: 13, color: 'var(--a)', text: '13B' },
+    { label: 'DeepSeek-V2 total', value: 236, color: 'var(--faint)', text: '236B' }, { label: 'DeepSeek-V2 active / token', value: 21, color: 'var(--a)', text: '21B' },
+    { label: 'Llama 3 70B (dense)', value: 70, color: 'var(--b)', text: '70B = 70B' }], { max: 240 });
+  let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const gauss = () => { const u = Math.max(1e-9, rnd()), v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const LOG = [...Array(6)].map(() => [...Array(8)].map(() => gauss() * 1.4));
+  Deck.seg('kSeg', v => {
+    const k = +v, s = clear(document.getElementById('rSvg')), load = Array(8).fill(0);
+    LOG.forEach((row, t) => {
+      const idx = row.map((x, i) => [x, i]).sort((a, b) => b[0] - a[0]).slice(0, k), mx = idx[0][0], ex = idx.map(([x]) => Math.exp(x - mx)), sum = ex.reduce((a, b) => a + b);
+      const ty = 30 + t * 36;
+      svg('rect', { x: 10, y: ty - 13, width: 210, height: 26, rx: 6, style: 'fill:var(--b)' }, s);
+      svg('text', { x: 115, y: ty + 5, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:600;font-size:12px', text: `token ${t + 1} → ` + idx.map(([x, e], j) => `E${e + 1} ${(ex[j] / sum).toFixed(2)}`).join(' · ') }, s);
+      idx.forEach(([x, e], j) => { load[e]++; const ey = 22 + e * 27; svg('line', { x1: 220, y1: ty, x2: 420, y2: ey + 10, style: `stroke:var(--a);stroke-width:${1 + 7 * ex[j] / sum};opacity:.85` }, s); });
+    });
+    for (let e = 0; e < 8; e++) {
+      const ey = 22 + e * 27; svg('rect', { x: 420, y: ey, width: 80, height: 21, rx: 5, class: 'f-a' }, s);
+      svg('text', { x: 460, y: ey + 15, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:12px', text: 'expert ' + (e + 1) }, s);
+      svg('rect', { x: 510, y: ey + 3, width: load[e] * 22, height: 15, rx: 3, style: 'fill:var(--c)' }, s);
+      svg('text', { x: 516 + load[e] * 22, y: ey + 15, class: 'tm', style: 'font-size:11px', text: load[e] }, s);
+    }
+  });
+  const TOK = 4096, NE = 8; seed = 11; const BASE = [...Array(TOK)].map(() => [...Array(NE)].map(gauss));
+  Deck.bind(['bS'], () => {
+    const sk = Deck.val('bS'); Deck.out('bSo', sk.toFixed(1));
+    const f = Array(NE).fill(0), P = Array(NE).fill(0), assign = [];
+    BASE.forEach(row => {
+      const lg = row.map((x, i) => x + sk * (1 - i / (NE - 1))), mx = Math.max(...lg), ex = lg.map(x => Math.exp(x - mx)), sm = ex.reduce((a, b) => a + b);
+      ex.forEach((e, i) => P[i] += e / sm / TOK); const a = lg.indexOf(mx); f[a] += 1 / TOK; assign.push(a);
+    });
+    const cap = Math.floor(TOK / NE * 1.25), used = Array(NE).fill(0); let drop = 0; assign.forEach(a => { if (used[a] < cap) used[a]++; else drop++; });
+    Deck.out('bL', (0.01 * NE * f.reduce((a, x, i) => a + x * P[i], 0)).toFixed(4)); Deck.out('bM', (100 * Math.max(...f)).toFixed(0) + '%'); Deck.out('bD', (100 * drop / TOK).toFixed(1) + '%');
+    Deck.hbars(document.getElementById('bBars'), f.map((x, i) => ({ label: 'expert ' + (i + 1), value: x, color: x * TOK > cap ? 'var(--d)' : 'var(--a)', text: (100 * x).toFixed(1) + '%' })), { max: 0.5 });
+  });
+
+})();
+</script>
+</body>
+</html>

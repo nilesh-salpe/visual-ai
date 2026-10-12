@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decoder-only, and Why It Won</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="Decoder-only, and why it won" data-home="../index.html" data-home-label="Architecture">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">The Modern LLM · 06</div>
+    <h1>Decoder-only, and why it won</h1>
+    <p class="sub">Encoder-decoder, encoder-only and decoder-only stacks differ mainly in their attention masks. Why the plain causal decoder became the default for LLMs.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>The 2017 Transformer has an encoder and a decoder with cross-attention. BERT kept only the encoder. GPT kept only the decoder. For one general-purpose model, which shape is best?</div>
+      <div class="c"><b>Core idea</b>A <b>causal decoder</b>: one stack, one mask (each token sees only the past), trained to predict the next token at <b>every</b> position. Prompts, documents and answers all live in one sequence.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Three families, one difference: the mask</h2>
+    <hr>
+    <p class="lede">Every family computes the same attention. What differs is which positions may see which. Each grid shows "row may attend to column" for 8 tokens. In the encoder-decoder, tokens 0–3 are the input and 4–7 the output.</p>
+    <div class="visual">
+      <div class="seg" id="fSeg"><button data-v="causal" class="on">Causal decoder (GPT, Llama)</button><button data-v="prefix">Prefix-LM (non-causal decoder)</button><button data-v="encdec">Encoder-decoder (T5, 2017)</button><button data-v="enc">Encoder-only (BERT)</button></div>
+      <svg id="fSvg" viewBox="0 0 660 250" style="margin-top:10px" role="img" aria-label="Attention mask"></svg>
+      <p class="readout" id="fOut"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>What the other shapes cost</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Encoder-only can't generate</h3><p>BERT sees both directions and is trained to fill in masked tokens (15% of them). Great for classification and retrieval, but there's no natural way to write a long answer token by token.</p></div>
+      <div class="card b"><h3>Encoder-decoder needs a split</h3><p>Every example must be cut into "input" and "target", and the two stacks are joined by cross-attention. Chat turns, documents and code don't come with a natural split.</p></div>
+      <div class="card c"><h3>Fewer training signals per token</h3><p>Masked-LM objectives compute loss only on the corrupted positions. A causal LM computes loss on <b>every</b> position of every sequence, so each forward pass yields T training targets.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which one serves chat most simply?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">A multi-turn chat keeps growing. Which architecture can reuse all previous computation (the KV cache) as each new message arrives?</p>
+      <div class="opts">
+      <button>A. Encoder-only</button>
+      <button>B. Encoder-decoder</button>
+      <button data-ok>C. Causal decoder</button>
+      <button>D. All of them equally</button>
+      </div>
+      <div class="why"><b>C.</b> In a causal decoder a token's keys and values depend only on earlier tokens, so they never change when new tokens arrive. Cache once, append forever. An encoder's bidirectional states change whenever the input grows, so they would have to be recomputed.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>The causal decoder recipe</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>One stack</h3><p>Embedding → N identical blocks (attention + FFN) → output head. No encoder and no cross-attention. Fewer moving parts to tune and to parallelize.</p></div>
+      <div class="card e"><h3>One objective</h3><p>Predict token t+1 from tokens ≤ t, at every position, on any text. No labels, no input/target split, so all of the web is training data.</p></div>
+      <div class="card b"><h3>One sequence for everything</h3><p>Instructions, documents, few-shot examples, tool calls and answers are all just tokens in context. GPT-2 and GPT-3 showed tasks can be specified in the prompt.</p></div>
+    </div>
+    <div class="deep"><h4>Packing and the document mask</h4><p>Pretraining packs many documents back to back into one long sequence, so no compute is wasted on padding. With a plain causal mask, a token can attend into the <b>previous, unrelated</b> document. Llama 3: "we use an attention mask that prevents self-attention between different documents within the same sequence". It had limited impact in standard pretraining but mattered for continued pretraining on very long sequences. Notebook 05 shows a packed batch with this mask gives exactly the same outputs as running each document alone.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Training signal per sequence</h2>
+    <hr>
+    <p class="lede">How many positions produce a loss in one forward pass of length T? Compare a causal LM, BERT-style masked LM (15% of tokens) and an encoder-decoder trained on a 50/50 input/target split.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><label class="ctl">Sequence length T <input type="range" id="tT" min="128" max="8192" step="128" value="2048"> <output id="tTo"></output></label></div>
+      <div id="tBars" style="margin-top:12px"></div>
+    </div>
+    <p class="caption">Illustrative counts. Real objectives vary: T5's span corruption predicts about 15% of tokens; prefix-LM computes loss only on the target part.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Same model, three uses</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>Pretraining</h3><p>Full causal mask (plus the document mask when packing) over long sequences. Loss on every token.</p></div>
+      <div class="card b"><h3>Fine-tuning (SFT)</h3><p>Same causal mask. Prompt and response in one sequence, with the loss usually counted only on response tokens. No architecture change.</p></div>
+      <div class="card e"><h3>Serving</h3><p>Prefill the prompt with one causal pass (cache K/V), then decode one token at a time, appending to the cache. Exactly the training computation, done incrementally.</p></div>
+    </div>
+    <div class="deep"><h4>What about bidirectional context?</h4><p>A prefix-LM lets prompt tokens see each other in both directions and keeps the generated part causal. Wang et al. found this <b>non-causal decoder with masked-LM pretraining</b> did best after <b>multitask fine-tuning</b>, while the causal decoder did best for zero-shot use after self-supervised pretraining alone. They also showed models can be adapted between the two. The industry chose the simplest shape that scales and serves well, plus instruction tuning.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why the causal decoder won</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Best zero-shot after pretraining alone</h3><p>Wang et al. (2022): causal decoder-only models trained autoregressively "exhibit the strongest zero-shot generalization after purely unsupervised pretraining".</p></div>
+      <div class="card e"><h3>Every token is a target</h3><p>Dense supervision from raw text, with no input/target split, makes it the simplest objective to scale on trillions of tokens.</p></div>
+      <div class="card b"><h3>Serving is incremental</h3><p>Past K/V never change, so the KV cache, prefix caching, continuous batching and speculative decoding all fit naturally (Inference decks 02–06).</p></div>
+      <div class="card c"><h3>One interface for every task</h3><p>Prompting turns any task into "continue this text", so one model and one serving stack cover translation, coding, chat and tool use.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Decoder-only models can't "understand" the input because they only look left."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Every prompt token sees all earlier prompt tokens, and the <b>last</b> position sees the whole prompt. Bidirectionality inside the prompt (prefix-LM) can help some setups, but it is not required to model the input well.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Encoder-decoder models are obsolete."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Wang et al. found non-causal objectives can win after multitask fine-tuning, and encoder-style models remain standard for embeddings and retrieval. Decoder-only is the default for <b>general-purpose generative</b> LLMs.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"A decoder-only Transformer is just the 2017 decoder."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It drops the 2017 decoder's cross-attention sub-layer entirely. Each block is just masked self-attention plus FFN.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">In a causal mask, query position i may attend to key position j when…</p>
+      <div class="opts">
+      <button>A. j ≥ i</button>
+      <button data-ok>B. j ≤ i</button>
+      <button>C. j = i</button>
+      <button>D. always</button>
+      </div>
+      <div class="why"><b>j ≤ i</b>: itself and the past.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why do packed pretraining sequences need a document mask?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Without it, tokens attend into earlier, unrelated documents in the same packed sequence. The document mask restricts attention to the same document, making a packed batch equivalent to running each document separately.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Give two reasons the causal decoder is convenient at serving time.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Past keys and values never change, so they can be cached and reused (KV cache, prefix caching). And the serving computation is exactly the training computation done incrementally, with no separate encoder pass.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">A causal decoder is one stack, one mask and one objective: predict the next token at every position. Simple to train at scale, and incremental to serve.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Encoder-only, encoder-decoder and decoder-only Transformers mostly differ in their attention mask. The causal decoder lets each token see only the past and trains it to predict the next token at every position, so every token of raw text is a training target and there is no input/target split. At serving time past keys and values never change, so they can be cached, and prompts let one model do any task. Wang et al. found causal decoders give the best zero-shot generalization after plain pretraining, while non-causal variants can win after multitask fine-tuning. When documents are packed together, a document mask stops attention leaking between them.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> three stack shapes; which one for a general LLM?</span></div><div><span><b>Core idea:</b> causal decoder: one stack, next-token loss on every position, past K/V never change.</span></div><div><span><b>Detail:</b> packing + document mask; prefix-LM is the in-between option.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/05_attention_masks.ipynb" target="_blank" rel="noopener">05 · Causal, prefix-LM and document masks</a> <span style="color:var(--faint)">· 25 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/architecture/05_attention_masks.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../07-rope-scaling/index.html">07 · Long context I: stretching RoPE →</a> · Previous: <a href="../05-attention-variants/index.html">← 05</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Vaswani et al. 2017; Devlin et al. 2019 (BERT, 15% masking); Raffel et al. 2020 (T5); Radford et al. 2019 (GPT-2); Wang et al. 2022, "What Language Model Architecture and Pretraining Objective Work Best for Zero-Shot Generalization?"; Llama Team 2024 (Llama 3 §3.2, document mask).</p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const MASKS = {
+    causal: [(i, j) => j <= i, 'Causal: row i sees columns 0…i. Every position predicts the next token, so there are 8 training targets here.'],
+    prefix: [(i, j) => (i < 4 && j < 4) || j <= i, 'Prefix-LM: the first 4 tokens (the prompt) see each other in both directions; the rest are causal. Loss is usually only on the last 4.'],
+    encdec: [(i, j) => (i < 4 && j < 4) ? 2 : (i >= 4 && j >= 4 && j <= i) ? 1 : (i >= 4 && j < 4) ? 3 : 0, 'Encoder (top-left) is bidirectional over the input. Decoder (bottom-right) is causal over the output. Cross-attention (bottom-left) lets output tokens see the whole input. Two stacks.'],
+    enc: [(i, j) => true, 'Encoder-only: everything sees everything. Trained by masking about 15% of tokens and predicting them. It cannot generate left to right.'],
+  };
+  Deck.seg('fSeg', v => {
+    const [f, txt] = MASKS[v], s = clear(document.getElementById('fSvg')), c = 26, x0 = 220, y0 = 20;
+    for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) {
+      const m = f(i, j), col = m === 3 ? 'var(--c)' : m === 2 ? 'var(--b)' : m ? 'var(--a)' : 'var(--panel-2)';
+      svg('rect', { x: x0 + j * c, y: y0 + i * c, width: c - 3, height: c - 3, rx: 4, style: `fill:${col}` }, s);
+    }
+    for (let i = 0; i < 8; i++) { svg('text', { x: x0 - 10, y: y0 + i * c + 17, 'text-anchor': 'end', class: 'tm', text: 'q' + i }, s); svg('text', { x: x0 + i * c + 11, y: y0 + 8 * c + 14, 'text-anchor': 'middle', class: 'tm', text: 'k' + i }, s); }
+    document.getElementById('fOut').innerHTML = txt;
+  });
+  Deck.bind(['tT'], () => {
+    const T = Deck.val('tT'); Deck.out('tTo', T.toLocaleString());
+    Deck.hbars(document.getElementById('tBars'), [
+      { label: 'causal LM: every position', value: T, color: 'var(--a)', text: T.toLocaleString() },
+      { label: 'encoder-decoder, 50/50 split', value: T / 2, color: 'var(--b)', text: (T / 2).toLocaleString() },
+      { label: 'masked LM (15%)', value: Math.round(0.15 * T), color: 'var(--c)', text: Math.round(0.15 * T).toLocaleString() }], { max: 8192 });
+  });
+
+})();
+</script>
+</body>
+</html>

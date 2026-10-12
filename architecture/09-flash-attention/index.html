@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlashAttention Internals</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="FlashAttention internals" data-home="../index.html" data-home-label="Architecture">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">The Modern LLM · 09</div>
+    <h1>FlashAttention internals</h1>
+    <p class="sub">How computing exact attention in tiles, with an online softmax, avoids writing the N×N matrix to GPU memory. Plus what FlashAttention-2 and -3 changed.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Standard attention writes the N×N score matrix to HBM, reads it back for the softmax, writes probabilities and reads them again. At long N this memory traffic, not arithmetic, dominates the runtime.</div>
+      <div class="c"><b>Core idea</b>Load blocks of Q, K and V into on-chip SRAM, compute scores, softmax and output for that tile there, and combine tiles with an <b>online softmax</b> (running max and sum, rescaling). The N×N matrix never touches HBM. The result is exact.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Attention is memory-bound</h2>
+    <hr>
+    <p class="lede">On an A100 (figures from the FlashAttention paper): HBM holds 40–80 GB at 1.5–2.0 TB/s. On-chip SRAM is 192 KB per streaming multiprocessor across 108 SMs, at around 19 TB/s. SRAM is roughly 10× faster and many orders of magnitude smaller. Standard attention runs as several separate passes, each reading from and writing to HBM. See <a href="../../gpu/03-memory-hierarchy/index.html">GPU deck 03</a> for the hierarchy.</p>
+    <div class="visual">
+      <svg id="pSvg" viewBox="0 0 660 190" role="img" aria-label="Standard attention passes over HBM"></svg>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why earlier speed-ups didn't help</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Approximate attention cuts FLOPs</h3><p>Sparse and low-rank methods reduce computation but trade quality, and the FlashAttention abstract notes they "often do not achieve wall-clock speedup".</p></div>
+      <div class="card b"><h3>FLOPs aren't the bottleneck</h3><p>Softmax, masking and dropout are element-wise over N² entries, so they do little arithmetic per byte moved. Their runtime is set by HBM bandwidth.</p></div>
+      <div class="card c"><h3>Memory grows as N²</h3><p>Storing S and P for the backward pass needs N² values per head. At N = 65,536 in BF16 that is 8 GiB per head, per layer.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What does FlashAttention save?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">FlashAttention actually does slightly <i>more</i> FLOPs than standard attention (it recomputes in the backward pass), yet it is several times faster. What does it reduce?</p>
+      <div class="opts">
+      <button>A. The number of attention heads</button>
+      <button data-ok>B. Reads and writes to HBM</button>
+      <button>C. The precision of the softmax</button>
+      <button>D. The sequence length</button>
+      </div>
+      <div class="why"><b>B.</b> It is IO-aware: tiling keeps S and P in SRAM, so HBM traffic drops. GPT-2 medium (N = 1,024), forward + backward on an A100: standard 66.6 GFLOPs, <b>40.3 GB</b> HBM, 41.7 ms; FlashAttention 75.2 GFLOPs, <b>4.4 GB</b>, <b>7.3 ms</b>.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Three ingredients</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>Tiling</h3><p>Split Q into row blocks and K, V into column blocks sized to fit in SRAM. For each pair of blocks compute S = QKᵀ/√d, then the partial softmax and partial output, without leaving the chip.</p></div>
+      <div class="card b"><h3>Online softmax</h3><p>Softmax needs a row max and sum over <b>all</b> columns. Keep a running max m and sum ℓ per row; when a new block raises the max, rescale the old sum and the old partial output by e<sup>m_old − m_new</sup>. The result is exact.</p></div>
+      <div class="card e"><h3>Recompute in the backward pass</h3><p>Don't store P. Save only the per-row softmax statistics (FA2: just the log-sum-exp) and recompute S and P block by block in the backward pass. Extra FLOPs, far less memory traffic, and memory linear in N.</p></div>
+    </div>
+    <div class="deep"><h4>IO complexity (FA1, Theorem 2)</h4><p>With head dimension d and SRAM size M: standard attention needs <b>Θ(Nd + N²)</b> HBM accesses, while FlashAttention needs <b>Θ(N²d²/M)</b>. For typical d (64–128) and M (~100 KB), d² is many times smaller than M. The paper also proves no exact attention algorithm can asymptotically do better for all M.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Online softmax, step by step</h2>
+    <hr>
+    <p class="lede">One row of 12 scores, processed in chunks of 4 as if they arrived from three K blocks. Watch the running max m and running sum ℓ. When the max increases, the old sum is multiplied by e<sup>m_old − m_new</sup>.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><button class="btn primary" id="osNext">next chunk</button><button class="btn" id="osReset">reset</button></div>
+      <svg id="osSvg" viewBox="0 0 660 190" style="margin-top:10px" role="img" aria-label="Online softmax"></svg>
+      <p class="readout" id="osOut"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Tiling: which blocks are touched</h2>
+    <hr>
+    <p class="lede">FlashAttention-2 order: for each Q block (outer loop, run in parallel across thread blocks), stream every K/V block through SRAM (inner loop). Step through and compare the elements moved to and from HBM with standard attention. Turn on causal: blocks entirely above the diagonal are skipped.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><button class="btn primary" id="tlNext">next tile</button><button class="btn" id="tlRun">run all</button><div class="seg" id="tlC"><button data-v="0" class="on">full</button><button data-v="1">causal</button></div></div>
+      <svg id="tlSvg" viewBox="0 0 660 240" style="margin-top:10px" role="img" aria-label="Tiled attention"></svg>
+      <p class="readout" id="tlOut"></p>
+    </div>
+    <p class="caption">N = 8 blocks of 128 rows, d = 64. Forward pass, element counts: standard ≈ 4Nd + 4N², tiled ≈ 2Nd + (N/B_r)·2Nd (the same traffic model as notebook 08).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Measured results, and FA1 → FA2 → FA3</h2>
+    <hr>
+    <div class="visual"><div id="fBars"></div><p class="caption">FA1 Fig. 2: GPT-2 medium attention (N = 1,024, d = 64, 16 heads, batch 64), forward + backward, A100.</p></div>
+    <div class="visual scroll-x" style="margin-top:12px"><table class="tbl">
+      <tr><th></th><th>Key change</th><th>Reported result</th></tr>
+      <tr><td>FlashAttention (2022)</td><td>Tiling + online softmax + recompute; IO-aware, exact</td><td>15% faster BERT-large training vs MLPerf 1.1 record; 3× GPT-2 (1K); 2.4× Long Range Arena</td></tr>
+      <tr><td>FlashAttention-2 (2023)</td><td>Fewer non-matmul FLOPs; parallelize over sequence (outer loop over Q blocks); split work across warps; rescale the output once at the end</td><td>~2× FA1; 50–73% of peak FLOPs on A100 (FA1: 25–40%); up to 225 TFLOPs/s training GPT models</td></tr>
+      <tr><td>FlashAttention-3 (2024)</td><td>Hopper features: asynchronous Tensor Cores and TMA, warp specialization, interleaved matmul + softmax, FP8 with block quantization</td><td>1.5–2.0× on H100; up to 740 TFLOPs/s FP16 (~75%); ~1.2 PFLOPs/s FP8 with 2.6× lower error than a baseline FP8 attention</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"FlashAttention is an approximation of attention."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is <b>exact</b>: the same outputs up to floating-point rounding (notebook 08: max error ~1e-15). Only the order of operations changes.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"FlashAttention makes attention O(N)."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Compute is still O(N²). What becomes O(N) is the <b>extra memory</b>: no N×N matrix is stored. HBM traffic drops by a large factor but is still quadratic in N.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"It is faster because it does fewer FLOPs."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It does <b>more</b> FLOPs (75.2 vs 66.6 GFLOPs in Fig. 2) because of recomputation. It is faster because it moves about 9× fewer bytes.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">In the online softmax, when a new block has a larger maximum, what happens to the running sum ℓ?</p>
+      <div class="opts">
+      <button>A. It is reset to 0</button>
+      <button data-ok>B. It is multiplied by e^(m_old − m_new)</button>
+      <button>C. It is divided by the block size</button>
+      <button>D. Nothing</button>
+      </div>
+      <div class="why"><b>Rescaled by e^(m_old − m_new)</b>, and so is the partial output.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">What does FlashAttention store for the backward pass instead of P?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Only per-row softmax statistics (in FA2, just the log-sum-exp L = m + log ℓ). S and P are recomputed block by block in SRAM during the backward pass.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Name two changes in FlashAttention-2 compared with FA1.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Parallelize over the sequence (outer loop over Q blocks, not K/V); fewer non-matmul FLOPs (rescale the output once at the end); better work split across warps; store only the log-sum-exp.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">FlashAttention computes exact attention tile by tile in SRAM with an online softmax, so the N×N matrix never touches HBM: more FLOPs, far fewer bytes, much faster.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Standard attention writes the N by N score matrix to GPU high-bandwidth memory, reads it back for the softmax, writes the probabilities and reads them again, and at long sequences that traffic, not arithmetic, sets the runtime. FlashAttention loads blocks of Q, K and V into on-chip SRAM and computes scores, softmax and output there. It combines blocks with an online softmax that keeps a running max and sum per row and rescales when the max grows. The backward pass recomputes scores from saved statistics instead of storing them. It is exact, uses memory linear in N, and on GPT-2 cut HBM traffic from 40 to 4.4 GB. FlashAttention-2 reordered the loops for parallelism; FlashAttention-3 uses Hopper's asynchrony and FP8.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> N×N intermediates make attention memory-bound and O(N²) in memory.</span></div><div><span><b>Core idea:</b> tiling + online softmax + recompute: exact, linear memory, ~9× less HBM traffic.</span></div><div><span><b>Versions:</b> FA2: loop order and parallelism (50–73% of peak); FA3: Hopper async + FP8 (740 TFLOPs/s).</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/08_flash_attention.ipynb" target="_blank" rel="noopener">08 · FlashAttention from scratch: online softmax and tiling</a> <span style="color:var(--faint)">· 50 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/architecture/08_flash_attention.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../10-mixture-of-experts/index.html">10 · Mixture of Experts →</a> · Previous: <a href="../08-sliding-window/index.html">← 08</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Dao et al. 2022, "FlashAttention" (Algorithm 1, Theorem 2, Fig. 2, §2.1 A100 figures); Dao 2023, "FlashAttention-2"; Shah et al. 2024, "FlashAttention-3"; Milakov & Gimelshein 2018, "Online normalizer calculation for softmax".</p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  (() => {
+    const s = document.getElementById('pSvg'), steps = [['S = QKᵀ', 'read Q, K · write S (N²)'], ['P = softmax(S)', 'read S · write P (N²)'], ['O = PV', 'read P, V · write O']];
+    steps.forEach(([a, b], i) => {
+      const x = 20 + i * 215;
+      svg('rect', { x, y: 30, width: 190, height: 50, rx: 9, class: 'f-a' }, s);
+      svg('text', { x: x + 95, y: 61, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:700', text: a }, s);
+      svg('text', { x: x + 95, y: 104, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: b }, s);
+      svg('path', { d: `M${x + 95} 112 V140`, style: 'stroke:var(--d);stroke-width:2;stroke-dasharray:4 3' }, s);
+    });
+    svg('rect', { x: 20, y: 140, width: 620, height: 34, rx: 8, style: 'fill:var(--d-soft);stroke:var(--d)' }, s);
+    svg('text', { x: 330, y: 162, 'text-anchor': 'middle', class: 't', text: 'HBM: every arrow is a round trip at 1.5–2.0 TB/s (each N² matrix is written, then read)' }, s);
+  })();
+  const X = [1.2, 0.3, 2.0, -0.5, 3.1, 0.8, 1.9, 2.5, 4.0, -1.0, 0.2, 3.6];
+  let os = 0;
+  const osDraw = () => {
+    const s = clear(document.getElementById('osSvg')); let m = -Infinity, l = 0, msg = [];
+    for (let c = 0; c < os; c++) {
+      const ch = X.slice(c * 4, c * 4 + 4), mn = Math.max(m, ...ch), corr = isFinite(m) ? Math.exp(m - mn) : 0;
+      l = l * corr + ch.reduce((a, x) => a + Math.exp(x - mn), 0);
+      msg.push(`chunk ${c + 1}: max ${isFinite(m) ? m.toFixed(1) : '−∞'} → ${mn.toFixed(1)}${c && mn > m ? `, old sum × e^(${m.toFixed(1)}−${mn.toFixed(1)}) = ×${corr.toFixed(3)}` : ''}; ℓ = ${l.toFixed(3)}`);
+      m = mn;
+    }
+    X.forEach((x, i) => {
+      const done = i < os * 4, cx = 40 + i * 50;
+      svg('rect', { x: cx - 20, y: 20, width: 40, height: 36, rx: 6, style: `fill:${done ? 'var(--a)' : 'var(--panel-2)'}` }, s);
+      svg('text', { x: cx, y: 43, 'text-anchor': 'middle', class: 't', style: done ? 'fill:#fff;font-weight:600' : '', text: x.toFixed(1) }, s);
+      if (i % 4 === 0) svg('text', { x: cx + 75, y: 74, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'chunk ' + (i / 4 + 1) }, s);
+    });
+    msg.forEach((t, k) => svg('text', { x: 20, y: 110 + k * 24, class: 't', style: 'font-size:12.5px', text: t }, s));
+    const trueL = X.reduce((a, x) => a + Math.exp(x - 4.0), 0);
+    document.getElementById('osOut').innerHTML = os < 3 ? `After ${os} of 3 chunks: m = ${isFinite(m) ? m.toFixed(1) : '−∞'}, ℓ = ${l.toFixed(3)}.` : `Done. m = ${m.toFixed(1)}, ℓ = ${l.toFixed(4)}; a two-pass softmax gives Σ e^(x − 4.0) = ${trueL.toFixed(4)}, identical. softmax(x)ᵢ = e^(xᵢ − m) / ℓ.`;
+  };
+  document.getElementById('osNext').addEventListener('click', () => { os = Math.min(3, os + 1); osDraw(); });
+  document.getElementById('osReset').addEventListener('click', () => { os = 0; osDraw(); });
+  osDraw();
+  const NB = 8, Bsz = 128, dd = 64, N = NB * Bsz; let causal = false, tile = 0, timer = null;
+  const tiles = () => { const t = []; for (let i = 0; i < NB; i++) for (let j = 0; j < NB; j++) if (!causal || j <= i) t.push([i, j]); return t; };
+  const tlDraw = () => {
+    const T = tiles(), s = clear(document.getElementById('tlSvg')), c = 24, x0 = 70, y0 = 20;
+    for (let i = 0; i < NB; i++) for (let j = 0; j < NB; j++) {
+      const k = T.findIndex(([a, b]) => a === i && b === j), done = k >= 0 && k < tile, cur = k === tile - 1, skip = k < 0;
+      svg('rect', { x: x0 + j * c, y: y0 + i * c, width: c - 3, height: c - 3, rx: 3, style: `fill:${cur ? 'var(--b)' : done ? 'var(--a)' : skip ? 'var(--panel)' : 'var(--panel-2)'};${skip ? 'stroke:var(--line);stroke-dasharray:2 2' : ''}` }, s);
+    }
+    svg('text', { x: x0 + NB * c / 2, y: y0 + NB * c + 18, 'text-anchor': 'middle', class: 'tm', text: 'K/V blocks (inner loop) →' }, s);
+    svg('text', { x: x0 - 8, y: y0 + NB * c / 2, 'text-anchor': 'end', class: 'tm', text: 'Q ↓' }, s);
+    const rowsDone = new Set(T.slice(0, tile).map(([i]) => i)).size;
+    const flash = rowsDone * Bsz * dd * 2 + T.slice(0, tile).length * Bsz * dd * 2;
+    const std = 4 * N * dd + 4 * N * N * (causal ? 0.5 : 1);
+    [['tiles computed', `${tile} / ${T.length}`], ['tiled HBM traffic so far', Deck.fmt(flash) + ' elements'], ['standard, whole pass', Deck.fmt(std) + ' elements'], ['N×N kept in HBM', 'never']].forEach(([a, b], k) => {
+      svg('text', { x: 340, y: 50 + k * 34, class: 'tm', text: a }, s); svg('text', { x: 640, y: 50 + k * 34, 'text-anchor': 'end', class: 't', style: 'font-weight:700', text: b }, s);
+    });
+    document.getElementById('tlOut').innerHTML = tile === T.length ? `Finished: tiled ≈ <b>${Deck.fmt(flash)}</b> vs standard ≈ <b>${Deck.fmt(std)}</b> elements moved (${(std / flash).toFixed(1)}× less)${causal ? `; ${NB * NB - T.length} future blocks skipped` : ''}.` : 'Each orange tile: load Q_i (once per row), K_j and V_j into SRAM, update m, ℓ and Õ for that row block.';
+  };
+  document.getElementById('tlNext').addEventListener('click', () => { tile = Math.min(tiles().length, tile + 1); tlDraw(); });
+  document.getElementById('tlRun').addEventListener('click', () => { clearInterval(timer); timer = setInterval(() => { tile++; if (tile >= tiles().length) { tile = tiles().length; clearInterval(timer); } tlDraw(); }, 70); });
+  Deck.seg('tlC', v => { causal = v === '1'; tile = 0; clearInterval(timer); tlDraw(); });
+  Deck.hbars(document.getElementById('fBars'), [
+    { label: 'GFLOPs, standard', value: 66.6, color: 'var(--faint)', text: '66.6' }, { label: 'GFLOPs, Flash', value: 75.2, color: 'var(--faint)', text: '75.2 (more!)' },
+    { label: 'HBM R/W, standard', value: 40.3, color: 'var(--d)', text: '40.3 GB' }, { label: 'HBM R/W, Flash', value: 4.4, color: 'var(--e)', text: '4.4 GB' },
+    { label: 'runtime, standard', value: 41.7, color: 'var(--d)', text: '41.7 ms' }, { label: 'runtime, Flash', value: 7.3, color: 'var(--e)', text: '7.3 ms' }], { max: 80 });
+
+})();
+</script>
+</body>
+</html>

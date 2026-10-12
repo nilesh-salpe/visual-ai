@@ -20,3 +20,20 @@ Run in Google Colab (NumPy, CPU only). Each notebook: Setup → tasks with `TODO
 | [12 · Tensor-parallel linear layers (Megatron-style)](inference/12_tensor_parallel.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/12_tensor_parallel.ipynb) |
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/inference/
+
+## Phase 2 · The modern LLM architecture
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · RMSNorm and pre-norm blocks](architecture/01_norms_prenorm.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/01_norms_prenorm.ipynb) |
+| [02 · Rotary position embeddings (RoPE)](architecture/02_rope.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/02_rope.ipynb) |
+| [03 · SwiGLU feed-forward layers](architecture/03_swiglu.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/03_swiglu.ipynb) |
+| [04 · Multi-head latent attention (MLA) and weight absorption](architecture/04_mla_absorption.ipynb) | 45 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/04_mla_absorption.ipynb) |
+| [05 · Causal, prefix-LM and document masks](architecture/05_attention_masks.ipynb) | 25 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/05_attention_masks.ipynb) |
+| [06 · Extending context: PI, NTK-aware and YaRN](architecture/06_rope_scaling.ipynb) | 45 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/06_rope_scaling.ipynb) |
+| [07 · Sliding-window attention and the rolling KV cache](architecture/07_sliding_window.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/07_sliding_window.ipynb) |
+| [08 · FlashAttention from scratch: online softmax and tiling](architecture/08_flash_attention.ipynb) | 50 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/08_flash_attention.ipynb) |
+| [09 · Mixture-of-Experts: router, dispatch and load balancing](architecture/09_moe_router.ipynb) | 45 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/09_moe_router.ipynb) |
+| [10 · Build a Llama-style decoder block and count its parameters](architecture/10_llama_block.ipynb) | 50 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/10_llama_block.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/architecture/

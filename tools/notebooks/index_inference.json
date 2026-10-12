@@ -1,0 +1,98 @@
+[
+ {
+  "slug": "01_tiny_gpt_forward",
+  "title": "01 \u00b7 A tiny GPT forward pass in NumPy",
+  "path": "build-it/inference/01_tiny_gpt_forward.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/01_tiny_gpt_forward.ipynb",
+  "deck": "inference/01-inference-workload/",
+  "minutes": 40
+ },
+ {
+  "slug": "02_kv_cache",
+  "title": "02 \u00b7 KV-cache decoding",
+  "path": "build-it/inference/02_kv_cache.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/02_kv_cache.ipynb",
+  "deck": "inference/02-kv-cache/",
+  "minutes": 35
+ },
+ {
+  "slug": "03_gqa_mqa",
+  "title": "03 \u00b7 Grouped-query attention (GQA) and multi-query attention (MQA)",
+  "path": "build-it/inference/03_gqa_mqa.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/03_gqa_mqa.ipynb",
+  "deck": "inference/02-kv-cache/",
+  "minutes": 25
+ },
+ {
+  "slug": "04_kv_memory_calculator",
+  "title": "04 \u00b7 KV-cache memory calculator",
+  "path": "build-it/inference/04_kv_memory_calculator.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/04_kv_memory_calculator.ipynb",
+  "deck": "inference/02-kv-cache/",
+  "minutes": 20
+ },
+ {
+  "slug": "05_continuous_batching",
+  "title": "05 \u00b7 Continuous (iteration-level) batching",
+  "path": "build-it/inference/05_continuous_batching.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/05_continuous_batching.ipynb",
+  "deck": "inference/03-batching/",
+  "minutes": 35
+ },
+ {
+  "slug": "06_chunked_prefill",
+  "title": "06 \u00b7 Chunked prefill with a token budget",
+  "path": "build-it/inference/06_chunked_prefill.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/06_chunked_prefill.ipynb",
+  "deck": "inference/04-chunked-prefill/",
+  "minutes": 40
+ },
+ {
+  "slug": "07_paged_kv_allocator",
+  "title": "07 \u00b7 A paged KV-cache allocator",
+  "path": "build-it/inference/07_paged_kv_allocator.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/07_paged_kv_allocator.ipynb",
+  "deck": "inference/05-paged-attention/",
+  "minutes": 40
+ },
+ {
+  "slug": "08_prefix_cache",
+  "title": "08 \u00b7 Prefix caching with a token trie (RadixAttention-style)",
+  "path": "build-it/inference/08_prefix_cache.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/08_prefix_cache.ipynb",
+  "deck": "inference/05-paged-attention/",
+  "minutes": 35
+ },
+ {
+  "slug": "09_speculative_sampling",
+  "title": "09 \u00b7 Speculative sampling",
+  "path": "build-it/inference/09_speculative_sampling.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/09_speculative_sampling.ipynb",
+  "deck": "inference/06-speculative-decoding/",
+  "minutes": 45
+ },
+ {
+  "slug": "10_quantization",
+  "title": "10 \u00b7 INT8/INT4 quantization and SmoothQuant",
+  "path": "build-it/inference/10_quantization.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/10_quantization.ipynb",
+  "deck": "inference/07-quantization/",
+  "minutes": 45
+ },
+ {
+  "slug": "11_fp8_emulation",
+  "title": "11 \u00b7 FP8 (E4M3 / E5M2) emulation",
+  "path": "build-it/inference/11_fp8_emulation.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/11_fp8_emulation.ipynb",
+  "deck": "inference/07-quantization/",
+  "minutes": 30
+ },
+ {
+  "slug": "12_tensor_parallel",
+  "title": "12 \u00b7 Tensor-parallel linear layers (Megatron-style)",
+  "path": "build-it/inference/12_tensor_parallel.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/12_tensor_parallel.ipynb",
+  "deck": "inference/08-parallelism/",
+  "minutes": 35
+ }
+]

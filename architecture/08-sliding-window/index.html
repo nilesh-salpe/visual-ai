@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Long Context II: Sliding Window and ALiBi</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="Long context II: sliding window and ALiBi" data-home="../index.html" data-home-label="Architecture">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">The Modern LLM · 08</div>
+    <h1>Long context II: sliding window and ALiBi</h1>
+    <p class="sub">Two other ways to handle long sequences: limit how far each layer looks (sliding-window attention with a rolling KV cache), or bias scores by distance (ALiBi).</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Full attention costs O(T²) compute and its KV cache grows with every token. At long T, both memory and time explode, even when most useful context is nearby.</div>
+      <div class="c"><b>Core idea</b><b>Sliding window</b>: each token attends only to the last W tokens, and stacked layers relay information further back, so the cache can be a fixed-size ring buffer. <b>ALiBi</b>: no position embeddings; subtract a head-specific slope × distance from every score.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Full attention gets expensive fast</h2>
+    <hr>
+    <p class="lede">Score computations per layer and KV-cache entries per layer, as the sequence grows. Full causal attention computes about T²/2 scores and caches T entries. A sliding window of W = 4,096 computes at most T·W and caches at most W.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><label class="ctl">Sequence length T <input type="range" id="cT" min="10" max="17" step="0.5" value="15"> <output id="cTo"></output></label></div>
+      <div id="cBars" style="margin-top:12px"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not just cut the context?</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Truncating loses information</h3><p>Dropping everything older than W tokens at the input means the model can't use it at all.</p></div>
+      <div class="card b"><h3>Sparse patterns are fiddly</h3><p>Hand-designed sparse attention (strided, global tokens) needs custom kernels and careful choices for every pattern.</p></div>
+      <div class="card c"><h3>Position extrapolation still matters</h3><p>Even with cheaper attention, the position encoding must behave sensibly at lengths beyond training (deck 07, and ALiBi below).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>How far can a window see?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Mistral 7B uses a window of W = 4,096 tokens in each of its 32 layers. What is the theoretical attention span at the last layer?</p>
+      <div class="opts">
+      <button>A. 4,096 tokens</button>
+      <button>B. 8,192 tokens</button>
+      <button data-ok>C. About 131K tokens</button>
+      <button>D. Unlimited</button>
+      </div>
+      <div class="why"><b>C.</b> Each layer lets information move up to W tokens further back. After 32 layers that is about 32 × 4,096 ≈ <b>131K</b> tokens (Mistral's figure). Exactly: L·(W−1)+1 = 131,041 with an inclusive window of W keys.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Two ideas</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Sliding-window attention (SWA)</h3><p>Token i attends to positions i−W+1 … i only. Information from further back reaches i indirectly: token i−W saw it in the previous layer. The KV cache needs only the last W entries, stored in a <b>rolling buffer</b> at slot i mod W. Mistral 7B: W = 4,096, 2× faster at 16K with its kernel changes, 8× less cache at 32K.</p></div>
+      <div class="card b"><h3>ALiBi</h3><p>Don't add position embeddings at all. Add a <b>linear penalty</b> −m·(i−j) to each query-key score, with a different slope m per head (a geometric sequence, 1/2 … 1/256 for 8 heads). Trained at 1,024 tokens, a 1.3B model extrapolates to 2,048 and matches a sinusoidal model trained at 2,048, while training 11% faster and using 11% less memory.</p></div>
+    </div>
+    <div class="deep"><h4>Not every Mistral-family model uses the window</h4><p>Mixtral's paper notes it "supports a fully dense context length of 32k tokens", meaning full attention, unlike Mistral 7B's sliding window. Windowing is a per-model design choice; a model card or config (<code>sliding_window</code>) tells you which.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Stacked windows: the receptive field grows with depth</h2>
+    <hr>
+    <p class="lede">Each row is a layer, each column a position (newest on the right). Highlighted cells are positions that can influence the last token's output through the stack. One layer sees W positions; each extra layer reaches W−1 further.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Window W <input type="range" id="wW" min="2" max="8" step="1" value="4"> <output id="wWo"></output></label>
+        <label class="ctl">Layers <input type="range" id="wL" min="1" max="8" step="1" value="4"> <output id="wLo"></output></label>
+      </div>
+      <svg id="wSvg" viewBox="0 0 660 230" style="margin-top:10px" role="img" aria-label="Receptive field across layers"></svg>
+      <p class="readout" id="wOut"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>The rolling-buffer KV cache</h2>
+    <hr>
+    <p class="lede">A cache of W = 4 slots. Token t's key and value are written to slot <b>t mod 4</b>, overwriting the entry from t−4, which the window no longer needs. Press "next token".</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><button class="btn primary" id="rbNext">next token</button><button class="btn" id="rbReset">reset</button></div>
+      <svg id="rbSvg" viewBox="0 0 660 170" style="margin-top:10px" role="img" aria-label="Rolling buffer"></svg>
+      <p class="readout" id="rbOut"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how3" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>ALiBi: a distance penalty per head</h2>
+    <hr>
+    <p class="lede">The bias added to each attention score for one head (rows: query position i, columns: key position j, causal). Darker means a bigger penalty. Heads with a steep slope focus locally; heads with a gentle slope can look far back.</p>
+    <div class="visual">
+      <div class="seg" id="aSeg"><button data-v="1" class="on">head 1 (m = 1/2)</button><button data-v="3">head 3 (m = 1/8)</button><button data-v="5">head 5 (m = 1/32)</button><button data-v="8">head 8 (m = 1/256)</button></div>
+      <svg id="aSvg" viewBox="0 0 660 260" style="margin-top:10px" role="img" aria-label="ALiBi bias matrix"></svg>
+    </div>
+    <p class="caption">Slopes for 8 heads: the geometric sequence 1/2¹, 1/2², …, 1/2⁸. For n heads it starts at 2^(−8/n) with the same ratio (Press et al.).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why they work, and their limits</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Most attention is local</h3><p>Many heads mostly look nearby. A window keeps that cheap and lets depth carry longer-range information.</p></div>
+      <div class="card e"><h3>Memory becomes constant</h3><p>With a rolling buffer, KV memory per sequence is capped at W entries per layer: 8× smaller at 32K for Mistral 7B, and it never grows during generation.</p></div>
+      <div class="card b"><h3>ALiBi has no unseen positions</h3><p>A penalty proportional to distance is defined for any distance, and longer distances just get a larger penalty, which is why it extrapolates.</p></div>
+      <div class="card d"><h3>Limits</h3><p>Information older than W must survive several relays, so exact long-range retrieval is harder than with full attention. ALiBi's built-in bias towards recent tokens can also limit how much distant text is used.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"A sliding-window model can't use anything older than W tokens."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It can, indirectly: information moves up to W further back per layer, so the theoretical span is about L × W. It is lossy, though.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"ALiBi is a kind of position embedding."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Nothing is added to the embeddings. ALiBi adds a fixed, distance-dependent <b>bias to the attention scores</b>.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Every Mistral model uses sliding-window attention."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Mistral 7B does (W = 4,096). Mixtral uses fully dense attention over 32K. Check the config.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">In Mistral's rolling buffer with W = 4,096, where is token 10,000's key stored?</p>
+      <div class="opts">
+      <button>A. slot 10,000</button>
+      <button data-ok>B. slot 10,000 mod 4,096 = 1,808</button>
+      <button>C. slot 0</button>
+      <button>D. it isn't cached</button>
+      </div>
+      <div class="why"><b>Slot i mod W = 1,808</b>, overwriting token 5,904's entry.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">What does ALiBi add to the score between query i and key j?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">−m·(i − j), a negative bias growing linearly with distance, with a fixed slope m per head (e.g. 1/2 … 1/256 for 8 heads). No position embeddings at all.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why does sliding-window attention make the KV cache constant-size?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">A token never attends further back than W positions, so older keys and values are never needed again and can be overwritten in a ring buffer of W slots.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Sliding windows cap attention cost and KV memory and rely on depth to reach further; ALiBi replaces position embeddings with a per-head distance penalty that extrapolates.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Full attention costs order T squared and its cache grows with every token. Sliding-window attention lets each token attend only to the last W tokens. Information older than that still flows indirectly through the stack, so Mistral 7B, with W of 4,096 over 32 layers, has a theoretical span of about 131K. Because no token looks back further than W, the KV cache can be a ring buffer indexed by position mod W: 8 times less memory at 32K. ALiBi removes position embeddings and subtracts a head-specific slope times the distance from each attention score, which let a model trained at 1,024 tokens work at 2,048.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> O(T²) scores and an ever-growing KV cache.</span></div><div><span><b>SWA:</b> attend to the last W; span ≈ L·W; rolling buffer at i mod W.</span></div><div><span><b>ALiBi:</b> score − m·distance, slopes 1/2…1/256; train short, test long.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/07_sliding_window.ipynb" target="_blank" rel="noopener">07 · Sliding-window attention and the rolling KV cache</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/architecture/07_sliding_window.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../09-flash-attention/index.html">09 · FlashAttention internals →</a> · Previous: <a href="../07-rope-scaling/index.html">← 07</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Jiang et al. 2023, "Mistral 7B" (§2, Table 1, Fig. 1–2); Jiang et al. 2024 (Mixtral §2, dense 32K); Beltagy et al. 2020 (Longformer); Press et al. 2022, "Train Short, Test Long: Attention with Linear Biases" (ALiBi, §3).</p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  Deck.bind(['cT'], () => {
+    const T = Math.round(Math.pow(2, Deck.val('cT'))), W = 4096; Deck.out('cTo', T.toLocaleString());
+    const full = T * (T + 1) / 2, win = T <= W ? full : W * (W + 1) / 2 + (T - W) * W;
+    Deck.hbars(document.getElementById('cBars'), [
+      { label: 'scores, full attention', value: full, color: 'var(--d)', text: Deck.fmt(full) },
+      { label: 'scores, window 4,096', value: win, color: 'var(--a)', text: Deck.fmt(win) },
+      { label: 'KV entries, full', value: T, color: 'var(--d)', text: T.toLocaleString() },
+      { label: 'KV entries, rolling buffer', value: Math.min(T, W), color: 'var(--a)', text: Math.min(T, W).toLocaleString() }], { log: true, min: 100 });
+  });
+  Deck.bind(['wW', 'wL'], () => {
+    const W = Deck.val('wW'), L = Deck.val('wL'), N = 40; Deck.out('wWo', W); Deck.out('wLo', L);
+    const s = clear(document.getElementById('wSvg')), c = 15, x0 = 30, rowH = 210 / (L + 1);
+    for (let l = 0; l <= L; l++) {
+      const reach = l === 0 ? 1 : l * (W - 1) + 1, y = 200 - l * rowH;
+      for (let p = 0; p < N; p++) {
+        const dist = N - 1 - p, on = l === 0 ? dist === 0 : dist < reach;
+        svg('rect', { x: x0 + p * c, y: y - c + 2, width: c - 3, height: c - 3, rx: 3, style: `fill:${on ? (l === L ? 'var(--a)' : 'var(--a-soft)') : 'var(--panel-2)'}` }, s);
+      }
+      svg('text', { x: x0 - 6, y: y - 3, 'text-anchor': 'end', class: 'tm', style: 'font-size:10px', text: l === 0 ? 'out' : 'L' + l }, s);
+    }
+    const span = L * (W - 1) + 1;
+    document.getElementById('wOut').innerHTML = `${L} layer${L > 1 ? 's' : ''} × window ${W}: the last token can be influenced by <b>${span}</b> positions (L·(W−1)+1). Mistral 7B: 32·4,095+1 = <b>131,041</b> ≈ 131K.`;
+  });
+  let t = 0; const W = 4, slots = Array(W).fill(null);
+  const rb = () => {
+    const s = clear(document.getElementById('rbSvg'));
+    for (let k = 0; k < W; k++) {
+      const x = 130 + k * 105, hot = t > 0 && (t - 1) % W === k;
+      svg('rect', { x, y: 40, width: 90, height: 60, rx: 9, style: `fill:${hot ? 'var(--b)' : slots[k] === null ? 'var(--panel-2)' : 'var(--a)'}` }, s);
+      svg('text', { x: x + 45, y: 76, 'text-anchor': 'middle', class: 't', style: slots[k] === null ? '' : 'fill:#fff;font-weight:700', text: slots[k] === null ? 'empty' : 'k,v of t=' + slots[k] }, s);
+      svg('text', { x: x + 45, y: 120, 'text-anchor': 'middle', class: 'tm', text: 'slot ' + k }, s);
+    }
+    document.getElementById('rbOut').innerHTML = t === 0 ? 'Empty cache. Press "next token".' : `Token t = ${t - 1} written to slot ${(t - 1) % W} = ${t - 1} mod ${W}. The cache holds tokens ${Math.max(0, t - W)}…${t - 1}, exactly the window. A full cache would now hold ${t} entries; this one never exceeds ${W}.`;
+  };
+  document.getElementById('rbNext').addEventListener('click', () => { slots[t % W] = t; t++; rb(); });
+  document.getElementById('rbReset').addEventListener('click', () => { t = 0; slots.fill(null); rb(); });
+  rb();
+  Deck.seg('aSeg', v => {
+    const h = +v, m = Math.pow(2, -h), N = 12, s = clear(document.getElementById('aSvg')), c = 18, x0 = 200, y0 = 14, maxPen = 11 * 0.5;
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+      if (j > i) { svg('rect', { x: x0 + j * c, y: y0 + i * c, width: c - 2, height: c - 2, rx: 2, style: 'fill:var(--panel-2)' }, s); continue; }
+      const pen = m * (i - j);
+      svg('rect', { x: x0 + j * c, y: y0 + i * c, width: c - 2, height: c - 2, rx: 2, style: `fill:var(--d);opacity:${(0.06 + 0.94 * pen / maxPen).toFixed(3)}` }, s);
+    }
+    svg('text', { x: x0 + N * c / 2, y: y0 + N * c + 20, 'text-anchor': 'middle', class: 'tm', text: 'key position j →' }, s);
+    svg('text', { x: x0 - 10, y: y0 + N * c / 2, 'text-anchor': 'end', class: 'tm', text: 'query i ↓' }, s);
+    svg('text', { x: 460, y: 60, class: 't', text: `slope m = 1/${Math.pow(2, h)}` }, s);
+    svg('text', { x: 460, y: 86, class: 'tm', text: `bias at distance 1: −${m.toPrecision(2)}` }, s);
+    svg('text', { x: 460, y: 108, class: 'tm', text: `bias at distance 11: −${(11 * m).toPrecision(2)}` }, s);
+    svg('text', { x: 460, y: 130, class: 'tm', text: `bias at distance 1,000: −${(1000 * m).toPrecision(3)}` }, s);
+  });
+
+})();
+</script>
+</body>
+</html>

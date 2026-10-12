@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoPE</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="RoPE" data-home="../index.html" data-home-label="Architecture">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">The Modern LLM · 03</div>
+    <h1>Rotary position embeddings (RoPE)</h1>
+    <p class="sub">How rotating queries and keys by an angle proportional to position makes attention depend only on the distance between tokens, with no position vector added anywhere.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Attention is order-blind. The 2017 fix adds a position vector to each token embedding, which mixes position into content and lets attention see relative distance only indirectly.</div>
+      <div class="c"><b>Core idea</b>Split q and k into 2-D pairs and <b>rotate</b> pair i by angle <b>m·θᵢ</b> at position m, with θᵢ = 10000<sup>−2i/d</sup>. The dot product of two rotated vectors depends only on the angle <b>difference</b>, so q·k depends on <b>m − n</b>.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Attention can't see order by itself</h2>
+    <hr>
+    <p class="lede">Self-attention scores every pair of tokens with q·k. Shuffle the input tokens and each token gets exactly the same scores, just permuted. "dog bites man" and "man bites dog" would look identical. Position has to be injected somehow.</p>
+    <div class="grid2">
+      <div class="card b"><h3>The 2017 answer: add a vector</h3><p>x₀ = embedding(token) + PE(position), once, at the input. Every later layer has to untangle "what" from "where" inside the same vector. Recap: <a href="../../transformer/07-positional-encoding/index.html">Transformer deck 07</a>.</p></div>
+      <div class="card a"><h3>What attention actually needs</h3><p>Mostly <b>relative</b> information: "the word two to my left", "the subject of this clause". A score that depends on m − n directly would be ideal, and it should keep working when the whole sequence shifts.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Limits of added position vectors</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Absolute, not relative</h3><p>With x + PE, the score (x_m + p_m)·W·(x_n + p_n) has content-position cross terms. Relative distance appears only through how the network learns to combine them.</p></div>
+      <div class="card b"><h3>Added once, diluted later</h3><p>The position signal enters at layer 0 and has to survive every residual update to be useful in layer 40.</p></div>
+      <div class="card c"><h3>Learned tables stop at L</h3><p>GPT-2-style learned position embeddings have exactly 1,024 rows. Position 1,025 has no vector at all.</p></div>
+    </div>
+    <div class="deep"><h4>Relative position attempts before RoPE</h4><p>Relative-position schemes (Shaw et al. 2018; T5's bucketed biases) add learned terms that depend on m − n to the attention scores. They work, but they need extra tables or bias terms, and RoFormer argues they are awkward to combine with linear-attention variants. RoPE gets relative behaviour from a fixed rotation with <b>no learned parameters</b>.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Rotate both, compare</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Rotate query q by angle mθ and key k by angle nθ in the same plane. Their dot product depends on…</p>
+      <div class="opts">
+      <button>A. m only</button>
+      <button>B. n only</button>
+      <button data-ok>C. m − n only (plus the vectors themselves)</button>
+      <button>D. m + n</button>
+      </div>
+      <div class="why"><b>C.</b> A dot product depends only on the vectors' lengths and the angle between them. Rotating q by mθ and k by nθ changes that angle by (m − n)θ. Shift both positions by the same amount and nothing changes. RoFormer: "the inner product encodes position information only in the relative form."</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>The RoPE recipe</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>1. Pair up dimensions</h3><p>Split a d-dimensional q (or k) into d/2 pairs: (x₀,x₁), (x₂,x₃), … Treat each pair as a point in a 2-D plane, or as a complex number x₂ᵢ + i·x₂ᵢ₊₁.</p></div>
+      <div class="card b"><h3>2. Give each pair a speed</h3><p>θᵢ = base<sup>−2i/d</sup>, base = 10,000 (RoFormer, LLaMA) or 500,000 (Llama 3). Pair 0 turns about once every 6 tokens; the last pair takes tens of thousands of tokens per turn.</p></div>
+      <div class="card e"><h3>3. Rotate by position</h3><p>At position m, rotate pair i by m·θᵢ. Do this to q and k in <b>every attention layer</b>, after the projections. Values are not rotated, and nothing is added to the residual stream.</p></div>
+    </div>
+    <div class="eq">q′ₘ · k′ₙ = Re[ Σᵢ qᵢ · conj(kᵢ) · e<sup>i(m−n)θᵢ</sup> ]   (pairs written as complex numbers)</div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>One pair, two tokens: only the gap matters</h2>
+    <hr>
+    <p class="lede">The left dial shows one pair of the query at position m; the right shows one pair of the key at position n. The score contribution is their dot product. Drag m and n, then use "shift both" to slide the pair along the sequence without changing the gap.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Query position m <input type="range" id="rM" min="0" max="60" step="1" value="12"> <output id="rMo"></output></label>
+        <label class="ctl">Key position n <input type="range" id="rN" min="0" max="60" step="1" value="9"> <output id="rNo"></output></label>
+        <div class="seg" id="rPair"><button data-v="0" class="on">pair 0 (fast)</button><button data-v="2">pair 2</button><button data-v="5">pair 5 (slow)</button></div>
+        <button class="btn" id="rShift">shift both +10</button>
+      </div>
+      <svg id="rSvg" viewBox="0 0 660 230" style="margin-top:10px" role="img" aria-label="Rotated query and key"></svg>
+      <p class="readout" id="rOut"></p>
+    </div>
+    <p class="caption">d = 16 here (8 pairs), base 10,000, so θ₀ = 1 rad/token, θ₂ = 0.1, θ₅ ≈ 0.0032. Real heads use d = 128 (64 pairs).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Many speeds: the frequency spectrum and long-term decay</h2>
+    <hr>
+    <p class="lede">Each pair rotates at its own speed. Fast pairs separate nearby positions; slow pairs separate far-apart ones. For q = k (all ones) the total score drifts down as the distance grows. RoFormer calls this <b>long-term decay</b>: distant tokens interact more weakly by default.</p>
+    <div class="visual">
+      <div class="seg" id="bSeg"><button data-v="10000" class="on">base 10,000 (Llama 2)</button><button data-v="500000">base 500,000 (Llama 3)</button></div>
+      <svg id="dSvg" viewBox="0 0 660 240" style="margin-top:10px" role="img" aria-label="Score vs distance"></svg>
+      <p class="readout" id="dOut"></p>
+    </div>
+    <div class="deep"><h4>Wavelengths for d = 128, base 10,000</h4><p>Tokens per full turn of pair i is 2π/θᵢ: pair 0 ≈ <b>6</b>, pair 16 ≈ <b>63</b>, pair 32 ≈ <b>628</b>, pair 48 ≈ <b>6,283</b>, pair 63 ≈ <b>54,410</b> (computed in notebook 02). Pairs whose wavelength exceeds the training length never complete a turn during training. That fact is the key to long-context extension in deck 07.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why RoPE won</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Relative by construction</h3><p>The score depends on m − n, proven in one line with complex numbers. The model doesn't have to learn to undo absolute positions.</p></div>
+      <div class="card e"><h3>Zero parameters, nothing added to the stream</h3><p>A fixed rotation, applied inside attention, in every layer. The residual stream carries content only, and every layer gets fresh position information.</p></div>
+      <div class="card b"><h3>Plays well with the KV cache</h3><p>A key's rotation depends only on its own position, so it is rotated once when written to the cache and never touched again. (Relative-bias schemes recompute per pair.)</p></div>
+      <div class="card c"><h3>Adopted everywhere</h3><p>GPT-NeoX/GPT-J, PaLM ("better performance on long sequences"), LLaMA, Mistral and most open models since. Its main weakness, behaviour beyond the trained length, has its own family of fixes (deck 07).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"RoPE adds a position vector to the token embeddings."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Nothing is added. RoPE <b>multiplies</b> (rotates) q and k inside each attention layer. The residual stream never sees a position vector.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"RoPE is applied to the values too."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Only <b>queries and keys</b> are rotated, because only their dot product needs position. Values carry content to the output unchanged.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"With RoPE a model works at any length."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The maths extends to any position, but the model never saw the large angles of slow pairs beyond its training length, so quality collapses without scaling or long-context training (deck 07).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">For head dimension d = 128 and base 10,000, what is θ for pair i = 0?</p>
+      <div class="opts">
+      <button>A. 10,000</button>
+      <button data-ok>B. 1 radian per token</button>
+      <button>C. 1/128</button>
+      <button>D. 2π</button>
+      </div>
+      <div class="why"><b>B.</b> θ₀ = 10000<sup>0</sup> = 1 rad/token, about one full turn every 6.3 tokens. The fastest pair.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why does shifting every position by the same amount leave all RoPE attention scores unchanged?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Each score depends on the angle between rotated q and k, which is (m − n)θᵢ for each pair. Adding the same shift to m and n leaves m − n unchanged.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Llama 3 raised the RoPE base from 10,000 to 500,000. What does that do to the rotation speeds?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Every θᵢ = base<sup>−2i/d</sup> gets smaller except pair 0, so pairs rotate more slowly and wavelengths stretch. More pairs stay distinguishable over long distances, which supports longer contexts.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">RoPE rotates each 2-D slice of q and k by position × frequency, so attention scores depend only on the distance between tokens.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Attention is order-blind, so position has to be injected. The 2017 Transformer added a position vector at the input. RoPE instead splits each query and key into 2-D pairs and rotates pair i by the position times a frequency theta-i, which ranges from about one turn every six tokens down to one turn every fifty thousand. A dot product depends only on the angle between the two vectors, so the score depends only on m minus n: relative position for free, with no parameters, nothing added to the residual stream, and keys that are rotated once when cached. The slow pairs are why extending context needs care.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> attention is permutation-invariant; added position vectors are absolute and diluted.</span></div><div><span><b>Core idea:</b> rotate q and k pairs by m·θᵢ; q·k depends on m − n.</span></div><div><span><b>Spectrum:</b> θᵢ = base^(−2i/d); fast pairs for local order, slow pairs for long range; base 10K → 500K in Llama 3.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/02_rope.ipynb" target="_blank" rel="noopener">02 · Rotary position embeddings (RoPE)</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/architecture/02_rope.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../04-swiglu/index.html">04 · SwiGLU →</a> · Previous: <a href="../02-normalization/index.html">← 02</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Su et al. 2021, "RoFormer: Enhanced Transformer with Rotary Position Embedding" (§3.2–3.4); Touvron et al. 2023 (LLaMA §2.2); Llama Team 2024 (Llama 3 §3.2, RoPE base 500,000); Chowdhery et al. 2022 (PaLM §2). Another visual explainer: murtuzasaifee.github.io/RoPE_Visualization.</p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  let pair = 0;
+  const draw = () => {
+    const m = Deck.val('rM'), n = Deck.val('rN'); Deck.out('rMo', m); Deck.out('rNo', n);
+    const th = Math.pow(10000, -2 * pair / 16), q0 = Math.atan2(0.6, 1), k0 = Math.atan2(-0.3, 1);
+    const qa = q0 + m * th, ka = k0 + n * th, qr = 1.166, kr = 1.044;
+    const s = clear(document.getElementById('rSvg'));
+    const dial = (cx, ang0, ang, r, color, label, pos) => {
+      svg('circle', { cx, cy: 110, r: 80, style: 'fill:none;stroke:var(--line)' }, s);
+      svg('line', { x1: cx - 85, x2: cx + 85, y1: 110, y2: 110, class: 'ln' }, s); svg('line', { x1: cx, x2: cx, y1: 25, y2: 195, class: 'ln' }, s);
+      svg('line', { x1: cx, y1: 110, x2: cx + 70 * r * Math.cos(ang0), y2: 110 - 70 * r * Math.sin(ang0), style: 'stroke:var(--faint);stroke-width:2;stroke-dasharray:4 3' }, s);
+      svg('line', { x1: cx, y1: 110, x2: cx + 70 * r * Math.cos(ang), y2: 110 - 70 * r * Math.sin(ang), style: `stroke:${color};stroke-width:4` }, s);
+      svg('circle', { cx: cx + 70 * r * Math.cos(ang), cy: 110 - 70 * r * Math.sin(ang), r: 6, style: `fill:${color}` }, s);
+      svg('text', { x: cx, y: 222, 'text-anchor': 'middle', class: 't', text: `${label} at position ${pos}: rotated ${(pos * th).toFixed(2)} rad` }, s);
+    };
+    dial(150, q0, qa, qr, 'var(--a)', 'q', m); dial(510, k0, ka, kr, 'var(--b)', 'k', n);
+    const score = qr * kr * Math.cos(qa - ka);
+    svg('text', { x: 330, y: 100, 'text-anchor': 'middle', class: 't', style: 'font-weight:700;font-size:15px', text: `q·k = ${score.toFixed(3)}` }, s);
+    svg('text', { x: 330, y: 122, 'text-anchor': 'middle', class: 'tm', text: `m − n = ${m - n}` }, s);
+    document.getElementById('rOut').innerHTML = `Pair ${pair}: θ = ${th.toPrecision(3)} rad/token. Angle between q and k = (q₀ − k₀) + (m − n)·θ = <b>${(qa - ka).toFixed(3)} rad</b>. Try "shift both": m and n move, the score doesn't.`;
+  };
+  Deck.bind(['rM', 'rN'], draw);
+  Deck.seg('rPair', v => { pair = +v; draw(); });
+  document.getElementById('rShift').addEventListener('click', () => {
+    const M = document.getElementById('rM'), N = document.getElementById('rN');
+    if (+M.value + 10 > 60 || +N.value + 10 > 60) { M.value = Math.max(0, +M.value - 40); N.value = Math.max(0, +N.value - 40); } else { M.value = +M.value + 10; N.value = +N.value + 10; }
+    draw();
+  });
+  Deck.seg('bSeg', v => {
+    const base = +v, d = 128, th = [...Array(64)].map((_, i) => Math.pow(base, -2 * i / d));
+    const score = dist => th.reduce((a, t) => a + Math.cos(dist * t), 0) / 64;
+    const s = clear(document.getElementById('dSvg')), L0 = 60, R0 = 630, T0 = 14, B0 = 190, X = x => L0 + Math.log10(x) / 5 * (R0 - L0), Y = y => B0 - (y + 0.2) / 1.2 * (B0 - T0);
+    [-0.2, 0, 0.5, 1].forEach(v => { svg('line', { x1: L0, x2: R0, y1: Y(v), y2: Y(v), class: 'ln' }, s); svg('text', { x: L0 - 8, y: Y(v) + 4, 'text-anchor': 'end', class: 'tm', text: v }, s); });
+    [1, 10, 100, 1000, 10000, 100000].forEach(v => svg('text', { x: X(v), y: B0 + 18, 'text-anchor': 'middle', class: 'tm', text: v >= 1000 ? (v / 1000) + 'K' : v }, s));
+    let pts = ''; for (let e = 0; e <= 5; e += 0.01) { const x = Math.pow(10, e); pts += `${X(x)},${Y(score(x))} `; }
+    svg('polyline', { points: pts, fill: 'none', style: 'stroke:var(--a);stroke-width:2.5' }, s);
+    svg('text', { x: (L0 + R0) / 2, y: B0 + 40, 'text-anchor': 'middle', class: 'tm', text: 'distance m − n (log scale)' }, s);
+    svg('text', { x: 14, y: (T0 + B0) / 2, 'text-anchor': 'middle', class: 'tm', transform: `rotate(-90 14 ${(T0 + B0) / 2})`, text: 'score (q = k = 1s)' }, s);
+    const at = [100, 1000, 10000].map(x => score(x).toFixed(2));
+    document.getElementById('dOut').innerHTML = `Normalized score at distance 100 / 1K / 10K: <b>${at.join(' / ')}</b>. A larger base keeps the score higher for longer, because every pair (except pair 0) turns more slowly.`;
+  });
+
+})();
+</script>
+</body>
+</html>

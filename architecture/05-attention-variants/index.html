@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MQA, GQA and MLA</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="MQA, GQA and MLA" data-home="../index.html" data-home-label="Architecture">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">The Modern LLM · 05</div>
+    <h1>MQA, GQA and MLA: fewer keys and values</h1>
+    <p class="sub">The modelling side of shrinking the KV cache: sharing key/value heads (MQA, GQA), compressing them into a latent (MLA), and why MLA needs "decoupled" RoPE.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>During generation every layer stores keys and values for every past token and head. That cache, not compute, limits batch size and context length.</div>
+      <div class="c"><b>Core idea</b><b>Share</b> K/V heads across groups of query heads (MQA: 1 group, GQA: g groups), or <b>compress</b> all heads' K/V into one small latent per token and re-expand on the fly (MLA).</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>The cache scales with K/V heads</h2>
+    <hr>
+    <p class="lede">The KV cache stores 2 × layers × <b>K/V heads</b> × head_dim numbers per token. With standard multi-head attention (MHA), every query head has its own K and V. This deck is the architecture view; memory sizes in GB and serving effects are in <a href="../../inference/02-kv-cache/index.html">Inference deck 02</a>.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><label class="ctl">K/V heads (32 query heads) <input type="range" id="kH" min="0" max="5" step="1" value="5"> <output id="kHo"></output></label></div>
+      <svg id="kSvg" viewBox="0 0 660 170" style="margin-top:10px" role="img" aria-label="Query heads sharing KV heads"></svg>
+      <p class="readout" id="kOut"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not just use one K/V head?</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>MQA can lose quality</h3><p>Multi-query attention (Shazeer 2019) shares <b>one</b> K/V head across all query heads. Ainslie et al.: MQA "can lead to quality degradation and training instability".</p></div>
+      <div class="card b"><h3>Training a second model is expensive</h3><p>Pretraining a separate MQA model just for faster inference is costly. Ideally you could convert an existing MHA checkpoint.</p></div>
+      <div class="card c"><h3>Tensor parallelism wants ≥ 1 K/V head per GPU</h3><p>With one K/V head and 8-way tensor parallelism, that head is replicated on every GPU, which wastes the saving. A few groups split cleanly across GPUs.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Count the groups</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Llama 3 70B has 64 query heads and 8 key/value heads. How many query heads share each K/V head, and how much smaller is the KV cache than MHA?</p>
+      <div class="opts">
+      <button data-ok>A. 8 each; 8× smaller</button>
+      <button>B. 64 each; 64× smaller</button>
+      <button>C. 8 each; 64× smaller</button>
+      <button>D. They don't share; same size</button>
+      </div>
+      <div class="why"><b>A.</b> 64 / 8 = 8 query heads per K/V head. The cache scales with the number of K/V heads, so it is 64 / 8 = <b>8×</b> smaller than MHA with 64 K/V heads.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Share or compress</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card b"><h3>MQA (2019)</h3><p>All query heads share <b>one</b> K and one V. Smallest cache (2·d_h per layer per token); PaLM used it. Risk: quality loss.</p></div>
+      <div class="card a"><h3>GQA (2023)</h3><p>Query heads split into <b>g groups</b>; each group shares one K/V head. g = 1 is MQA; g = heads is MHA. "Quality close to multi-head attention with comparable speed to multi-query." Llama 2 (34B, 70B), Mistral, Llama 3.</p></div>
+      <div class="card e"><h3>MLA (2024)</h3><p>Cache one <b>latent vector</b> c (d_c = 512 in DeepSeek-V2) per token and layer, and up-project to every head's K and V when needed. A small extra slice carries RoPE.</p></div>
+    </div>
+    <div class="deep"><h4>Converting MHA into GQA</h4><p>Ainslie et al. convert a trained multi-head checkpoint: the key and value projection matrices within each group are <b>mean-pooled</b> into one head (mean pooling worked better than picking one head or random init), then the model is <b>uptrained</b> for about <b>5%</b> of its original pretraining compute. Uptrained GQA reached quality close to MHA with speed close to MQA.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>MLA step by step</h2>
+    <hr>
+    <p class="lede">Step through what DeepSeek-V2 computes for one token, and what goes into the cache.</p>
+    <div class="visual">
+      <div class="seg" id="mSeg"><button data-v="0" class="on">1 · compress</button><button data-v="1">2 · expand (naive)</button><button data-v="2">3 · absorb</button><button data-v="3">4 · RoPE problem</button><button data-v="4">5 · decoupled RoPE</button></div>
+      <svg id="mSvg" viewBox="0 0 660 200" style="margin-top:10px" role="img" aria-label="MLA data flow"></svg>
+      <div class="infobox" id="mInfo" style="background:var(--panel-2);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:14px;color:var(--muted)"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Cache per token, per layer: the numbers</h2>
+    <hr>
+    <p class="lede">DeepSeek-V2's comparison (Table 1) in numbers of elements per token per layer, with its dimensions: n_h = 128 heads, d_h = 128, d_c = 512, RoPE slice d_h<sup>R</sup> = 64.</p>
+    <div class="visual"><div id="cBars"></div></div>
+    <div class="deep"><h4>Reading the table</h4><p>MHA: 2·n_h·d_h. GQA: 2·n_g·d_h. MQA: 2·d_h. MLA: d_c + d_h<sup>R</sup> ≈ (9/2)·d_h, "equal to GQA with only 2.25 groups", while the paper reports <b>stronger</b> performance than MHA. Against DeepSeek 67B, DeepSeek-V2 reports a <b>93.3%</b> smaller KV cache and <b>5.76×</b> higher maximum generation throughput (that comparison also includes other changes, such as MoE and FP8 KV).</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why sharing works, and what each option costs</h2>
+    <hr>
+    <div class="visual scroll-x"><table class="tbl">
+      <tr><th></th><th>MHA</th><th>GQA</th><th>MQA</th><th>MLA</th></tr>
+      <tr><td>KV cache / token / layer</td><td>2·n_h·d_h</td><td>2·g·d_h</td><td>2·d_h</td><td>d_c + d_R</td></tr>
+      <tr><td>Quality</td><td>baseline</td><td>close to MHA</td><td>can degrade</td><td>reported ≥ MHA</td></tr>
+      <tr><td>Extra compute</td><td>none</td><td>none</td><td>none</td><td>up-projections, absorbed into Q and O at inference</td></tr>
+      <tr><td>Works with plain RoPE</td><td>yes</td><td>yes</td><td>yes</td><td>no: needs decoupled RoPE</td></tr>
+      <tr><td>Used by</td><td>GPT-3, LLaMA 1</td><td>Llama 2 70B, Mistral, Llama 3</td><td>PaLM</td><td>DeepSeek-V2, V3</td></tr>
+    </table></div>
+    <div class="deep"><h4>Why sharing barely hurts</h4><p>Decoding is memory-bound: each step reads the whole KV cache to produce one token per sequence. Query heads still differ, and each one attends to the shared keys in its own way, so the model keeps most of its capacity to look for different things. What it loses is the ability to <b>store</b> different keys per head. GQA's groups and MLA's per-head up-projections recover much of that.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"MQA means attention with a single head."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">There are still many <b>query</b> heads, each attending differently. Only the keys and values are shared.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"GQA mainly saves FLOPs."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The FLOPs for attention scores barely change, because every query head still computes its scores. GQA saves <b>KV-cache memory and memory bandwidth</b>, which is what limits decoding.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"MLA is just low-rank GQA, and RoPE works the same."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">MLA's trick depends on absorbing W_UK into W_Q, and RoPE's position-dependent rotation sits between them and breaks that. DeepSeek-V2 needs a separate decoupled RoPE slice with a key shared across heads.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">GQA with g = 1 is…</p>
+      <div class="opts">
+      <button>A. MHA</button>
+      <button data-ok>B. MQA</button>
+      <button>C. MLA</button>
+      <button>D. Sliding-window attention</button>
+      </div>
+      <div class="why"><b>MQA</b>: one group, so one K/V head shared by every query head.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">How do you turn a trained MHA model into a GQA model cheaply?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Mean-pool the K and V projection matrices of the heads in each group into one head, then uptrain for about 5% of the original pretraining compute (Ainslie et al., 2023).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why can't MLA simply apply RoPE to its reconstructed keys?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Inference relies on precomputing W_Q·W_UKᵀ so keys never get decompressed. RoPE inserts a rotation that depends on both positions between those matrices, so no single precomputed matrix works. DeepSeek-V2 carries position in a separate small RoPE query/key slice instead.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">The KV cache scales with K/V heads: share them (MQA, GQA) or compress them into a latent (MLA). MLA needs decoupled RoPE to keep its absorption trick.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>During decoding, memory, not compute, is the limit, and the KV cache scales with the number of key/value heads. MQA shares one K/V head across all query heads; it is smallest but can lose quality. GQA uses a few groups, gets quality close to MHA at near-MQA speed, and an existing model can be converted by mean-pooling heads and uptraining for about 5% of the original compute. MLA, from DeepSeek-V2, caches one small latent per token and re-expands it per head; at inference the up-projection is absorbed into the query projection so keys are never materialized. RoPE would break that absorption, so MLA adds a small decoupled RoPE slice.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> KV cache per token = 2 × layers × K/V heads × head_dim.</span></div><div><span><b>Share:</b> MQA (1 group) and GQA (g groups): cache shrinks by heads/g; convert by mean-pool + 5% uptraining.</span></div><div><span><b>Compress:</b> MLA caches d_c + d_R ≈ 4.5·d_h; absorption + decoupled RoPE.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/04_mla_absorption.ipynb" target="_blank" rel="noopener">04 · Multi-head latent attention (MLA) and weight absorption</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/architecture/04_mla_absorption.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../06-decoder-only/index.html">06 · Decoder-only, and why it won →</a> · Previous: <a href="../04-swiglu/index.html">← 04</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Shazeer 2019, "Fast Transformer Decoding: One Write-Head is All You Need"; Ainslie et al. 2023, "GQA" (EMNLP; mean-pooling, 5% uptraining); Chowdhery et al. 2022 (PaLM §2, MQA); Touvron et al. 2023 (Llama 2 Table 1); DeepSeek-AI 2024, DeepSeek-V2 (§2.1, Table 1); Llama 3 §3.2.</p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const KV = [1, 2, 4, 8, 16, 32];
+  Deck.bind(['kH'], () => {
+    const g = KV[Deck.val('kH')], s = clear(document.getElementById('kSvg')), name = g === 1 ? 'MQA' : g === 32 ? 'MHA' : 'GQA';
+    Deck.out('kHo', `${g} (${name})`);
+    for (let i = 0; i < 32; i++) {
+      const x = 14 + i * 20, grp = Math.floor(i / (32 / g)), gx = 14 + (grp + 0.5) * (640 / g) - 8;
+      svg('line', { x1: x + 8, y1: 40, x2: gx + 8, y2: 118, style: `stroke:hsl(${grp * 360 / g},55%,55%);stroke-width:1.2;opacity:.7` }, s);
+      svg('rect', { x, y: 20, width: 16, height: 20, rx: 3, style: `fill:hsl(${grp * 360 / g},55%,55%)` }, s);
+    }
+    for (let j = 0; j < g; j++) { const gx = 14 + (j + 0.5) * (640 / g) - 8; svg('rect', { x: gx, y: 118, width: 16, height: 26, rx: 3, style: `fill:hsl(${j * 360 / g},55%,40%)` }, s); }
+    svg('text', { x: 4, y: 14, class: 'tm', style: 'font-size:11px', text: '32 query heads' }, s); svg('text', { x: 4, y: 162, class: 'tm', style: 'font-size:11px', text: `${g} K/V head${g > 1 ? 's' : ''} (cached)` }, s);
+    const bytes = 2 * 32 * g * 128 * 2;
+    document.getElementById('kOut').innerHTML = `${32 / g} query heads per K/V head. KV cache per token (32 layers, head_dim 128, BF16): <b>${Deck.bytes(bytes)}</b>, which is <b>${32 / g}×</b> smaller than MHA. Llama 3 8B uses 8.`;
+  });
+  const STEPS = [
+    ['<b>Compress.</b> c = x·W<sup>DKV</sup>: one d_c-wide latent (512 in DeepSeek-V2) per token per layer. <b>This is what gets cached</b>, instead of 128 heads × (K + V).', ['x', 'c (cached)']],
+    ['<b>Expand, naively.</b> Each head\'s key is k_h = c·W<sup>UK</sup>_h and value v_h = c·W<sup>UV</sup>_h. Doing this for every cached token at every step would cost a lot of compute and give back the memory you saved.', ['c (cached)', 'k_h, v_h for all heads']],
+    ['<b>Absorb.</b> q_h·k_hᵀ = x·(W<sup>Q</sup>_h W<sup>UK</sup>_hᵀ)·cᵀ. Precompute the product once and the query goes straight into latent space; keys are never materialized. W<sup>UV</sup> is absorbed into the output projection the same way. Notebook 04 checks this is exact.', ['x → latent query', 'score against c directly']],
+    ['<b>The RoPE problem.</b> With RoPE the key is R_t·(c_t W<sup>UK</sup>_h), where the rotation R_t depends on the key\'s position. The middle matrix becomes W<sup>Q</sup>_h R_mᵀ R_t W<sup>UK</sup>_hᵀ, which differs for every pair of positions, so it can\'t be precomputed. DeepSeek-V2: "RoPE is incompatible with low-rank KV compression."', ['absorbed matrix', 'depends on m and t ✗']],
+    ['<b>Decoupled RoPE.</b> Keep the latent path position-free, and add a small extra slice (d_h<sup>R</sup> = 64) per head for queries plus <b>one RoPE key shared by all heads</b>, cached next to c. Score = content part + RoPE part. Cache per token: d_c + d_h<sup>R</sup> = 576 numbers per layer.', ['c (512) + k^R (64)', 'cached: 576 per layer']],
+  ];
+  Deck.seg('mSeg', v => {
+    const [txt, labels] = STEPS[+v], s = clear(document.getElementById('mSvg'));
+    const box = (x, w, label, cls) => { svg('rect', { x, y: 70, width: w, height: 56, rx: 9, class: cls }, s); svg('text', { x: x + w / 2, y: 103, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:600', text: label }, s); };
+    box(30, 220, labels[0], 'f-a'); box(410, 220, labels[1], +v === 3 ? 'f-d' : 'f-e');
+    svg('line', { x1: 255, x2: 400, y1: 98, y2: 98, style: 'stroke:var(--muted);stroke-width:2.5' }, s);
+    svg('path', { d: 'M392 90 L404 98 L392 106', fill: 'none', style: 'stroke:var(--muted);stroke-width:2.5' }, s);
+    svg('text', { x: 330, y: 160, 'text-anchor': 'middle', class: 'tm', text: ['W^DKV: d → d_c', 'W^UK, W^UV per head', 'W^Q·W^UKᵀ precomputed', 'R_m, R_t in the middle', 'separate RoPE slice'][+v] }, s);
+    document.getElementById('mInfo').innerHTML = txt;
+  });
+  (() => {
+    const rows = [['MHA', 2 * 128 * 128], ['GQA, 8 groups', 2 * 8 * 128], ['MLA (d_c + d_R)', 576], ['MQA', 2 * 128]];
+    Deck.hbars(document.getElementById('cBars'), rows.map(([n, v]) => ({ label: n, value: v, color: n.startsWith('MLA') ? 'var(--e)' : n === 'MHA' ? 'var(--d)' : 'var(--a)', text: v.toLocaleString() + ` (${(100 * v / 32768).toFixed(1)}%)` })), { log: true, min: 100 });
+  })();
+
+})();
+</script>
+</body>
+</html>

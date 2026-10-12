@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Changed Since 2017</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+<style>.cfg{font:500 13px/1.75 "JetBrains Mono",monospace;background:var(--panel-2);border-radius:10px;padding:12px 14px;margin:0;overflow-x:auto}.cfg span{cursor:pointer;border-radius:4px;padding:1px 3px}.cfg span:hover{background:var(--a-soft)}.cfg span.on{background:var(--b-soft);outline:1px solid var(--b)}</style>
+</head>
+<body data-deck="What changed since 2017" data-home="../index.html" data-home-label="Architecture">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">The Modern LLM · 01</div>
+    <h1>What changed since 2017</h1>
+    <p class="sub">The 2017 Transformer and a 2024 Llama block side by side: seven changes, what problem each one solved, and where each is explained in this guide.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>The 2017 Transformer was built for translation on 8 GPUs. Scaling it to hundreds of billions of parameters, long contexts and millions of users exposed problems in training stability, position handling, FFN quality, inference memory and attention speed.</div>
+      <div class="c"><b>Core idea</b>Modern LLMs keep the 2017 skeleton (attention + FFN + residuals) and swap specific parts: <b>pre-norm RMSNorm</b>, <b>RoPE</b>, <b>SwiGLU</b>, <b>GQA/MLA</b>, a <b>decoder-only</b> stack, <b>long-context</b> tricks and <b>FlashAttention</b>, with <b>MoE</b> for the largest models.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Same skeleton, different parts</h2>
+    <hr>
+    <p class="lede">Pick a change to see which part of the block it replaced. Left: one decoder layer as described in 2017. Right: a Llama 3 layer. Both are a stack of identical layers with residual connections. What changed is inside the boxes.</p>
+    <div class="visual">
+      <div class="seg" id="chSeg" style="flex-wrap:wrap"><button data-v="normpos" class="on">Norm placement</button><button data-v="normtype">Norm type</button><button data-v="pos">Position</button><button data-v="ffn">FFN</button><button data-v="heads">K/V heads</button><button data-v="family">Stack</button><button data-v="kernel">Attention kernel</button></div>
+      <svg id="cmpSvg" viewBox="0 0 660 340" style="margin-top:10px" role="img" aria-label="2017 block vs Llama 3 block"></svg>
+      <div class="infobox" id="chInfo" style="background:var(--panel-2);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:14px;color:var(--muted)"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>What broke when the 2017 design was scaled up</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Training stability</h3><p>Post-norm (a LayerNorm after each residual add) gives large gradients near the output at initialization. It needs a carefully tuned learning-rate warm-up, and deeper stacks make this worse (Xiong et al., 2020).</p></div>
+      <div class="card b"><h3>Position handling</h3><p>Sinusoidal or learned vectors are <b>added</b> to the token embedding, so position is mixed into the content. Attention sees relative distance only indirectly, and learned positions don't exist beyond the trained length.</p></div>
+      <div class="card c"><h3>Inference memory</h3><p>Every head keeps its own keys and values. During generation that KV cache, not compute, limits batch size and context (Inference deck 02).</p></div>
+      <div class="card a"><h3>FFN quality per parameter</h3><p>The ReLU FFN holds about two thirds of a layer's weights. A gated variant (SwiGLU) gets lower perplexity at the same parameter count (Shazeer, 2020).</p></div>
+      <div class="card e"><h3>Attention is memory-bound</h3><p>A plain implementation writes the N×N score matrix to GPU memory and reads it back. At long N that traffic, not FLOPs, sets the runtime (Dao et al., 2022).</p></div>
+      <div class="card d"><h3>Two stacks for one job</h3><p>An encoder-decoder needs separate inputs, targets and cross-attention. For "continue this text" a single causal stack is simpler, and it learns from every token.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which change is mostly about serving cost?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">Which of these changes mainly reduces memory at inference time, rather than improving training quality?</p>
+      <div class="opts">
+      <button>A. RMSNorm instead of LayerNorm</button>
+      <button>B. SwiGLU instead of ReLU</button>
+      <button data-ok>C. Grouped-query attention (fewer K/V heads)</button>
+      <button>D. RoPE instead of sinusoidal embeddings</button>
+      </div>
+      <div class="why"><b>C.</b> GQA lets several query heads share one key/value head, so the KV cache shrinks by the sharing factor (8× for Llama 3 with 64 query heads per 8 KV heads in 70B). PaLM reported MQA as roughly neutral for quality and training speed but a significant saving at decoding time. The others mainly help training speed, stability or quality.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>The seven swaps, in one table</h2>
+    <hr>
+    <div class="visual scroll-x"><table class="tbl">
+      <tr><th>Part</th><th>2017</th><th>Modern default</th><th>Problem it solves</th><th>Deck</th></tr>
+      <tr><td>Norm placement</td><td>Post-norm: Norm(x + F(x))</td><td><b>Pre-norm</b>: x + F(Norm(x)), plus a final norm</td><td>Stable training without warm-up, even when deep</td><td>02</td></tr>
+      <tr><td>Norm type</td><td>LayerNorm (centre + scale)</td><td><b>RMSNorm</b> (scale only)</td><td>Fewer operations, same quality</td><td>02</td></tr>
+      <tr><td>Position</td><td>Sinusoidal vector added at the input</td><td><b>RoPE</b>: rotate q and k in every layer</td><td>Attention depends on relative distance; nothing added to the residual stream</td><td>03, 07</td></tr>
+      <tr><td>FFN</td><td>ReLU, hidden 4d, 2 matrices</td><td><b>SwiGLU</b>, hidden ≈ ⅔·4d, 3 matrices</td><td>Better perplexity for the same parameters</td><td>04</td></tr>
+      <tr><td>K/V heads</td><td>One K/V per query head</td><td><b>GQA</b> (or MQA, or MLA)</td><td>Smaller KV cache, faster decoding</td><td>05</td></tr>
+      <tr><td>Stack</td><td>Encoder-decoder</td><td><b>Decoder-only</b>, causal mask</td><td>One stack, every token is a training target, natural fit for chat and KV caching</td><td>06</td></tr>
+      <tr><td>Attention kernel</td><td>Materialize the N×N matrix</td><td><b>FlashAttention</b> (tiled, exact)</td><td>Memory linear in N, far less HBM traffic</td><td>09</td></tr>
+    </table></div>
+    <div class="deep"><h4>Also new, but not in every model</h4><ul><li><b>Long context</b>: RoPE scaling (PI, NTK-aware, YaRN), larger RoPE base, sliding-window attention. Decks 07 and 08.</li><li><b>Mixture of Experts</b>: replace the FFN with many expert FFNs and a router. Mixtral and DeepSeek-V2. Deck 10.</li><li><b>No biases</b> in linear layers and norms (PaLM: "this results in increased training stability for large models"). Llama's config also has <code>attention_bias: false</code>.</li></ul></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>How the recipe accumulated, model by model</h2>
+    <hr>
+    <p class="lede">No single paper introduced the modern block. Each model adopted a few changes, and the combination that LLaMA published in 2023 became the default. Only details stated in each paper are listed. A dot means the paper doesn't say.</p>
+    <div class="visual scroll-x"><table class="tbl">
+      <tr><th>Model</th><th>Norm</th><th>Position</th><th>FFN</th><th>Attention</th><th>Notable</th></tr>
+      <tr><td>Transformer (2017)</td><td>post-norm LayerNorm</td><td>sinusoidal, added</td><td>ReLU</td><td>MHA</td><td>encoder-decoder</td></tr>
+      <tr><td>GPT-2 (2019)</td><td><b>pre-norm</b> + final LN</td><td>learned, added</td><td>·</td><td>MHA</td><td>decoder-only, 1024 context</td></tr>
+      <tr><td>PaLM (2022)</td><td>pre-norm, no biases</td><td><b>RoPE</b></td><td><b>SwiGLU</b></td><td><b>MQA</b></td><td>parallel attention + MLP, 256K vocab</td></tr>
+      <tr><td>LLaMA (2023)</td><td>pre-norm <b>RMSNorm</b></td><td>RoPE</td><td>SwiGLU, ⅔·4d</td><td>MHA</td><td>the recipe that stuck</td></tr>
+      <tr><td>Llama 2 (2023)</td><td>pre-norm RMSNorm</td><td>RoPE</td><td>SwiGLU</td><td><b>GQA</b> (34B, 70B)</td><td>4K context</td></tr>
+      <tr><td>Mistral 7B (2023)</td><td>·</td><td>RoPE</td><td>·</td><td>GQA (8 KV heads)</td><td><b>sliding window</b> 4096</td></tr>
+      <tr><td>Mixtral (2024)</td><td>as Mistral 7B</td><td>RoPE</td><td>SwiGLU <b>experts</b></td><td>GQA</td><td><b>MoE</b> 8 experts, top-2; dense 32K context</td></tr>
+      <tr><td>DeepSeek-V2 (2024)</td><td>·</td><td>decoupled RoPE</td><td>DeepSeekMoE</td><td><b>MLA</b></td><td>236B total, 21B active</td></tr>
+      <tr><td>Llama 3 (2024)</td><td>pre-norm RMSNorm</td><td>RoPE, base <b>500,000</b></td><td>SwiGLU</td><td>GQA, 8 KV heads (all sizes)</td><td>128K vocab, document mask</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Read a real config.json</h2>
+    <hr>
+    <p class="lede">These fields are from the published config.json of Meta-Llama-3-8B (a subset; the file also has token ids, dtype and similar). Click any field to see which concept it controls. Being able to read a config like this and explain each line is a quick test of the whole guide.</p>
+    <div class="visual">
+      <div class="grid2" style="align-items:start">
+        <pre class="cfg" id="cfg"></pre>
+        <div class="infobox" id="cfgInfo" style="background:var(--panel-2);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--muted)">Click a field on the left.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why these changes stuck</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>They are cheap to adopt</h3><p>Each swap changes one sub-component and keeps the residual stream and the attention + FFN layout. They compose: you can take all of them at once, as LLaMA did.</p></div>
+      <div class="card e"><h3>They target scale problems</h3><p>Pre-norm and RMSNorm address stability and speed at depth. GQA and MLA address serving memory. FlashAttention and RoPE scaling address long sequences. These problems only appeared at scale.</p></div>
+      <div class="card b"><h3>They were tested in public</h3><p>Shazeer's GLU ablation, Xiong's norm analysis, RoFormer and the GQA uptraining study each report controlled comparisons, and open model families then confirmed the combination.</p></div>
+      <div class="card c"><h3>Inference shaped training</h3><p>Several changes (MQA/GQA/MLA, sliding windows, MoE's active parameters) exist mainly because a model is served billions of times after it is trained once.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"Modern LLMs use a completely different architecture from the 2017 Transformer."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The skeleton is the same: token embeddings, a stack of attention + FFN layers with residual connections, and a softmax output. The changes are <b>targeted swaps</b> inside that skeleton.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Each change was invented by the model that made it famous."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Mostly not. LLaMA credits pre-normalization to GPT-3, SwiGLU to PaLM (and Shazeer 2020), and rotary embeddings to GPT-Neo (and Su et al. 2021). Its contribution was the combination and the open release.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"These changes are mostly about accuracy."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Many are about <b>cost</b>: RMSNorm (speed), GQA/MLA (KV memory), FlashAttention (memory traffic), MoE (FLOPs per token). Quality had to stay roughly the same; the cost went down.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">In a pre-norm block, where is the normalization applied?</p>
+      <div class="opts">
+      <button>A. After the residual addition</button>
+      <button data-ok>B. To the input of each sub-layer, inside the residual branch</button>
+      <button>C. Only once, at the end of the network</button>
+      <button>D. To the attention weights</button>
+      </div>
+      <div class="why"><b>B.</b> x + F(Norm(x)). The residual path itself is never normalized, so a final norm is added before the output head.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Llama 3 8B has num_attention_heads 32 and num_key_value_heads 8. What does that mean, and what does it buy?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">It uses <b>GQA</b>: groups of 4 query heads share one key/value head. The KV cache is 4× smaller than with full multi-head attention, which means more concurrent sequences or longer contexts per GPU.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Name the parts of a Llama block that differ from the 2017 block, and one reason for each.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Pre-norm (stable without warm-up), RMSNorm (cheaper), RoPE (relative positions; no added vector), SwiGLU (better quality per parameter), GQA (smaller KV cache), decoder-only (one stack, every token trains). FlashAttention is the kernel used to compute the same attention faster.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">A modern LLM is the 2017 Transformer with seven targeted swaps: pre-norm, RMSNorm, RoPE, SwiGLU, shared or compressed K/V heads, a decoder-only stack and an IO-aware attention kernel.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>The skeleton hasn't changed: attention plus FFN layers with residual connections. What changed are the parts that broke at scale. Normalization moved inside the residual branch and became RMSNorm, for stability and speed. Positions became rotations of q and k (RoPE), so attention depends on relative distance. The FFN became a gated SwiGLU. Query heads now share key/value heads (GQA) to shrink the KV cache. Everything runs as a single causal decoder, computed with FlashAttention. Long-context tricks and Mixture-of-Experts sit on top for the models that need them.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> the 2017 block had stability, position, memory and speed problems at scale.</span></div><div><span><b>Core idea:</b> keep the skeleton; swap norm, position, FFN, K/V heads, stack type and kernel.</span></div><div><span><b>Read configs:</b> every field in a config.json maps to one of these decisions.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/10_llama_block.ipynb" target="_blank" rel="noopener">10 · Build a Llama-style decoder block and count its parameters</a> <span style="color:var(--faint)">· 50 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/architecture/10_llama_block.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../02-normalization/index.html">02 · Pre-norm and RMSNorm →</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Vaswani et al. 2017; Radford et al. 2019 (GPT-2 §2.3); Chowdhery et al. 2022 (PaLM §2); Touvron et al. 2023 (LLaMA §2.2; Llama 2 Table 1); Jiang et al. 2023 (Mistral 7B); Jiang et al. 2024 (Mixtral); DeepSeek-AI 2024 (DeepSeek-V2); Llama Team 2024 (Llama 3 §3.2, Table 3); Meta-Llama-3-8B config.json.</p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const L = [
+    { k: 'family', t: 'decoder layer of an encoder-decoder' },
+    { k: 'pos', t: 'token embedding + sinusoidal PE (input only)' },
+    { k: 'heads', t: 'masked self-attention: 8 Q, 8 K, 8 V heads' },
+    { k: 'kernel', t: 'scores N×N written to memory' },
+    { k: 'normpos', t: 'Add, then LayerNorm (post-norm)' },
+    { k: 'cross', t: 'cross-attention to encoder, Add & LayerNorm' },
+    { k: 'ffn', t: 'FFN: ReLU, hidden 4d (2 matrices)' },
+    { k: 'normtype', t: 'Add, then LayerNorm' },
+  ];
+  const R = [
+    { k: 'family', t: 'decoder-only stack, causal mask' },
+    { k: 'pos', t: 'token embedding only (no position vector)' },
+    { k: 'normtype', t: 'RMSNorm (pre-norm, inside the branch)' },
+    { k: 'heads', t: 'GQA (32 Q, 8 K/V heads) + RoPE on q, k' },
+    { k: 'kernel', t: 'FlashAttention: tiled, exact' },
+    { k: 'normpos', t: 'Add (residual is never normalized)' },
+    { k: 'ffn', t: 'RMSNorm, then SwiGLU FFN (3 matrices, ≈⅔·4d)' },
+    { k: 'final', t: 'final RMSNorm before the output head' },
+  ];
+  const INFO = {
+    normpos: '<b>Pre-norm.</b> 2017: x ← Norm(x + F(x)). Modern: x ← x + F(Norm(x)). The residual stream becomes a clean sum of every layer\'s output, which keeps gradients well behaved at initialization and removes the need for warm-up (Xiong et al., 2020). GPT-2 already made this move. <a href="../02-normalization/index.html">Deck 02 →</a>',
+    normtype: '<b>RMSNorm.</b> Drop LayerNorm\'s mean subtraction and bias and keep only division by the root mean square. Zhang & Sennrich (2019) report similar quality with 7–64% less running time. LLaMA adopted it. <a href="../02-normalization/index.html">Deck 02 →</a>',
+    pos: '<b>RoPE.</b> Instead of adding a position vector to the embeddings once, rotate the query and key vectors in every attention layer by an angle proportional to the position. The q·k score then depends only on the distance between tokens. <a href="../03-rope/index.html">Deck 03 →</a>',
+    ffn: '<b>SwiGLU.</b> FFN(x) = (SiLU(xW_gate) ⊙ xW_up)W_down. Three matrices instead of two, so the hidden size drops to about ⅔·4d to keep the parameter count. Lower perplexity in Shazeer\'s 2020 ablation. <a href="../04-swiglu/index.html">Deck 04 →</a>',
+    heads: '<b>GQA.</b> Many query heads share each key/value head. The KV cache shrinks by the sharing factor with little quality loss (Ainslie et al., 2023). MQA (one shared K/V head) and MLA (compressed latent K/V) are the extremes. <a href="../05-attention-variants/index.html">Deck 05 →</a>',
+    family: '<b>Decoder-only.</b> One stack with a causal mask, trained to predict the next token at every position. No separate encoder and no cross-attention. Wang et al. (2022) found causal decoders generalize best zero-shot after self-supervised pretraining alone. <a href="../06-decoder-only/index.html">Deck 06 →</a>',
+    kernel: '<b>FlashAttention.</b> Same maths, different kernel: compute attention in tiles that fit in on-chip SRAM, using an online softmax, so the N×N matrix never goes to HBM. Exact, linear memory in N, and much faster. <a href="../09-flash-attention/index.html">Deck 09 →</a>',
+  };
+  let pick = 'normpos';
+  const draw = () => {
+    const s = clear(document.getElementById('cmpSvg'));
+    const col = (items, x, title) => {
+      svg('text', { x: x + 150, y: 18, 'text-anchor': 'middle', class: 't', style: 'font-weight:700', text: title }, s);
+      items.forEach((b, i) => {
+        const y = 312 - i * 37, on = b.k === pick || (pick === 'normpos' && b.k === 'final' && x > 300);
+        svg('rect', { x, y: y - 24, width: 300, height: 30, rx: 7, style: `fill:${on ? (x < 300 ? 'var(--d-soft)' : 'var(--e-soft)') : 'var(--panel-2)'};stroke:${on ? (x < 300 ? 'var(--d)' : 'var(--e)') : 'var(--line)'};stroke-width:${on ? 2 : 1}` }, s);
+        svg('text', { x: x + 150, y: y - 4, 'text-anchor': 'middle', class: on ? 't' : 'tm', style: on ? 'font-weight:600' : '', text: b.t }, s);
+      });
+    };
+    col(L, 10, '2017 (one decoder layer)'); col(R, 350, 'Llama 3 (one layer)');
+    svg('text', { x: 330, y: 334, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'read each column bottom to top · red = replaced, green = replacement' }, s);
+    document.getElementById('chInfo').innerHTML = INFO[pick];
+  };
+  Deck.seg('chSeg', v => { pick = v; draw(); });
+
+  const CFG = [
+    ['hidden_size', 4096, 'Model width d. Every token is a 4,096-number vector in the residual stream.'],
+    ['num_hidden_layers', 32, 'Number of identical decoder blocks stacked.'],
+    ['num_attention_heads', 32, 'Query heads. Head dimension = 4096 / 32 = 128.'],
+    ['num_key_value_heads', 8, '<b>GQA</b>: only 8 K/V heads, each shared by 4 query heads, so the KV cache is 4× smaller than MHA. 2 × 32 layers × 8 × 128 × 2 bytes = 128 KiB per token in BF16. (Deck 05)'],
+    ['intermediate_size', 14336, '<b>SwiGLU</b> hidden size. 3.5 × d: Meta\'s formula ⅔·4d × 1.3, rounded up to a multiple of 1024. (Deck 04)'],
+    ['hidden_act', '"silu"', '<b>SwiGLU</b>: the gate uses SiLU = Swish₁, x·σ(x). (Deck 04)'],
+    ['rms_norm_eps', '1e-05', '<b>RMSNorm</b> epsilon. No mean, no bias. (Deck 02)'],
+    ['rope_theta', '500000.0', '<b>RoPE</b> base. Llama 2 used 10,000; Llama 3 raised it to 500,000 to support longer contexts: every pair rotates more slowly. (Decks 03, 07)'],
+    ['max_position_embeddings', 8192, 'Context length the base model was pretrained with (8K). Llama 3.1 later extended this to 128K. Note there is no position embedding <i>table</i>; the name is historical. (Deck 07)'],
+    ['vocab_size', 128256, 'Tokenizer size: 128K tokens (100K from tiktoken + 28K extra). With untied embeddings the input table and output head each cost 128,256 × 4,096 ≈ 525M parameters.'],
+    ['tie_word_embeddings', 'false', 'Separate input embedding and output projection matrices (PaLM shared them).'],
+    ['attention_bias', 'false', 'No bias vectors in the attention projections.'],
+  ];
+  const pre = document.getElementById('cfg'); pre.innerHTML = '{\n' + CFG.map(([k, v], i) => `  <span data-i="${i}">"${k}": ${v}${i < CFG.length - 1 ? ',' : ''}</span>`).join('\n') + '\n}';
+  pre.querySelectorAll('span').forEach(sp => sp.addEventListener('click', () => {
+    pre.querySelectorAll('span').forEach(x => x.classList.toggle('on', x === sp));
+    const c = CFG[+sp.dataset.i]; document.getElementById('cfgInfo').innerHTML = `<b style="font-family:JetBrains Mono,monospace">${c[0]}</b><br>${c[2]}`;
+  }));
+  pre.querySelectorAll('span')[3].click();
+
+})();
+</script>
+</body>
+</html>
