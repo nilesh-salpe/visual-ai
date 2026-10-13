@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Post-training LLMs</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body { overflow-y: auto; }</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="label" style="margin-top:28px">Visual guide · 9 decks + 8 Colab notebooks</div>
+  <h1>Post-training LLMs</h1>
+  <p class="lede">How a pretrained model becomes an assistant: supervised fine-tuning, LoRA and QLoRA, reward models, RLHF with PPO, reward hacking, DPO and its relatives, RL with verifiable rewards (GRPO), and Constitutional AI. Every deck follows the 9-beat template, numbers are checked against the source papers, and most concepts have a hands-on Colab notebook.</p>
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: 8 Colab notebooks</h3><p class="caption" style="margin:0">Implement SFT loss masking and packing, LoRA, NF4 quantization, a Bradley-Terry reward model, PPO with a KL penalty, best-of-n overoptimization, DPO and GRPO in NumPy. Built-in tests, hidden solutions, no GPU needed.</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>
+  <div class="hub-grid"><a class="hub-card" href="01-pipeline/index.html"><div class="n">01</div><h3>The post-training pipeline</h3><p>From base model to assistant: SFT, preferences, verifiable rewards; real lab recipes.</p></a><a class="hub-card" href="02-supervised-fine-tuning/index.html"><div class="n">02</div><h3>Supervised fine-tuning</h3><p>Chat templates, loss on assistant tokens only, packing, quality over quantity.</p></a><a class="hub-card" href="03-lora-qlora/index.html"><div class="n">03</div><h3>LoRA and QLoRA</h3><p>Low-rank adapters, merging, NF4, double quantization.</p></a><a class="hub-card" href="04-reward-models/index.html"><div class="n">04</div><h3>Reward models</h3><p>Bradley-Terry, rankings to pairs, noise ceilings.</p></a><a class="hub-card" href="05-rlhf-ppo/index.html"><div class="n">05</div><h3>RLHF with PPO</h3><p>Reward − β·KL, clipped updates, four models, PPO-ptx.</p></a><a class="hub-card" href="06-reward-hacking/index.html"><div class="n">06</div><h3>Reward hacking and overoptimization</h3><p>Goodhart curves in KL, best-of-n, mitigations.</p></a><a class="hub-card" href="07-dpo-and-friends/index.html"><div class="n">07</div><h3>DPO, KTO and rejection sampling</h3><p>The implicit reward and RL-free preference tuning.</p></a><a class="hub-card" href="08-rlvr-grpo/index.html"><div class="n">08</div><h3>RLVR and GRPO</h3><p>Verifiable rewards, group baselines, DeepSeek-R1.</p></a><a class="hub-card" href="09-rlaif-constitutional-ai/index.html"><div class="n">09</div><h3>RLAIF and Constitutional AI</h3><p>Principles, self-critique and AI preference labels.</p></a></div>
+  <p class="cite" style="margin-top:26px">Sources: Ouyang et al. 2022 (InstructGPT); Christiano et al. 2017; Stiennon et al. 2020; Schulman et al. 2017 (PPO); Touvron et al. 2023 (Llama 2); Llama Team 2024 (Llama 3); Hu et al. 2021 (LoRA); Dettmers et al. 2023 (QLoRA); Gao et al. 2022 (RM overoptimization); Rafailov et al. 2023 (DPO); Ethayarajh et al. 2024 (KTO); Shao et al. 2024 (DeepSeekMath, GRPO); DeepSeek-AI 2025 (DeepSeek-R1); Lambert et al. 2024 (Tülu 3); Bai et al. 2022 (Constitutional AI).</p>
+</div>
+</body>
+</html>

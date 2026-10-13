@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reward Models</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="Reward models" data-home="../index.html" data-home-label="Post-training">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Post-training · 04</div>
+    <h1>Reward models</h1>
+    <p class="sub">How human comparisons become a scalar score: the Bradley-Terry model, the pairwise loss, rankings to pairs, and the limits of any learned reward.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>"Helpful, honest, harmless" can't be written as a formula. RL needs a number for every sampled answer, and people can't label millions of samples during training.</div>
+      <div class="c"><b>Core idea</b>Collect <b>comparisons</b> between answers, then train a model r(x, y) → scalar so that σ(r_w − r_l) matches how often people prefer y_w over y_l. That model scores RL samples automatically.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Comparisons are easier than scores</h2>
+    <hr>
+    <p class="lede">Ask five people to score an answer from 1 to 10 and you get five different calibrations. Ask which of two answers is better and they mostly agree. The Bradley-Terry model links reward <b>differences</b> to preference probabilities. Drag the gap.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><label class="ctl">r(A) − r(B) <input type="range" id="bD" min="-5" max="5" step="0.1" value="1.5"> <output id="bDo"></output></label></div>
+      <svg id="bSvg" viewBox="0 0 660 220" style="margin-top:10px" role="img" aria-label="Bradley-Terry curve"></svg>
+      <p class="readout" id="bOut"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not use a hand-written reward or direct scores?</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>No formula for "helpful"</h3><p>Unlike a game score, quality depends on the request, the audience and subtle correctness. Any hand-written rule is easy to game.</p></div>
+      <div class="card b"><h3>Absolute ratings are noisy</h3><p>Labelers disagree on what "7/10" means, and drift over time. Relative judgements are more consistent.</p></div>
+      <div class="card c"><h3>Humans can't be in the loop</h3><p>PPO samples millions of responses. A learned reward model answers instantly; humans label only a fixed dataset per round.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Read a reward model</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">A reward model scores answer A at 2.0 and answer B at 0.5. Under Bradley-Terry, what is the predicted probability that a person prefers A?</p>
+      <div class="opts">
+      <button>A. 0.50</button>
+      <button>B. 0.75</button>
+      <button data-ok>C. about 0.82</button>
+      <button>D. 0.99</button>
+      </div>
+      <div class="why"><b>C.</b> σ(2.0 − 0.5) = σ(1.5) = 1/(1 + e^−1.5) ≈ 0.82. Only the difference matters: scores of 102.0 and 100.5 predict exactly the same preference.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Architecture and loss</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>Model</h3><p>InstructGPT: start from the SFT model "with the final unembedding layer removed" and output one scalar for a (prompt, response) pair. They used 6B reward models; 175B RM training "could be unstable".</p></div>
+      <div class="card b"><h3>Loss</h3><p>loss = −E[log σ(r(x, y_w) − r(x, y_l))]: maximize the likelihood of the observed choices under Bradley-Terry. Only differences are learned, so rewards are often normalized before RL.</p></div>
+      <div class="card e"><h3>Data</h3><p>For each prompt, sample several model outputs and have labelers rank them. InstructGPT: K = 4 to 9 per prompt; Llama 2: binary comparisons with a strength label, over 1M of them.</p></div>
+    </div>
+    <div class="eq">loss(θ) = −1/C(K,2) · E<sub>(x, y_w, y_l)</sub> [ log σ( r<sub>θ</sub>(x, y_w) − r<sub>θ</sub>(x, y_l) ) ]   (InstructGPT eq. 1)</div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>From a ranking to training pairs</h2>
+    <hr>
+    <p class="lede">A labeler ranks K responses. Every ordered pair becomes a comparison: K·(K−1)/2 of them. InstructGPT puts all pairs from one prompt in the <b>same batch element</b>, because they are strongly correlated and treating them as independent samples made the RM overfit.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><label class="ctl">K responses ranked <input type="range" id="kK" min="2" max="9" step="1" value="4"> <output id="kKo"></output></label></div>
+      <svg id="kSvg" viewBox="0 0 660 230" style="margin-top:10px" role="img" aria-label="Pairs from ranking"></svg>
+      <p class="readout" id="kOut"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>How good can a reward model get? <span class="ill">simulation</span></h2>
+    <hr>
+    <p class="lede">From notebook 04: simulated labelers choose with Bradley-Terry noise around a hidden true reward. Even the true reward function only predicts 81% of their choices, which is the ceiling. A learned RM approaches it as comparisons grow.</p>
+    <div class="visual"><div id="aBars"></div></div>
+    <div class="deep"><h4>Real reward models</h4><p>Real preference data is noisy too: labelers disagree with each other, so held-out RM accuracy well below 100% is expected. Llama 2 trained <b>two</b> reward models, one for helpfulness and one for safety, because the two goals can conflict and a single model had trouble serving both.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works, and where it breaks</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>It generalizes the labels</h3><p>The RM learns features of good answers from tens of thousands of comparisons, then scores answers no labeler has seen.</p></div>
+      <div class="card e"><h3>Comparisons carry fine signal</h3><p>Ranking 4–9 samples gives up to 36 comparisons per prompt, focused on the subtle differences between plausible answers.</p></div>
+      <div class="card d"><h3>It is only a proxy</h3><p>The RM is accurate where its training data was. Push a policy far from that data and the RM's mistakes get exploited (deck 06).</p></div>
+      <div class="card b"><h3>It must keep up</h3><p>As the policy improves, its outputs leave the RM's training distribution. Llama 2 and 3 collect fresh comparisons on the newest model each round.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"A reward model outputs a probability or a 1–10 score."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It outputs an unbounded scalar, identified only up to a constant: only differences between answers to the same prompt mean anything.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"A good reward model should agree with labelers 100% of the time."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Labelers disagree among themselves, so even the "true" reward can't predict every label. Accuracy has a noise ceiling.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Once trained, the reward model can be reused for the whole project."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It goes stale as the policy improves. Iterated recipes retrain it on comparisons of the current model's outputs.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">How many pairwise comparisons does one ranking of K = 9 responses give?</p>
+      <div class="opts">
+      <button>A. 9</button>
+      <button>B. 18</button>
+      <button data-ok>C. 36</button>
+      <button>D. 81</button>
+      </div>
+      <div class="why"><b>C(9,2) = 36.</b></div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Write the reward-model loss and explain why only differences are learned.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">−log σ(r(x,y_w) − r(x,y_l)). Adding the same constant to every reward leaves every difference, and therefore the loss, unchanged.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why did InstructGPT put all pairs from a prompt into one batch element?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The C(K,2) pairs share responses, so they are highly correlated. Shuffling them as independent samples caused overfitting; grouping them is also cheaper (one forward pass per response).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">A reward model learns a scalar score from human comparisons via the Bradley-Terry loss −log σ(r_w − r_l), giving RL an automatic but imperfect judge.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Helpfulness has no formula, and humans can't score the millions of samples RL needs. So labs collect comparisons, which are more consistent than absolute ratings, often as rankings of four to nine answers per prompt, and train a model that outputs one scalar per response. The Bradley-Terry model says the probability that one answer is preferred is the sigmoid of the reward difference, so the loss is minus log sigmoid of the winner's score minus the loser's. Only differences are learned. Accuracy is capped by labeler disagreement, the model is only reliable near its training data, and it needs fresh comparisons as the policy improves.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> no formula for "good answer"; humans can't score every RL sample.</span></div><div><span><b>Core idea:</b> train r(x, y) on comparisons: −log σ(r_w − r_l); only differences matter.</span></div><div><span><b>Limits:</b> label noise caps accuracy; it is a proxy that goes stale as the policy moves.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/04_reward_model.ipynb" target="_blank" rel="noopener">04 · Train a Bradley-Terry reward model</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/post-training/04_reward_model.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../05-rlhf-ppo/index.html">05 · RLHF with PPO →</a> · Previous: <a href="../03-lora-qlora/index.html">← 03</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Ouyang et al. 2022 (InstructGPT §3.5, eq. 1: K = 4–9 rankings, 6B RM from the SFT model); Touvron et al. 2023 (Llama 2 §3.2.1–3.2.2: helpfulness and safety RMs, 1,418,091 Meta comparisons); Bradley & Terry 1952; Christiano et al. 2017.</p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  Deck.bind(['bD'], () => {
+    const d = Deck.val('bD'), p = 1 / (1 + Math.exp(-d)); Deck.out('bDo', d.toFixed(1));
+    const s = clear(document.getElementById('bSvg')), X = v => 60 + (v + 5) / 10 * 560, Y = v => 190 - v * 170;
+    [0, 0.5, 1].forEach(v => { svg('line', { x1: 60, x2: 620, y1: Y(v), y2: Y(v), class: 'ln' }, s); svg('text', { x: 52, y: Y(v) + 4, 'text-anchor': 'end', class: 'tm', text: v }, s); });
+    let pts = ''; for (let v = -5; v <= 5.001; v += 0.05) pts += `${X(v)},${Y(1 / (1 + Math.exp(-v)))} `;
+    svg('polyline', { points: pts, fill: 'none', style: 'stroke:var(--a);stroke-width:3' }, s);
+    svg('circle', { cx: X(d), cy: Y(p), r: 7, style: 'fill:var(--b)' }, s);
+    svg('text', { x: 340, y: 214, 'text-anchor': 'middle', class: 'tm', text: 'reward difference r(A) − r(B)' }, s);
+    document.getElementById('bOut').innerHTML = `P(A preferred) = σ(${d.toFixed(1)}) = <b>${p.toFixed(2)}</b>. Loss if the labeler chose A: −log ${p.toFixed(2)} = ${(-Math.log(p)).toFixed(2)}; if they chose B: ${(-Math.log(1 - p)).toFixed(2)}.`;
+  });
+  Deck.bind(['kK'], () => {
+    const K = Deck.val('kK'), s = clear(document.getElementById('kSvg')); Deck.out('kKo', K);
+    const pos = i => [330 + 150 * Math.cos(-Math.PI / 2 + 2 * Math.PI * i / K), 110 + 90 * Math.sin(-Math.PI / 2 + 2 * Math.PI * i / K)];
+    for (let i = 0; i < K; i++) for (let j = i + 1; j < K; j++) { const [x1, y1] = pos(i), [x2, y2] = pos(j); svg('line', { x1, y1, x2, y2, style: 'stroke:var(--a);stroke-width:1.5;opacity:.6' }, s); }
+    for (let i = 0; i < K; i++) { const [x, y] = pos(i); svg('circle', { cx: x, cy: y, r: 16, style: `fill:hsl(${140 - 140 * i / Math.max(1, K - 1)},55%,45%)` }, s); svg('text', { x, y: y + 5, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:700', text: '#' + (i + 1) }, s); }
+    document.getElementById('kOut').innerHTML = `Ranking of ${K} (#1 best): <b>${K * (K - 1) / 2}</b> comparisons, each line a (better, worse) pair. ${K >= 4 ? 'InstructGPT used K = 4–9, so 6 to 36 pairs per prompt.' : ''}`;
+  });
+  Deck.hbars(document.getElementById('aBars'), [[25, 0.703], [100, 0.758], [400, 0.796], [2000, 0.812]].map(([n, a]) => ({ label: n.toLocaleString() + ' comparisons', value: a - 0.5, color: 'var(--a)', text: (100 * a).toFixed(1) + '%' })).concat([{ label: 'true reward (ceiling)', value: 0.311, color: 'var(--faint)', text: '81.1%' }]), { max: 0.35 });
+
+})();
+</script>
+</body>
+</html>

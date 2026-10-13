@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RLAIF and Constitutional AI</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="RLAIF and Constitutional AI" data-home="../index.html" data-home-label="Post-training">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Post-training · 09</div>
+    <h1>RLAIF and Constitutional AI</h1>
+    <p class="sub">Using a model, guided by a written set of principles, to produce the feedback that humans used to provide: critique-and-revise for SFT, and AI preference labels for RL.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Human preference labels are slow and expensive, and for harmful requests they require people to read and judge harmful content. The rules the model is meant to follow are also implicit in thousands of individual labels.</div>
+      <div class="c"><b>Core idea</b>Write the rules down as a <b>constitution</b>. In a supervised stage, the model critiques and revises its own answers against principles; in an RL stage, an AI model compares pairs of answers against principles, and RL uses a preference model trained on those <b>AI labels</b> (RLAIF).</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Feedback is the bottleneck</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Scale</h3><p>Every RLHF round needs new comparisons on the latest model's outputs. Human labelling limits how often and how widely that can happen.</p></div>
+      <div class="card b"><h3>Exposure</h3><p>Labelling harmlessness means people reading and ranking answers to harmful requests.</p></div>
+      <div class="card c"><h3>Opacity</h3><p>The intended behaviour lives implicitly in many individual judgements. Nobody can read off "the rules" the model was trained on.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>The harmless-but-evasive trap</h2>
+    <hr>
+    <p class="lede">An easy way to be "harmless" is to refuse anything borderline. That is unhelpful and teaches users nothing. The Constitutional AI paper's goal was a "harmless but non-evasive" assistant that "engages with harmful queries by explaining its objections to them".</p>
+    <div class="deep"><h4>Why plain preference labels push towards evasion</h4><p>If labelers judging harmlessness in isolation tend to prefer a refusal over any risky-looking answer, the reward model learns that refusing scores well, and RL amplifies it. Writing explicit principles that ask for explanations instead of bare refusals is one way to steer away from that.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What does "RLAIF" replace?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">In the Constitutional AI paper, what does RL from AI Feedback replace?</p>
+      <div class="opts">
+      <button>A. The pretraining data</button>
+      <button data-ok>B. Human preference labels for harmlessness</button>
+      <button>C. The PPO algorithm</button>
+      <button>D. All human involvement</button>
+      </div>
+      <div class="why"><b>B.</b> "We replace human preferences for harmlessness with 'AI feedback'": an AI evaluates responses according to constitutional principles. Humans still write the principles, and the paper still used human feedback for helpfulness.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Two stages</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Supervised stage (SL-CAI)</h3><p>Sample responses to harmful (red-team) prompts from a <b>helpful-only</b> RLHF model; ask it to <b>critique</b> its own response against a randomly chosen principle, then <b>revise</b> it; repeat. Fine-tune the original model on the revised responses.</p></div>
+      <div class="card e"><h3>RL stage (RL-CAI, i.e. RLAIF)</h3><p>Sample pairs of responses from the SL-CAI model; ask a model which one better satisfies a principle; train a preference model on these AI labels; run RL against it, exactly as in RLHF. The paper wrote <b>16 principles</b> and sampled one at random for each comparison label.</p></div>
+    </div>
+    <div class="deep"><h4>Chain of thought helps the judge</h4><p>The paper reports that "both the SL and RL methods can leverage chain-of-thought style reasoning to improve the human-judged performance and transparency of AI decision making": asking the feedback model to reason before choosing makes its labels better and easier to inspect.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Critique and revise, step by step <span class="ill">illustrative example</span></h2>
+    <hr>
+    <p class="lede">An invented, low-stakes example of the SL-CAI loop, to show the mechanics. Real constitutions contain many principles; one is sampled for each critique.</p>
+    <div class="visual">
+      <div class="seg" id="cSeg"><button data-v="0" class="on">1 · prompt + response</button><button data-v="1">2 · principle</button><button data-v="2">3 · critique</button><button data-v="3">4 · revision</button><button data-v="4">5 · training data</button></div>
+      <div class="infobox" id="cOut" style="background:var(--panel-2);border-radius:10px;padding:14px 16px;margin-top:12px;font-size:15px;line-height:1.6"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Where AI feedback plugs into the pipeline</h2>
+    <hr>
+    <div class="visual scroll-x"><table class="tbl">
+      <tr><th>Step</th><th>RLHF</th><th>Constitutional AI (RLAIF)</th></tr>
+      <tr><td>Supervised data</td><td>human demonstrations</td><td>model's own responses, critiqued and revised against principles</td></tr>
+      <tr><td>Comparisons</td><td>human labelers pick the better response</td><td>a feedback model picks the response that better follows a principle</td></tr>
+      <tr><td>Reward / preference model</td><td>trained on human labels</td><td>trained on AI labels (harmlessness) mixed with human labels (helpfulness)</td></tr>
+      <tr><td>RL</td><td>PPO against the RM</td><td>same: RL against the preference model</td></tr>
+      <tr><td>What humans provide</td><td>many individual judgements</td><td>a short list of written principles, plus helpfulness data</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works, and what to watch</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Judging is easier than generating</h3><p>A capable model can often tell which of two answers better follows a stated principle even if its own first answer didn't.</p></div>
+      <div class="card e"><h3>Scalable and inspectable</h3><p>AI labels are cheap to regenerate for every new model, and the principles are written down, so the target behaviour can be read, debated and changed.</p></div>
+      <div class="card b"><h3>The feedback model's limits carry over</h3><p>If the judging model misreads a principle or has blind spots, those errors become training signal, so AI feedback still needs human evaluation.</p></div>
+      <div class="card c"><h3>Widely reused idea</h3><p>Model-generated judgements now appear throughout post-training: rejection sampling with reward models, synthetic SFT data, and LLM-as-judge evaluation (Evals topic).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"RLAIF removes humans from alignment."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Humans write and choose the principles, and the paper still used human feedback for helpfulness. What changes is who produces each individual label.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Constitutional AI is just a system prompt with rules."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The principles are used to <b>generate training data</b>: revised responses for SFT and AI preference labels for a preference model and RL. The behaviour is trained into the weights.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Being harmless means refusing more."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The paper aimed for "harmless but non-evasive": engaging with the request and explaining objections rather than refusing blindly.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz ">
+      <p class="qq">Describe the two stages of Constitutional AI.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">SL-CAI: the model critiques and revises its own responses against sampled principles, and is fine-tuned on the revisions. RL-CAI: a model labels which of two responses better follows a principle; a preference model is trained on those AI labels and used for RL (RLAIF).</div>
+    </div>
+    <div class="quiz">
+      <p class="qq">Which part of the Constitutional AI pipeline still used human preference labels?</p>
+      <div class="opts">
+      <button>A. Harmlessness</button>
+      <button data-ok>B. Helpfulness</button>
+      <button>C. Neither</button>
+      <button>D. Both</button>
+      </div>
+      <div class="why"><b>Helpfulness.</b> AI feedback replaced human labels for harmlessness.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why might AI feedback make the target behaviour more transparent?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The behaviour is specified by a short written list of principles that anyone can read, and chain-of-thought judgements show why each label was chosen, instead of being implicit in thousands of individual human labels.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Constitutional AI replaces human harmlessness labels with AI feedback guided by written principles: self-critique and revision for SFT, AI preference labels for RL.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Human feedback is slow, hard to scale, and leaves the intended rules implicit. Constitutional AI writes those rules down as principles. In the supervised stage the model critiques its own responses against a sampled principle and revises them, and is fine-tuned on the revisions. In the RL stage a model compares pairs of responses against principles, a preference model is trained on those AI labels, and RL proceeds as in RLHF. That is RLAIF. The goal was an assistant that is harmless but not evasive, explaining its objections rather than refusing blindly. Humans still write the principles, and the paper kept human labels for helpfulness.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> human labels are slow, expensive and leave the rules implicit.</span></div><div><span><b>Core idea:</b> principles + AI critique/revision (SL-CAI) + AI preference labels for RL (RLAIF).</span></div><div><span><b>Watch:</b> the judge's blind spots become training signal; humans still set the principles.</span></div></div>
+    <p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../08-rlvr-grpo/index.html">← 08</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Bai et al. 2022, "Constitutional AI: Harmlessness from AI Feedback" (§1, §3 SL-CAI, §4 RL-CAI); Christiano et al. 2017; Ouyang et al. 2022.</p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const C = [
+    '<b>Prompt:</b> My neighbour\'s dog barks all night. Write a note I can leave on their door.<br><br><b>Initial response:</b> <span style="color:var(--muted)">"Your dog is a nightmare and you clearly don\'t care about anyone else. Fix it or I\'ll call the police."</span>',
+    '<b>Sampled principle:</b> <span style="color:var(--muted)">"Choose the response that is most respectful and least likely to escalate a conflict, while still being helpful."</span>',
+    '<b>Critique (written by the model):</b> <span style="color:var(--muted)">The note is hostile and accusatory. It assumes bad intent and threatens the neighbour, which is likely to escalate the conflict rather than solve the problem. A helpful note should describe the problem, assume good faith and suggest a next step.</span>',
+    '<b>Revision (written by the model):</b> <span style="color:var(--muted)">"Hi! I live next door. Your dog has been barking a lot at night recently, and it\'s keeping me awake. You may not have noticed if you\'re asleep or out. Could we have a chat about it? Thanks, your neighbour at no. 12."</span>',
+    '<b>Result:</b> the pair (prompt, revised response) becomes an SFT example. After several critique/revision rounds over many prompts and principles, the model is fine-tuned on the revisions (SL-CAI). In the RL stage, a model would instead be asked which of two sampled responses better follows the principle, producing an AI preference label.',
+  ];
+  Deck.seg('cSeg', v => { document.getElementById('cOut').innerHTML = C[+v]; });
+
+})();
+</script>
+</body>
+</html>

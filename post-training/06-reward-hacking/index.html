@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reward Hacking and Overoptimization</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="Reward hacking and overoptimization" data-home="../index.html" data-home-label="Post-training">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Post-training · 06</div>
+    <h1>Reward hacking and overoptimization</h1>
+    <p class="sub">Why optimizing a learned reward model too hard makes the model worse, how to measure "too hard" with KL, and the mitigations labs use.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A reward model is a proxy trained on limited data. The harder RL or best-of-n pushes on it, the more it finds the RM's blind spots: the proxy score climbs while the real quality falls.</div>
+      <div class="c"><b>Core idea</b>Treat optimization as a <b>budget measured in KL</b> from the starting policy. True ("gold") reward rises then falls as KL grows (Gao et al. 2022), so limit KL, refresh the reward model, and prefer rewards that can't be gamed.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>The proxy keeps rising; the truth doesn't <span class="ill">simulation</span></h2>
+    <hr>
+    <p class="lede">Best-of-n against a flawed reward model (notebook 06): the proxy RM partly mistakes "length" for quality, while the true (gold) reward penalizes extreme length. Move n. The x-axis is √KL, the distance from the base policy.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><label class="ctl">best-of-n <input type="range" id="hN" min="0" max="10" step="1" value="3"> <output id="hNo"></output></label></div>
+      <svg id="hSvg" viewBox="0 0 660 260" style="margin-top:10px" role="img" aria-label="Proxy vs gold reward"></svg>
+      <div class="legend"><span><i style="background:var(--b)"></i>proxy RM score</span><span><i style="background:var(--a)"></i>gold reward (change)</span><span><i style="background:var(--faint)"></i>fit d(α − βd)</span></div>
+      <p class="readout" id="hOut"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why a reward model can be gamed</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Trained on a narrow distribution</h3><p>The RM saw outputs from earlier models. As the policy improves, it produces text the RM has never been checked on.</p></div>
+      <div class="card b"><h3>Spurious features</h3><p>If longer or more confident answers tended to win in the data, the RM may reward length or confidence itself, even when they don't help.</p></div>
+      <div class="card c"><h3>An optimizer finds every flaw</h3><p>RL is a search for high-scoring outputs. Any systematic error in the RM is a direction the search will follow. Goodhart's law: "When a measure becomes a target, it ceases to be a good measure."</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What happens as you push harder?</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">You increase n in best-of-n (or train RL longer) against a fixed, imperfect reward model. What does the true quality typically do?</p>
+      <div class="opts">
+      <button>A. Keeps improving, more slowly</button>
+      <button data-ok>B. Rises, peaks, then declines</button>
+      <button>C. Declines from the start</button>
+      <button>D. Stays flat</button>
+      </div>
+      <div class="why"><b>B.</b> Gao et al. find gold reward follows d(α − βd) for best-of-n and d(α − β·log d) for RL, with d = √KL: an initial gain, a peak, then decline, while the proxy score keeps increasing.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Measure optimization in KL</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>KL as the distance travelled</h3><p>How far the optimized policy is from where it started. Best-of-n has an exact formula: KL<sub>bon</sub> = log n − (n−1)/n, which grows roughly like log n.</p></div>
+      <div class="card b"><h3>Predictable curves</h3><p>Gold reward R(d), with d = √KL:<br>best-of-n: <b>d(α − βd)</b><br>RL: <b>d(α − β log d)</b><br>The coefficients scale smoothly with the reward model's size.</p></div>
+      <div class="card e"><h3>The KL penalty is a brake</h3><p>RLHF's −β·KL term (deck 05) caps how far the policy goes, holding it near the region where the RM is trustworthy.</p></div>
+    </div>
+    <div class="deep"><h4>How Gao et al. measured this</h4><p>Real human labels are too expensive to sweep, so they used a large "gold-standard" reward model as stand-in ground truth, trained smaller proxy RMs on labels from it, optimized policies against the proxies, and scored the results with the gold RM. That synthetic setup made the rise-then-fall curve measurable across many sizes.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>What the optimizer actually selected <span class="ill">simulation</span></h2>
+    <hr>
+    <p class="lede">The same simulation: average features of the response picked by best-of-n. Helpfulness rises at first, but the optimizer increasingly buys proxy score with "length", which the gold reward penalizes.</p>
+    <div class="visual">
+      <svg id="sSvg" viewBox="0 0 660 230" role="img" aria-label="Selected features vs n"></svg>
+      <div class="legend"><span><i style="background:var(--a)"></i>helpfulness of chosen answer</span><span><i style="background:var(--d)"></i>"length" of chosen answer</span></div>
+    </div>
+    <div class="deep"><h4>Real-world versions</h4><p>Commonly reported symptoms include answers that grow longer without getting better, excessive hedging or flattery, and confident wording that the RM likes. Notebook 06 is a two-feature toy: the mechanism (a correlated but wrong feature exploited by search) is the general one.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Mitigations</h2>
+    <hr>
+    <div class="visual scroll-x"><table class="tbl">
+      <tr><th>Mitigation</th><th>How it helps</th></tr>
+      <tr><td>KL penalty / early stopping</td><td>Stop before the gold curve turns down; β or the step count sets the budget</td></tr>
+      <tr><td>Bigger, better reward models</td><td>Overoptimization coefficients scale smoothly with RM size (Gao et al.)</td></tr>
+      <tr><td>Iterate: fresh comparisons on the current policy</td><td>Keeps the RM accurate where the policy now is. Llama 2 ran RLHF-V1 to V5; Llama 3 ran six rounds</td></tr>
+      <tr><td>Several reward models</td><td>Llama 2 used separate helpfulness and safety RMs</td></tr>
+      <tr><td>Verifiable rewards</td><td>For maths and code, a checker is much harder to game than a learned scorer (deck 08)</td></tr>
+      <tr><td>Watch the outputs</td><td>Track length, refusal rate and human spot checks, not only the RM score</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why the curve turns down</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Early: real gains</h3><p>Near the start, the RM's ranking is mostly right, so picking higher-scoring answers picks better answers.</p></div>
+      <div class="card d"><h3>Later: errors dominate</h3><p>The biggest proxy scores come increasingly from the RM's mistakes. Selection pressure concentrates on exactly those outputs.</p></div>
+      <div class="card b"><h3>The fit is good</h3><p>In our toy, d(1.20 − 0.52d) predicts every simulated point within ~0.05, with a peak near KL ≈ 1.4 nats (n ≈ 8).</p></div>
+      <div class="card e"><h3>Lesson</h3><p>A reward model's score is evidence, not a target. More optimization is not automatically better.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"If the reward model score goes up, the model got better."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Only up to a point. Past the peak, proxy score and true quality move in opposite directions.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Best-of-n is safe because it doesn't change the model."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It still optimizes against the RM. KL<sub>bon</sub> = log n − (n−1)/n grows with n, and so does exploitation.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Reward hacking is a bug in the RL algorithm."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is a property of optimizing any imperfect proxy. A perfect optimizer hacks harder.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">KL of best-of-2 from the base policy?</p>
+      <div class="opts">
+      <button>A. 0</button>
+      <button data-ok>B. log 2 − 0.5 ≈ 0.19</button>
+      <button>C. log 2 ≈ 0.69</button>
+      <button>D. 1</button>
+      </div>
+      <div class="why"><b>log 2 − 1/2 ≈ 0.19 nats.</b></div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Gao et al.'s functional forms for gold reward vs d = √KL?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Best-of-n: d(α − βd). RL: d(α − β log d). Both rise then fall.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Name three mitigations for reward hacking.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">A KL penalty or early stopping; larger and fresher reward models (new comparisons each round); verifiable rewards where possible; multiple RMs; monitoring length and spot checks.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Optimizing a learned reward model is a KL budget: true quality rises, peaks and falls while the proxy keeps climbing, so cap KL and keep the reward honest.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>A reward model is a proxy trained on a narrow slice of outputs. Best-of-n sampling and RL are searches for high proxy scores, so the harder they push, the more they find the reward model's mistakes. Gao and colleagues measured this: plotted against the square root of KL from the starting policy, the true reward follows d times alpha minus beta d for best-of-n and d times alpha minus beta log d for RL, rising then falling while the proxy keeps increasing. Best-of-n's KL is log n minus n minus one over n. Mitigations are a KL penalty or early stopping, bigger and regularly refreshed reward models, and verifiable rewards where possible.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> the RM is a proxy; optimization finds its errors (Goodhart).</span></div><div><span><b>Core idea:</b> measure optimization in KL; gold reward vs √KL rises then falls.</span></div><div><span><b>Fixes:</b> KL penalty, early stopping, bigger and fresher RMs, verifiable rewards, monitoring.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/06_overoptimization.ipynb" target="_blank" rel="noopener">06 · Reward hacking: best-of-n against a flawed reward model</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/post-training/06_overoptimization.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../07-dpo-and-friends/index.html">07 · DPO, KTO and rejection sampling →</a> · Previous: <a href="../05-rlhf-ppo/index.html">← 05</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Gao, Schulman & Hilton 2022, "Scaling Laws for Reward Model Overoptimization" (functional forms, KL_bon); Stiennon et al. 2020 (App. G.3); Ouyang et al. 2022 (per-token KL penalty); Touvron et al. 2023 (Llama 2 iterative RLHF V1–V5).</p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  const BON = [[1, 0.0, -0.03, 0.0, 0.0], [2, 0.19, 0.81, 0.414, 0.43], [4, 0.64, 1.45, 0.63, 0.632], [8, 1.2, 2.02, 0.704, 0.7], [16, 1.84, 2.51, 0.671, 0.684], [32, 2.5, 2.91, 0.628, 0.614], [64, 3.17, 3.33, 0.507, 0.507], [128, 3.86, 3.68, 0.419, 0.374], [256, 4.55, 4.01, 0.184, 0.22], [512, 5.24, 4.32, 0.025, 0.052], [1024, 5.93, 4.61, -0.109, -0.129]];
+  Deck.bind(['hN'], () => {
+    const k = Deck.val('hN'), [n, kl, px, gd] = BON[k]; Deck.out('hNo', n);
+    const s = clear(document.getElementById('hSvg')), X = d => 60 + d / 2.5 * 560, Y = v => 215 - (v + 0.4) / 5.2 * 195;
+    [0, 1, 2, 3, 4, 5].forEach(v => { svg('line', { x1: 60, x2: 620, y1: Y(v), y2: Y(v), class: 'ln' }, s); svg('text', { x: 52, y: Y(v) + 4, 'text-anchor': 'end', class: 'tm', text: v }, s); });
+    const line = (i, c, w, dash) => svg('polyline', { points: BON.map(r => `${X(Math.sqrt(r[1]))},${Y(r[i])}`).join(' '), fill: 'none', style: `stroke:${c};stroke-width:${w}${dash ? ';stroke-dasharray:5 4' : ''}` }, s);
+    line(4, 'var(--faint)', 2, true); line(2, 'var(--b)', 3); line(3, 'var(--a)', 3);
+    svg('line', { x1: X(Math.sqrt(kl)), x2: X(Math.sqrt(kl)), y1: 15, y2: 215, style: 'stroke:var(--ink);stroke-dasharray:3 3' }, s);
+    [0, 0.5, 1, 1.5, 2, 2.5].forEach(d => svg('text', { x: X(d), y: 234, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: d }, s));
+    svg('text', { x: 340, y: 254, 'text-anchor': 'middle', class: 'tm', text: 'd = √KL from the base policy' }, s);
+    document.getElementById('hOut').innerHTML = `n = ${n}: KL = log n − (n−1)/n = <b>${kl.toFixed(2)}</b> nats. Proxy score ${px.toFixed(2)}, gold change <b>${gd >= 0 ? '+' : ''}${gd.toFixed(2)}</b>${k > 3 ? (gd < 0.6 ? ' (past the peak: the extra proxy score is mostly exploitation)' : '') : ''}.`;
+  });
+  (() => {
+    const s = document.getElementById('sSvg'), ns = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
+    const ev = n => { let seed = 7 + n, h = 0, L = 0; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647; const g = () => Math.sqrt(-2 * Math.log(Math.max(1e-9, rnd()))) * Math.cos(2 * Math.PI * rnd());
+      for (let t = 0; t < 200; t++) { let best = -1e9, bh = 0, bl = 0; for (let i = 0; i < n; i++) { const a = g(), b = g(), p = a + b; if (p > best) { best = p; bh = a; bl = b; } } h += bh; L += bl; } return [h / 200, L / 200]; };
+    const R = ns.map(ev), X = i => 70 + i * 54, Y = v => 200 - v / 3 * 170;
+    [0, 1, 2, 3].forEach(v => { svg('line', { x1: 60, x2: 620, y1: Y(v), y2: Y(v), class: 'ln' }, s); svg('text', { x: 52, y: Y(v) + 4, 'text-anchor': 'end', class: 'tm', text: v }, s); });
+    ns.forEach((n, i) => svg('text', { x: X(i), y: 220, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: n }, s));
+    [[0, 'var(--a)'], [1, 'var(--d)']].forEach(([j, c]) => svg('polyline', { points: R.map((r, i) => `${X(i)},${Y(r[j])}`).join(' '), fill: 'none', style: `stroke:${c};stroke-width:3` }, s));
+  })();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+[
+ {
+  "slug": "01_sft_loss_masking",
+  "title": "01 \u00b7 Supervised fine-tuning: chat templates, loss masking and packing",
+  "path": "build-it/post-training/01_sft_loss_masking.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/01_sft_loss_masking.ipynb",
+  "deck": "post-training/02-supervised-fine-tuning/",
+  "minutes": 35
+ },
+ {
+  "slug": "02_lora",
+  "title": "02 \u00b7 LoRA from scratch",
+  "path": "build-it/post-training/02_lora.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/02_lora.ipynb",
+  "deck": "post-training/03-lora-qlora/",
+  "minutes": 40
+ },
+ {
+  "slug": "03_nf4_quantization",
+  "title": "03 \u00b7 QLoRA's NF4 and double quantization",
+  "path": "build-it/post-training/03_nf4_quantization.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/03_nf4_quantization.ipynb",
+  "deck": "post-training/03-lora-qlora/",
+  "minutes": 30
+ },
+ {
+  "slug": "04_reward_model",
+  "title": "04 \u00b7 Train a Bradley-Terry reward model",
+  "path": "build-it/post-training/04_reward_model.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/04_reward_model.ipynb",
+  "deck": "post-training/04-reward-models/",
+  "minutes": 35
+ },
+ {
+  "slug": "05_ppo_toy",
+  "title": "05 \u00b7 PPO with a KL penalty on a toy policy",
+  "path": "build-it/post-training/05_ppo_toy.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/05_ppo_toy.ipynb",
+  "deck": "post-training/05-rlhf-ppo/",
+  "minutes": 45
+ },
+ {
+  "slug": "06_overoptimization",
+  "title": "06 \u00b7 Reward hacking: best-of-n against a flawed reward model",
+  "path": "build-it/post-training/06_overoptimization.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/06_overoptimization.ipynb",
+  "deck": "post-training/06-reward-hacking/",
+  "minutes": 35
+ },
+ {
+  "slug": "07_dpo",
+  "title": "07 \u00b7 Direct Preference Optimization (DPO)",
+  "path": "build-it/post-training/07_dpo.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/07_dpo.ipynb",
+  "deck": "post-training/07-dpo-and-friends/",
+  "minutes": 40
+ },
+ {
+  "slug": "08_grpo_rlvr",
+  "title": "08 \u00b7 RL with verifiable rewards and GRPO",
+  "path": "build-it/post-training/08_grpo_rlvr.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/08_grpo_rlvr.ipynb",
+  "deck": "post-training/08-rlvr-grpo/",
+  "minutes": 45
+ }
+]

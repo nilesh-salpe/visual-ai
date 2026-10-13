@@ -37,3 +37,18 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/inference/
 | [10 · Build a Llama-style decoder block and count its parameters](architecture/10_llama_block.ipynb) | 50 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/10_llama_block.ipynb) |
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/architecture/
+
+## Phase 3 · Post-training
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · Supervised fine-tuning: chat templates, loss masking and packing](post-training/01_sft_loss_masking.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/01_sft_loss_masking.ipynb) |
+| [02 · LoRA from scratch](post-training/02_lora.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/02_lora.ipynb) |
+| [03 · QLoRA's NF4 and double quantization](post-training/03_nf4_quantization.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/03_nf4_quantization.ipynb) |
+| [04 · Train a Bradley-Terry reward model](post-training/04_reward_model.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/04_reward_model.ipynb) |
+| [05 · PPO with a KL penalty on a toy policy](post-training/05_ppo_toy.ipynb) | 45 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/05_ppo_toy.ipynb) |
+| [06 · Reward hacking: best-of-n against a flawed reward model](post-training/06_overoptimization.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/06_overoptimization.ipynb) |
+| [07 · Direct Preference Optimization (DPO)](post-training/07_dpo.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/07_dpo.ipynb) |
+| [08 · RL with verifiable rewards and GRPO](post-training/08_grpo_rlvr.ipynb) | 45 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/08_grpo_rlvr.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/post-training/

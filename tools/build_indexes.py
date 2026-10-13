@@ -10,6 +10,7 @@ BADGE = 'https://colab.research.google.com/assets/colab-badge.svg'
 PHASES = [  # (heading, notebook folder, index json)
     ('Phase 1 · LLM inference and serving', 'inference', 'index_inference.json'),
     ('Phase 2 · The modern LLM architecture', 'architecture', 'index_architecture.json'),
+    ('Phase 3 · Post-training', 'post-training', 'index_post_training.json'),
 ]
 
 
@@ -52,7 +53,7 @@ def build_it_html():
     </ol>
   </div>
 {chr(10).join(sections)}
-  <p class="cite" style="margin-top:20px">Later phases (post-training, distributed training, pretraining, GPU performance) will add their notebooks here.</p>
+  <p class="cite" style="margin-top:20px">Later phases (evals, distributed training, pretraining, GPU performance) will add their notebooks here.</p>
 </div>
 </body>
 </html>
@@ -120,3 +121,51 @@ if __name__ == '__main__':
     open(os.path.join(REPO, 'build-it', 'README.md'), 'w').write(build_it_md())
     open(os.path.join(REPO, 'architecture', 'index.html'), 'w').write(arch_hub())
     print('wrote build-it/index.html, build-it/README.md, architecture/index.html')
+
+
+POST_CARDS = [
+    ('01-pipeline', 'The post-training pipeline', 'From base model to assistant: SFT, preferences, verifiable rewards; real lab recipes.'),
+    ('02-supervised-fine-tuning', 'Supervised fine-tuning', 'Chat templates, loss on assistant tokens only, packing, quality over quantity.'),
+    ('03-lora-qlora', 'LoRA and QLoRA', 'Low-rank adapters, merging, NF4, double quantization.'),
+    ('04-reward-models', 'Reward models', 'Bradley-Terry, rankings to pairs, noise ceilings.'),
+    ('05-rlhf-ppo', 'RLHF with PPO', 'Reward − β·KL, clipped updates, four models, PPO-ptx.'),
+    ('06-reward-hacking', 'Reward hacking and overoptimization', 'Goodhart curves in KL, best-of-n, mitigations.'),
+    ('07-dpo-and-friends', 'DPO, KTO and rejection sampling', 'The implicit reward and RL-free preference tuning.'),
+    ('08-rlvr-grpo', 'RLVR and GRPO', 'Verifiable rewards, group baselines, DeepSeek-R1.'),
+    ('09-rlaif-constitutional-ai', 'RLAIF and Constitutional AI', 'Principles, self-critique and AI preference labels.'),
+]
+
+
+def post_hub():
+    cards = ''.join(f'<a class="hub-card" href="{s}/index.html"><div class="n">{s[:2]}</div><h3>{t}</h3><p>{p}</p></a>' for s, t, p in POST_CARDS)
+    n_nb = len(load('index_post_training.json'))
+    return f'''<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Post-training LLMs</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body {{ overflow-y: auto; }}</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="label" style="margin-top:28px">Visual guide · {len(POST_CARDS)} decks + {n_nb} Colab notebooks</div>
+  <h1>Post-training LLMs</h1>
+  <p class="lede">How a pretrained model becomes an assistant: supervised fine-tuning, LoRA and QLoRA, reward models, RLHF with PPO, reward hacking, DPO and its relatives, RL with verifiable rewards (GRPO), and Constitutional AI. Every deck follows the 9-beat template, numbers are checked against the source papers, and most concepts have a hands-on Colab notebook.</p>
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: {n_nb} Colab notebooks</h3><p class="caption" style="margin:0">Implement SFT loss masking and packing, LoRA, NF4 quantization, a Bradley-Terry reward model, PPO with a KL penalty, best-of-n overoptimization, DPO and GRPO in NumPy. Built-in tests, hidden solutions, no GPU needed.</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>
+  <div class="hub-grid">{cards}</div>
+  <p class="cite" style="margin-top:26px">Sources: Ouyang et al. 2022 (InstructGPT); Christiano et al. 2017; Stiennon et al. 2020; Schulman et al. 2017 (PPO); Touvron et al. 2023 (Llama 2); Llama Team 2024 (Llama 3); Hu et al. 2021 (LoRA); Dettmers et al. 2023 (QLoRA); Gao et al. 2022 (RM overoptimization); Rafailov et al. 2023 (DPO); Ethayarajh et al. 2024 (KTO); Shao et al. 2024 (DeepSeekMath, GRPO); DeepSeek-AI 2025 (DeepSeek-R1); Lambert et al. 2024 (Tülu 3); Bai et al. 2022 (Constitutional AI).</p>
+</div>
+</body>
+</html>
+'''
+
+
+if __name__ == '__main__':
+    open(os.path.join(REPO, 'post-training', 'index.html'), 'w').write(post_hub())
+    print('wrote post-training/index.html')
