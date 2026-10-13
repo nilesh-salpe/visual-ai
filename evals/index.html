@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evaluating LLMs</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body { overflow-y: auto; }</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="label" style="margin-top:28px">Visual guide · 7 decks + 4 Colab notebooks</div>
+  <h1>Evaluating LLMs</h1>
+  <p class="lede">What an eval score really measures and how much to trust it: benchmark design and failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases, and arena ratings. Every deck follows the 9-beat template, numbers are checked against the source papers, and the statistics have hands-on Colab notebooks.</p>
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: 4 Colab notebooks</h3><p class="caption" style="margin:0">Implement the unbiased pass@k estimator, standard and clustered errors, paired tests and power analysis, an n-gram contamination detector, a judge position-swap test, Bradley-Terry ratings and online Elo in NumPy.</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>
+  <div class="hub-grid"><a class="hub-card" href="01-what-an-eval-measures/index.html"><div class="n">01</div><h3>What an eval measures</h3><p>A score is a protocol: prompts, decoding, scoring, uncertainty. HELM's 7 metrics.</p></a><a class="hub-card" href="02-benchmarks/index.html"><div class="n">02</div><h3>Benchmarks and their failure modes</h3><p>MMLU, GPQA, GSM8K, HumanEval, SWE-bench; floors, ceilings, saturation.</p></a><a class="hub-card" href="03-pass-at-k/index.html"><div class="n">03</div><h3>pass@k and sampling metrics</h3><p>The unbiased estimator and choosing k.</p></a><a class="hub-card" href="04-error-bars/index.html"><div class="n">04</div><h3>Error bars and comparing models</h3><p>Standard errors, clustered errors, paired tests, power analysis.</p></a><a class="hub-card" href="05-contamination/index.html"><div class="n">05</div><h3>Contamination</h3><p>13-gram overlap, clean vs dirty scores, fresh test sets.</p></a><a class="hub-card" href="06-llm-as-judge/index.html"><div class="n">06</div><h3>LLM-as-judge</h3><p>Agreement with humans; position, verbosity and self-enhancement bias.</p></a><a class="hub-card" href="07-arenas/index.html"><div class="n">07</div><h3>Arenas and ratings</h3><p>Bradley-Terry vs online Elo, confidence intervals.</p></a></div>
+  <p class="cite" style="margin-top:26px">Sources: Liang et al. 2022 (HELM); Sclar et al. 2023; Hendrycks et al. 2021 (MMLU); Wang et al. 2024 (MMLU-Pro); Rein et al. 2023 (GPQA); Cobbe et al. 2021 (GSM8K); Chen et al. 2021 (HumanEval, pass@k); Jimenez et al. 2024 (SWE-bench); Miller 2024 (error bars); Brown et al. 2020 (GPT-3 contamination); Zhang et al. 2024 (GSM1k); Zheng et al. 2023 (MT-Bench); Dubois et al. 2024 (length-controlled AlpacaEval); Chiang et al. 2024 (Chatbot Arena).</p>
+</div>
+</body>
+</html>

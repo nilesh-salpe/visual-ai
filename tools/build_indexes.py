@@ -11,6 +11,7 @@ PHASES = [  # (heading, notebook folder, index json)
     ('Phase 1 · LLM inference and serving', 'inference', 'index_inference.json'),
     ('Phase 2 · The modern LLM architecture', 'architecture', 'index_architecture.json'),
     ('Phase 3 · Post-training', 'post-training', 'index_post_training.json'),
+    ('Phase 4 · Evaluating LLMs', 'evals', 'index_evals.json'),
 ]
 
 
@@ -53,7 +54,7 @@ def build_it_html():
     </ol>
   </div>
 {chr(10).join(sections)}
-  <p class="cite" style="margin-top:20px">Later phases (evals, distributed training, pretraining, GPU performance) will add their notebooks here.</p>
+  <p class="cite" style="margin-top:20px">Later phases (distributed training, pretraining, GPU performance) will add their notebooks here.</p>
 </div>
 </body>
 </html>
@@ -169,3 +170,49 @@ def post_hub():
 if __name__ == '__main__':
     open(os.path.join(REPO, 'post-training', 'index.html'), 'w').write(post_hub())
     print('wrote post-training/index.html')
+
+
+EVAL_CARDS = [
+    ('01-what-an-eval-measures', 'What an eval measures', 'A score is a protocol: prompts, decoding, scoring, uncertainty. HELM\'s 7 metrics.'),
+    ('02-benchmarks', 'Benchmarks and their failure modes', 'MMLU, GPQA, GSM8K, HumanEval, SWE-bench; floors, ceilings, saturation.'),
+    ('03-pass-at-k', 'pass@k and sampling metrics', 'The unbiased estimator and choosing k.'),
+    ('04-error-bars', 'Error bars and comparing models', 'Standard errors, clustered errors, paired tests, power analysis.'),
+    ('05-contamination', 'Contamination', '13-gram overlap, clean vs dirty scores, fresh test sets.'),
+    ('06-llm-as-judge', 'LLM-as-judge', 'Agreement with humans; position, verbosity and self-enhancement bias.'),
+    ('07-arenas', 'Arenas and ratings', 'Bradley-Terry vs online Elo, confidence intervals.'),
+]
+
+
+def evals_hub():
+    cards = ''.join(f'<a class="hub-card" href="{s}/index.html"><div class="n">{s[:2]}</div><h3>{t}</h3><p>{p}</p></a>' for s, t, p in EVAL_CARDS)
+    n_nb = len(load('index_evals.json'))
+    return f'''<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evaluating LLMs</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body {{ overflow-y: auto; }}</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="label" style="margin-top:28px">Visual guide · {len(EVAL_CARDS)} decks + {n_nb} Colab notebooks</div>
+  <h1>Evaluating LLMs</h1>
+  <p class="lede">What an eval score really measures and how much to trust it: benchmark design and failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases, and arena ratings. Every deck follows the 9-beat template, numbers are checked against the source papers, and the statistics have hands-on Colab notebooks.</p>
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: {n_nb} Colab notebooks</h3><p class="caption" style="margin:0">Implement the unbiased pass@k estimator, standard and clustered errors, paired tests and power analysis, an n-gram contamination detector, a judge position-swap test, Bradley-Terry ratings and online Elo in NumPy.</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>
+  <div class="hub-grid">{cards}</div>
+  <p class="cite" style="margin-top:26px">Sources: Liang et al. 2022 (HELM); Sclar et al. 2023; Hendrycks et al. 2021 (MMLU); Wang et al. 2024 (MMLU-Pro); Rein et al. 2023 (GPQA); Cobbe et al. 2021 (GSM8K); Chen et al. 2021 (HumanEval, pass@k); Jimenez et al. 2024 (SWE-bench); Miller 2024 (error bars); Brown et al. 2020 (GPT-3 contamination); Zhang et al. 2024 (GSM1k); Zheng et al. 2023 (MT-Bench); Dubois et al. 2024 (length-controlled AlpacaEval); Chiang et al. 2024 (Chatbot Arena).</p>
+</div>
+</body>
+</html>
+'''
+
+
+if __name__ == '__main__':
+    open(os.path.join(REPO, 'evals', 'index.html'), 'w').write(evals_hub())
+    print('wrote evals/index.html')

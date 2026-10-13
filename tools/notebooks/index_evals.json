@@ -1,0 +1,34 @@
+[
+ {
+  "slug": "01_pass_at_k",
+  "title": "01 \u00b7 pass@k: the unbiased estimator",
+  "path": "build-it/evals/01_pass_at_k.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/01_pass_at_k.ipynb",
+  "deck": "evals/03-pass-at-k/",
+  "minutes": 30
+ },
+ {
+  "slug": "02_error_bars",
+  "title": "02 \u00b7 Error bars, clustered errors and paired comparisons",
+  "path": "build-it/evals/02_error_bars.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/02_error_bars.ipynb",
+  "deck": "evals/04-error-bars/",
+  "minutes": 40
+ },
+ {
+  "slug": "03_contamination",
+  "title": "03 \u00b7 Detecting benchmark contamination with n-grams",
+  "path": "build-it/evals/03_contamination.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/03_contamination.ipynb",
+  "deck": "evals/05-contamination/",
+  "minutes": 35
+ },
+ {
+  "slug": "04_judges_and_arenas",
+  "title": "04 \u00b7 LLM judges and arena ratings",
+  "path": "build-it/evals/04_judges_and_arenas.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb",
+  "deck": "evals/07-arenas/",
+  "minutes": 45
+ }
+]

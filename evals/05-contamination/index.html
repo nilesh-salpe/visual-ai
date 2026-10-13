@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contamination</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="Contamination" data-home="../index.html" data-home-label="Evals">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Evaluating LLMs · 05</div>
+    <h1>Benchmark contamination</h1>
+    <p class="sub">When test questions leak into training data the score partly measures memorization. How to detect overlap, how to report it, and how fresh test sets reveal overfitting.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Pretraining corpora are scraped from the web, and benchmarks are published on the web. Test items (or close variants) can end up in training data, inflating scores in ways that don't reflect real capability.</div>
+      <div class="c"><b>Core idea</b><b>Detect</b> overlap (GPT-3 flagged any 13-gram match with the training set), <b>report</b> clean-subset scores next to full ones, and <b>validate</b> on fresh or held-out test sets that can't have leaked.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>How leakage inflates a score <span class="ill">simulation</span></h2>
+    <hr>
+    <p class="lede">A model with true skill 55% that answers leaked items correctly 95% of the time (memorized). Move the fraction of the test set that leaked into training.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><label class="ctl">leaked fraction <input type="range" id="lF" min="0" max="0.5" step="0.05" value="0.1"> <output id="lFo"></output></label></div>
+      <div id="lBars" style="margin-top:12px"></div>
+      <p class="readout" id="lOut"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why it is hard to avoid</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Web-scale data</h3><p>Benchmarks, their solutions and discussions of them are posted online and get scraped along with everything else.</p></div>
+      <div class="card b"><h3>Filtering is imperfect</h3><p>GPT-3 tried to remove overlaps with its benchmarks, but "a bug in the filtering caused us to ignore some overlaps, and due to the cost of training it was not feasible to retrain the model."</p></div>
+      <div class="card c"><h3>Paraphrases escape detection</h3><p>Exact n-gram matching misses translated, reworded or reformatted copies of test items.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Reading a contamination report</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">A model scores 80% on a benchmark, 81% on the flagged ("dirty") items and 80% on the clean items. What does that suggest?</p>
+      <div class="opts">
+      <button>A. Heavy contamination inflated the score</button>
+      <button data-ok>B. Contamination is not driving the score on this benchmark</button>
+      <button>C. The benchmark is broken</button>
+      <button>D. The detector failed</button>
+      </div>
+      <div class="why"><b>B.</b> If clean-subset performance matches the full score, the overlapping items aren't giving the model an advantage. That is GPT-3's method: compare scores on the clean subset with the full benchmark. GPT-3 found contamination "has a minimal effect" on most datasets, while flagging some where it did matter.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Detect, report, validate</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>Detect</h3><p>GPT-3 flagged test examples "that have a 13-gram overlap with anything in the pretraining set (or that overlap with the whole example when it is shorter than 13-grams)". Deliberately conservative.</p></div>
+      <div class="card b"><h3>Report</h3><p>Score the full set, the clean subset and the dirty subset. A big gap between clean and full means the score is partly memorization.</p></div>
+      <div class="card e"><h3>Validate</h3><p>Build new test sets the model can't have seen: GSM1k mirrors GSM8K's style with fresh problems. Models that overfit GSM8K drop on it.</p></div>
+    </div>
+    <div class="deep"><h4>What GSM1k found</h4><p>On fresh, GSM8K-style problems, the authors "observe accuracy drops of up to 8%, with several families of models showing evidence of systematic overfitting across almost all model sizes", while frontier models (they name Gemini, GPT and Claude) "show little to no signs of overfitting". Contamination is not uniform: it depends on how each model's data was collected.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>n-gram overlap, by hand</h2>
+    <hr>
+    <p class="lede">A toy test item and a training document. Choose n and see which n-grams of the test item also appear in training. Short n flags coincidences; long n misses partial copies.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0"><label class="ctl">n <input type="range" id="nN" min="2" max="8" step="1" value="5"> <output id="nNo"></output></label></div>
+      <div id="nTest" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:12px;font:500 13px 'JetBrains Mono',monospace"></div>
+      <p class="caption" style="margin-top:8px">training document: <span id="nTrain" style="font-family:'JetBrains Mono',monospace"></span></p>
+      <p class="readout" id="nOut"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Other defences</h2>
+    <hr>
+    <div class="visual scroll-x"><table class="tbl">
+      <tr><th>Defence</th><th>How it helps</th><th>Limits</th></tr>
+      <tr><td>n-gram overlap filtering</td><td>Removes exact copies before training; flags items after</td><td>Misses paraphrases and translations</td></tr>
+      <tr><td>Clean-subset reporting</td><td>Shows whether flagged items move the score</td><td>Only as good as the detector</td></tr>
+      <tr><td>Fresh / held-out test sets</td><td>Can't have leaked (GSM1k)</td><td>Expensive to build; must match difficulty</td></tr>
+      <tr><td>Private or rotating test sets</td><td>Never published, or replaced regularly</td><td>Less reproducible for outsiders</td></tr>
+      <tr><td>Canary strings</td><td>A unique marker in benchmark files lets data pipelines filter them and lets models be probed for having seen them</td><td>Depends on pipelines honouring it</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it matters</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Scores stop meaning capability</h3><p>A memorized answer says nothing about solving a new problem of the same kind, which is what the benchmark is supposed to predict.</p></div>
+      <div class="card e"><h3>Comparisons become unfair</h3><p>Models trained on different data are contaminated to different degrees, so rankings mix skill with exposure.</p></div>
+      <div class="card b"><h3>It compounds over time</h3><p>The longer a benchmark is public, the more copies, solutions and discussions exist on the web.</p></div>
+      <div class="card c"><h3>Fresh tests restore trust</h3><p>A gap between an old benchmark and a fresh equivalent (GSM8K vs GSM1k) is direct evidence of overfitting.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"If the benchmark was filtered from the training data, it is clean."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Filters miss paraphrases and can have bugs, as GPT-3's did. Report clean-subset results and use fresh sets.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Contamination always inflates scores a lot."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">GPT-3 found minimal effect on most benchmarks, and GSM1k found frontier models barely affected. It varies by model and dataset, so measure it.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"A shorter n-gram makes detection strictly better."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Short n-grams match by coincidence in real text, producing false positives. GPT-3 chose 13 to stay conservative.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">What n-gram length did GPT-3 use to flag potential contamination?</p>
+      <div class="opts">
+      <button>A. 3</button>
+      <button>B. 8</button>
+      <button data-ok>C. 13</button>
+      <button>D. 50</button>
+      </div>
+      <div class="why"><b>13-grams</b> (or the whole example if shorter).</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">How do clean and dirty subset scores tell you whether contamination matters?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">If the clean-subset score matches the full score, overlap isn't driving results. If dirty items score much higher than clean ones, part of the score is memorization.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">What did GSM1k do, and what did it find?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Built fresh GSM8K-style problems. Accuracy dropped by up to 8% for some model families (systematic overfitting), while frontier models showed little to no drop.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Contaminated test items turn benchmarks into memory tests: detect overlap (13-grams), report clean-subset scores, and confirm on fresh test sets.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Benchmarks live on the web, and so does training data, so test items leak. A model that memorized leaked items looks better than it is, and the effect differs between models. GPT-3 flagged any test example sharing a 13-gram with its training data and compared scores on the clean and dirty subsets; it found little effect on most benchmarks, after a filtering bug had left some overlap in. n-gram matching misses paraphrases, so the strongest evidence comes from fresh test sets: on GSM1k, new GSM8K-style problems, some model families dropped by up to 8 percent while frontier models barely changed.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> web-scale training data includes public test sets.</span></div><div><span><b>Detect & report:</b> 13-gram overlap; full vs clean vs dirty scores.</span></div><div><span><b>Validate:</b> fresh or private test sets; GSM1k drops of up to 8%.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/03_contamination.ipynb" target="_blank" rel="noopener">03 · Detecting benchmark contamination with n-grams</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/evals/03_contamination.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../06-llm-as-judge/index.html">06 · LLM-as-judge →</a> · Previous: <a href="../04-error-bars/index.html">← 04</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Brown et al. 2020, "Language Models are Few-Shot Learners" (GPT-3 §4 and App. C: 13-gram overlap, filtering bug, clean vs dirty analysis); Zhang et al. 2024, "A Careful Examination of Large Language Model Performance on Grade School Arithmetic" (GSM1k: drops of up to 8%).</p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  Deck.bind(['lF'], () => {
+    const f = Deck.val('lF'), clean = 0.55, full = f * 0.95 + (1 - f) * clean; Deck.out('lFo', (100 * f).toFixed(0) + '%');
+    Deck.hbars(document.getElementById('lBars'), [{ label: 'reported (full set)', value: full, color: 'var(--d)', text: (100 * full).toFixed(1) + '%' }, { label: 'clean subset', value: clean, color: 'var(--a)', text: '55.0%' }, { label: 'dirty subset', value: f ? 0.95 : 0, color: 'var(--b)', text: f ? '95.0%' : '—' }], { max: 1 });
+    document.getElementById('lOut').innerHTML = `With ${(100 * f).toFixed(0)}% leaked, the reported score is inflated by <b>${(100 * (full - clean)).toFixed(1)} points</b> over the model's real skill.`;
+  });
+  const TEST = 'a train leaves the station at noon travelling at sixty miles per hour toward the coast'.split(' ');
+  const TRAIN = 'yesterday a train leaves the station at noon travelling quickly and nobody knows why the coast is quiet'.split(' ');
+  Deck.bind(['nN'], () => {
+    const n = Deck.val('nN'); Deck.out('nNo', n);
+    const grams = new Set(); for (let i = 0; i + n <= TRAIN.length; i++) grams.add(TRAIN.slice(i, i + n).join(' '));
+    const hit = new Array(TEST.length).fill(false); let any = 0;
+    for (let i = 0; i + n <= TEST.length; i++) if (grams.has(TEST.slice(i, i + n).join(' '))) { any++; for (let j = i; j < i + n; j++) hit[j] = true; }
+    const box = document.getElementById('nTest'); box.innerHTML = '';
+    TEST.forEach((w, i) => { const s = document.createElement('span'); s.textContent = w; s.style.cssText = `padding:3px 7px;border-radius:5px;background:${hit[i] ? 'var(--d)' : 'var(--panel-2)'};color:${hit[i] ? '#fff' : 'var(--ink)'}`; box.appendChild(s); });
+    document.getElementById('nTrain').textContent = TRAIN.join(' ');
+    document.getElementById('nOut').innerHTML = any ? `<b>${any}</b> of the test item's ${n}-grams appear in training: <b>flagged</b>.` : `No shared ${n}-gram: <b>not flagged</b>, even though half the item was copied. Longer n misses partial copies.`;
+  });
+
+})();
+</script>
+</body>
+</html>

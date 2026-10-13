@@ -52,3 +52,14 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/architecture/
 | [08 · RL with verifiable rewards and GRPO](post-training/08_grpo_rlvr.ipynb) | 45 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/08_grpo_rlvr.ipynb) |
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/post-training/
+
+## Phase 4 · Evaluating LLMs
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · pass@k: the unbiased estimator](evals/01_pass_at_k.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/01_pass_at_k.ipynb) |
+| [02 · Error bars, clustered errors and paired comparisons](evals/02_error_bars.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/02_error_bars.ipynb) |
+| [03 · Detecting benchmark contamination with n-grams](evals/03_contamination.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/03_contamination.ipynb) |
+| [04 · LLM judges and arena ratings](evals/04_judges_and_arenas.ipynb) | 45 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/evals/

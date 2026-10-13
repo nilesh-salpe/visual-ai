@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benchmarks and Their Failure Modes</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+
+</head>
+<body data-deck="Benchmarks and their failure modes" data-home="../index.html" data-home-label="Evals">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Evaluating LLMs · 02</div>
+    <h1>Benchmarks and their failure modes</h1>
+    <p class="sub">Multiple-choice, generative, code and agentic benchmarks: how each is scored, what it really measures, and why benchmarks saturate and get replaced.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Benchmarks are how the field measures progress, but each format has blind spots, and once models approach the ceiling a benchmark stops telling models apart.</div>
+      <div class="c"><b>Core idea</b>Pick benchmarks whose <b>format matches the capability</b> (recognize vs produce vs act), check how answers are <b>scored</b>, know the <b>chance and expert baselines</b>, and move to harder or fresher sets as a benchmark <b>saturates</b>.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Four kinds of benchmark</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Multiple choice (MMLU, GPQA)</h3><p>Pick one of the given options. Cheap and unambiguous to score, but measures <b>recognition</b>, and a random guess already scores 1/(number of options).</p></div>
+      <div class="card b"><h3>Short answer (GSM8K)</h3><p>Produce a final answer (a number) that is compared with the reference. 8.5K grade-school maths word problems; scoring depends on extracting the answer correctly.</p></div>
+      <div class="card e"><h3>Code with tests (HumanEval)</h3><p>164 hand-written programming problems; the generated function must pass unit tests. Functional correctness instead of text similarity.</p></div>
+      <div class="card c"><h3>Agentic (SWE-bench)</h3><p>2,294 real GitHub issues: edit a repository so the project's tests pass. Measures multi-step work in a realistic environment; at release the best model, Claude 2, solved 1.96%.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>How benchmarks fail</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card d"><h3>Saturation</h3><p>Once top models score near the ceiling (or near the label-noise limit), differences shrink into the error bars and the benchmark stops ranking models.</p></div>
+      <div class="card b"><h3>Shortcuts</h3><p>With 4 options, eliminating two weak distractors gives 50% without knowing the answer. MMLU-Pro raised options from 4 to 10 and accuracy dropped by 16–33%.</p></div>
+      <div class="card c"><h3>Contamination and label errors</h3><p>Public test sets leak into training data (deck 05), and some "correct" answers are themselves wrong, which caps the achievable score.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Read the baselines</h2>
+    <hr>
+    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+    <div class="quiz">
+      <p class="qq">GPQA reports experts at 65%, skilled non-experts with web access at 34%, and GPT-4 at 39%. What makes GPQA useful as a benchmark?</p>
+      <div class="opts">
+      <button>A. It is easy for everyone</button>
+      <button data-ok>B. Answers are hard to look up: non-experts barely beat guessing even with 30+ minutes of web search</button>
+      <button>C. It has many more questions than MMLU</button>
+      <button>D. It is open-ended</button>
+      </div>
+      <div class="why"><b>B.</b> "Google-proof": the large gap between experts (65%) and skilled non-experts with unrestricted web access (34%, near the 25% chance level) means retrieval alone doesn't solve it, so it still separates strong models.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Know the floor, the ceiling and the format</h2>
+    <hr>
+    <div class="grid3">
+      <div class="card a"><h3>Floor</h3><p>Chance level: 25% for 4 options, 10% for 10. MMLU's original paper: GPT-3 175B improved over random chance "by almost 20 percentage points on average".</p></div>
+      <div class="card b"><h3>Ceiling</h3><p>Expert accuracy and label noise. If experts score 65% (GPQA) or some labels are wrong, 100% is neither expected nor meaningful.</p></div>
+      <div class="card e"><h3>Format fit</h3><p>Recognize (multiple choice), produce (short answer, code), or act over many steps (agents). Use the format closest to how the model will be used.</p></div>
+    </div>
+    <div class="deep"><h4>Scoring multiple choice</h4><p>Two common ways: compare the model's <b>log-probability</b> of each option (or option letter) and take the highest, or let the model <b>generate</b> an answer and parse the letter. They can give different scores for the same model: the first never fails to produce a valid answer, the second also tests instruction following and can lose points to parsing errors. Harnesses differ here, which is one reason published numbers disagree.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Chance level vs number of options</h2>
+    <hr>
+    <p class="lede">Expected accuracy for a model that knows a fraction of the answers and guesses uniformly on the rest. More options lower the floor and make guessing less rewarding, which is part of how MMLU-Pro separates models better.</p>
+    <div class="visual">
+      <div class="controls" style="margin-top:0">
+        <label class="ctl">Fraction truly known <input type="range" id="kK" min="0" max="1" step="0.05" value="0.5"> <output id="kKo"></output></label>
+        <label class="ctl">Distractors eliminated <input type="range" id="kE" min="0" max="2" step="1" value="0"> <output id="kEo"></output></label>
+      </div>
+      <div id="kBars" style="margin-top:12px"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Benchmarks at a glance</h2>
+    <hr>
+    <div class="visual scroll-x"><table class="tbl">
+      <tr><th>Benchmark</th><th>Size</th><th>Format / scoring</th><th>Reference points</th></tr>
+      <tr><td>MMLU</td><td>57 tasks</td><td>4-option multiple choice</td><td>GPT-3 175B ≈ chance + 20 points at release</td></tr>
+      <tr><td>MMLU-Pro</td><td>10 options</td><td>harder, reasoning-focused multiple choice</td><td>16–33% lower accuracy than MMLU</td></tr>
+      <tr><td>GPQA</td><td>448 questions</td><td>expert-written multiple choice</td><td>experts 65%, non-experts 34%, GPT-4 39%</td></tr>
+      <tr><td>GSM8K</td><td>8.5K problems</td><td>maths word problems, final-answer match</td><td>saturating; fresh variants show overfitting (deck 05)</td></tr>
+      <tr><td>HumanEval</td><td>164 problems</td><td>Python functions, unit tests, pass@k</td><td>Codex-12B 28.8% pass@1</td></tr>
+      <tr><td>SWE-bench</td><td>2,294 issues</td><td>edit a real repo, project tests must pass</td><td>Claude 2 1.96% at release</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why benchmarks keep being replaced</h2>
+    <hr>
+    <div class="grid2">
+      <div class="card a"><h3>Progress compresses scores</h3><p>Near the ceiling, gaps between models fall inside the error bars, so the benchmark no longer ranks them.</p></div>
+      <div class="card e"><h3>Harder versions restore spread</h3><p>More options (MMLU-Pro), expert-only questions (GPQA) and realistic tasks (SWE-bench) re-open the range.</p></div>
+      <div class="card b"><h3>Fresh sets fight leakage</h3><p>The longer a test set is public, the more likely it is in training data. New or held-out sets restore trust.</p></div>
+      <div class="card c"><h3>Usage moves on</h3><p>As models are used as agents and coders, benchmarks shift from recognizing answers to doing work end to end.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+    <div class="quiz myth">
+      <p class="qq">"25% on a 4-option benchmark means the model knows a quarter of the material."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">25% is what random guessing gets. Knowledge shows up only above the chance floor.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"A model at 90% on a saturated benchmark is clearly better than one at 88%."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Near the ceiling, a 2-point gap may be within the error bars or caused by label noise and prompt format.</div>
+    </div>
+    <div class="quiz myth">
+      <p class="qq">"Multiple-choice accuracy shows the model can produce the answer."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It shows the model can <b>recognize</b> the answer among options. Producing it unaided is a harder, different skill.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+    <div class="quiz">
+      <p class="qq">MMLU-Pro increased the number of options to…</p>
+      <div class="opts">
+      <button>A. 5</button>
+      <button>B. 8</button>
+      <button data-ok>C. 10</button>
+      <button>D. 26</button>
+      </div>
+      <div class="why"><b>10</b>, lowering the chance floor to 10%, and accuracy dropped 16–33%.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">Why can log-prob scoring and generation scoring disagree on the same multiple-choice benchmark?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Log-prob scoring always yields a valid choice; generation can produce unparseable or differently formatted answers and also depends on instruction following and the parser.</div>
+    </div>
+    <div class="quiz ">
+      <p class="qq">What does SWE-bench measure that HumanEval doesn't?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Working in a real repository on real issues: finding the relevant code, making multi-file edits and passing the project's own tests, rather than writing one standalone function.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Choose benchmarks by format (recognize, produce, act), read them against chance and expert baselines, and expect saturation, shortcuts and leakage to retire them.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Benchmarks differ in what they measure. Multiple-choice sets like MMLU test recognition and have a guessing floor; short-answer sets like GSM8K test producing an answer; HumanEval checks code with unit tests; SWE-bench asks a model to resolve real GitHub issues, where the best model at release solved under 2 percent. Scores must be read against chance and expert levels: on GPQA experts score 65 percent and skilled non-experts with web search only 34. As models improve, benchmarks saturate, shortcuts appear and test sets leak, so harder versions like MMLU-Pro, with ten options and 16 to 33 percent lower scores, replace them.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> each format has blind spots; benchmarks saturate.</span></div><div><span><b>Core idea:</b> match format to capability; know floor, ceiling and scoring.</span></div><div><span><b>Examples:</b> MMLU/MMLU-Pro, GPQA, GSM8K, HumanEval, SWE-bench.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/02_error_bars.ipynb" target="_blank" rel="noopener">02 · Error bars, clustered errors and paired comparisons</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/evals/02_error_bars.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/03_contamination.ipynb" target="_blank" rel="noopener">03 · Detecting benchmark contamination with n-grams</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/evals/03_contamination.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../03-pass-at-k/index.html">03 · pass@k and sampling metrics →</a> · Previous: <a href="../01-what-an-eval-measures/index.html">← 01</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Hendrycks et al. 2021 (MMLU: 57 tasks); Wang et al. 2024 (MMLU-Pro: 10 options, 16–33% drop); Rein et al. 2023 (GPQA: 448 questions, experts 65%, non-experts 34%, GPT-4 39%); Cobbe et al. 2021 (GSM8K: 8.5K problems); Chen et al. 2021 (HumanEval: 164 problems); Jimenez et al. 2024 (SWE-bench: 2,294 issues, 1.96%).</p>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+
+  Deck.bind(['kK', 'kE'], () => {
+    const k = Deck.val('kK'), e = Deck.val('kE'); Deck.out('kKo', (100 * k).toFixed(0) + '%'); Deck.out('kEo', e);
+    const acc = n => k + (1 - k) / Math.max(1, n - e);
+    Deck.hbars(document.getElementById('kBars'), [4, 10].map(n => ({ label: `${n} options (chance ${(100 / n).toFixed(0)}%)`, value: acc(n), color: n === 4 ? 'var(--b)' : 'var(--a)', text: (100 * acc(n)).toFixed(1) + '%' })), { max: 1 });
+  });
+
+})();
+</script>
+</body>
+</html>
