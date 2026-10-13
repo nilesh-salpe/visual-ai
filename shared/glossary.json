@@ -1,0 +1,505 @@
+{
+ "_about": "Acronym -> expansion. Used by tools/decks/acronyms.py to expand the first body-text use in each deck, by tools/lint_acronyms.py, and by the Glossary page. 'plural' overrides the default (expansion + 's'). 'exempt' lists tokens that are units, product names, venues or code, never expanded.",
+ "terms": {
+  "AI": {
+   "exp": "artificial intelligence"
+  },
+  "AIME": {
+   "exp": "American Invitational Mathematics Examination"
+  },
+  "ALiBi": {
+   "exp": "Attention with Linear Biases"
+  },
+  "ALU": {
+   "exp": "arithmetic logic unit"
+  },
+  "API": {
+   "exp": "application programming interface"
+  },
+  "AWQ": {
+   "exp": "Activation-aware Weight Quantization"
+  },
+  "BERT": {
+   "exp": "Bidirectional Encoder Representations from Transformers"
+  },
+  "BF16": {
+   "exp": "bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats"
+  },
+  "BLEU": {
+   "exp": "Bilingual Evaluation Understudy, an n-gram overlap score for translation"
+  },
+  "BOS": {
+   "exp": "beginning of sequence"
+  },
+  "BPE": {
+   "exp": "byte-pair encoding"
+  },
+  "BT": {
+   "exp": "Bradley-Terry"
+  },
+  "CAI": {
+   "exp": "Constitutional AI (artificial intelligence), Anthropic's method"
+  },
+  "CI": {
+   "exp": "confidence interval",
+   "plural": "confidence intervals"
+  },
+  "CLS": {
+   "exp": "classification token"
+  },
+  "CLT": {
+   "exp": "central limit theorem"
+  },
+  "CNN": {
+   "exp": "convolutional neural network"
+  },
+  "CPU": {
+   "exp": "central processing unit"
+  },
+  "CUDA": {
+   "exp": "Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors"
+  },
+  "DCGM": {
+   "exp": "NVIDIA Data Center GPU (graphics processing unit) Manager"
+  },
+  "DP": {
+   "exp": "data parallelism"
+  },
+  "DPO": {
+   "exp": "Direct Preference Optimization"
+  },
+  "DRAM": {
+   "exp": "dynamic random-access memory"
+  },
+  "ECC": {
+   "exp": "error-correcting code"
+  },
+  "ECMP": {
+   "exp": "equal-cost multi-path routing"
+  },
+  "ECN": {
+   "exp": "explicit congestion notification"
+  },
+  "EOS": {
+   "exp": "end of sequence"
+  },
+  "EP": {
+   "exp": "expert parallelism"
+  },
+  "FFN": {
+   "exp": "feed-forward network"
+  },
+  "FIM": {
+   "exp": "fill-in-the-middle"
+  },
+  "FLOP": {
+   "exp": "floating-point operation"
+  },
+  "FLOPS": {
+   "exp": "floating-point operations per second"
+  },
+  "FMA": {
+   "exp": "fused multiply-add"
+  },
+  "FP16": {
+   "exp": "16-bit floating point"
+  },
+  "FP32": {
+   "exp": "32-bit floating point"
+  },
+  "FP4": {
+   "exp": "4-bit floating point"
+  },
+  "FP64": {
+   "exp": "64-bit floating point"
+  },
+  "FP8": {
+   "exp": "8-bit floating point"
+  },
+  "FSDP": {
+   "exp": "Fully Sharded Data Parallel"
+  },
+  "GAE": {
+   "exp": "generalized advantage estimation"
+  },
+  "GELU": {
+   "exp": "Gaussian Error Linear Unit"
+  },
+  "GEMM": {
+   "exp": "general matrix multiplication"
+  },
+  "GLU": {
+   "exp": "gated linear unit"
+  },
+  "GPQA": {
+   "exp": "Graduate-level Google-Proof Q&A benchmark"
+  },
+  "GPU": {
+   "exp": "graphics processing unit"
+  },
+  "GQA": {
+   "exp": "grouped-query attention"
+  },
+  "GRPO": {
+   "exp": "Group Relative Policy Optimization"
+  },
+  "GSM8K": {
+   "exp": "Grade School Math 8K"
+  },
+  "HBM": {
+   "exp": "high-bandwidth memory"
+  },
+  "HELM": {
+   "exp": "Holistic Evaluation of Language Models"
+  },
+  "HF": {
+   "exp": "Hugging Face"
+  },
+  "HFU": {
+   "exp": "Hardware FLOPs (floating-point operations) Utilization, like model FLOPs utilization but counting recomputed work too"
+  },
+  "INT4": {
+   "exp": "4-bit integer"
+  },
+  "INT8": {
+   "exp": "8-bit integer"
+  },
+  "IO": {
+   "exp": "input/output (memory reads and writes)"
+  },
+  "KL": {
+   "exp": "Kullback-Leibler divergence"
+  },
+  "KTO": {
+   "exp": "Kahneman-Tversky Optimization"
+  },
+  "KV": {
+   "exp": "key-value"
+  },
+  "LLM": {
+   "exp": "large language model"
+  },
+  "LM": {
+   "exp": "language model"
+  },
+  "LN": {
+   "exp": "layer normalization"
+  },
+  "LoRA": {
+   "exp": "Low-Rank Adaptation"
+  },
+  "LRU": {
+   "exp": "least recently used"
+  },
+  "LSTM": {
+   "exp": "long short-term memory network"
+  },
+  "MFU": {
+   "exp": "Model FLOPs (floating-point operations) Utilization, the share of peak compute spent on the model's math"
+  },
+  "MHA": {
+   "exp": "multi-head attention"
+  },
+  "MIG": {
+   "exp": "Multi-Instance GPU (graphics processing unit) partitioning"
+  },
+  "MLA": {
+   "exp": "multi-head latent attention"
+  },
+  "MLE": {
+   "exp": "maximum likelihood estimation"
+  },
+  "MLP": {
+   "exp": "multilayer perceptron"
+  },
+  "MMLU": {
+   "exp": "Massive Multitask Language Understanding"
+  },
+  "MoE": {
+   "exp": "Mixture of Experts"
+  },
+  "MPS": {
+   "exp": "NVIDIA Multi-Process Service"
+  },
+  "MQA": {
+   "exp": "multi-query attention"
+  },
+  "MT": {
+   "exp": "machine translation"
+  },
+  "MTBF": {
+   "exp": "mean time between failures"
+  },
+  "NCCL": {
+   "exp": "NVIDIA Collective Communications Library"
+  },
+  "NF4": {
+   "exp": "4-bit NormalFloat"
+  },
+  "NFKC": {
+   "exp": "Unicode Normalization Form KC (compatibility composition)"
+  },
+  "NIC": {
+   "exp": "network interface card"
+  },
+  "NLP": {
+   "exp": "natural language processing"
+  },
+  "NMT": {
+   "exp": "neural machine translation"
+  },
+  "NTK": {
+   "exp": "neural tangent kernel"
+  },
+  "NUMA": {
+   "exp": "non-uniform memory access"
+  },
+  "OS": {
+   "exp": "operating system"
+  },
+  "PCIe": {
+   "exp": "PCI Express, the standard expansion bus"
+  },
+  "PE": {
+   "exp": "positional encoding"
+  },
+  "PFC": {
+   "exp": "priority flow control"
+  },
+  "PI": {
+   "exp": "Position Interpolation"
+  },
+  "PP": {
+   "exp": "pipeline parallelism"
+  },
+  "PPL": {
+   "exp": "perplexity"
+  },
+  "PPO": {
+   "exp": "Proximal Policy Optimization"
+  },
+  "PUE": {
+   "exp": "power usage effectiveness"
+  },
+  "QLoRA": {
+   "exp": "Quantized Low-Rank Adaptation"
+  },
+  "RAM": {
+   "exp": "random-access memory"
+  },
+  "RDMA": {
+   "exp": "remote direct memory access"
+  },
+  "ReLU": {
+   "exp": "rectified linear unit"
+  },
+  "RL": {
+   "exp": "reinforcement learning"
+  },
+  "RLAIF": {
+   "exp": "reinforcement learning from artificial-intelligence feedback"
+  },
+  "RLHF": {
+   "exp": "reinforcement learning from human feedback"
+  },
+  "RLVR": {
+   "exp": "reinforcement learning with verifiable rewards"
+  },
+  "RM": {
+   "exp": "reward model"
+  },
+  "RMSNorm": {
+   "exp": "root-mean-square normalization"
+  },
+  "RNN": {
+   "exp": "recurrent neural network"
+  },
+  "RoCE": {
+   "exp": "remote direct memory access over Converged Ethernet"
+  },
+  "ROCm": {
+   "exp": "AMD's Radeon Open Compute software stack for its graphics processors"
+  },
+  "RoPE": {
+   "exp": "rotary position embedding"
+  },
+  "RS": {
+   "exp": "rejection sampling"
+  },
+  "SDC": {
+   "exp": "silent data corruption"
+  },
+  "SE": {
+   "exp": "standard error"
+  },
+  "SFT": {
+   "exp": "supervised fine-tuning"
+  },
+  "SGD": {
+   "exp": "stochastic gradient descent"
+  },
+  "SHARP": {
+   "exp": "Scalable Hierarchical Aggregation and Reduction Protocol, in-network reduction on NVIDIA switches"
+  },
+  "SiLU": {
+   "exp": "Sigmoid Linear Unit"
+  },
+  "SIMD": {
+   "exp": "single instruction, multiple data"
+  },
+  "SIMT": {
+   "exp": "single instruction, multiple threads"
+  },
+  "SLO": {
+   "exp": "service-level objective"
+  },
+  "SM": {
+   "exp": "streaming multiprocessor"
+  },
+  "SMEM": {
+   "exp": "shared memory, on-chip per streaming multiprocessor"
+  },
+  "SRAM": {
+   "exp": "static random-access memory (fast on-chip memory)"
+  },
+  "SWA": {
+   "exp": "sliding-window attention"
+  },
+  "SwiGLU": {
+   "exp": "Swish-gated linear unit"
+  },
+  "SXM": {
+   "exp": "NVIDIA's socketed module form factor for data-center graphics processors"
+  },
+  "TDP": {
+   "exp": "thermal design power"
+  },
+  "TF32": {
+   "exp": "TensorFloat-32"
+  },
+  "TFLOP": {
+   "exp": "trillion floating-point operations"
+  },
+  "TFLOPS": {
+   "exp": "trillion floating-point operations per second"
+  },
+  "TMA": {
+   "exp": "Tensor Memory Accelerator"
+  },
+  "TP": {
+   "exp": "tensor parallelism"
+  },
+  "TPOT": {
+   "exp": "time per output token"
+  },
+  "TPU": {
+   "exp": "tensor processing unit"
+  },
+  "TTFT": {
+   "exp": "time to first token"
+  },
+  "UNK": {
+   "exp": "unknown token"
+  },
+  "UTF": {
+   "exp": "Unicode Transformation Format"
+  },
+  "W8A8": {
+   "exp": "8-bit weights and 8-bit activations"
+  },
+  "WMT": {
+   "exp": "Workshop on Machine Translation"
+  },
+  "XID": {
+   "exp": "NVIDIA driver error code"
+  },
+  "YaRN": {
+   "exp": "Yet another RoPE (rotary position embedding) extension method"
+  },
+  "ZeRO": {
+   "exp": "Zero Redundancy Optimizer"
+  }
+ },
+ "exempt": [
+  "KB",
+  "MB",
+  "GB",
+  "TB",
+  "KiB",
+  "MiB",
+  "GiB",
+  "TiB",
+  "PB",
+  "MW",
+  "NVIDIA",
+  "AMD",
+  "OpenAI",
+  "DeepSeek",
+  "GitHub",
+  "PyTorch",
+  "NumPy",
+  "JAX",
+  "XLA",
+  "vLLM",
+  "SGLang",
+  "TensorRT",
+  "NVLink",
+  "NVSwitch",
+  "InfiniBand",
+  "DGX",
+  "HGX",
+  "ConnectX",
+  "GPT",
+  "PaLM",
+  "LLaMA",
+  "README",
+  "JavaScript",
+  "URL",
+  "URLs",
+  "ASCII",
+  "OSDI",
+  "SOSP",
+  "ICML",
+  "EMNLP",
+  "NeurIPS",
+  "ICLR",
+  "ISCA",
+  "ISSCC",
+  "HotOS",
+  "IEEE",
+  "MLSys",
+  "II",
+  "QA",
+  "OK",
+  "EN",
+  "DE",
+  "FR",
+  "RO",
+  "RU",
+  "MATH",
+  "DROP",
+  "RACE",
+  "MGSM",
+  "XXL",
+  "GFLOPs",
+  "TFLOPs",
+  "PFLOPs",
+  "FasterTransformer",
+  "PagedAttention",
+  "RadixAttention",
+  "DistServe",
+  "SmoothQuant",
+  "GLM",
+  "GPTQ",
+  "Orca",
+  "Splitwise",
+  "Sarathi",
+  "Mooncake",
+  "Medusa",
+  "EAGLE",
+  "FlashAttention",
+  "LLM.int8",
+  "SARATHI",
+  "TinyChat"
+ ]
+}

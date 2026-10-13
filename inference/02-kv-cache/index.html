@@ -14,7 +14,7 @@
   <div class="inner">
     <div class="kicker">LLM Inference &amp; Serving · 02</div>
     <h1>The KV cache</h1>
-    <p class="sub">Why every LLM server stores past keys and values, how much memory that takes, and how GQA and MLA shrink it.</p>
+    <p class="sub">Why every LLM (large language model) server stores past keys and values, how much memory that takes, and how GQA (grouped-query attention) and MLA (multi-head latent attention) shrink it.</p>
     <div class="ps">
       <div class="p"><b>What is the problem?</b>Without caching, generating token t re-runs attention over all t previous tokens, so total work grows quadratically.</div>
       <div class="c"><b>Core idea</b>Store each layer's <b>K and V</b> for every past token. A new token computes only its own q, k and v and attends over the cache. The result is exact, but memory grows with context × batch.</div>
@@ -48,7 +48,7 @@
     <div class="grid3">
       <div class="card d"><h3>Same K and V every time</h3><p>Past tokens' keys and values don't change when a new token arrives, because causal masking means earlier positions never see later ones.</p></div>
       <div class="card b"><h3>Quadratic total work</h3><p>Generating n tokens costs about n²/2 token-passes, so long answers get disproportionately slow.</p></div>
-      <div class="card c"><h3>Latency grows each step</h3><p>Every step is slower than the one before it, so TPOT keeps rising throughout the answer.</p></div>
+      <div class="card c"><h3>Latency grows each step</h3><p>Every step is slower than the one before it, so TPOT (time per output token) keeps rising throughout the answer.</p></div>
     </div>
   </div>
 </section>
@@ -83,6 +83,8 @@
       <div class="card e"><h3>Exact</h3><p>The logits are identical to full recomputation. The cache trades compute for <b>memory</b>.</p></div>
     </div>
     <div class="eq">KV bytes = 2 × layers × kv_heads × head_dim × bytes/element × tokens × batch</div>
+
+    <div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 216" role="img" aria-label="The cache turns &quot;recompute the whole prefix&quot; into &quot;compute one token and read the past&quot;." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">new token</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">embedding of the</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">latest token</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">q, k, v</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">computed for this</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">token only</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">append k, v</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">to every layer&#x27;s</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">cache</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">attend</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">q · all cached</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">keys</text><text x="461.6" y="137.0" text-anchor="middle" class="tm" style="font-size:11px">→ weights × cached</text><text x="461.6" y="151.0" text-anchor="middle" class="tm" style="font-size:11px">values</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">next token</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">sample, feed back</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">in</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M593.2 164 V188 H66.8 V166" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="330.0" y="205" text-anchor="middle" class="tm" style="font-size:11px">one decode step per token; the cache grows by one entry per layer each step</text></svg><p class="caption" style="margin:4px 0 0">The cache turns "recompute the whole prefix" into "compute one token and read the past".</p></div>
   </div>
 </section>
 
@@ -99,9 +101,9 @@
         <div class="seg" id="mD"><button data-v="2" class="on">BF16</button><button data-v="1">FP8</button></div>
       </div>
       <div class="grid3" style="margin-top:14px">
-        <div class="stat"><div class="num" id="mTok"></div><div class="lbl">KV per token</div></div>
+        <div class="stat"><div class="num" id="mTok"></div><div class="lbl">KV (key-value) per token</div></div>
         <div class="stat"><div class="num" id="mTot" style="color:var(--b)"></div><div class="lbl">total KV cache</div></div>
-        <div class="stat"><div class="num" id="mW"></div><div class="lbl">weights (BF16) for comparison</div></div>
+        <div class="stat"><div class="num" id="mW"></div><div class="lbl">weights (BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats)) for comparison</div></div>
       </div>
       <div id="mBars" style="margin-top:12px"></div>
     </div>
@@ -121,9 +123,19 @@
       <p class="readout" id="gOut"></p>
     </div>
     <div class="grid2" style="margin-top:12px">
-      <div class="card a"><h3>GQA (Ainslie et al., EMNLP 2023)</h3><p>Between MHA and MQA. Quality close to MHA at speeds comparable to MQA, and MHA checkpoints can be "uptrained" with about 5% of the original pre-training compute.</p></div>
+      <div class="card a"><h3>GQA (Ainslie et al., EMNLP 2023)</h3><p>Between MHA (multi-head attention) and MQA (multi-query attention). Quality close to MHA at speeds comparable to MQA, and MHA checkpoints can be "uptrained" with about 5% of the original pre-training compute.</p></div>
       <div class="card c"><h3>MLA (DeepSeek-V2, 2024)</h3><p>Compresses K and V into a latent vector: <b>93.3%</b> smaller KV cache and <b>5.76×</b> max generation throughput compared with DeepSeek 67B.</p></div>
     </div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: how big is the cache?</h2>
+    <hr>
+    <p class="lede">Llama-3-70B: 80 layers, 8 KV (key-value) heads (GQA), head dimension 128, BF16 (2 bytes). Context 8,192 tokens, batch 32.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Per token: 2 (K and V) × 80 layers × 8 heads × 128 × 2 bytes = <b>327,680 bytes = 320 KiB</b>.</li><li>Per sequence at 8,192 tokens: 320 KiB × 8,192 = <b>2.5 GiB</b>.</li><li>Batch of 32: <b>80 GiB</b>, about as much as the 70B weights in FP8 (8-bit floating point).</li><li>Without GQA (64 KV heads, one per query head) it would be 8× larger: <b>640 GiB</b>.</li></ol><div class="result">Rule: KV bytes per token = 2 × layers × KV heads × head_dim × bytes. For this model, every 1,000 tokens of context costs <b>0.31 GiB</b> per sequence.</div></div>
   </div>
 </section>
 
@@ -161,6 +173,19 @@
       <p class="qq">"The KV cache is small compared with the weights."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">At long context it isn't: a 70B-shaped model with GQA needs <b>40 GiB per sequence at 128K tokens</b> in BF16.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>KV bytes/token = 2·L·n_kv·d_head·bytes.</b> Use KV heads, not query heads.</li><li><b>Total = per-token × context × batch.</b> Batch and context trade against each other for the same memory.</li><li><b>GQA saves n_heads / n_kv.</b> Llama-3-70B: 64 query heads / 8 KV heads = 8× smaller cache.</li><li><b>Break-even with weights.</b> Context × batch where KV = weight bytes tells you when memory, not weights, limits concurrency.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Using num_attention_heads.</b> With GQA the cache scales with num_key_value_heads; using query heads overestimates by the group factor.</li><li><b>Dropping the factor 2.</b> There are two cached tensors, K and V.</li><li><b>Caching queries.</b> Past queries are never reused; only K and V are cached.</li><li><b>Thinking the cache changes outputs.</b> It is exact: identical logits to recomputing everything.</li></ul></div>
     </div>
   </div>
 </section>
@@ -209,6 +234,29 @@
     <div class="recap"><div><span><b>Problem:</b> naive decoding recomputes the whole prefix every step.</span></div><div><span><b>Core idea:</b> cache K and V; exact, linear work per step, memory grows with context × batch; shrink it with GQA or MLA.</span></div></div>
     <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/02_kv_cache.ipynb" target="_blank" rel="noopener">02 · KV-cache decoding</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/02_kv_cache.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/03_gqa_mqa.ipynb" target="_blank" rel="noopener">03 · Grouped-query attention (GQA) and multi-query attention (MQA)</a> <span style="color:var(--faint)">· 25 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/03_gqa_mqa.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/04_kv_memory_calculator.ipynb" target="_blank" rel="noopener">04 · KV-cache memory calculator</a> <span style="color:var(--faint)">· 20 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/04_kv_memory_calculator.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
     <p class="start-hint">Next: <a href="../03-batching/index.html">03 · Batching →</a> · Previous: <a href="../01-inference-workload/index.html">← 01</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1911.02150" target="_blank" rel="noopener">Fast Transformer Decoding: One Write-Head is All You Need</a>
+        <div class="meta">Shazeer · arXiv 2019</div>
+        <p>Introduces multi-query attention: all heads share one key/value head, cutting the memory bandwidth of incremental decoding with only minor quality loss.</p><div class="num">Remember: 1 K/V head instead of h</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2305.13245" target="_blank" rel="noopener">GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints</a>
+        <div class="meta">Ainslie et al. · EMNLP 2023</div>
+        <p>Grouped-query attention: an intermediate number of key/value heads, plus a recipe to convert existing multi-head checkpoints.</p><div class="num">Remember: quality close to MHA, speed close to MQA; uptraining with 5% of the original pretraining compute</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2405.04434" target="_blank" rel="noopener">DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model</a>
+        <div class="meta">DeepSeek-AI · arXiv 2024</div>
+        <p>Introduces multi-head latent attention (MLA), which compresses keys and values into a small latent vector per token, alongside a Mixture-of-Experts design.</p><div class="num">Remember: KV cache reduced by 93.3%; maximum generation throughput 5.76× vs DeepSeek 67B</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2211.05102" target="_blank" rel="noopener">Efficiently Scaling Transformer Inference</a>
+        <div class="meta">Pope et al. · MLSys 2023</div>
+        <p>An analytical model of inference cost that picks how to partition a model across chips for a given latency target; shows prefill and decode need different strategies and that multi-query attention allows much longer contexts.</p><div class="num">Remember: 29 ms/token on PaLM 540B with int8 weights; 76% MFU (Model FLOPs (floating-point operations) Utilization, the share of peak compute spent on the model's math) on large-batch prefill; MQA enables up to 32× longer context</div></div>
+    </div>
   </div>
 </section>
 

@@ -30,7 +30,7 @@
     <hr>
     <div class="grid2">
       <div class="card a"><h3>Prefill</h3><p>Hundreds to thousands of tokens in one pass. Compute-heavy and slow per iteration.</p></div>
-      <div class="card b"><h3>Decode</h3><p>One token per running request. Fast, but uses little of the GPU's compute.</p></div>
+      <div class="card b"><h3>Decode</h3><p>One token per running request. Fast, but uses little of the GPU (graphics processing unit)'s compute.</p></div>
     </div>
     <div class="takeaway">Naively interleaving the two makes it hard to get high throughput and low latency at the same time (Sarathi-Serve).</div>
   </div>
@@ -42,8 +42,8 @@
     <h2>Two naive policies, two failure modes</h2>
     <hr>
     <div class="vs">
-      <div class="card d"><h3>Prefill-first</h3><p>Run a new prompt's whole prefill as soon as it arrives. Every running decode <b>stalls</b> behind that long iteration, causing TPOT spikes.</p></div>
-      <div class="card b"><h3>Decode-first</h3><p>Finish decodes before admitting prefills. New requests wait, which hurts TTFT, and decode-only batches underuse compute.</p></div>
+      <div class="card d"><h3>Prefill-first</h3><p>Run a new prompt's whole prefill as soon as it arrives. Every running decode <b>stalls</b> behind that long iteration, causing TPOT (time per output token) spikes.</p></div>
+      <div class="card b"><h3>Decode-first</h3><p>Finish decodes before admitting prefills. New requests wait, which hurts TTFT (time to first token), and decode-only batches underuse compute.</p></div>
     </div>
   </div>
 </section>
@@ -77,6 +77,8 @@
       <div class="card b"><h3>Decodes first</h3><p>Every running request gets its token, so decodes never stall.</p></div>
       <div class="card e"><h3>Prefill chunks fill the rest</h3><p>Waiting prompts are processed in near-equal chunks. The first output token appears when the last chunk finishes.</p></div>
     </div>
+
+    <div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 188" role="img" aria-label="Every iteration has a bounded size, so decode latency stays flat while long prompts stream in." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--faint)"/><text x="83.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">token budget</text><text x="83.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">per iteration, e.g. 512</text><rect x="174.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--b)"/><text x="247.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">decodes first</text><text x="247.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">1 token each, never</text><text x="247.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">paused</text><line x1="158.5" y1="60.0" x2="172.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="339.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--a)"/><text x="412.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">prefill chunk</text><text x="412.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">fills the remaining</text><text x="412.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">budget</text><line x1="323.0" y1="60.0" x2="337.0" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="503.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--c)"/><text x="576.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">one forward pass</text><text x="576.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">mixed batch</text><line x1="487.5" y1="60.0" x2="501.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M576.8 136 V160 H83.2 V138" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="330.0" y="177" text-anchor="middle" class="tm" style="font-size:11px">next iteration: the next chunk of the same prompt continues</text></svg><p class="caption" style="margin:4px 0 0">Every iteration has a bounded size, so decode latency stays flat while long prompts stream in.</p></div>
   </div>
 </section>
 
@@ -93,6 +95,16 @@
       <p class="readout" id="ckOut"></p>
     </div>
     <p class="caption">Same request trace for both, from the rules in Build-it notebook 06. Bar height = tokens processed in that iteration, a proxy for iteration time.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: an 8,000-token prompt arrives</h2>
+    <hr>
+    <p class="lede">100 sequences are decoding. Token budget per iteration: 512.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Prefill-first: the next iteration processes 8,000 + 100 = <b>8,100 tokens</b>; every running sequence waits for it (a TPOT spike).</li><li>Chunked: decodes take 100 tokens of the budget, leaving <b>412</b> for the new prompt.</li><li>The prompt is processed in ⌈8,000 / 412⌉ = <b>20 chunks</b>, each iteration at most 512 tokens.</li><li>Each chunk attends to the KV (key-value) of earlier chunks, so the result is identical to one big prefill.</li></ol><div class="result">Running sequences never stall: every iteration is ≤ 512 tokens instead of one 8,100-token iteration. The cost: the new request's TTFT is spread over 20 iterations.</div></div>
   </div>
 </section>
 
@@ -130,6 +142,19 @@
       <p class="qq">"Chunked prefill only helps long prompts."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">It also raises <b>utilization</b>, because decode-only iterations underuse compute and the chunks fill that gap.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Size the budget from the TPOT SLO (service-level objective).</b> Pick the largest budget whose iteration time still meets the TPOT target.</li><li><b>Decodes piggyback.</b> A decode token costs little extra when batched with a compute-heavy prefill chunk.</li><li><b>Chunking is exact.</b> Later chunks attend to earlier chunks' cached K and V.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Chunks too small.</b> Low arithmetic intensity, and each chunk re-reads the growing KV of earlier chunks.</li><li><b>Expecting less total work.</b> Chunking reorganizes prefill, it does not remove FLOPs (and adds a little overhead).</li><li><b>Ignoring TTFT.</b> Long prompts finish prefill later than with prefill-first; that is the trade being made.</li></ul></div>
     </div>
   </div>
 </section>
@@ -178,6 +203,23 @@
     <div class="recap"><div><span><b>Problem:</b> long prefills stall decodes (TPOT spikes) or wait behind them (TTFT).</span></div><div><span><b>Core idea:</b> a per-iteration token budget: decodes first, prefill chunks after.</span></div></div>
     <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/06_chunked_prefill.ipynb" target="_blank" rel="noopener">06 · Chunked prefill with a token budget</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/06_chunked_prefill.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
     <p class="start-hint">Next: <a href="../05-paged-attention/index.html">05 · PagedAttention and prefix caching →</a> · Previous: <a href="../03-batching/index.html">← 03</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2308.16369" target="_blank" rel="noopener">SARATHI: Efficient LLM (large language model) Inference by Piggybacking Decodes with Chunked Prefills</a>
+        <div class="meta">Agrawal et al. · arXiv 2023</div>
+        <p>Splits prefills into equal chunks and fills the rest of each batch with decodes, which "piggyback" on the compute-heavy chunk.</p><div class="num">Remember: up to 10× decode throughput (LLaMA-13B, A6000)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2403.02310" target="_blank" rel="noopener">Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve</a>
+        <div class="meta">Agrawal et al. · OSDI 2024</div>
+        <p>Chunked prefills plus stall-free scheduling: new requests are added without pausing ongoing decodes, so throughput rises without TPOT spikes.</p><div class="num">Remember: 2.6× serving capacity (Mistral-7B, 1 A100) and up to 3.7× (Yi-34B, 2 A100s) vs vLLM; up to 5.6× with pipeline parallelism (Falcon-180B)</div></div>
+    </div>
   </div>
 </section>
 

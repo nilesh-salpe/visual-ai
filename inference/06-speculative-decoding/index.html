@@ -16,7 +16,7 @@
     <h1>Speculative decoding</h1>
     <p class="sub">Draft several tokens with a small model, verify them all in one pass of the large model, and keep exactly the large model's output distribution (Leviathan et al., ICML 2023; Chen et al., 2023).</p>
     <div class="ps">
-      <div class="p"><b>What is the problem?</b>Decode produces one token per full read of the model's weights. The GPU waits on memory while its compute sits mostly idle, and tokens can't be generated in parallel because each depends on the last.</div>
+      <div class="p"><b>What is the problem?</b>Decode produces one token per full read of the model's weights. The GPU (graphics processing unit) waits on memory while its compute sits mostly idle, and tokens can't be generated in parallel because each depends on the last.</div>
       <div class="c"><b>Core idea</b>A cheap <b>draft</b> model proposes γ tokens; the target model <b>scores all of them in one forward pass</b>; a modified rejection rule accepts a prefix of them, so the output distribution is unchanged.</div>
     </div>
     <div class="toc" data-auto></div>
@@ -28,7 +28,7 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>Decode is slow for a reason that has nothing to do with compute</h2>
     <hr>
-    <p class="lede">At batch 1, every decode step reads all the weights, about 140 GB for a 70B model in BF16, to produce <b>one</b> token. Scoring several tokens in the same pass costs almost the same, because the memory read is the bottleneck, not the math (GPU deck 02).</p>
+    <p class="lede">At batch 1, every decode step reads all the weights, about 140 GB for a 70B model in BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats), to produce <b>one</b> token. Scoring several tokens in the same pass costs almost the same, because the memory read is the bottleneck, not the math (GPU deck 02).</p>
     <div class="takeaway">If we knew which tokens to score, we could check several of them for about the price of one step.</div>
   </div>
 </section>
@@ -76,6 +76,8 @@
       <div class="card e"><h3>3. Accept or reject</h3><p>Accept draft x with probability min(1, p(x)/q(x)). On the first rejection, sample a replacement from norm(max(0, p − q)) and stop.</p></div>
       <div class="card c"><h3>4. Bonus token</h3><p>If all γ are accepted, sample one more token from p for free. Each pass yields 1 to γ+1 tokens.</p></div>
     </div>
+
+    <div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 202" role="img" aria-label="Exact: the output distribution is the target model&#x27;s." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--b)"/><text x="83.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">draft γ tokens</text><text x="83.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">small model, cheap</text><rect x="174.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--a)"/><text x="247.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">verify in one pass</text><text x="247.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">target scores all γ + 1</text><text x="247.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">positions</text><line x1="158.5" y1="60.0" x2="172.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="339.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--c)"/><text x="412.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">accept / reject</text><text x="412.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">modified rejection</text><text x="412.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">sampling</text><line x1="323.0" y1="60.0" x2="337.0" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="503.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--e)"/><text x="576.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">emit</text><text x="576.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">accepted prefix</text><text x="576.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">+ 1 token from the</text><text x="576.8" y="137.0" text-anchor="middle" class="tm" style="font-size:11px">target</text><line x1="487.5" y1="60.0" x2="501.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M576.8 150 V174 H83.2 V152" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="330.0" y="191" text-anchor="middle" class="tm" style="font-size:11px">repeat from the last accepted token</text></svg><p class="caption" style="margin:4px 0 0">Exact: the output distribution is the target model's.</p></div>
   </div>
 </section>
 
@@ -115,6 +117,16 @@
   </div>
 </section>
 
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: expected speedup</h2>
+    <hr>
+    <p class="lede">Acceptance rate α = 0.8, draft length γ = 4, and a draft that costs c = 0.05 of a target forward pass.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Expected tokens per target pass = (1 − α<sup>γ+1</sup>) / (1 − α) = (1 − 0.8<sup>5</sup>) / 0.2 = <b>3.36</b>.</li><li>Cost per iteration = γ·c + 1 = 4 × 0.05 + 1 = <b>1.20</b> target-pass equivalents.</li><li>Speedup = 3.36 / 1.20 ≈ <b>2.8×</b>.</li><li>With α = 0.5 instead: tokens = 1.94, speedup ≈ 1.6×. Draft quality matters more than draft length.</li></ol><div class="result">Formulas from Leviathan et al. (2023). This assumes the target pass costs the same for 1 or γ + 1 tokens, which holds while decode is memory-bound (small batch).</div></div>
+  </div>
+</section>
+
 <section class="slide" id="s-why" data-chapter="Why">
   <div class="inner">
     <span class="qtag b6">6 · Why it works</span>
@@ -149,6 +161,19 @@
       <p class="qq">"A longer draft (bigger γ) is always faster."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Each extra draft token costs c and is less likely to be accepted. The best γ depends on α and c.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>E[tokens] = (1 − α^(γ+1)) / (1 − α).</b> Speedup = E[tokens] / (γc + 1).</li><li><b>Best at small batch.</b> Verifying γ + 1 tokens is nearly free only while the target is memory-bound.</li><li><b>Every iteration emits ≥ 1 token.</b> Even if all drafts are rejected, the target's own token is kept.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Assuming it changes outputs.</b> With the modified rejection rule the samples are exactly from the target distribution.</li><li><b>Using it at large batch.</b> When decode is already compute-bound, the extra verification FLOPs (floating-point operations) reduce or erase the gain.</li><li><b>Ignoring draft cost and KV (key-value).</b> The draft model also needs memory, its own KV cache and time; c is not zero.</li></ul></div>
     </div>
   </div>
 </section>
@@ -197,6 +222,23 @@
     <div class="recap"><div><span><b>Problem:</b> one token per full weight read; autoregression blocks parallel generation.</span></div><div><span><b>Core idea:</b> draft cheaply, verify in parallel, accept or reject exactly; speedup is set by α, γ and c.</span></div></div>
     <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/09_speculative_sampling.ipynb" target="_blank" rel="noopener">09 · Speculative sampling</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/09_speculative_sampling.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
     <p class="start-hint">Next: <a href="../07-quantization/index.html">07 · Quantization →</a> · Previous: <a href="../05-paged-attention/index.html">← 05</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2211.17192" target="_blank" rel="noopener">Fast Inference from Transformers via Speculative Decoding</a>
+        <div class="meta">Leviathan et al. · ICML 2023</div>
+        <p>A small model drafts tokens, the large model verifies them in parallel, and a modified rejection rule keeps the output distribution exactly unchanged.</p><div class="num">Remember: 2–3× faster on T5-XXL with identical outputs</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2302.01318" target="_blank" rel="noopener">Accelerating Large Language Model Decoding with Speculative Sampling</a>
+        <div class="meta">Chen et al. · arXiv 2023</div>
+        <p>Independent derivation of speculative sampling with a modified rejection scheme that preserves the target distribution.</p><div class="num">Remember: 2–2.5× decoding speedup on Chinchilla 70B</div></div>
+    </div>
   </div>
 </section>
 

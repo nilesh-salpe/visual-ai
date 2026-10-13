@@ -14,7 +14,7 @@
   <div class="inner">
     <div class="kicker">LLM Inference &amp; Serving · 07</div>
     <h1>Quantization for inference</h1>
-    <p class="sub">Fewer bits per weight, activation and KV entry: INT8 and INT4 scales, the activation-outlier problem and SmoothQuant's fix, weight-only methods (GPTQ, AWQ), and FP8.</p>
+    <p class="sub">Fewer bits per weight, activation and KV (key-value) entry: INT8 (8-bit integer) and INT4 (4-bit integer) scales, the activation-outlier problem and SmoothQuant's fix, weight-only methods (GPTQ, AWQ (Activation-aware Weight Quantization)), and FP8 (8-bit floating point).</p>
     <div class="ps">
       <div class="p"><b>What is the problem?</b>Decode speed and capacity are limited by bytes: weights and KV cache read every step. 16-bit numbers are expensive to move.</div>
       <div class="c"><b>Core idea</b>Store numbers in 8, 4 or fewer bits with <b>scales</b>, chosen per tensor, per channel or per group, and handle <b>outliers</b> so accuracy survives.</div>
@@ -28,7 +28,7 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>Bytes, not FLOPs, set decode speed</h2>
     <hr>
-    <p class="lede">At small batch, every decode step streams the weights (and the KV cache) from HBM. Halve the bytes and you roughly halve that time, and twice as much fits in memory.</p>
+    <p class="lede">At small batch, every decode step streams the weights (and the KV cache) from HBM (high-bandwidth memory). Halve the bytes and you roughly halve that time, and twice as much fits in memory.</p>
     <div class="visual"><div id="p1Bars"></div></div>
     <p class="caption">Weight bytes for a 70B-parameter model at different precisions.</p>
   </div>
@@ -75,9 +75,11 @@
     <div class="grid2" style="margin-top:12px">
       <div class="card a"><h3>Granularity</h3><p>Per tensor → per channel → per group: smaller groups mean tighter ranges and less error, at the cost of storing more scales.</p></div>
       <div class="card b"><h3>W8A8 (SmoothQuant)</h3><p>INT8 weights and activations via smoothing: up to <b>1.56×</b> speed and <b>2×</b> less memory with negligible accuracy loss.</p></div>
-      <div class="card c"><h3>Weight-only, 3–4 bits</h3><p><b>GPTQ</b>: second-order one-shot quantization; a 175B model in ~4 GPU-hours; 3.25× (A100) and 4.5× (A6000) over FP16. <b>AWQ</b>: protect the ~1% salient weights found from activations; &gt;3× over HF FP16.</p></div>
+      <div class="card c"><h3>Weight-only, 3–4 bits</h3><p><b>GPTQ</b>: second-order one-shot quantization; a 175B model in ~4 GPU-hours (GPU = graphics processing unit); 3.25× (A100) and 4.5× (A6000) over FP16 (16-bit floating point). <b>AWQ</b>: protect the ~1% salient weights found from activations; &gt;3× over HF (Hugging Face) FP16.</p></div>
       <div class="card e"><h3>FP8</h3><p>E4M3 and E5M2 floating point, with per-tensor or per-block scales. It matched 16-bit training quality in Micikevicius et al. (2022).</p></div>
     </div>
+
+    <div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Quantization trades a little accuracy for fewer bytes to store and to read." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">BF16 weights</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">and activations</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">pick granularity</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">tensor / channel /</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">group</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">scales + codes</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">INT8, INT4, FP8</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">matmul</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">dequantize or</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">low-bit kernel</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">fewer bytes</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">faster decode,</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">more KV room</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Quantization trades a little accuracy for fewer bytes to store and to read.</p></div>
   </div>
 </section>
 
@@ -103,7 +105,7 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>SmoothQuant on live data</h2>
     <hr>
-    <p class="lede">Activations with two outlier channels (×40), as LLMs show. The smoothing factor is <b>s<sub>j</sub> = max|X<sub>j</sub>|<sup>α</sup> / max|W<sub>j</sub>|<sup>1−α</sup></b> (paper eq. 4). α = 0.5 is the paper's default, and 0.75 was used for GLM-130B.</p>
+    <p class="lede">Activations with two outlier channels (×40), as LLMs (large language models) show. The smoothing factor is <b>s<sub>j</sub> = max|X<sub>j</sub>|<sup>α</sup> / max|W<sub>j</sub>|<sup>1−α</sup></b> (paper eq. 4). α = 0.5 is the paper's default, and 0.75 was used for GLM-130B.</p>
     <div class="visual">
       <label class="ctl">migration strength α <input type="range" id="smA" min="0" max="1" step="0.05" value="0.5"> <output id="smAo"></output></label>
       <div class="grid2" style="margin-top:10px">
@@ -129,6 +131,16 @@
       <tr><td>Character</td><td>more precision</td><td>more range</td></tr>
     </table></div>
     <div class="cite">Micikevicius et al., "FP8 Formats for Deep Learning" (2022), Table 1. Build-it notebook 11 enumerates all 127 / 124 finite non-negative values.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: memory and decode speed for a 70B model</h2>
+    <hr>
+    <p class="lede">70B parameters; group-wise INT4 uses one FP16 scale per 128 weights. Decode at batch 1 reads every weight once per token (H100: 3.35 TB/s).</p>
+    <div class="example"><h4>Worked example</h4><ol><li>BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats): 70B × 2 bytes = <b>140 GB</b>; INT8: <b>70 GB</b>; INT4: <b>35 GB</b>.</li><li>INT4 scale overhead: 16 bits / 128 weights = 0.125 bits per weight → +1.1 GB, so 4.125 effective bits.</li><li>Time to read the weights once: BF16 42 ms, INT8 21 ms, INT4 11 ms (bandwidth only, as if on one GPU).</li><li>Prefill is compute-bound, so weight-only INT4 helps it far less unless the kernel computes in low precision.</li></ol><div class="result">Weight-only INT4 cuts the per-token weight read about 3.9× vs BF16. That speeds memory-bound decode and frees memory for KV cache.</div></div>
   </div>
 </section>
 
@@ -166,6 +178,19 @@
       <p class="qq">"Per-tensor scales are fine for activations."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">LLM activations have <b>outlier channels</b>, so per-tensor activation INT8 needs SmoothQuant-style smoothing or finer scales.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Effective bits = bits + scale_bits / group_size.</b> INT4 with FP16 scales per 128 → 4.125 bits.</li><li><b>Weight-only quantization speeds decode.</b> Decode is bandwidth-bound; fewer bytes per weight = faster steps.</li><li><b>Handle outliers.</b> Per-channel scales, SmoothQuant's migration (α = 0.5 default), or keep outlier dimensions in 16-bit (LLM.int8()).</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Per-tensor activation scales.</b> A few outlier channels blow up the scale and crush everything else to zero.</li><li><b>Forgetting the scales.</b> Group scales add real memory; group size trades accuracy for overhead.</li><li><b>Expecting INT4 compute speedups everywhere.</b> Without low-bit kernels, weights are dequantized and the matmul runs in 16-bit.</li><li><b>Treating KV-cache and weight quantization as the same.</b> KV is quantized at runtime per token; errors accumulate differently.</li></ul></div>
     </div>
   </div>
 </section>
@@ -214,6 +239,32 @@
     <div class="recap"><div><span><b>Problem:</b> 16-bit bytes bound decode; naive low-bit rounding breaks on outliers.</span></div><div><span><b>Core idea:</b> scales at the right granularity, outlier migration, error-aware weight quantization, FP8.</span></div></div>
     <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/10_quantization.ipynb" target="_blank" rel="noopener">10 · INT8/INT4 quantization and SmoothQuant</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/10_quantization.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/11_fp8_emulation.ipynb" target="_blank" rel="noopener">11 · FP8 (E4M3 / E5M2) emulation</a> <span style="color:var(--faint)">· 30 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/11_fp8_emulation.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
     <p class="start-hint">Next: <a href="../08-parallelism/index.html">08 · Parallelism for inference →</a> · Previous: <a href="../06-speculative-decoding/index.html">← 06</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2208.07339" target="_blank" rel="noopener">LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale</a>
+        <div class="meta">Dettmers et al. · NeurIPS 2022</div>
+        <p>Finds systematic outlier features in large transformers and handles them with a mixed-precision decomposition: outlier dimensions in 16-bit, everything else in 8-bit.</p><div class="num">Remember: more than 99.9% of values multiplied in 8-bit, no degradation up to 175B</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2211.10438" target="_blank" rel="noopener">SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models</a>
+        <div class="meta">Xiao et al. · ICML 2023</div>
+        <p>Migrates quantization difficulty from activation outliers to weights with a mathematically equivalent per-channel scaling, enabling W8A8 (8-bit weights and activations).</p><div class="num">Remember: up to 1.56× speedup and 2× memory reduction</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2210.17323" target="_blank" rel="noopener">GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers</a>
+        <div class="meta">Frantar et al. · ICLR 2023</div>
+        <p>One-shot weight quantization using approximate second-order information, quantizing one column at a time and compensating the error in the rest.</p><div class="num">Remember: 175B model to 3–4 bits in about four GPU hours</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2306.00978" target="_blank" rel="noopener">AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration</a>
+        <div class="meta">Lin et al. · MLSys 2024</div>
+        <p>Weight-only low-bit quantization that protects the most important weight channels, chosen by activation magnitude, by scaling them up before quantizing.</p><div class="num">Remember: protecting 1% of salient weights greatly reduces error; >3× over Hugging Face FP16 with its TinyChat kernels</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2209.05433" target="_blank" rel="noopener">FP8 Formats for Deep Learning</a>
+        <div class="meta">Micikevicius et al. · arXiv 2022</div>
+        <p>Defines the two FP8 encodings, E4M3 (more precision) and E5M2 (more range), and shows FP8 training and post-training quantization matching 16-bit results.</p><div class="num">Remember: E4M3 max 448, E5M2 max 57,344</div></div>
+    </div>
   </div>
 </section>
 

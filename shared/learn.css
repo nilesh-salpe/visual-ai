@@ -67,3 +67,26 @@ pre.code { font: 13px/1.6 'JetBrains Mono', monospace; background: var(--panel-2
 .deep p { margin: 6px 0 0; }
 .deep b { color: var(--ink); }
 .deep ul { margin: 6px 0 0; padding-left: 20px; }
+
+/* At-a-glance diagram, worked example, tricks & traps, key papers */
+.glance { margin-top: 14px; padding: 12px 14px 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.glance h4, .example h4 { margin: 0 0 6px; font: 700 11.5px 'JetBrains Mono', monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--a); }
+.glance-svg { width: 100%; max-width: 820px; height: auto; display: block; margin: 0 auto; }
+.example { margin-top: 12px; padding: 14px 18px; border-radius: 12px; background: var(--a-soft); border: 1px solid var(--a); }
+.example ol { margin: 4px 0 0; padding-left: 22px; line-height: 1.65; font-size: 15px; }
+.example ol li { margin: 4px 0; }
+.example .result { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--a); font-size: 15px; }
+.tt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+@media (max-width: 760px) { .tt-grid { grid-template-columns: 1fr; } }
+.tt { border-radius: 12px; padding: 12px 16px; border: 1px solid var(--line); background: var(--panel); }
+.tt h3 { margin: 0 0 6px; font-size: 16px; }
+.tt.tricks h3 { color: var(--e); } .tt.traps h3 { color: var(--d); }
+.tt.tricks { border-top: 4px solid var(--e); } .tt.traps { border-top: 4px solid var(--d); }
+.tt ul { margin: 0; padding-left: 18px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+.tt li { margin: 7px 0; } .tt li b { color: var(--ink); }
+.papers { display: grid; gap: 10px; margin-top: 10px; }
+.paper-item { border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: 10px; padding: 10px 14px; background: var(--panel); }
+.paper-item a { font-weight: 700; color: var(--ink); text-decoration: none; } .paper-item a:hover { text-decoration: underline; }
+.paper-item .meta { font-size: 12.5px; color: var(--faint); margin-top: 2px; }
+.paper-item p { margin: 6px 0 0; font-size: 14.5px; color: var(--muted); }
+.paper-item .num { margin-top: 6px; font-size: 13.5px; font-weight: 600; color: var(--c); }
