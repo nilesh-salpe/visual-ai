@@ -14,10 +14,10 @@
   <div class="inner">
     <div class="kicker">The Modern LLM · 07</div>
     <h1>Long context I: stretching RoPE</h1>
-    <p class="sub">Why a model trained on 4K tokens falls apart at 32K, and how Position Interpolation, NTK-aware scaling, YaRN and Llama 3's long-context training fix it.</p>
+    <p class="sub">Why a model trained on 4K tokens falls apart at 32K, and how Position Interpolation, NTK-aware (NTK = neural tangent kernel) scaling, YaRN (Yet another rotary-position-embedding extension method) and Llama 3's long-context training fix it.</p>
     <div class="ps">
       <div class="p"><b>What is the problem?</b>A RoPE model trained at length L sees angles m·θᵢ only for m < L. Beyond L, the slow pairs reach angles the model has never seen, and attention scores blow up.</div>
-      <div class="c"><b>Core idea</b>Remap the rotation frequencies so long positions land on <b>angles seen in training</b>. PI slows every pair by s. NTK-aware raises the base. YaRN slows only the slow pairs and adds a temperature. Then fine-tune briefly, or train long from the start.</div>
+      <div class="c"><b>Core idea</b>Remap the rotation frequencies so long positions land on <b>angles seen in training</b>. PI (Position Interpolation) slows every pair by s. NTK-aware raises the base. YaRN slows only the slow pairs and adds a temperature. Then fine-tune briefly, or train long from the start.</div>
     </div>
     <div class="toc" data-auto></div>
   </div>
@@ -83,6 +83,8 @@
       <div class="card e"><h3>YaRN: by parts, plus temperature</h3><p>Count each pair's turns within L: r = L/λᵢ. If r &lt; α (=1): interpolate fully (θ/s). If r &gt; β (=32): leave alone. Blend linearly in between. Scale logits by √(1/t) = 0.1·ln s + 1.</p></div>
     </div>
     <div class="deep"><h4>Why YaRN adds a temperature</h4><p>Stretching the context spreads attention over many more tokens, so the softmax gets flatter (higher entropy). YaRN scales q and k so the logits are multiplied by (0.1·ln s + 1)²; at s = 8, √(1/t) ≈ 1.208. The coefficient was fit empirically on LLaMA models. YaRN reports needing about <b>10× fewer tokens and 2.5× fewer training steps</b> than previous methods: <b>400 steps</b>, about 0.1% of the original pretraining data, and it was the first method to extend Llama 2's effective context to 128K.</p></div>
+
+    <div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Or train long directly with a larger RoPE base, as Llama 3 did." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">trained at L</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">angles seen: m·θᵢ,</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">m &lt; L</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">target s·L</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">pick factor s</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">remap θ</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">PI / NTK-aware /</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">YaRN</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">short fine-tune</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">hundreds of steps</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">serve s·L</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">angles stay in</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">range</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Or train long directly with a larger RoPE base, as Llama 3 did.</p></div>
   </div>
 </section>
 
@@ -121,6 +123,16 @@
   </div>
 </section>
 
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: extending 4K to 32K (s = 8)</h2>
+    <hr>
+    <p class="lede">d = 128, base 10,000, trained length L = 4,096.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>PI: every θ ÷ 8. Neighbouring tokens differ by only 1/8 rad in pair 0 (was 1 rad).</li><li>NTK-aware: new base = 10,000 × 8<sup>128/126</sup> = <b>82,685</b>; pair 0 unchanged, pair 63 slowed by exactly 8.</li><li>YaRN: pairs with fewer than 1 turn in 4,096 tokens get θ/8; more than 32 turns are left alone; a ramp in between.</li><li>YaRN logit temperature: √(1/t) = 0.1·ln 8 + 1 = <b>1.208</b>.</li></ol><div class="result">All three keep slow pairs inside the trained angle range; they differ in how much local resolution they keep and how much fine-tuning they need.</div></div>
+  </div>
+</section>
+
 <section class="slide" id="s-why" data-chapter="Why">
   <div class="inner">
     <span class="qtag b6">6 · Why it works</span>
@@ -155,6 +167,19 @@
       <p class="qq">"Raising the RoPE base is all you need."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">A bigger base changes the frequencies the model was trained on. It has to be trained (or fine-tuned) at long lengths with that base, which is what Llama 3's staged continued pretraining does.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Find the at-risk pairs.</b> Pairs with wavelength 2π/θᵢ > L never completed a turn in training.</li><li><b>NTK base: b·s^(d/(d−2)).</b> Keeps the fastest pair, slows the slowest by s.</li><li><b>YaRN defaults for Llama: α = 1, β = 32.</b> Plus temperature 0.1·ln s + 1.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Skipping fine-tuning.</b> PI and YaRN both fine-tune; extrapolation without it fails.</li><li><b>Trusting the advertised window.</b> Check retrieval and long-document quality at the length you need.</li><li><b>Mismatched rope_scaling at inference.</b> Serving must apply the same scaling as fine-tuning.</li></ul></div>
     </div>
   </div>
 </section>
@@ -197,7 +222,27 @@
     <div class="explain"><b>Say it in 30 seconds</b><p>A RoPE model trained at length L has seen each pair's angles only up to L times theta. Fast pairs turn many times, so every angle is familiar, but slow pairs cover only part of the circle, and past L they produce unseen angles and exploding attention scores. Position Interpolation divides positions by the extension factor so every angle stays in range, then fine-tunes for about a thousand steps. NTK-aware scaling raises the base so fast pairs stay sharp. YaRN interpolates only the slow pairs, adds an attention temperature, and needs about 400 steps. Llama 3 instead uses a base of 500,000 and six stages of continued pretraining up to 128K.</p></div>
     <div class="recap"><div><span><b>Problem:</b> slow RoPE pairs hit unseen angles past the trained length.</span></div><div><span><b>Remap:</b> PI (all ÷ s), NTK-aware (bigger base), YaRN (slow pairs only + temperature).</span></div><div><span><b>Train long:</b> Llama 3: base 500K, 6 stages, 8K → 128K, ~800B tokens.</span></div></div>
     <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/06_rope_scaling.ipynb" target="_blank" rel="noopener">06 · Extending context: PI, NTK-aware and YaRN</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/architecture/06_rope_scaling.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
-    <p class="start-hint">Next: <a href="../08-sliding-window/index.html">08 · Long context II: sliding window and ALiBi →</a> · Previous: <a href="../06-decoder-only/index.html">← 06</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Chen et al. 2023, "Extending Context Window of Large Language Models via Positional Interpolation"; Peng et al. 2023, "YaRN" (eq. 13–22, §4); Su et al. 2021 (RoFormer); Llama Team 2024 (Llama 3 §3.2 RoPE base; §3.4.2 long-context pretraining).</p>
+    <p class="start-hint">Next: <a href="../08-sliding-window/index.html">08 · Long context II: sliding window and ALiBi (Attention with Linear Biases) →</a> · Previous: <a href="../06-decoder-only/index.html">← 06</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Chen et al. 2023, "Extending Context Window of Large Language Models via Positional Interpolation"; Peng et al. 2023, "YaRN" (eq. 13–22, §4); Su et al. 2021 (RoFormer); Llama Team 2024 (Llama 3 §3.2 RoPE base; §3.4.2 long-context pretraining).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2306.15595" target="_blank" rel="noopener">Extending Context Window of Large Language Models via Positional Interpolation</a>
+        <div class="meta">Chen et al. · arXiv 2023</div>
+        <p>Linearly down-scales position indices so a RoPE model sees only trained angles at longer lengths, then fine-tunes briefly.</p><div class="num">Remember: to 32,768 tokens with ~1,000 fine-tuning steps</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2309.00071" target="_blank" rel="noopener">YaRN: Efficient Context Window Extension of Large Language Models</a>
+        <div class="meta">Peng et al. · ICLR 2024</div>
+        <p>Interpolates only low-frequency RoPE pairs (a ramp between α and β) and adds an attention temperature.</p><div class="num">Remember: 10× fewer tokens, 2.5× fewer steps; Llama 2 to 128K</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    </div>
   </div>
 </section>
 

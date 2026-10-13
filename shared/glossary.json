@@ -38,7 +38,7 @@
    "exp": "Bradley-Terry"
   },
   "CAI": {
-   "exp": "Constitutional AI (artificial intelligence), Anthropic's method"
+   "exp": "Constitutional AI, Anthropic's method"
   },
   "CI": {
    "exp": "confidence interval",
@@ -60,7 +60,7 @@
    "exp": "Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors"
   },
   "DCGM": {
-   "exp": "NVIDIA Data Center GPU (graphics processing unit) Manager"
+   "exp": "NVIDIA Data Center GPU Manager"
   },
   "DP": {
    "exp": "data parallelism"
@@ -85,6 +85,15 @@
   },
   "EP": {
    "exp": "expert parallelism"
+  },
+  "FA1": {
+   "exp": "FlashAttention-1"
+  },
+  "FA2": {
+   "exp": "FlashAttention-2"
+  },
+  "FA3": {
+   "exp": "FlashAttention-3"
   },
   "FFN": {
    "exp": "feed-forward network"
@@ -119,6 +128,9 @@
   "FSDP": {
    "exp": "Fully Sharded Data Parallel"
   },
+  "FT": {
+   "exp": "fine-tuning"
+  },
   "GAE": {
    "exp": "generalized advantage estimation"
   },
@@ -128,8 +140,14 @@
   "GEMM": {
    "exp": "general matrix multiplication"
   },
+  "GFLOP": {
+   "exp": "billion floating-point operations"
+  },
   "GLU": {
    "exp": "gated linear unit"
+  },
+  "GLUE": {
+   "exp": "General Language Understanding Evaluation benchmark"
   },
   "GPQA": {
    "exp": "Graduate-level Google-Proof Q&A benchmark"
@@ -156,7 +174,7 @@
    "exp": "Hugging Face"
   },
   "HFU": {
-   "exp": "Hardware FLOPs (floating-point operations) Utilization, like model FLOPs utilization but counting recomputed work too"
+   "exp": "hardware floating-point-operation utilization, which also counts recomputed work"
   },
   "INT4": {
    "exp": "4-bit integer"
@@ -194,14 +212,17 @@
   "LSTM": {
    "exp": "long short-term memory network"
   },
+  "MCQ": {
+   "exp": "multiple-choice question"
+  },
   "MFU": {
-   "exp": "Model FLOPs (floating-point operations) Utilization, the share of peak compute spent on the model's math"
+   "exp": "model floating-point-operation utilization, the share of peak compute spent on the model's math"
   },
   "MHA": {
    "exp": "multi-head attention"
   },
   "MIG": {
-   "exp": "Multi-Instance GPU (graphics processing unit) partitioning"
+   "exp": "Multi-Instance GPU, hardware partitioning of one GPU"
   },
   "MLA": {
    "exp": "multi-head latent attention"
@@ -266,6 +287,9 @@
   "PFC": {
    "exp": "priority flow control"
   },
+  "PFLOP": {
+   "exp": "quadrillion floating-point operations"
+  },
   "PI": {
    "exp": "Position Interpolation"
   },
@@ -307,6 +331,9 @@
   },
   "RM": {
    "exp": "reward model"
+  },
+  "RMS": {
+   "exp": "root mean square"
   },
   "RMSNorm": {
    "exp": "root-mean-square normalization"
@@ -350,6 +377,9 @@
   "SIMT": {
    "exp": "single instruction, multiple threads"
   },
+  "SL": {
+   "exp": "supervised learning"
+  },
   "SLO": {
    "exp": "service-level objective"
   },
@@ -362,8 +392,14 @@
   "SRAM": {
    "exp": "static random-access memory (fast on-chip memory)"
   },
+  "STEM": {
+   "exp": "science, technology, engineering and mathematics"
+  },
   "SWA": {
    "exp": "sliding-window attention"
+  },
+  "SWE": {
+   "exp": "software engineering"
   },
   "SwiGLU": {
    "exp": "Swish-gated linear unit"
@@ -414,7 +450,7 @@
    "exp": "NVIDIA driver error code"
   },
   "YaRN": {
-   "exp": "Yet another RoPE (rotary position embedding) extension method"
+   "exp": "Yet another rotary-position-embedding extension method"
   },
   "ZeRO": {
    "exp": "Zero Redundancy Optimizer"
@@ -500,6 +536,37 @@
   "FlashAttention",
   "LLM.int8",
   "SARATHI",
-  "TinyChat"
+  "TinyChat",
+  "TopK",
+  "SuperGLUE",
+  "MLPerf",
+  "CLIP",
+  "BA",
+  "BAx",
+  "LEAST",
+  "JMLR",
+  "NAACL",
+  "TMLR",
+  "COLM",
+  "DeepSeekMoE",
+  "LayerNorm",
+  "RoFormer",
+  "BatchNorm",
+  "ResNet",
+  "ResNets",
+  "GEGLU",
+  "ReGLU",
+  "InstructGPT",
+  "ChatGPT",
+  "DeBERTa",
+  "RoBERTa",
+  "NormalFloat",
+  "DeepSeekMath",
+  "FormatSpread",
+  "HumanEval",
+  "GSM1k",
+  "AlpacaEval",
+  "FlashAttn",
+  "QK"
  ]
 }

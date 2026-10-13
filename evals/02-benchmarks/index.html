@@ -44,7 +44,7 @@
     <hr>
     <div class="grid3">
       <div class="card d"><h3>Saturation</h3><p>Once top models score near the ceiling (or near the label-noise limit), differences shrink into the error bars and the benchmark stops ranking models.</p></div>
-      <div class="card b"><h3>Shortcuts</h3><p>With 4 options, eliminating two weak distractors gives 50% without knowing the answer. MMLU-Pro raised options from 4 to 10 and accuracy dropped by 16–33%.</p></div>
+      <div class="card b"><h3>Shortcuts</h3><p>With 4 options, eliminating two weak distractors gives 50% without knowing the answer. MMLU-Pro (MMLU = Massive Multitask Language Understanding) raised options from 4 to 10 and accuracy dropped by 16–33%.</p></div>
       <div class="card c"><h3>Contamination and label errors</h3><p>Public test sets leak into training data (deck 05), and some "correct" answers are themselves wrong, which caps the achievable score.</p></div>
     </div>
   </div>
@@ -57,7 +57,7 @@
     <hr>
     <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
     <div class="quiz">
-      <p class="qq">GPQA reports experts at 65%, skilled non-experts with web access at 34%, and GPT-4 at 39%. What makes GPQA useful as a benchmark?</p>
+      <p class="qq">GPQA (Graduate-level Google-Proof Q&A benchmark) reports experts at 65%, skilled non-experts with web access at 34%, and GPT-4 at 39%. What makes GPQA useful as a benchmark?</p>
       <div class="opts">
       <button>A. It is easy for everyone</button>
       <button data-ok>B. Answers are hard to look up: non-experts barely beat guessing even with 30+ minutes of web search</button>
@@ -80,6 +80,8 @@
       <div class="card e"><h3>Format fit</h3><p>Recognize (multiple choice), produce (short answer, code), or act over many steps (agents). Use the format closest to how the model will be used.</p></div>
     </div>
     <div class="deep"><h4>Scoring multiple choice</h4><p>Two common ways: compare the model's <b>log-probability</b> of each option (or option letter) and take the highest, or let the model <b>generate</b> an answer and parse the letter. They can give different scores for the same model: the first never fails to produce a valid answer, the second also tests instruction following and can lose points to parsing errors. Harnesses differ here, which is one reason published numbers disagree.</p></div>
+
+    <div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Each benchmark lives until its scores stop separating models." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">format</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">recognize /</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">produce / act</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">scoring</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">log-prob, match,</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">tests</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">floor and ceiling</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">chance, experts,</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">label noise</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">saturation</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">scores bunch near</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">the top</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">replace</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">harder or fresher</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">set</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Each benchmark lives until its scores stop separating models.</p></div>
   </div>
 </section>
 
@@ -109,10 +111,20 @@
       <tr><td>MMLU</td><td>57 tasks</td><td>4-option multiple choice</td><td>GPT-3 175B ≈ chance + 20 points at release</td></tr>
       <tr><td>MMLU-Pro</td><td>10 options</td><td>harder, reasoning-focused multiple choice</td><td>16–33% lower accuracy than MMLU</td></tr>
       <tr><td>GPQA</td><td>448 questions</td><td>expert-written multiple choice</td><td>experts 65%, non-experts 34%, GPT-4 39%</td></tr>
-      <tr><td>GSM8K</td><td>8.5K problems</td><td>maths word problems, final-answer match</td><td>saturating; fresh variants show overfitting (deck 05)</td></tr>
+      <tr><td>GSM8K (Grade School Math 8K)</td><td>8.5K problems</td><td>maths word problems, final-answer match</td><td>saturating; fresh variants show overfitting (deck 05)</td></tr>
       <tr><td>HumanEval</td><td>164 problems</td><td>Python functions, unit tests, pass@k</td><td>Codex-12B 28.8% pass@1</td></tr>
-      <tr><td>SWE-bench</td><td>2,294 issues</td><td>edit a real repo, project tests must pass</td><td>Claude 2 1.96% at release</td></tr>
+      <tr><td>SWE-bench (SWE = software engineering)</td><td>2,294 issues</td><td>edit a real repo, project tests must pass</td><td>Claude 2 1.96% at release</td></tr>
     </table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: how guessing inflates multiple choice</h2>
+    <hr>
+    <p class="lede">A model truly knows 50% of the answers and guesses uniformly on the rest.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>4 options: 0.5 + 0.5 × 1/4 = <b>62.5%</b>.</li><li>4 options, one distractor eliminated: 0.5 + 0.5 × 1/3 = <b>66.7%</b>.</li><li>10 options (MMLU-Pro): 0.5 + 0.5 × 1/10 = <b>55.0%</b>.</li><li>Chance-corrected knowledge from a 4-option score s: (s − 0.25) / 0.75; e.g. s = 62.5% → 50%.</li></ol><div class="result">More options lower the floor, so scores reflect knowledge more; part of why MMLU-Pro scores are 16–33% lower.</div></div>
   </div>
 </section>
 
@@ -150,6 +162,19 @@
       <p class="qq">"Multiple-choice accuracy shows the model can produce the answer."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">It shows the model can <b>recognize</b> the answer among options. Producing it unaided is a harder, different skill.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Subtract chance.</b> (score − 1/k) / (1 − 1/k) for k options.</li><li><b>Know the expert ceiling.</b> GPQA: experts 65%, so 100% isn't the target.</li><li><b>Match the format to the use.</b> Recognize (MCQ (multiple-choice question)), produce (short answer, code), act (agents).</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>MCQ = can produce the answer.</b> It measures recognition among options.</li><li><b>Small gaps on saturated sets.</b> Often inside the error bars or label noise.</li><li><b>Ignoring the scoring rule.</b> Log-prob vs parsed generation can disagree for the same model.</li></ul></div>
     </div>
   </div>
 </section>
@@ -193,6 +218,29 @@
     <div class="recap"><div><span><b>Problem:</b> each format has blind spots; benchmarks saturate.</span></div><div><span><b>Core idea:</b> match format to capability; know floor, ceiling and scoring.</span></div><div><span><b>Examples:</b> MMLU/MMLU-Pro, GPQA, GSM8K, HumanEval, SWE-bench.</span></div></div>
     <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/02_error_bars.ipynb" target="_blank" rel="noopener">02 · Error bars, clustered errors and paired comparisons</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/evals/02_error_bars.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/03_contamination.ipynb" target="_blank" rel="noopener">03 · Detecting benchmark contamination with n-grams</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/evals/03_contamination.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
     <p class="start-hint">Next: <a href="../03-pass-at-k/index.html">03 · pass@k and sampling metrics →</a> · Previous: <a href="../01-what-an-eval-measures/index.html">← 01</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Hendrycks et al. 2021 (MMLU: 57 tasks); Wang et al. 2024 (MMLU-Pro: 10 options, 16–33% drop); Rein et al. 2023 (GPQA: 448 questions, experts 65%, non-experts 34%, GPT-4 39%); Cobbe et al. 2021 (GSM8K: 8.5K problems); Chen et al. 2021 (HumanEval: 164 problems); Jimenez et al. 2024 (SWE-bench: 2,294 issues, 1.96%).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2009.03300" target="_blank" rel="noopener">Measuring Massive Multitask Language Understanding (MMLU)</a>
+        <div class="meta">Hendrycks et al. · ICLR 2021</div>
+        <p>A 57-task multiple-choice benchmark spanning STEM (science, technology, engineering and mathematics), humanities and professional subjects.</p><div class="num">Remember: GPT-3 175B ≈ chance + 20 points at release</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2406.01574" target="_blank" rel="noopener">MMLU-Pro: A More Robust and Challenging Multi-Task Language Understanding Benchmark</a>
+        <div class="meta">Wang et al. · NeurIPS 2024</div>
+        <p>A harder, reasoning-focused successor with ten options per question and noisy questions removed.</p><div class="num">Remember: accuracy drops 16–33% vs MMLU</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2311.12022" target="_blank" rel="noopener">GPQA: A Graduate-Level Google-Proof Q&A Benchmark</a>
+        <div class="meta">Rein et al. · COLM 2024</div>
+        <p>448 expert-written science questions that skilled non-experts can't answer even with web search.</p><div class="num">Remember: experts 65%, non-experts 34%, GPT-4 39%</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2310.06770" target="_blank" rel="noopener">SWE-bench: Can Language Models Resolve Real-World GitHub Issues?</a>
+        <div class="meta">Jimenez et al. · ICLR 2024</div>
+        <p>Real GitHub issues: the model edits the repository and the project's own tests decide success.</p><div class="num">Remember: 2,294 issues; Claude 2 solved 1.96% at release</div></div>
+    </div>
   </div>
 </section>
 

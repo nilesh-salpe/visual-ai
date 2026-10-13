@@ -1,6 +1,9 @@
 """Generate the modern-LLM-architecture decks (9-beat template) into visual-ai/architecture/."""
 import sys, os, json
 from tool import section, REPO
+from extras import apply as apply_extras
+from acronyms import process as expand_acronyms
+from extras_architecture import EXTRAS
 
 OUT = os.path.join(REPO, 'architecture')
 NB_INDEX = os.path.join(REPO, 'tools', 'notebooks', 'index_architecture.json')
@@ -42,7 +45,7 @@ def page(i, d):
     <div class="toc" data-auto></div>
   </div>
 </section>'''
-    body = '\n\n'.join([title] + d['slides'] + [take])
+    body = '\n\n'.join(apply_extras([title] + d['slides'] + [take], EXTRAS.get(SLUGS[i], {})))
     return f'''<!doctype html>
 <html lang="en">
 <head>
@@ -78,5 +81,5 @@ if __name__ == '__main__':
     for i, slug in enumerate(SLUGS):
         if slug in decks:
             os.makedirs(f'{OUT}/{slug}', exist_ok=True)
-            open(f'{OUT}/{slug}/index.html', 'w').write(page(i, decks[slug]))
+            open(f'{OUT}/{slug}/index.html', 'w').write(expand_acronyms(page(i, decks[slug]))[0])
             print('wrote', slug)

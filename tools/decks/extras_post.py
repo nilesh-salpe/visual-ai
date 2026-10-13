@@ -1,0 +1,192 @@
+"""Per-deck extras for the Post-training guide. Numbers are computed here."""
+from math import comb, exp, log
+from papers import PAPERS as P
+
+sig = lambda z: 1 / (1 + exp(-z))
+EXTRAS = {}
+
+EXTRAS['01-pipeline'] = dict(
+    glance=dict(steps=[('pretrained model', 'next-token on web text', 'f'), ('SFT', 'imitate demonstrations', 'a'), ('reward model', 'learn from comparisons', 'b'),
+                       ('RL (PPO)', 'reward − β·KL', 'c'), ('assistant', 'repeat in rounds', 'e')],
+                caption='Alternatives: DPO replaces the reward model + RL step; RLVR replaces the reward model with a checker.'),
+    example=dict(title='Worked example: InstructGPT\'s data budget',
+                 setup='Reported dataset sizes (training prompts) for the three steps.',
+                 steps=['SFT: about <b>13k</b> prompts with labeler-written demonstrations.',
+                        f'Reward model: about <b>33k</b> prompts; each labeler ranking of K = 4–9 outputs gives C(K, 2) = {comb(4, 2)}–{comb(9, 2)} comparisons.',
+                        'PPO: about <b>31k</b> prompts from the API (the policy writes the answers itself).',
+                        'Compare pretraining: hundreds of billions of tokens. Post-training is tiny by comparison.'],
+                 result='With that small budget, the 1.3B InstructGPT model was preferred to the 175B base GPT-3: post-training shapes behaviour, pretraining supplies knowledge.'),
+    traps=dict(tricks=[('Comparisons beat demonstrations for scale.', 'Judging is easier than writing; one ranking gives many pairs.'),
+                       ('Iterate in rounds.', 'Collect fresh preferences on the current model (Llama 2: five RLHF versions; Llama 3: six rounds).'),
+                       ('Pick the optimizer for the signal.', 'Pairs → DPO; reward model → PPO or rejection sampling; checker → RLVR.')],
+               traps=[('Expecting new knowledge from post-training.', 'It mostly changes behaviour, not what the model knows.'),
+                      ('Treating the RM as ground truth.', 'It is a proxy; optimize it too hard and it gets gamed (deck 06).'),
+                      ('Ignoring the alignment tax.', 'RLHF can regress benchmarks; InstructGPT mixed pretraining gradients in (PPO-ptx).')]),
+    papers=[P['instructgpt'], P['christiano'], P['stiennon'], P['llama3']],
+)
+
+EXTRAS['02-supervised-fine-tuning'] = dict(
+    glance=dict(steps=[('messages', 'system, user, assistant', 'f'), ('chat template', 'role tokens + end-of-turn', 'c'), ('tokens + mask', 'assistant tokens = 1', 'a'),
+                       ('shift labels', 'mask → −100', 'b'), ('masked loss', 'average over trained tokens', 'e')],
+                caption='Ordinary next-token training, applied only to what the assistant should produce.'),
+    example=dict(title='Worked example: what fraction of a chat is trained on?',
+                 setup='The 2-turn chat in notebook 01: system prompt, two user turns, two short assistant answers (toy word-level tokenizer).',
+                 steps=['Rendered sequence: <b>29 tokens</b> (bos, role tokens, content, end-of-turn markers).',
+                        'Trained tokens: the two answers plus their end-of-turn tokens = <b>8 tokens (28%)</b>.',
+                        'Loss = mean of −log p over those 8 positions only; the other 21 are labels of −100.',
+                        f'Packing 2,000 examples of 20–399 tokens: one example per row → 54% real tokens; packed into 2,048-token rows → 93%.'],
+                 result='Most positions in a chat are context, not targets. Masking keeps the loss focused, and packing keeps the GPU busy.'),
+    traps=dict(tricks=[('Train the end-of-turn token.', 'Otherwise the model never learns to stop.'),
+                       ('Average over trained tokens only.', 'Averaging over all positions shrinks the effective learning rate.'),
+                       ('Pack + document mask.', 'Llama 2 concatenated prompts and answers to fill 4,096-token rows.')],
+               traps=[('Training on user turns.', 'Wastes capacity predicting what users type.'),
+                      ('More data at any quality.', 'Llama 2 preferred 27,540 high-quality examples to millions of third-party ones.'),
+                      ('Picking checkpoints by validation loss.', 'InstructGPT kept training past the minimum because preference scores improved.')]),
+    papers=[P['instructgpt'], P['llama2']],
+)
+
+_lp = 32 * 8 * ((4096 + 4096) + (4096 + 1024))
+EXTRAS['03-lora-qlora'] = dict(
+    glance=dict(steps=[('x', 'layer input', 'f'), ('W₀ x', 'frozen (QLoRA: stored in NF4)', 'f'), ('(α/r)·B·A·x', 'trainable, rank r\nB starts at 0', 'a'),
+                       ('sum', 'h = W₀x + (α/r)BAx', 'e'), ('merge after training', 'W = W₀ + (α/r)BA', 'c')],
+                caption='No extra layer at inference once merged; or keep one base and swap small adapters.'),
+    example=dict(title='Worked example: LoRA on Llama 3 8B',
+                 setup='Rank r = 8 on W_q (4,096 × 4,096) and W_v (4,096 × 1,024) in all 32 layers.',
+                 steps=[f'Per layer: 8 × (4,096 + 4,096) + 8 × (4,096 + 1,024) = {_lp // 32:,} parameters.',
+                        f'Total trainable: <b>{_lp:,}</b> = {_lp / 8.03e9:.3%} of 8.03B.',
+                        f'Adapter file in BF16: <b>{_lp * 2 / 2 ** 20:.1f} MiB</b> vs a 16 GB full checkpoint.',
+                        f'QLoRA: base in NF4 ≈ 8.03B × 0.5 bytes = <b>{8.03e9 * 0.5 / 1e9:.1f} GB</b> + double-quantized scales ({8.03e9 * 0.127 / 8 / 1e9:.2f} GB).'],
+                 result='Train a few million parameters, store megabytes per task, and fit the frozen base in a quarter of its BF16 size.'),
+    traps=dict(tricks=[('Params per matrix = r·(d_in + d_out).', 'Tiny compared with d_in·d_out.'),
+                       ('Scale α/r.', 'Set α to the first r you try; changing r then needs little retuning.'),
+                       ('QLoRA overhead.', '4 bits + 0.127 bits per parameter with double quantization.')],
+               traps=[('Forgetting to merge.', 'Unmerged adapters add a small extra matmul per layer at inference.'),
+                      ('"QLoRA trains in 4-bit."', 'Only the frozen base is 4-bit; compute is BF16 and adapters are 16-bit.'),
+                      ('Rank as a free win.', 'Beyond the needed rank, extra rank only adds parameters.')]),
+    papers=[P['lora'], P['qlora']],
+)
+
+EXTRAS['04-reward-models'] = dict(
+    glance=dict(steps=[('prompt + answer A', '', 'f'), ('prompt + answer B', '', 'f'), ('reward model', 'SFT model + scalar head', 'b'),
+                       ('σ(r_A − r_B)', 'P(A preferred)', 'c'), ('loss', '−log σ(r_w − r_l)', 'a')],
+                caption='Only reward differences matter; the RM then scores millions of RL samples automatically.'),
+    example=dict(title='Worked example: one comparison through the loss',
+                 setup='The RM scores the labeler\'s chosen answer 2.0 and the rejected one 0.5.',
+                 steps=[f'P(chosen preferred) = σ(2.0 − 0.5) = σ(1.5) = <b>{sig(1.5):.3f}</b>.',
+                        f'Loss for this pair = −log {sig(1.5):.3f} = <b>{-log(sig(1.5)):.3f}</b>.',
+                        f'If the RM had it backwards (0.5 vs 2.0): loss = −log σ(−1.5) = <b>{-log(sig(-1.5)):.3f}</b>, a much larger gradient.',
+                        f'A ranking of K = 9 answers contributes C(9, 2) = <b>{comb(9, 2)}</b> such pairs, grouped in one batch element.'],
+                 result='Bradley-Terry turns "which is better?" into a smooth loss on reward differences.'),
+    traps=dict(tricks=[('P(A ≻ B) = σ(r_A − r_B).', 'A gap of 1.5 ≈ 82%.'),
+                       ('Normalize rewards before RL.', 'Only differences are identified, so the offset is arbitrary.'),
+                       ('Group a ranking\'s pairs.', 'They share responses and are correlated.')],
+               traps=[('Reading rewards as probabilities.', 'They are unbounded scalars.'),
+                      ('Expecting 100% accuracy.', 'Labelers disagree; there is a noise ceiling.'),
+                      ('Reusing a stale RM.', 'As the policy improves, its outputs leave the RM\'s training distribution.')]),
+    papers=[P['instructgpt'], P['christiano'], P['llama2']],
+)
+
+_r, _eps = 1.5, 0.2
+EXTRAS['05-rlhf-ppo'] = dict(
+    glance=dict(steps=[('prompts', 'from a dataset', 'f'), ('policy samples', 'current model writes answers', 'c'), ('score', 'RM reward − β·KL to SFT', 'b'),
+                       ('advantages', 'value model baseline', 'a'), ('clipped update', 'several epochs per batch', 'e')],
+                loop=(4, 1, 'repeat: sample again from the updated policy'),
+                caption='Four models: policy and value (trained), reference and reward model (frozen).'),
+    example=dict(title='Worked example: what clipping does to one sample',
+                 setup=f'A sample with advantage Â = +1. After a few updates the policy gives it {_r}× its old probability (ratio ρ = {_r}). ε = {_eps}.',
+                 steps=[f'Unclipped term: ρ·Â = <b>{_r * 1:.2f}</b>.',
+                        f'Clipped term: clip(ρ, 1 − ε, 1 + ε)·Â = <b>{min(_r, 1 + _eps):.2f}</b>.',
+                        f'PPO takes the minimum: <b>{min(_r, 1 + _eps):.2f}</b>, a flat region, so this sample stops pushing the policy further.',
+                        'With Â = −1 and ρ = 0.5, the clipped term is −0.8 and the minimum is −0.8, again flat: no reward for pushing a bad sample below 0.8×.'],
+                 result='Clipping bounds how far any single sample can move the policy within one batch, which makes several epochs per batch safe.'),
+    traps=dict(tricks=[('Objective: r − β·log(π/π_SFT).', 'Exact optimum π* ∝ π_SFT·e^(r/β).'),
+                       ('ε = 0.2.', 'The PPO paper\'s default clip range.'),
+                       ('PPO-ptx.', 'Mix pretraining gradients in to reduce the alignment tax.')],
+               traps=[('Dropping the KL term.', 'The policy then exploits the reward model.'),
+                      ('Confusing value model and reward model.', 'The RM scores full answers; the value model predicts reward per token.'),
+                      ('Underestimating memory.', 'Four models, two with optimizer state, plus generation in the loop.')]),
+    papers=[P['ppo'], P['instructgpt'], P['stiennon']],
+)
+
+EXTRAS['06-reward-hacking'] = dict(
+    glance=dict(steps=[('proxy RM', 'trained on limited data', 'b'), ('optimize', 'best-of-n or RL', 'c'), ('KL grows', 'policy drifts from start', 'd'),
+                       ('gold rises, then falls', 'proxy keeps rising', 'a')],
+                caption='Goodhart\'s law: when a measure becomes a target, it ceases to be a good measure.'),
+    example=dict(title='Worked example: the KL cost of best-of-n',
+                 setup='KL_bon = log n − (n − 1)/n (nats), from Stiennon et al.',
+                 steps=[f'n = 2: log 2 − 1/2 = <b>{log(2) - 0.5:.2f}</b>.',
+                        f'n = 16: log 16 − 15/16 = <b>{log(16) - 15 / 16:.2f}</b>.',
+                        f'n = 1,024: <b>{log(1024) - 1023 / 1024:.2f}</b>. KL grows like log n: each doubling of n adds ~{log(2):.2f} nats.',
+                        'In notebook 06\'s simulation, gold reward peaks near n = 8 (KL ≈ 1.2) and falls below its starting value by n = 1,024, while the proxy keeps rising.'],
+                 result='Pushing harder costs KL; past the peak, extra proxy score is mostly exploitation.'),
+    traps=dict(tricks=[('Measure optimization in KL.', 'Gold vs √KL follows d(α − βd) for best-of-n.'),
+                       ('Bigger, fresher RMs.', 'Overoptimization coefficients scale smoothly with RM size; refresh data each round.'),
+                       ('Prefer checkable rewards.', 'Where possible, use verifiers (deck 08).')],
+               traps=[('RM score up ⇒ better model.', 'Only before the peak.'),
+                      ('Best-of-n is "safe".', 'It optimizes too; KL grows with log n.'),
+                      ('Ignoring length.', 'A common exploited feature is simply longer answers.')]),
+    papers=[P['gao'], P['stiennon'], P['instructgpt']],
+)
+
+_b = 0.1
+_lw, _ll = log(0.30 / 0.20), log(0.10 / 0.20)
+EXTRAS['07-dpo-and-friends'] = dict(
+    glance=dict(steps=[('preference pair', 'chosen y_w, rejected y_l', 'f'), ('log-ratios', 'log π/π_ref for each', 'c'), ('margin', 'β·(ratio_w − ratio_l)', 'a'),
+                       ('loss', '−log σ(margin)', 'e')],
+                caption='Two models (policy + frozen reference), no reward model, no sampling.'),
+    example=dict(title='Worked example: one DPO step by hand',
+                 setup=f'β = {_b}. The reference gives the chosen and rejected answers 0.20 each; the policy now gives 0.30 and 0.10.',
+                 steps=[f'Chosen log-ratio: log(0.30/0.20) = {_lw:.3f}; rejected: log(0.10/0.20) = {_ll:.3f}.',
+                        f'Margin z = β·({_lw:.3f} − ({_ll:.3f})) = <b>{_b * (_lw - _ll):.4f}</b>.',
+                        f'Loss = −log σ(z) = <b>{-log(sig(_b * (_lw - _ll))):.4f}</b> (it was log 2 = {log(2):.4f} when policy = reference).',
+                        f'Gradient weight 1 − σ(z) = {1 - sig(_b * (_lw - _ll)):.3f}: still large, because with β = 0.1 the margin is small.'],
+                 result=f'Implicit rewards: β·log ratio = {_b * _lw:+.4f} (chosen) and {_b * _ll:+.4f} (rejected). The policy is its own reward model.'),
+    traps=dict(tricks=[('Implicit reward = β·log(π/π_ref).', 'Z(x) cancels within a pair.'),
+                       ('Gradient focuses on mistakes.', 'Weight 1 − σ(z) is largest when the pair is ranked wrongly.'),
+                       ('Iterate.', 'Fresh pairs from the current model each round (Llama 3: six rounds).')],
+               traps=[('No reference model.', 'DPO needs a frozen reference; it defines the implicit reward.'),
+                      ('"Can\'t be hacked."', 'It can overfit noisy or narrow pairs.'),
+                      ('β as a learning rate.', 'β is the KL strength; small β allows bigger departures.')]),
+    papers=[P['dpo'], P['kto'], P['llama2']],
+)
+
+EXTRAS['08-rlvr-grpo'] = dict(
+    glance=dict(steps=[('prompt', 'maths, code, format', 'f'), ('G samples', 'from the current policy', 'c'), ('verifier', '1 if correct, else 0', 'b'),
+                       ('(r − mean) / std', 'group-relative advantage', 'a'), ('clipped update + KL', 'no critic', 'e')],
+                loop=(4, 0, 'next batch of prompts'),
+                caption='The group is its own baseline; a checker replaces the reward model.'),
+    example=dict(title='Worked example: advantages and dead groups',
+                 setup='GRPO with group size G = 4.',
+                 steps=['Rewards [1, 0, 0, 1]: mean 0.5, std 0.5 → advantages <b>[+1, −1, −1, +1]</b>.',
+                        'Rewards [1, 0, 0, 0]: mean 0.25, std 0.433 → advantages <b>[+1.73, −0.58, −0.58, −0.58]</b>; a rare success gets a big push.',
+                        f'A prompt the model solves 90% of the time: P(all 4 right or all 4 wrong) = 0.9⁴ + 0.1⁴ = <b>{0.9 ** 4 + 0.1 ** 4:.1%}</b> of groups give zero gradient.',
+                        f'At 15% success and G = 8: {0.15 ** 8 + 0.85 ** 8:.1%} dead groups; at G = 32: {0.15 ** 32 + 0.85 ** 32:.2%}.'],
+                 result='Filter prompts to useful difficulty and use larger groups on hard prompts so most samples carry signal.'),
+    traps=dict(tricks=[('Â = (r − mean)/std within the group.', 'Applied to every token of that sample.'),
+                       ('Dead groups: p^G + (1 − p)^G.', 'Too easy or too hard prompts waste compute.'),
+                       ('Keep a small KL.', 'DeepSeek-R1 used a KL coefficient of 0.001.')],
+               traps=[('Assuming every sample teaches.', 'Equal rewards in a group give zero advantage.'),
+                      ('Dropping the reference model.', 'GRPO drops the critic, not the KL reference.'),
+                      ('Using RLVR for open-ended tasks.', 'Writing quality and safety still need preference signals.')]),
+    papers=[P['deepseekmath'], P['r1'], P['tulu3']],
+)
+
+EXTRAS['09-rlaif-constitutional-ai'] = dict(
+    glance=dict(steps=[('harmful prompt', 'red-team set', 'f'), ('response', 'from a helpful-only model', 'c'), ('critique + revise', 'against a sampled principle', 'b'),
+                       ('SFT on revisions', 'SL-CAI', 'a'), ('AI comparisons → PM → RL', 'RL-CAI (RLAIF)', 'e')],
+                caption='Humans write the principles (16 in the paper) and still provide helpfulness labels.'),
+    example=dict(title='Worked example: producing one AI preference label',
+                 setup='The RL stage needs comparisons. Instead of a human, a feedback model labels them.',
+                 steps=['Sample two responses (A, B) to the same prompt from the SL-CAI model.',
+                        'Sample one principle at random from the constitution, e.g. "choose the response that is more helpful while avoiding harm".',
+                        'Ask the feedback model, optionally with chain-of-thought, which response better satisfies it; record the probabilities as a soft label.',
+                        'Repeat across many prompts and principles; train a preference model on these AI labels mixed with human helpfulness labels, then run RL against it.'],
+                 result='Each label is cheap to regenerate for every new model, and the criteria are written down rather than implicit in thousands of individual judgements.'),
+    traps=dict(tricks=[('Two stages.', 'Critique-and-revise SFT, then RL from AI preference labels.'),
+                       ('Sample principles.', 'Ensembling over principles gave more robust labels in the paper.'),
+                       ('Reason before judging.', 'Chain-of-thought improved AI feedback quality and transparency.')],
+               traps=[('"No humans involved."', 'Humans write the constitution, and helpfulness labels stayed human.'),
+                      ('Just a system prompt.', 'Principles generate training data; behaviour ends up in the weights.'),
+                      ('Harmless = refuse.', 'The goal was harmless but non-evasive: explain objections instead.')]),
+    papers=[P['cai'], P['instructgpt']],
+)

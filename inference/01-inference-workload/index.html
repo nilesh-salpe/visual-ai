@@ -238,7 +238,7 @@
     <div class="papers">
       <div class="paper-item"><a href="https://arxiv.org/abs/2211.05102" target="_blank" rel="noopener">Efficiently Scaling Transformer Inference</a>
         <div class="meta">Pope et al. · MLSys 2023</div>
-        <p>An analytical model of inference cost that picks how to partition a model across chips for a given latency target; shows prefill and decode need different strategies and that multi-query attention allows much longer contexts.</p><div class="num">Remember: 29 ms/token on PaLM 540B with int8 weights; 76% MFU (Model FLOPs (floating-point operations) Utilization, the share of peak compute spent on the model's math) on large-batch prefill; MQA enables up to 32× longer context</div></div>
+        <p>An analytical model of inference cost that picks how to partition a model across chips for a given latency target; shows prefill and decode need different strategies and that multi-query attention allows much longer contexts.</p><div class="num">Remember: 29 ms/token on PaLM 540B with int8 weights; 76% MFU (model floating-point-operation utilization, the share of peak compute spent on the model's math) on large-batch prefill; MQA enables up to 32× longer context</div></div>
       <div class="paper-item"><a href="https://arxiv.org/abs/2401.09670" target="_blank" rel="noopener">DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving</a>
         <div class="meta">Zhong et al. · OSDI 2024</div>
         <p>Defines serving quality as goodput, the request rate served within both TTFT and TPOT targets, and runs prefill and decode on separate GPUs so they stop interfering.</p><div class="num">Remember: 7.4× more requests or 12.6× tighter SLO than colocated systems</div></div>

@@ -14,10 +14,10 @@
   <div class="inner">
     <div class="kicker">Post-training · 08</div>
     <h1>RL with verifiable rewards and GRPO</h1>
-    <p class="sub">How reasoning models are trained: replace the learned reward model with a checker, replace the critic with a group of samples, and let RL discover long chains of thought.</p>
+    <p class="sub">How reasoning models are trained: replace the learned reward model with a checker, replace the critic with a group of samples, and let RL (reinforcement learning) discover long chains of thought.</p>
     <div class="ps">
-      <div class="p"><b>What is the problem?</b>Learned reward models can be gamed and PPO's critic costs a whole extra model. For maths and code, correctness can often be checked exactly, so why approximate it?</div>
-      <div class="c"><b>Core idea</b><b>RLVR</b>: reward = 1 if a checker accepts the answer (plus format rules). <b>GRPO</b>: sample a group of G answers per prompt and use (r − mean)/std within the group as each answer's advantage, so no value model is needed.</div>
+      <div class="p"><b>What is the problem?</b>Learned reward models can be gamed and PPO (Proximal Policy Optimization)'s critic costs a whole extra model. For maths and code, correctness can often be checked exactly, so why approximate it?</div>
+      <div class="c"><b>Core idea</b><b>RLVR (reinforcement learning with verifiable rewards)</b>: reward = 1 if a checker accepts the answer (plus format rules). <b>GRPO (Group Relative Policy Optimization)</b>: sample a group of G answers per prompt and use (r − mean)/std within the group as each answer's advantage, so no value model is needed.</div>
     </div>
     <div class="toc" data-auto></div>
   </div>
@@ -77,9 +77,11 @@
     <div class="grid3">
       <div class="card a"><h3>Sample a group</h3><p>For each question, sample G outputs {o₁ … o_G} from the old policy.</p></div>
       <div class="card b"><h3>Normalize within the group</h3><p>Â<sub>i</sub> = (r<sub>i</sub> − mean(r)) / std(r), applied to every token of o<sub>i</sub>. "GRPO foregoes the critic model, instead estimating the baseline from group scores."</p></div>
-      <div class="card e"><h3>PPO-style update</h3><p>Clipped probability ratios as in PPO, plus a KL penalty to a reference model added to the loss (R1 used a KL coefficient of 0.001).</p></div>
+      <div class="card e"><h3>PPO-style update</h3><p>Clipped probability ratios as in PPO, plus a KL (Kullback-Leibler divergence) penalty to a reference model added to the loss (R1 used a KL coefficient of 0.001).</p></div>
     </div>
     <div class="deep"><h4>Why a group baseline works</h4><p>A baseline only has to be "what reward would I expect for this prompt?". Several samples for the <b>same</b> prompt estimate that directly, with no network. The cost moves from memory (a critic) to compute (G samples per prompt), which also gives the reward signal more chances to be non-zero.</p></div>
+
+    <div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 188" role="img" aria-label="The group is its own baseline; a checker replaces the reward model." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">prompt</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">maths, code,</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">format</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">G samples</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">from the current</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">policy</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">verifier</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">1 if correct, else</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">0</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">(r − mean) / std</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">group-relative</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">advantage</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">clipped update + KL</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">no critic</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M593.2 136 V160 H66.8 V138" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="330.0" y="177" text-anchor="middle" class="tm" style="font-size:11px">next batch of prompts</text></svg><p class="caption" style="margin:4px 0 0">The group is its own baseline; a checker replaces the reward model.</p></div>
   </div>
 </section>
 
@@ -108,9 +110,19 @@
     <hr>
     <div class="visual"><div id="rBars"></div></div>
     <div class="grid2" style="margin-top:12px">
-      <div class="card a"><h3>R1-Zero: RL without SFT</h3><p>RL with rule-based accuracy and format rewards directly on the base model. AIME 2024 pass@1 went from 15.6% to 77.9%, and responses grew longer as the model learned to think longer. The paper shows an "aha moment" where an intermediate checkpoint learns to stop and re-examine its own solution.</p></div>
-      <div class="card b"><h3>R1: fixing R1-Zero's rough edges</h3><p>R1-Zero had "poor readability and language mixing". R1 adds cold-start long chain-of-thought data, a language consistency reward during RL, and a multi-stage pipeline integrating rejection sampling, RL and SFT.</p></div>
+      <div class="card a"><h3>R1-Zero: RL without SFT</h3><p>RL with rule-based accuracy and format rewards directly on the base model. AIME (American Invitational Mathematics Examination) 2024 pass@1 went from 15.6% to 77.9%, and responses grew longer as the model learned to think longer. The paper shows an "aha moment" where an intermediate checkpoint learns to stop and re-examine its own solution.</p></div>
+      <div class="card b"><h3>R1: fixing R1-Zero's rough edges</h3><p>R1-Zero had "poor readability and language mixing". R1 adds cold-start long chain-of-thought data, a language consistency reward during RL, and a multi-stage pipeline integrating rejection sampling, RL and SFT (supervised fine-tuning).</p></div>
     </div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: advantages and dead groups</h2>
+    <hr>
+    <p class="lede">GRPO with group size G = 4.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Rewards [1, 0, 0, 1]: mean 0.5, std 0.5 → advantages <b>[+1, −1, −1, +1]</b>.</li><li>Rewards [1, 0, 0, 0]: mean 0.25, std 0.433 → advantages <b>[+1.73, −0.58, −0.58, −0.58]</b>; a rare success gets a big push.</li><li>A prompt the model solves 90% of the time: P(all 4 right or all 4 wrong) = 0.9⁴ + 0.1⁴ = <b>65.6%</b> of groups give zero gradient.</li><li>At 15% success and G = 8: 27.2% dead groups; at G = 32: 0.55%.</li></ol><div class="result">Filter prompts to useful difficulty and use larger groups on hard prompts so most samples carry signal.</div></div>
   </div>
 </section>
 
@@ -148,6 +160,19 @@
       <p class="qq">"RLVR replaces preference tuning."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Only where answers can be verified. General chat quality, tone and safety still rely on preference data or other reward models.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Â = (r − mean)/std within the group.</b> Applied to every token of that sample.</li><li><b>Dead groups: p^G + (1 − p)^G.</b> Too easy or too hard prompts waste compute.</li><li><b>Keep a small KL.</b> DeepSeek-R1 used a KL coefficient of 0.001.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Assuming every sample teaches.</b> Equal rewards in a group give zero advantage.</li><li><b>Dropping the reference model.</b> GRPO drops the critic, not the KL reference.</li><li><b>Using RLVR for open-ended tasks.</b> Writing quality and safety still need preference signals.</li></ul></div>
     </div>
   </div>
 </section>
@@ -190,7 +215,27 @@
     <div class="explain"><b>Say it in 30 seconds</b><p>For maths, code and formats, correctness can be checked, so RL with verifiable rewards replaces the learned reward model with a rule: one if the answer is right, plus format checks. GRPO, from DeepSeekMath, removes PPO's value model too: sample a group of answers per prompt and use each answer's reward minus the group mean, divided by the group standard deviation, as its advantage, keeping PPO's clipping and a small KL penalty to a reference. Groups where every answer gets the same reward teach nothing, so prompt difficulty and group size matter. DeepSeek-R1-Zero used this with no SFT and went from 15.6 to 77.9 percent on AIME 2024, learning longer, self-checking reasoning along the way.</p></div>
     <div class="recap"><div><span><b>Problem:</b> learned RMs can be hacked; PPO's critic is expensive.</span></div><div><span><b>Core idea:</b> verifier rewards + group-normalized advantages (r − mean)/std, no critic.</span></div><div><span><b>Results:</b> DeepSeekMath MATH 46.8→51.7%; R1-Zero AIME 15.6→77.9% with RL only.</span></div></div>
     <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/08_grpo_rlvr.ipynb" target="_blank" rel="noopener">08 · RL with verifiable rewards and GRPO</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/post-training/08_grpo_rlvr.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
-    <p class="start-hint">Next: <a href="../09-rlaif-constitutional-ai/index.html">09 · RLAIF and Constitutional AI →</a> · Previous: <a href="../07-dpo-and-friends/index.html">← 07</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Shao et al. 2024, "DeepSeekMath" (§4: GRPO, eq. for group-normalized advantage; GSM8K 82.9→88.2%, MATH 46.8→51.7%); DeepSeek-AI 2025, "DeepSeek-R1" (rule-based accuracy and format rewards, KL coefficient 0.001, AIME 2024 15.6%→77.9%, "aha moment", language consistency reward); Lambert et al. 2024 (Tülu 3, RLVR).</p>
+    <p class="start-hint">Next: <a href="../09-rlaif-constitutional-ai/index.html">09 · RLAIF (reinforcement learning from artificial-intelligence feedback) and Constitutional AI (artificial intelligence) →</a> · Previous: <a href="../07-dpo-and-friends/index.html">← 07</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Shao et al. 2024, "DeepSeekMath" (§4: GRPO, eq. for group-normalized advantage; GSM8K 82.9→88.2%, MATH 46.8→51.7%); DeepSeek-AI 2025, "DeepSeek-R1" (rule-based accuracy and format rewards, KL coefficient 0.001, AIME 2024 15.6%→77.9%, "aha moment", language consistency reward); Lambert et al. 2024 (Tülu 3, RLVR).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2402.03300" target="_blank" rel="noopener">DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models</a>
+        <div class="meta">Shao et al. · arXiv 2024</div>
+        <p>Introduces GRPO: PPO without a critic, using the mean and std of rewards within a group of samples as the baseline.</p><div class="num">Remember: MATH 46.8% → 51.7%, GSM8K (Grade School Math 8K) 82.9% → 88.2%</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2501.12948" target="_blank" rel="noopener">DeepSeek-R1: Incentivizing Reasoning Capability in LLMs (large language models) via Reinforcement Learning</a>
+        <div class="meta">DeepSeek-AI · arXiv 2025</div>
+        <p>R1-Zero: RL with rule-based accuracy and format rewards directly on a base model; R1 adds cold-start data and a multi-stage pipeline.</p><div class="num">Remember: AIME 2024 pass@1 15.6% → 77.9% (R1-Zero)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2411.15124" target="_blank" rel="noopener">Tülu 3: Pushing Frontiers in Open Language Model Post-Training</a>
+        <div class="meta">Lambert et al. · arXiv 2024</div>
+        <p>An open post-training recipe (SFT → DPO (Direct Preference Optimization) → RL) that names Reinforcement Learning with Verifiable Rewards (RLVR).</p></div>
+    </div>
   </div>
 </section>
 

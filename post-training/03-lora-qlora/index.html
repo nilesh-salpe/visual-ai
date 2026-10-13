@@ -14,10 +14,10 @@
   <div class="inner">
     <div class="kicker">Post-training · 03</div>
     <h1>LoRA and QLoRA</h1>
-    <p class="sub">Fine-tune by training a tiny low-rank update instead of every weight, and keep the frozen base model in 4-bit NormalFloat to fit large models on one GPU.</p>
+    <p class="sub">Fine-tune by training a tiny low-rank update instead of every weight, and keep the frozen base model in 4-bit NormalFloat to fit large models on one GPU (graphics processing unit).</p>
     <div class="ps">
       <div class="p"><b>What is the problem?</b>Full fine-tuning stores gradients and optimizer state for every parameter and produces a full model copy per task: for an 8B model that is roughly 100 GB of training memory and 16 GB per checkpoint.</div>
-      <div class="c"><b>Core idea</b><b>LoRA</b>: freeze W₀ and learn ΔW = BA of rank r (B starts at 0), then merge after training. <b>QLoRA</b>: store the frozen base in 4-bit <b>NF4</b>, dequantize on the fly, train LoRA adapters in 16-bit.</div>
+      <div class="c"><b>Core idea</b><b>LoRA (Low-Rank Adaptation)</b>: freeze W₀ and learn ΔW = BA of rank r (B starts at 0), then merge after training. <b>QLoRA (Quantized Low-Rank Adaptation)</b>: store the frozen base in 4-bit <b>NF4 (4-bit NormalFloat)</b>, dequantize on the fly, train LoRA adapters in 16-bit.</div>
     </div>
     <div class="toc" data-auto></div>
   </div>
@@ -28,7 +28,7 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>Where the memory goes in full fine-tuning</h2>
     <hr>
-    <p class="lede">Rough training memory: BF16 weights (2 bytes per parameter), FP32 gradients (4), and Adam's two FP32 moments (8). Activations are extra. LoRA keeps the last three only for its adapters; QLoRA also shrinks the frozen weights to about 4 bits.</p>
+    <p class="lede">Rough training memory: BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats) weights (2 bytes per parameter), FP32 (32-bit floating point) gradients (4), and Adam's two FP32 moments (8). Activations are extra. LoRA keeps the last three only for its adapters; QLoRA also shrinks the frozen weights to about 4 bits.</p>
     <div class="visual">
       <div class="seg" id="fSeg"><button data-v="8.03" class="on">8B</button><button data-v="65">65B</button></div>
       <div id="fBars" style="margin-top:12px"></div>
@@ -80,6 +80,8 @@
       <div class="card e"><h3>Merge for free inference</h3><p>After training, W = W₀ + (α/r)BA is one ordinary matrix: "no additional inference latency". You can also keep W₀ shared and swap small adapters per task.</p></div>
     </div>
     <div class="deep"><h4>Reported results</h4><p>On GPT-3 175B, LoRA "can reduce the number of trainable parameters by 10,000 times and the GPU memory requirement by 3 times", and performs on par or better than full fine-tuning in model quality on RoBERTa, DeBERTa, GPT-2 and GPT-3, with higher training throughput. The α/r scale means changing r doesn't require retuning the learning rate much; the paper simply sets α to the first r tried.</p></div>
+
+    <div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="No extra layer at inference once merged; or keep one base and swap small adapters." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">x</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">layer input</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">W₀ x</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">frozen (QLoRA:</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">stored in NF4)</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">(α/r)·B·A·x</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">trainable, rank r</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">B starts at 0</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">sum</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">h = W₀x + (α/r)BAx</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">merge after training</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">W = W₀ + (α/r)BA</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">No extra layer at inference once merged; or keep one base and swap small adapters.</p></div>
   </div>
 </section>
 
@@ -88,7 +90,7 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>LoRA parameter calculator</h2>
     <hr>
-    <p class="lede">For Llama 3 8B (32 layers, d = 4,096, GQA with 1,024-wide K/V, FFN 14,336), choose the rank and which matrices get adapters.</p>
+    <p class="lede">For Llama 3 8B (32 layers, d = 4,096, GQA (grouped-query attention) with 1,024-wide K/V, FFN (feed-forward network) 14,336), choose the rank and which matrices get adapters.</p>
     <div class="visual">
       <div class="controls" style="margin-top:0">
         <label class="ctl">rank r <input type="range" id="lR" min="0" max="8" step="1" value="3"> <output id="lRo"></output></label>
@@ -109,12 +111,22 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>QLoRA: a 4-bit frozen base</h2>
     <hr>
-    <p class="lede">The 16 NF4 levels (from the QLoRA paper) vs 16 evenly spaced INT4 levels, drawn over a normal distribution like the one pretrained weights follow. NF4 puts more levels where most weights are.</p>
+    <p class="lede">The 16 NF4 levels (from the QLoRA paper) vs 16 evenly spaced INT4 (4-bit integer) levels, drawn over a normal distribution like the one pretrained weights follow. NF4 puts more levels where most weights are.</p>
     <div class="visual">
       <svg id="qSvg" viewBox="0 0 660 200" role="img" aria-label="NF4 vs INT4 levels"></svg>
       <div class="legend"><span><i style="background:var(--a)"></i>NF4 levels</span><span><i style="background:var(--b)"></i>INT4 levels (uniform)</span><span><i style="background:var(--faint)"></i>normal density</span></div>
     </div>
-    <div class="deep"><h4>The three QLoRA ingredients</h4><ul><li><b>NF4</b>: blockwise (64 weights per block) absmax-scaled 4-bit codes at normal quantiles. Notebook 03 measures lower error than uniform INT4 on Gaussian weights.</li><li><b>Double quantization</b>: quantize the per-block scales too, cutting their overhead from 0.5 to 0.127 bits per parameter, about 3 GB for a 65B model.</li><li><b>Paged optimizers</b>: page optimizer state between GPU and CPU memory to survive memory spikes.</li></ul><p>Weights are dequantized to BF16 for each matmul; gradients flow through them to the 16-bit LoRA adapters. The paper: 4-bit QLoRA with NF4 "matches 16-bit full finetuning and 16-bit LoRA finetuning performance on academic benchmarks".</p></div>
+    <div class="deep"><h4>The three QLoRA ingredients</h4><ul><li><b>NF4</b>: blockwise (64 weights per block) absmax-scaled 4-bit codes at normal quantiles. Notebook 03 measures lower error than uniform INT4 on Gaussian weights.</li><li><b>Double quantization</b>: quantize the per-block scales too, cutting their overhead from 0.5 to 0.127 bits per parameter, about 3 GB for a 65B model.</li><li><b>Paged optimizers</b>: page optimizer state between GPU and CPU (central processing unit) memory to survive memory spikes.</li></ul><p>Weights are dequantized to BF16 for each matmul; gradients flow through them to the 16-bit LoRA adapters. The paper: 4-bit QLoRA with NF4 "matches 16-bit full finetuning and 16-bit LoRA finetuning performance on academic benchmarks".</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: LoRA on Llama 3 8B</h2>
+    <hr>
+    <p class="lede">Rank r = 8 on W_q (4,096 × 4,096) and W_v (4,096 × 1,024) in all 32 layers.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Per layer: 8 × (4,096 + 4,096) + 8 × (4,096 + 1,024) = 106,496 parameters.</li><li>Total trainable: <b>3,407,872</b> = 0.042% of 8.03B.</li><li>Adapter file in BF16: <b>6.5 MiB</b> vs a 16 GB full checkpoint.</li><li>QLoRA: base in NF4 ≈ 8.03B × 0.5 bytes = <b>4.0 GB</b> + double-quantized scales (0.13 GB).</li></ol><div class="result">Train a few million parameters, store megabytes per task, and fit the frozen base in a quarter of its BF16 size.</div></div>
   </div>
 </section>
 
@@ -152,6 +164,19 @@
       <p class="qq">"A bigger rank is always better."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Past the rank the task needs, extra rank only adds parameters; the paper found very small ranks sufficient for W_q and W_v.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Params per matrix = r·(d_in + d_out).</b> Tiny compared with d_in·d_out.</li><li><b>Scale α/r.</b> Set α to the first r you try; changing r then needs little retuning.</li><li><b>QLoRA overhead.</b> 4 bits + 0.127 bits per parameter with double quantization.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Forgetting to merge.</b> Unmerged adapters add a small extra matmul per layer at inference.</li><li><b>"QLoRA trains in 4-bit."</b> Only the frozen base is 4-bit; compute is BF16 and adapters are 16-bit.</li><li><b>Rank as a free win.</b> Beyond the needed rank, extra rank only adds parameters.</li></ul></div>
     </div>
   </div>
 </section>
@@ -195,6 +220,23 @@
     <div class="recap"><div><span><b>Problem:</b> full fine-tuning memory ≈ 14 bytes/param plus a full copy per task.</span></div><div><span><b>LoRA:</b> W₀ + (α/r)BA, B = 0 at init, merge after: tiny trainable set, no latency.</span></div><div><span><b>QLoRA:</b> NF4 frozen base + double quantization + paged optimizers; 65B on one 48 GB GPU.</span></div></div>
     <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/02_lora.ipynb" target="_blank" rel="noopener">02 · LoRA from scratch</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/post-training/02_lora.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/03_nf4_quantization.ipynb" target="_blank" rel="noopener">03 · QLoRA's NF4 and double quantization</a> <span style="color:var(--faint)">· 30 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/post-training/03_nf4_quantization.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
     <p class="start-hint">Next: <a href="../04-reward-models/index.html">04 · Reward models →</a> · Previous: <a href="../02-supervised-fine-tuning/index.html">← 02</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Hu et al. 2021, "LoRA: Low-Rank Adaptation of Large Language Models" (§4, Fig. 1, §7); Dettmers et al. 2023, "QLoRA: Efficient Finetuning of Quantized LLMs" (§3, Appendix E NF4 values).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2106.09685" target="_blank" rel="noopener">LoRA: Low-Rank Adaptation of Large Language Models</a>
+        <div class="meta">Hu et al. · ICLR 2022</div>
+        <p>Freezes the pretrained weights and trains a low-rank update BA (B initialized to zero) that can be merged after training.</p><div class="num">Remember: 10,000× fewer trainable parameters, 3× less GPU memory (GPT-3 175B)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2305.14314" target="_blank" rel="noopener">QLoRA: Efficient Finetuning of Quantized LLMs</a>
+        <div class="meta">Dettmers et al. · NeurIPS 2023</div>
+        <p>Fine-tunes LoRA adapters through a frozen 4-bit NormalFloat base, with double quantization and paged optimizers.</p><div class="num">Remember: 65B on one 48 GB GPU; Guanaco 99.3% of ChatGPT on Vicuna</div></div>
+    </div>
   </div>
 </section>
 

@@ -14,7 +14,7 @@
   <div class="inner">
     <div class="kicker">Post-training · 05</div>
     <h1>RLHF with PPO</h1>
-    <p class="sub">Optimizing a language model against a reward model: the KL-penalized objective, PPO's clipped update, the four models in memory, and the "alignment tax".</p>
+    <p class="sub">Optimizing a language model against a reward model: the KL-penalized (KL = Kullback-Leibler divergence) objective, PPO (Proximal Policy Optimization)'s clipped update, the four models in memory, and the "alignment tax".</p>
     <div class="ps">
       <div class="p"><b>What is the problem?</b>We have a reward model. We want the policy to produce higher-scoring answers, but naive policy gradients are unstable, and maximizing an imperfect reward model without limits produces garbage that scores well.</div>
       <div class="c"><b>Core idea</b>Maximize <b>r(x, y) − β·KL(π ‖ π_SFT)</b> with <b>PPO</b>: sample answers, score them, and take several small, clipped policy-gradient steps per batch so no update moves the policy too far.</div>
@@ -28,7 +28,7 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>Four models at once</h2>
     <hr>
-    <p class="lede">A PPO step for an LLM involves four networks. Two are trained, and two are frozen but must still run a forward pass on every sample. For a 7B policy that is a lot of memory before activations.</p>
+    <p class="lede">A PPO step for an LLM (large language model) involves four networks. Two are trained, and two are frozen but must still run a forward pass on every sample. For a 7B policy that is a lot of memory before activations.</p>
     <div class="visual">
       <svg id="fSvg" viewBox="0 0 660 230" role="img" aria-label="Four models in PPO"></svg>
       <div class="infobox" style="background:var(--panel-2);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:14px;color:var(--muted)" id="fInfo">Click a model.</div>
@@ -56,14 +56,14 @@
     <hr>
     <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
     <div class="quiz">
-      <p class="qq">RLHF maximizes r(x,y) − β·log(π_RL(y|x)/π_SFT(y|x)). What happens as β grows large?</p>
+      <p class="qq">RLHF (reinforcement learning from human feedback) maximizes r(x,y) − β·log(π_RL(y|x)/π_SFT(y|x)). What happens as β grows large?</p>
       <div class="opts">
       <button>A. The policy ignores the reward model</button>
       <button data-ok>B. The policy stays close to the SFT model and gains less reward</button>
       <button>C. Training becomes faster</button>
       <button>D. The reward model is updated</button>
       </div>
-      <div class="why"><b>B.</b> The penalty term, averaged over samples, is β·KL(π‖π_SFT). A large β makes drifting from the SFT model expensive, trading reward for staying where the reward model is trustworthy. The exact optimum is π* ∝ π_SFT·exp(r/β).</div>
+      <div class="why"><b>B.</b> The penalty term, averaged over samples, is β·KL(π‖π_SFT). A large β makes drifting from the SFT (supervised fine-tuning) model expensive, trading reward for staying where the reward model is trustworthy. The exact optimum is π* ∝ π_SFT·exp(r/β).</div>
     </div>
   </div>
 </section>
@@ -78,6 +78,8 @@
       <div class="card b"><h3>How it is maximized (PPO)</h3><p>L<sup>CLIP</sup> = E[ min(ρ·Â, clip(ρ, 1−ε, 1+ε)·Â) ], with ρ the new/old probability ratio and ε = 0.2 in the PPO paper. Several epochs of minibatch updates per batch of samples.</p></div>
     </div>
     <div class="deep"><h4>Advantages for text</h4><p>The reward model scores the full answer once. The per-token KL penalty gives every token a small reward too. A <b>value model</b> (InstructGPT: initialized from the RM) predicts the expected future reward at each token, and the advantage Â is how much better the actual outcome was than predicted (usually with generalized advantage estimation). GRPO (deck 08) replaces this value model with the average reward of a group of samples.</p></div>
+
+    <div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 188" role="img" aria-label="Four models: policy and value (trained), reference and reward model (frozen)." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">prompts</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">from a dataset</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">policy samples</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">current model</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">writes answers</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">score</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">RM reward − β·KL</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">to SFT</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">advantages</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">value model</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">baseline</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">clipped update</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">several epochs per</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">batch</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M593.2 136 V160 H198.4 V138" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="395.8" y="177" text-anchor="middle" class="tm" style="font-size:11px">repeat: sample again from the updated policy</text></svg><p class="caption" style="margin:4px 0 0">Four models: policy and value (trained), reference and reward model (frozen).</p></div>
   </div>
 </section>
 
@@ -105,16 +107,26 @@
   </div>
 </section>
 
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: what clipping does to one sample</h2>
+    <hr>
+    <p class="lede">A sample with advantage Â = +1. After a few updates the policy gives it 1.5× its old probability (ratio ρ = 1.5). ε = 0.2.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Unclipped term: ρ·Â = <b>1.50</b>.</li><li>Clipped term: clip(ρ, 1 − ε, 1 + ε)·Â = <b>1.20</b>.</li><li>PPO takes the minimum: <b>1.20</b>, a flat region, so this sample stops pushing the policy further.</li><li>With Â = −1 and ρ = 0.5, the clipped term is −0.8 and the minimum is −0.8, again flat: no reward for pushing a bad sample below 0.8×.</li></ol><div class="result">Clipping bounds how far any single sample can move the policy within one batch, which makes several epochs per batch safe.</div></div>
+  </div>
+</section>
+
 <section class="slide" id="s-why" data-chapter="Why">
   <div class="inner">
     <span class="qtag b6">6 · Why it works</span>
     <h2>Why RLHF with PPO worked</h2>
     <hr>
     <div class="grid2">
-      <div class="card a"><h3>Learns from its own samples</h3><p>Online RL scores what the current policy actually writes, so it fixes the model's own failure modes, not just copies demonstrations.</p></div>
+      <div class="card a"><h3>Learns from its own samples</h3><p>Online RL (reinforcement learning) scores what the current policy actually writes, so it fixes the model's own failure modes, not just copies demonstrations.</p></div>
       <div class="card e"><h3>Stable enough at scale</h3><p>Clipping plus the KL leash keep updates small. InstructGPT, Llama 2-Chat (PPO after rejection-sampling rounds) and many others used it.</p></div>
-      <div class="card b"><h3>The alignment tax, and PPO-ptx</h3><p>InstructGPT saw regressions on some public NLP datasets after RLHF. Mixing pretraining gradients into PPO (PPO-ptx) greatly reduced them "without compromising labeler preference scores".</p></div>
-      <div class="card d"><h3>The costs</h3><p>Four models, generation inside the training loop, many sensitive hyperparameters (β, ε, learning rates, GAE settings). Hence the search for simpler methods (decks 07–08).</p></div>
+      <div class="card b"><h3>The alignment tax, and PPO-ptx</h3><p>InstructGPT saw regressions on some public NLP (natural language processing) datasets after RLHF. Mixing pretraining gradients into PPO (PPO-ptx) greatly reduced them "without compromising labeler preference scores".</p></div>
+      <div class="card d"><h3>The costs</h3><p>Four models, generation inside the training loop, many sensitive hyperparameters (β, ε, learning rates, GAE (generalized advantage estimation) settings). Hence the search for simpler methods (decks 07–08).</p></div>
     </div>
   </div>
 </section>
@@ -143,6 +155,19 @@
   </div>
 </section>
 
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Objective: r − β·log(π/π_SFT).</b> Exact optimum π* ∝ π_SFT·e^(r/β).</li><li><b>ε = 0.2.</b> The PPO paper's default clip range.</li><li><b>PPO-ptx.</b> Mix pretraining gradients in to reduce the alignment tax.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Dropping the KL term.</b> The policy then exploits the reward model.</li><li><b>Confusing value model and reward model.</b> The RM scores full answers; the value model predicts reward per token.</li><li><b>Underestimating memory.</b> Four models, two with optimizer state, plus generation in the loop.</li></ul></div>
+    </div>
+  </div>
+</section>
+
 <section class="slide" id="s-check" data-chapter="Check">
   <div class="inner">
     <span class="qtag b8">8 · Check yourself</span>
@@ -162,7 +187,7 @@
     <div class="quiz ">
       <p class="qq">What is the closed-form optimum of E[r] − β·KL(π‖π_ref)?</p>
       <button class="reveal">Think first, then reveal</button>
-      <div class="why">π*(y) ∝ π_ref(y)·exp(r(y)/β). Higher reward answers are up-weighted exponentially, more strongly the smaller β is. DPO is built on this formula.</div>
+      <div class="why">π*(y) ∝ π_ref(y)·exp(r(y)/β). Higher reward answers are up-weighted exponentially, more strongly the smaller β is. DPO (Direct Preference Optimization) is built on this formula.</div>
     </div>
     <div class="quiz ">
       <p class="qq">What problem does PPO-ptx address?</p>
@@ -182,6 +207,26 @@
     <div class="recap"><div><span><b>Problem:</b> optimize against an imperfect RM without instability or exploitation.</span></div><div><span><b>Core idea:</b> max r − β·KL(π‖π_SFT) with PPO's clipped ratio (ε = 0.2).</span></div><div><span><b>Costs:</b> policy, reference, RM and value model in memory; many hyperparameters.</span></div></div>
     <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/05_ppo_toy.ipynb" target="_blank" rel="noopener">05 · PPO with a KL penalty on a toy policy</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/post-training/05_ppo_toy.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
     <p class="start-hint">Next: <a href="../06-reward-hacking/index.html">06 · Reward hacking and overoptimization →</a> · Previous: <a href="../04-reward-models/index.html">← 04</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Ouyang et al. 2022 (InstructGPT §3.5 eq. 2: per-token KL penalty, PPO-ptx, value function initialized from the RM); Schulman et al. 2017, "Proximal Policy Optimization Algorithms" (eq. 7, ε = 0.2); Stiennon et al. 2020; Touvron et al. 2023 (Llama 2 §3.2.3).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1707.06347" target="_blank" rel="noopener">Proximal Policy Optimization Algorithms</a>
+        <div class="meta">Schulman et al. · arXiv 2017</div>
+        <p>A clipped surrogate objective that allows several gradient steps per batch while keeping the new policy close to the old one.</p><div class="num">Remember: ε = 0.2</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2203.02155" target="_blank" rel="noopener">Training language models to follow instructions with human feedback (InstructGPT)</a>
+        <div class="meta">Ouyang et al. · NeurIPS 2022</div>
+        <p>SFT on demonstrations, a reward model from rankings, then PPO with a per-token KL penalty and a pretraining mix (PPO-ptx).</p><div class="num">Remember: 1.3B InstructGPT preferred over 175B GPT-3</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2009.01325" target="_blank" rel="noopener">Learning to summarize from human feedback</a>
+        <div class="meta">Stiennon et al. · NeurIPS 2020</div>
+        <p>RLHF for summarization: reward model from human comparisons, PPO with a KL penalty; also gives the analytic KL of best-of-n.</p><div class="num">Remember: KL_bon = log n − (n−1)/n</div></div>
+    </div>
   </div>
 </section>
 

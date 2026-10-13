@@ -220,7 +220,7 @@
         <p>Intra-layer (tensor) model parallelism that splits each attention and MLP block across GPUs with only a few all-reduce operations, implemented in plain PyTorch.</p><div class="num">Remember: 2 all-reduces per transformer block in the forward pass; 76% scaling efficiency on 512 GPUs</div></div>
       <div class="paper-item"><a href="https://arxiv.org/abs/2211.05102" target="_blank" rel="noopener">Efficiently Scaling Transformer Inference</a>
         <div class="meta">Pope et al. · MLSys 2023</div>
-        <p>An analytical model of inference cost that picks how to partition a model across chips for a given latency target; shows prefill and decode need different strategies and that multi-query attention allows much longer contexts.</p><div class="num">Remember: 29 ms/token on PaLM 540B with int8 weights; 76% MFU (Model FLOPs (floating-point operations) Utilization, the share of peak compute spent on the model's math) on large-batch prefill; MQA enables up to 32× longer context</div></div>
+        <p>An analytical model of inference cost that picks how to partition a model across chips for a given latency target; shows prefill and decode need different strategies and that multi-query attention allows much longer contexts.</p><div class="num">Remember: 29 ms/token on PaLM 540B with int8 weights; 76% MFU (model floating-point-operation utilization, the share of peak compute spent on the model's math) on large-batch prefill; MQA enables up to 32× longer context</div></div>
     </div>
   </div>
 </section>

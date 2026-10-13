@@ -14,7 +14,7 @@
   <div class="inner">
     <div class="kicker">The Modern LLM · 08</div>
     <h1>Long context II: sliding window and ALiBi</h1>
-    <p class="sub">Two other ways to handle long sequences: limit how far each layer looks (sliding-window attention with a rolling KV cache), or bias scores by distance (ALiBi).</p>
+    <p class="sub">Two other ways to handle long sequences: limit how far each layer looks (sliding-window attention with a rolling KV (key-value) cache), or bias scores by distance (ALiBi (Attention with Linear Biases)).</p>
     <div class="ps">
       <div class="p"><b>What is the problem?</b>Full attention costs O(T²) compute and its KV cache grows with every token. At long T, both memory and time explode, even when most useful context is nearby.</div>
       <div class="c"><b>Core idea</b><b>Sliding window</b>: each token attends only to the last W tokens, and stacked layers relay information further back, so the cache can be a fixed-size ring buffer. <b>ALiBi</b>: no position embeddings; subtract a head-specific slope × distance from every score.</div>
@@ -78,6 +78,8 @@
       <div class="card b"><h3>ALiBi</h3><p>Don't add position embeddings at all. Add a <b>linear penalty</b> −m·(i−j) to each query-key score, with a different slope m per head (a geometric sequence, 1/2 … 1/256 for 8 heads). Trained at 1,024 tokens, a 1.3B model extrapolates to 2,048 and matches a sinusoidal model trained at 2,048, while training 11% faster and using 11% less memory.</p></div>
     </div>
     <div class="deep"><h4>Not every Mistral-family model uses the window</h4><p>Mixtral's paper notes it "supports a fully dense context length of 32k tokens", meaning full attention, unlike Mistral 7B's sliding window. Windowing is a per-model design choice; a model card or config (<code>sliding_window</code>) tells you which.</p></div>
+
+    <div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 138" role="img" aria-label="Bounded attention per layer; depth relays information further back; memory capped at W per layer." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--faint)"/><text x="83.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">token i</text><text x="83.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">query</text><rect x="174.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--c)"/><text x="247.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">attend to i−W+1 … i</text><text x="247.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">window of W keys</text><line x1="158.5" y1="60.0" x2="172.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="339.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--a)"/><text x="412.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">stack L layers</text><text x="412.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">reach ≈ L·(W−1)+1</text><line x1="323.0" y1="60.0" x2="337.0" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="503.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--b)"/><text x="576.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">rolling cache</text><text x="576.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">slot = i mod W</text><line x1="487.5" y1="60.0" x2="501.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Bounded attention per layer; depth relays information further back; memory capped at W per layer.</p></div>
   </div>
 </section>
 
@@ -126,6 +128,16 @@
   </div>
 </section>
 
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: Mistral 7B at 32K tokens</h2>
+    <hr>
+    <p class="lede">32 layers, 8 KV heads of 128, BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats), window W = 4,096.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>KV per token: 2 × 32 × 8 × 128 × 2 = <b>128 KiB</b>.</li><li>Full cache at 32,768 tokens: <b>4 GiB</b>; rolling buffer (4,096 slots): <b>0.5 GiB</b>, 8× less.</li><li>Theoretical span: 32 × (4,096 − 1) + 1 = <b>131,041</b> tokens (paper: ~131K).</li><li>Token 10,000 is written to slot 10,000 mod 4,096 = <b>1,808</b>, overwriting token 5,904.</li></ol><div class="result">Constant memory per sequence and attention cost O(T·W), at the price of indirect long-range access.</div></div>
+  </div>
+</section>
+
 <section class="slide" id="s-why" data-chapter="Why">
   <div class="inner">
     <span class="qtag b6">6 · Why it works</span>
@@ -160,6 +172,19 @@
       <p class="qq">"Every Mistral model uses sliding-window attention."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Mistral 7B does (W = 4,096). Mixtral uses fully dense attention over 32K. Check the config.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Span ≈ layers × W.</b> Exactly L·(W−1)+1 with an inclusive window of W keys.</li><li><b>ALiBi slopes: 2^(−8i/n).</b> For 8 heads: 1/2 … 1/256.</li><li><b>Check sliding_window in the config.</b> Mixtral, unlike Mistral 7B, is dense over 32K.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Assuming nothing beyond W is visible.</b> Information hops W per layer, lossily.</li><li><b>Calling ALiBi a position embedding.</b> It is a bias on attention scores.</li><li><b>Off-by-one windows.</b> Codebases differ on whether the window includes the current token.</li></ul></div>
     </div>
   </div>
 </section>
@@ -200,9 +225,29 @@
     <hr>
     <div class="take-line">Sliding windows cap attention cost and KV memory and rely on depth to reach further; ALiBi replaces position embeddings with a per-head distance penalty that extrapolates.</div>
     <div class="explain"><b>Say it in 30 seconds</b><p>Full attention costs order T squared and its cache grows with every token. Sliding-window attention lets each token attend only to the last W tokens. Information older than that still flows indirectly through the stack, so Mistral 7B, with W of 4,096 over 32 layers, has a theoretical span of about 131K. Because no token looks back further than W, the KV cache can be a ring buffer indexed by position mod W: 8 times less memory at 32K. ALiBi removes position embeddings and subtracts a head-specific slope times the distance from each attention score, which let a model trained at 1,024 tokens work at 2,048.</p></div>
-    <div class="recap"><div><span><b>Problem:</b> O(T²) scores and an ever-growing KV cache.</span></div><div><span><b>SWA:</b> attend to the last W; span ≈ L·W; rolling buffer at i mod W.</span></div><div><span><b>ALiBi:</b> score − m·distance, slopes 1/2…1/256; train short, test long.</span></div></div>
+    <div class="recap"><div><span><b>Problem:</b> O(T²) scores and an ever-growing KV cache.</span></div><div><span><b>SWA (sliding-window attention):</b> attend to the last W; span ≈ L·W; rolling buffer at i mod W.</span></div><div><span><b>ALiBi:</b> score − m·distance, slopes 1/2…1/256; train short, test long.</span></div></div>
     <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/architecture/07_sliding_window.ipynb" target="_blank" rel="noopener">07 · Sliding-window attention and the rolling KV cache</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/architecture/07_sliding_window.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
     <p class="start-hint">Next: <a href="../09-flash-attention/index.html">09 · FlashAttention internals →</a> · Previous: <a href="../07-rope-scaling/index.html">← 07</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Jiang et al. 2023, "Mistral 7B" (§2, Table 1, Fig. 1–2); Jiang et al. 2024 (Mixtral §2, dense 32K); Beltagy et al. 2020 (Longformer); Press et al. 2022, "Train Short, Test Long: Attention with Linear Biases" (ALiBi, §3).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2310.06825" target="_blank" rel="noopener">Mistral 7B</a>
+        <div class="meta">Jiang et al. · arXiv 2023</div>
+        <p>A 7B model with GQA (grouped-query attention) and sliding-window attention (W = 4,096) plus a rolling-buffer KV cache.</p><div class="num">Remember: ~131K theoretical span; 8× less cache at 32K</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2004.05150" target="_blank" rel="noopener">Longformer: The Long-Document Transformer</a>
+        <div class="meta">Beltagy et al. · arXiv 2020</div>
+        <p>Combines sliding-window local attention with a few global tokens so attention cost grows linearly with length.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2108.12409" target="_blank" rel="noopener">Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation</a>
+        <div class="meta">Press et al. · ICLR 2022</div>
+        <p>No position embeddings: each head adds a fixed penalty proportional to query-key distance, with geometric slopes.</p><div class="num">Remember: train on 1,024, test on 2,048; 11% faster, 11% less memory</div></div>
+    </div>
   </div>
 </section>
 
