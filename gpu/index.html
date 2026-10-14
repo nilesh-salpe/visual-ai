@@ -18,32 +18,49 @@
   <a class="brand" href="../index.html">← Visual AI</a>
   <div class="kicker label" style="margin-top:28px">Interactive explainers</div>
   <h1>GPU for GenAI</h1>
-  <p class="lede">Eight interactive slide decks on the GPU concepts behind training and serving large models. Each slide has a visual you can adjust, and each deck ends with practice questions and model answers.</p>
+  <p class="lede">Eight interactive slide decks on the GPU (graphics processing unit) concepts behind training and serving large models. Each slide has a visual you can adjust, and each deck ends with practice questions and model answers.</p>
   <p class="caption" style="margin-top:14px">Suggested study order: roofline thinking first, since the other decks build on it.</p>
   <div class="path">
     <a href="02-why-gpus-for-ai/index.html">02</a><span>→</span><a href="03-memory-hierarchy/index.html">03</a><span>→</span><a href="01-what-is-a-gpu/index.html">01</a><span>→</span><a href="04-inside-gpu-server/index.html">04</a><span>→</span><a href="05-cluster-topology/index.html">05</a><span>→</span><a href="06-gpu-failures/index.html">06</a><span>→</span><a href="08-sharing-gpus/index.html">08</a><span>→</span><a href="07-heterogeneous-gpus/index.html">07</a>
   </div>
 
+<!--x:map--><style>
+.bigmap { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding: 4px 2px 10px; }
+.bigmap .stage { flex: 1 1 0; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
+.bigmap .stage h4 { margin: 0 0 2px; font: 700 11.5px 'JetBrains Mono', monospace; letter-spacing: .05em; text-transform: uppercase; color: var(--a); }
+.bigmap .stage a { display: block; padding: 9px 11px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 14px; line-height: 1.3; }
+.bigmap .stage a:hover { border-color: var(--a); background: var(--a-soft); }
+.bigmap .stage a span { display: block; font: 600 11px 'JetBrains Mono', monospace; color: var(--faint); }
+.bigmap .arrow { align-self: center; color: var(--faint); font-size: 20px; }
+.hub-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+@media (max-width: 700px) { .bigmap { flex-direction: column; } .bigmap .arrow { transform: rotate(90deg); } }
+</style>
+  <div class="visual" style="margin-top:22px">
+    <h3 style="margin:0 0 10px">The big picture</h3>
+    <div class="bigmap"><div class="stage"><h4>The chip</h4><a href="01-what-is-a-gpu/index.html"><span>01</span>What a GPU is</a><a href="02-why-gpus-for-ai/index.html"><span>02</span>Why GPUs for AI (artificial intelligence)</a><a href="03-memory-hierarchy/index.html"><span>03</span>Memory hierarchy</a></div><div class="arrow">→</div><div class="stage"><h4>The machine</h4><a href="04-inside-gpu-server/index.html"><span>04</span>Inside a GPU server</a><a href="05-cluster-topology/index.html"><span>05</span>Cluster topology</a></div><div class="arrow">→</div><div class="stage"><h4>Operating a fleet</h4><a href="06-gpu-failures/index.html"><span>06</span>GPU failures</a><a href="07-heterogeneous-gpus/index.html"><span>07</span>Heterogeneous GPUs</a><a href="08-sharing-gpus/index.html"><span>08</span>Sharing GPUs</a></div></div>
+    <div class="hub-links"><a class="btn" href="reading-list.html">📚 Reading list</a><a class="btn" href="../glossary/index.html">🔤 Glossary</a></div>
+  </div>
+<!--/x:map-->
   <div class="hub-grid">
-    <a class="hub-card" href="01-what-is-a-gpu/index.html"><div class="n">01 · 12 slides</div><h3>What a GPU is</h3><p>CPU vs GPU, SMs and Tensor Cores, warps and divergence, latency hiding, wave quantization.</p><div class="tags"><span>SIMT</span><span>occupancy</span><span>H100 anatomy</span></div></a>
-    <a class="hub-card" href="02-why-gpus-for-ai/index.html"><div class="n">02 · 11 slides</div><h3>Why GPUs for AI</h3><p>2N and 6ND FLOPs, arithmetic intensity, the roofline, prefill vs decode, batching, precision, MFU.</p><div class="tags"><span>roofline</span><span>TTFT / TPOT</span><span>FP8</span></div></a>
-    <a class="hub-card" href="03-memory-hierarchy/index.html"><div class="n">03 · 12 slides</div><h3>Memory hierarchy</h3><p>Registers to NVMe, tiling, kernel fusion, FlashAttention, ZeRO memory, KV-cache sizing, PagedAttention.</p><div class="tags"><span>HBM</span><span>FlashAttention</span><span>KV cache</span></div></a>
-    <a class="hub-card" href="04-inside-gpu-server/index.html"><div class="n">04 · 10 slides</div><h3>Inside a GPU server</h3><p>HGX H100 layout, NVLink/NVSwitch vs PCIe, GPUDirect RDMA, NUMA affinity, power, NVL72.</p><div class="tags"><span>NVSwitch</span><span>topo -m</span><span>power</span></div></a>
-    <a class="hub-card" href="05-cluster-topology/index.html"><div class="n">05 · 12 slides</div><h3>Cluster topology</h3><p>Scale-up vs scale-out, fat tree, rails, collectives, ring all-reduce, parallelism planner, MoE all-to-all.</p><div class="tags"><span>all-reduce</span><span>TP/PP/DP</span><span>rails</span></div></a>
-    <a class="hub-card" href="06-gpu-failures/index.html"><div class="n">06 · 12 slides</div><h3>GPU failures</h3><p>Llama 3 failure data, cluster MTBF, Xid errors, stragglers, checkpoint maths, fast recovery, SDC.</p><div class="tags"><span>MTBF</span><span>checkpointing</span><span>SDC</span></div></a>
-    <a class="hub-card" href="07-heterogeneous-gpus/index.html"><div class="n">07 · 9 slides</div><h3>Heterogeneous GPUs</h3><p>Mixed fleets, the slowest GPU sets the pace, rebalancing DP and PP, disaggregated prefill/decode, placement.</p><div class="tags"><span>A100/H100/B200</span><span>disaggregation</span></div></a>
-    <a class="hub-card" href="08-sharing-gpus/index.html"><div class="n">08 · 10 slides</div><h3>Sharing GPUs</h3><p>Time-slicing, MPS, MIG builder, continuous batching, multi-LoRA, gang scheduling and fragmentation.</p><div class="tags"><span>MIG</span><span>multi-LoRA</span><span>scheduling</span></div></a>
+    <a class="hub-card" href="01-what-is-a-gpu/index.html"><div class="n">01 · 12 slides</div><h3>What a GPU is</h3><p>CPU (central processing unit) vs GPU, SMs (streaming multiprocessors) and Tensor Cores, warps and divergence, latency hiding, wave quantization.</p><div class="tags"><span>SIMT</span><span>occupancy</span><span>H100 anatomy</span></div></a>
+    <a class="hub-card" href="02-why-gpus-for-ai/index.html"><div class="n">02 · 11 slides</div><h3>Why GPUs for AI</h3><p>2N and 6ND FLOPs (floating-point operations), arithmetic intensity, the roofline, prefill vs decode, batching, precision, MFU (model floating-point-operation utilization, the share of peak compute spent on the model's math).</p><div class="tags"><span>roofline</span><span>TTFT / TPOT</span><span>FP8</span></div></a>
+    <a class="hub-card" href="03-memory-hierarchy/index.html"><div class="n">03 · 12 slides</div><h3>Memory hierarchy</h3><p>Registers to NVMe (Non-Volatile Memory Express, the fast interface for flash storage), tiling, kernel fusion, FlashAttention, ZeRO (Zero Redundancy Optimizer) memory, KV-cache (KV = key-value) sizing, PagedAttention.</p><div class="tags"><span>HBM</span><span>FlashAttention</span><span>KV cache</span></div></a>
+    <a class="hub-card" href="04-inside-gpu-server/index.html"><div class="n">04 · 10 slides</div><h3>Inside a GPU server</h3><p>HGX H100 layout, NVLink/NVSwitch vs PCIe (PCI (Peripheral Component Interconnect) Express, the standard expansion bus), GPUDirect RDMA (remote direct memory access), NUMA (non-uniform memory access) affinity, power, NVL72.</p><div class="tags"><span>NVSwitch</span><span>topo -m</span><span>power</span></div></a>
+    <a class="hub-card" href="05-cluster-topology/index.html"><div class="n">05 · 12 slides</div><h3>Cluster topology</h3><p>Scale-up vs scale-out, fat tree, rails, collectives, ring all-reduce, parallelism planner, MoE (Mixture of Experts) all-to-all.</p><div class="tags"><span>all-reduce</span><span>TP/PP/DP</span><span>rails</span></div></a>
+    <a class="hub-card" href="06-gpu-failures/index.html"><div class="n">06 · 12 slides</div><h3>GPU failures</h3><p>Llama 3 failure data, cluster MTBF (mean time between failures), Xid errors, stragglers, checkpoint maths, fast recovery, SDC (silent data corruption).</p><div class="tags"><span>MTBF</span><span>checkpointing</span><span>SDC</span></div></a>
+    <a class="hub-card" href="07-heterogeneous-gpus/index.html"><div class="n">07 · 9 slides</div><h3>Heterogeneous GPUs</h3><p>Mixed fleets, the slowest GPU sets the pace, rebalancing DP (data parallelism) and PP (pipeline parallelism), disaggregated prefill/decode, placement.</p><div class="tags"><span>A100/H100/B200</span><span>disaggregation</span></div></a>
+    <a class="hub-card" href="08-sharing-gpus/index.html"><div class="n">08 · 10 slides</div><h3>Sharing GPUs</h3><p>Time-slicing, MPS (NVIDIA Multi-Process Service), MIG (Multi-Instance GPU, hardware partitioning of one GPU) builder, continuous batching, multi-LoRA, gang scheduling and fragmentation.</p><div class="tags"><span>MIG</span><span>multi-LoRA</span><span>scheduling</span></div></a>
   </div>
 
   <h2 style="margin-top:44px;font-size:26px">Numbers to memorize</h2>
   <div class="visual scroll-x">
     <table class="tbl nums">
       <tr><th>What</th><th>Value</th><th>Why it matters</th></tr>
-      <tr><td>H100 SXM BF16 / FP8 (dense)</td><td>989 / 1,979 TFLOPS</td><td>Compute ceiling</td></tr>
-      <tr><td>H100 HBM3</td><td>80 GB · 3.35 TB/s</td><td>Decode speed and capacity</td></tr>
+      <tr><td>H100 SXM (NVIDIA's socketed module form factor for data-center graphics processors) BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats) / FP8 (dense)</td><td>989 / 1,979 TFLOPS (trillion floating-point operations per second)</td><td>Compute ceiling</td></tr>
+      <tr><td>H100 HBM3 (third-generation high-bandwidth memory)</td><td>80 GB · 3.35 TB/s</td><td>Decode speed and capacity</td></tr>
       <tr><td>Ridge point (H100)</td><td>~295 FLOPs/byte</td><td>Below it you are memory-bound</td></tr>
-      <tr><td>NVLink 4 per GPU</td><td>900 GB/s bidir (450 per direction)</td><td>TP stays inside the node</td></tr>
-      <tr><td>PCIe Gen5 x16 / 400G NIC</td><td>~64 / 50 GB/s</td><td>About 9× slower than NVLink</td></tr>
+      <tr><td>NVLink 4 per GPU</td><td>900 GB/s bidir (450 per direction)</td><td>TP (tensor parallelism) stays inside the node</td></tr>
+      <tr><td>PCIe Gen5 x16 / 400G NIC (network interface card)</td><td>~64 / 50 GB/s</td><td>About 9× slower than NVLink</td></tr>
       <tr><td>Training FLOPs</td><td>6 · N · D</td><td>Estimate a training run</td></tr>
       <tr><td>Inference FLOPs per token</td><td>2 · N</td><td>Prefill cost</td></tr>
       <tr><td>Mixed-precision Adam</td><td>16 bytes / param</td><td>Why training is sharded</td></tr>

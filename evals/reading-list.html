@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evaluating LLMs Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Evaluating LLMs</a>
+  <div class="label" style="margin-top:28px">Reading list · 13 papers and docs</div>
+  <h1>Evaluating LLMs: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://arxiv.org/abs/2211.09110" target="_blank" rel="noopener">Holistic Evaluation of Language Models (HELM)</a>
+      <div class="meta">Liang et al. · TMLR 2023 · cited in <a href="01-what-an-eval-measures/index.html" style="font-weight:500;color:var(--a)">What an eval measures</a></div>
+      <p>Standardized evaluation of many models across many scenarios and seven metrics, not accuracy alone.</p><div class="num">Remember: 7 metrics × 16 core scenarios; 30 models on 42 scenarios</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2310.11324" target="_blank" rel="noopener">Quantifying Language Models' Sensitivity to Spurious Features in Prompt Design</a>
+      <div class="meta">Sclar et al. · ICLR 2024 · cited in <a href="01-what-an-eval-measures/index.html" style="font-weight:500;color:var(--a)">What an eval measures</a></div>
+      <p>Shows equivalent prompt formats (separators, casing, spacing) change accuracy dramatically, and proposes reporting the spread (FormatSpread).</p><div class="num">Remember: up to 76 accuracy points (LLaMA-2-13B)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2009.03300" target="_blank" rel="noopener">Measuring Massive Multitask Language Understanding (MMLU)</a>
+      <div class="meta">Hendrycks et al. · ICLR 2021 · cited in <a href="02-benchmarks/index.html" style="font-weight:500;color:var(--a)">Benchmarks and their failure modes</a></div>
+      <p>A 57-task multiple-choice benchmark spanning STEM (science, technology, engineering and mathematics), humanities and professional subjects.</p><div class="num">Remember: GPT-3 175B ≈ chance + 20 points at release</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2406.01574" target="_blank" rel="noopener">MMLU-Pro: A More Robust and Challenging Multi-Task Language Understanding Benchmark</a>
+      <div class="meta">Wang et al. · NeurIPS 2024 · cited in <a href="02-benchmarks/index.html" style="font-weight:500;color:var(--a)">Benchmarks and their failure modes</a></div>
+      <p>A harder, reasoning-focused successor with ten options per question and noisy questions removed.</p><div class="num">Remember: accuracy drops 16–33% vs MMLU</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2311.12022" target="_blank" rel="noopener">GPQA: A Graduate-Level Google-Proof Q&A Benchmark</a>
+      <div class="meta">Rein et al. · COLM 2024 · cited in <a href="02-benchmarks/index.html" style="font-weight:500;color:var(--a)">Benchmarks and their failure modes</a></div>
+      <p>448 expert-written science questions that skilled non-experts can't answer even with web search.</p><div class="num">Remember: experts 65%, non-experts 34%, GPT-4 39%</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2310.06770" target="_blank" rel="noopener">SWE-bench: Can Language Models Resolve Real-World GitHub Issues?</a>
+      <div class="meta">Jimenez et al. · ICLR 2024 · cited in <a href="02-benchmarks/index.html" style="font-weight:500;color:var(--a)">Benchmarks and their failure modes</a>, <a href="03-pass-at-k/index.html" style="font-weight:500;color:var(--a)">pass@k and sampling metrics</a></div>
+      <p>Real GitHub issues: the model edits the repository and the project's own tests decide success.</p><div class="num">Remember: 2,294 issues; Claude 2 solved 1.96% at release</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2107.03374" target="_blank" rel="noopener">Evaluating Large Language Models Trained on Code (Codex, HumanEval)</a>
+      <div class="meta">Chen et al. · arXiv 2021 · cited in <a href="03-pass-at-k/index.html" style="font-weight:500;color:var(--a)">pass@k and sampling metrics</a></div>
+      <p>HumanEval's 164 hand-written problems scored by unit tests, and the unbiased pass@k estimator.</p><div class="num">Remember: Codex-12B: 28.8% pass@1, 70.2% with 100 samples</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2411.00640" target="_blank" rel="noopener">Adding Error Bars to Evals: A Statistical Approach to Language Model Evaluations</a>
+      <div class="meta">Miller · arXiv 2024 · cited in <a href="04-error-bars/index.html" style="font-weight:500;color:var(--a)">Error bars and comparing models</a></div>
+      <p>Standard errors from the central limit theorem, clustered standard errors, paired comparisons and power analysis for evals.</p><div class="num">Remember: clustered SEs can be over 3× naive ones</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2403.04132" target="_blank" rel="noopener">Chatbot Arena: An Open Platform for Evaluating LLMs (large language models) by Human Preference</a>
+      <div class="meta">Chiang et al. · ICML 2024 · cited in <a href="04-error-bars/index.html" style="font-weight:500;color:var(--a)">Error bars and comparing models</a>, <a href="07-arenas/index.html" style="font-weight:500;color:var(--a)">Arenas and ratings</a></div>
+      <p>Crowdsourced anonymous pairwise votes on real prompts, ranked with Bradley-Terry maximum likelihood and confidence intervals.</p><div class="num">Remember: over 240K votes</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2005.14165" target="_blank" rel="noopener">Language Models are Few-Shot Learners (GPT-3)</a>
+      <div class="meta">Brown et al. · NeurIPS 2020 · cited in <a href="05-contamination/index.html" style="font-weight:500;color:var(--a)">Contamination</a></div>
+      <p>Besides in-context learning, a systematic contamination study: 13-gram overlap flags and clean vs dirty scores.</p><div class="num">Remember: 13-gram overlap; a filtering bug left some overlap in</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2405.00332" target="_blank" rel="noopener">A Careful Examination of Large Language Model Performance on Grade School Arithmetic (GSM1k)</a>
+      <div class="meta">Zhang et al. · arXiv 2024 · cited in <a href="05-contamination/index.html" style="font-weight:500;color:var(--a)">Contamination</a></div>
+      <p>A fresh set of GSM8K-style problems that exposes models overfit to the public benchmark.</p><div class="num">Remember: accuracy drops of up to 8%</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2306.05685" target="_blank" rel="noopener">Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena</a>
+      <div class="meta">Zheng et al. · NeurIPS 2023 · cited in <a href="06-llm-as-judge/index.html" style="font-weight:500;color:var(--a)">LLM-as-judge</a>, <a href="07-arenas/index.html" style="font-weight:500;color:var(--a)">Arenas and ratings</a></div>
+      <p>Measures how well strong LLMs judge open-ended answers, and documents position, verbosity and self-enhancement biases.</p><div class="num">Remember: >80% agreement with humans; GPT-4 position consistency 65%</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2404.04475" target="_blank" rel="noopener">Length-Controlled AlpacaEval: A Simple Way to Debias Automatic Evaluators</a>
+      <div class="meta">Dubois et al. · arXiv 2024 · cited in <a href="06-llm-as-judge/index.html" style="font-weight:500;color:var(--a)">LLM-as-judge</a></div>
+      <p>Removes the judge's length preference by predicting win rates as if both answers had the same length.</p><div class="num">Remember: Spearman with Chatbot Arena 0.94 → 0.98</div></div>
+  </div>
+</div>
+
+</body>
+</html>

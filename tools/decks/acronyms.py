@@ -15,7 +15,7 @@ GLOSSARY = json.load(open(os.path.join(HERE, '..', '..', 'shared', 'glossary.jso
 TERMS, EXEMPT = GLOSSARY['terms'], set(GLOSSARY['exempt'])
 
 SKIP_TAGS = {'script', 'style', 'title', 'h1', 'h2', 'h3', 'h4', 'sup', 'sub', 'button', 'option', 'select', 'output', 'svg', 'label', 'code', 'pre', 'th', 'summary'}
-SKIP_CLASSES = {'qtag', 'ill', 'kicker', 'eq', 'mono', 'legend', 'cite', 'n', 'tags'}
+SKIP_CLASSES = {'qtag', 'ill', 'kicker', 'eq', 'mono', 'legend', 'cite', 'n', 'tags', 'brand', 'btn', 'label', 'start-hint'}
 TOKEN = re.compile(r'<script\b.*?</script>|<style\b.*?</style>|<!--.*?-->|<(/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*)>|([^<]+|<)', re.S)
 VOID = {'br', 'hr', 'img', 'input', 'meta', 'link', 'source', 'wbr'}
 

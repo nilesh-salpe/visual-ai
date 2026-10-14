@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Modern LLM Architecture Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← The Modern LLM Architecture</a>
+  <div class="label" style="margin-top:28px">Reading list · 28 papers and docs</div>
+  <h1>The Modern LLM Architecture: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need</a>
+      <div class="meta">Vaswani et al. · NeurIPS 2017 · cited in <a href="01-what-changed/index.html" style="font-weight:500;color:var(--a)">What changed since 2017</a></div>
+      <p>The Transformer: attention-only encoder-decoder with post-norm residual blocks, sinusoidal positions and a ReLU FFN (feed-forward network). The baseline every later change is measured against.</p><div class="num">Remember: 28.4 BLEU (Bilingual Evaluation Understudy, an n-gram overlap score for translation) on WMT (Workshop on Machine Translation) 2014 English-German</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2302.13971" target="_blank" rel="noopener">LLaMA: Open and Efficient Foundation Language Models</a>
+      <div class="meta">Touvron et al. · arXiv 2023 · cited in <a href="01-what-changed/index.html" style="font-weight:500;color:var(--a)">What changed since 2017</a>, <a href="03-rope/index.html" style="font-weight:500;color:var(--a)">RoPE</a>, <a href="04-swiglu/index.html" style="font-weight:500;color:var(--a)">SwiGLU</a>, <a href="11-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together</a></div>
+      <p>The recipe most open models followed: pre-normalization with RMSNorm, SwiGLU with a ⅔·4d hidden size, and rotary embeddings.</p><div class="num">Remember: trained on 1.0–1.4T tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+      <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024 · cited in <a href="01-what-changed/index.html" style="font-weight:500;color:var(--a)">What changed since 2017</a>, <a href="03-rope/index.html" style="font-weight:500;color:var(--a)">RoPE</a>, <a href="07-rope-scaling/index.html" style="font-weight:500;color:var(--a)">Long context I: stretching RoPE</a>, <a href="11-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together</a></div>
+      <p>Dense Transformer with GQA (8 KV heads), RoPE base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2002.04745" target="_blank" rel="noopener">On Layer Normalization in the Transformer Architecture</a>
+      <div class="meta">Xiong et al. · ICML 2020 · cited in <a href="02-normalization/index.html" style="font-weight:500;color:var(--a)">Pre-norm and RMSNorm</a></div>
+      <p>Mean-field analysis showing post-norm has large gradients near the output at initialization, so it needs learning-rate warm-up; pre-norm does not.</p><div class="num">Remember: pre-LN trains without warm-up</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1910.07467" target="_blank" rel="noopener">Root Mean Square Layer Normalization</a>
+      <div class="meta">Zhang & Sennrich · NeurIPS 2019 · cited in <a href="02-normalization/index.html" style="font-weight:500;color:var(--a)">Pre-norm and RMSNorm</a></div>
+      <p>Drops LayerNorm's mean-centring and keeps only re-scaling by the root mean square, with comparable quality.</p><div class="num">Remember: 7–64% less running time</div></div>
+    <div class="paper-item"><a href="https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf" target="_blank" rel="noopener">Language Models are Unsupervised Multitask Learners (GPT-2)</a>
+      <div class="meta">Radford et al. · OpenAI 2019 · cited in <a href="02-normalization/index.html" style="font-weight:500;color:var(--a)">Pre-norm and RMSNorm</a>, <a href="06-decoder-only/index.html" style="font-weight:500;color:var(--a)">Decoder-only, and why it won</a></div>
+      <p>Decoder-only language model that moved layer normalization to the input of each sub-block (pre-norm) and added a final norm.</p><div class="num">Remember: context 1,024 tokens, vocabulary 50,257</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2104.09864" target="_blank" rel="noopener">RoFormer: Enhanced Transformer with Rotary Position Embedding</a>
+      <div class="meta">Su et al. · arXiv 2021 · cited in <a href="03-rope/index.html" style="font-weight:500;color:var(--a)">RoPE</a></div>
+      <p>Rotates query and key pairs by position-dependent angles so the attention score depends only on relative position, with a long-term decay property.</p><div class="num">Remember: θᵢ = 10000^(−2i/d)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2002.05202" target="_blank" rel="noopener">GLU Variants Improve Transformer</a>
+      <div class="meta">Shazeer · arXiv 2020 · cited in <a href="04-swiglu/index.html" style="font-weight:500;color:var(--a)">SwiGLU</a></div>
+      <p>Replaces the Transformer FFN with gated linear units (ReGLU, GEGLU, SwiGLU…) at equal parameters by shrinking the hidden size to ⅔.</p><div class="num">Remember: log-perplexity 1.677 (ReLU) → 1.636 (SwiGLU)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1612.08083" target="_blank" rel="noopener">Language Modeling with Gated Convolutional Networks</a>
+      <div class="meta">Dauphin et al. · ICML 2017 · cited in <a href="04-swiglu/index.html" style="font-weight:500;color:var(--a)">SwiGLU</a></div>
+      <p>Introduces the gated linear unit (GLU): one projection gates another through a sigmoid.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1911.02150" target="_blank" rel="noopener">Fast Transformer Decoding: One Write-Head is All You Need</a>
+      <div class="meta">Shazeer · arXiv 2019 · cited in <a href="05-attention-variants/index.html" style="font-weight:500;color:var(--a)">MQA, GQA and MLA</a></div>
+      <p>Multi-query attention: all query heads share one key/value head, cutting decode memory bandwidth with minor quality loss.</p><div class="num">Remember: 1 K/V head instead of h</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.13245" target="_blank" rel="noopener">GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints</a>
+      <div class="meta">Ainslie et al. · EMNLP 2023 · cited in <a href="05-attention-variants/index.html" style="font-weight:500;color:var(--a)">MQA, GQA and MLA</a></div>
+      <p>Grouped-query attention plus a recipe to convert multi-head checkpoints by mean-pooling key/value heads and uptraining.</p><div class="num">Remember: uptraining with 5% of the original pretraining compute</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2405.04434" target="_blank" rel="noopener">DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model</a>
+      <div class="meta">DeepSeek-AI · arXiv 2024 · cited in <a href="05-attention-variants/index.html" style="font-weight:500;color:var(--a)">MQA, GQA and MLA</a>, <a href="10-mixture-of-experts/index.html" style="font-weight:500;color:var(--a)">Mixture of Experts</a></div>
+      <p>Multi-head latent attention (MLA) with decoupled RoPE, and DeepSeekMoE with shared and fine-grained routed experts.</p><div class="num">Remember: KV cache −93.3%; 236B total / 21B active parameters</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2204.05832" target="_blank" rel="noopener">What Language Model Architecture and Pretraining Objective Work Best for Zero-Shot Generalization?</a>
+      <div class="meta">Wang et al. · ICML 2022 · cited in <a href="06-decoder-only/index.html" style="font-weight:500;color:var(--a)">Decoder-only, and why it won</a></div>
+      <p>Compares causal decoders, non-causal decoders and encoder-decoders with several objectives at scale.</p><div class="num">Remember: causal decoders best zero-shot after pretraining alone</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1910.10683" target="_blank" rel="noopener">Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer (T5)</a>
+      <div class="meta">Raffel et al. · JMLR 2020 · cited in <a href="06-decoder-only/index.html" style="font-weight:500;color:var(--a)">Decoder-only, and why it won</a></div>
+      <p>Systematic study of encoder-decoder pretraining with a span-corruption objective, framing every task as text-to-text.</p><div class="num">Remember: corrupts 15% of tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1810.04805" target="_blank" rel="noopener">BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding</a>
+      <div class="meta">Devlin et al. · NAACL 2019 · cited in <a href="06-decoder-only/index.html" style="font-weight:500;color:var(--a)">Decoder-only, and why it won</a></div>
+      <p>Encoder-only model pretrained with masked language modelling; bidirectional context, but not built to generate text.</p><div class="num">Remember: masks 15% of tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2306.15595" target="_blank" rel="noopener">Extending Context Window of Large Language Models via Positional Interpolation</a>
+      <div class="meta">Chen et al. · arXiv 2023 · cited in <a href="07-rope-scaling/index.html" style="font-weight:500;color:var(--a)">Long context I: stretching RoPE</a></div>
+      <p>Linearly down-scales position indices so a RoPE model sees only trained angles at longer lengths, then fine-tunes briefly.</p><div class="num">Remember: to 32,768 tokens with ~1,000 fine-tuning steps</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2309.00071" target="_blank" rel="noopener">YaRN: Efficient Context Window Extension of Large Language Models</a>
+      <div class="meta">Peng et al. · ICLR 2024 · cited in <a href="07-rope-scaling/index.html" style="font-weight:500;color:var(--a)">Long context I: stretching RoPE</a></div>
+      <p>Interpolates only low-frequency RoPE pairs (a ramp between α and β) and adds an attention temperature.</p><div class="num">Remember: 10× fewer tokens, 2.5× fewer steps; Llama 2 to 128K</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2310.06825" target="_blank" rel="noopener">Mistral 7B</a>
+      <div class="meta">Jiang et al. · arXiv 2023 · cited in <a href="08-sliding-window/index.html" style="font-weight:500;color:var(--a)">Long context II: sliding window and ALiBi</a>, <a href="11-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together</a></div>
+      <p>A 7B model with GQA (grouped-query attention) and sliding-window attention (W = 4,096) plus a rolling-buffer KV cache.</p><div class="num">Remember: ~131K theoretical span; 8× less cache at 32K</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2004.05150" target="_blank" rel="noopener">Longformer: The Long-Document Transformer</a>
+      <div class="meta">Beltagy et al. · arXiv 2020 · cited in <a href="08-sliding-window/index.html" style="font-weight:500;color:var(--a)">Long context II: sliding window and ALiBi</a></div>
+      <p>Combines sliding-window local attention with a few global tokens so attention cost grows linearly with length.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2108.12409" target="_blank" rel="noopener">Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation</a>
+      <div class="meta">Press et al. · ICLR 2022 · cited in <a href="08-sliding-window/index.html" style="font-weight:500;color:var(--a)">Long context II: sliding window and ALiBi</a></div>
+      <p>No position embeddings: each head adds a fixed penalty proportional to query-key distance, with geometric slopes.</p><div class="num">Remember: train on 1,024, test on 2,048; 11% faster, 11% less memory</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener">FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness</a>
+      <div class="meta">Dao et al. · NeurIPS 2022 · cited in <a href="09-flash-attention/index.html" style="font-weight:500;color:var(--a)">FlashAttention internals</a></div>
+      <p>Tiles attention so scores never leave on-chip SRAM, using an online softmax and recomputation in the backward pass. Exact, with memory linear in sequence length.</p><div class="num">Remember: GPT-2 medium: 40.3 → 4.4 GB of memory traffic, 41.7 → 7.3 ms</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2307.08691" target="_blank" rel="noopener">FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning</a>
+      <div class="meta">Dao · ICLR 2024 · cited in <a href="09-flash-attention/index.html" style="font-weight:500;color:var(--a)">FlashAttention internals</a></div>
+      <p>Fewer non-matmul FLOPs, parallelism across the sequence (outer loop over query blocks) and better work split across warps.</p><div class="num">Remember: ~2× FA1; 50–73% of peak on A100</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.08608" target="_blank" rel="noopener">FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision</a>
+      <div class="meta">Shah et al. · NeurIPS 2024 · cited in <a href="09-flash-attention/index.html" style="font-weight:500;color:var(--a)">FlashAttention internals</a></div>
+      <p>Uses Hopper features: asynchronous Tensor Cores and TMA, warp specialization, interleaved matmul and softmax, and FP8 with block quantization.</p><div class="num">Remember: 740 TFLOP/s FP16 (~75% of H100), ~1.2 PFLOP/s FP8</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1805.02867" target="_blank" rel="noopener">Online normalizer calculation for softmax</a>
+      <div class="meta">Milakov & Gimelshein · arXiv 2018 · cited in <a href="09-flash-attention/index.html" style="font-weight:500;color:var(--a)">FlashAttention internals</a></div>
+      <p>Computes the softmax normalizer in a single pass with a running max and a rescaled running sum, the trick FlashAttention builds on.</p><div class="num">Remember: up to 1.3× faster softmax</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2101.03961" target="_blank" rel="noopener">Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity</a>
+      <div class="meta">Fedus et al. · JMLR 2022 · cited in <a href="10-mixture-of-experts/index.html" style="font-weight:500;color:var(--a)">Mixture of Experts</a></div>
+      <p>Top-1 expert routing, an auxiliary load-balancing loss α·N·Σfᵢ·Pᵢ, expert capacity, and tricks for stable bfloat16 training.</p><div class="num">Remember: up to 7× faster pretraining; α = 10⁻²</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2401.04088" target="_blank" rel="noopener">Mixtral of Experts</a>
+      <div class="meta">Jiang et al. · arXiv 2024 · cited in <a href="10-mixture-of-experts/index.html" style="font-weight:500;color:var(--a)">Mixture of Experts</a></div>
+      <p>A sparse MoE with 8 SwiGLU experts per layer and top-2 routing on the Mistral 7B architecture, with dense 32K context.</p><div class="num">Remember: 47B total, 13B active parameters</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1701.06538" target="_blank" rel="noopener">Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer</a>
+      <div class="meta">Shazeer et al. · ICLR 2017 · cited in <a href="10-mixture-of-experts/index.html" style="font-weight:500;color:var(--a)">Mixture of Experts</a></div>
+      <p>The modern sparsely gated MoE layer: a trainable gate picks a few experts per example, decoupling parameters from compute.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2307.09288" target="_blank" rel="noopener">Llama 2: Open Foundation and Fine-Tuned Chat Models</a>
+      <div class="meta">Touvron et al. · arXiv 2023 · cited in <a href="11-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together</a></div>
+      <p>Adds grouped-query attention for the 34B and 70B models and documents the chat post-training: SFT (supervised fine-tuning), two reward models and iterative RLHF (reinforcement learning from human feedback) with rejection sampling and PPO (Proximal Policy Optimization).</p><div class="num">Remember: 27,540 SFT annotations; over 1M human comparisons</div></div>
+  </div>
+</div>
+
+</body>
+</html>

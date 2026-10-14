@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tokenization for LLMs Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Tokenization for LLMs</a>
+  <div class="label" style="margin-top:28px">Reading list · 13 papers and docs</div>
+  <h1>Tokenization for LLMs: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://arxiv.org/abs/1508.07909" target="_blank" rel="noopener">Neural Machine Translation of Rare Words with Subword Units</a>
+      <div class="meta">Sennrich et al. · ACL 2016 · cited in <a href="01-why-tokenize/index.html" style="font-weight:500;color:var(--a)">Why tokenize?</a>, <a href="02-bpe-from-scratch/index.html" style="font-weight:500;color:var(--a)">BPE from scratch</a></div>
+      <p>Byte-pair encoding for open-vocabulary translation: rare words become sequences of subword units.</p></div>
+    <div class="paper-item"><a href="https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf" target="_blank" rel="noopener">Language Models are Unsupervised Multitask Learners (GPT-2)</a>
+      <div class="meta">Radford et al. · OpenAI 2019 · cited in <a href="01-why-tokenize/index.html" style="font-weight:500;color:var(--a)">Why tokenize?</a>, <a href="02-bpe-from-scratch/index.html" style="font-weight:500;color:var(--a)">BPE from scratch</a>, <a href="03-byte-level-bpe/index.html" style="font-weight:500;color:var(--a)">Byte-level BPE</a>, <a href="07-vocabulary-size/index.html" style="font-weight:500;color:var(--a)">Vocabulary size trade-offs</a>, <a href="08-tokenizers-in-llms/index.html" style="font-weight:500;color:var(--a)">Tokenizers in real LLMs</a>, <a href="10-tokenization-quirks/index.html" style="font-weight:500;color:var(--a)">Tokenization quirks</a></div>
+      <p>Decoder-only language model that moved layer normalization to the input of each sub-block (pre-norm) and added a final norm.</p><div class="num">Remember: context 1,024 tokens, vocabulary 50,257</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1810.04805" target="_blank" rel="noopener">BERT (Bidirectional Encoder Representations from Transformers): Pre-training of Deep Bidirectional Transformers for Language Understanding</a>
+      <div class="meta">Devlin et al. · NAACL 2019 · cited in <a href="01-why-tokenize/index.html" style="font-weight:500;color:var(--a)">Why tokenize?</a>, <a href="04-wordpiece-unigram/index.html" style="font-weight:500;color:var(--a)">WordPiece and unigram LM</a>, <a href="08-tokenizers-in-llms/index.html" style="font-weight:500;color:var(--a)">Tokenizers in real LLMs</a></div>
+      <p>Encoder-only model pretrained with masked language modelling; bidirectional context, but not built to generate text.</p><div class="num">Remember: masks 15% of tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2105.13626" target="_blank" rel="noopener">ByT5: Towards a token-free future with pre-trained byte-to-byte models</a>
+      <div class="meta">Xue et al. · TACL 2022 · cited in <a href="03-byte-level-bpe/index.html" style="font-weight:500;color:var(--a)">Byte-level BPE</a>, <a href="09-multilingual-cost/index.html" style="font-weight:500;color:var(--a)">Multilingual cost</a>, <a href="10-tokenization-quirks/index.html" style="font-weight:500;color:var(--a)">Tokenization quirks</a></div>
+      <p>A standard Transformer on raw bytes: no tokenizer, more robust to noise and spelling, at the cost of longer sequences.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1804.10959" target="_blank" rel="noopener">Subword Regularization: Improving Neural Network Translation Models with Multiple Subword Candidates</a>
+      <div class="meta">Kudo · ACL 2018 · cited in <a href="04-wordpiece-unigram/index.html" style="font-weight:500;color:var(--a)">WordPiece and unigram LM</a>, <a href="05-sentencepiece/index.html" style="font-weight:500;color:var(--a)">SentencePiece</a>, <a href="06-many-tokenizations/index.html" style="font-weight:500;color:var(--a)">One text, many tokenizations</a></div>
+      <p>Introduces the unigram language-model tokenizer and trains on sampled segmentations for robustness.</p><div class="num">Remember: consistent gains, especially low-resource and out-of-domain</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1609.08144" target="_blank" rel="noopener">Google's Neural Machine Translation System (GNMT)</a>
+      <div class="meta">Wu et al. · arXiv 2016 · cited in <a href="04-wordpiece-unigram/index.html" style="font-weight:500;color:var(--a)">WordPiece and unigram LM</a></div>
+      <p>The production deep-LSTM translation system with attention and wordpieces that the Transformer was compared against.</p><div class="num">Remember: 60% fewer translation errors than phrase-based production in side-by-side evaluation</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1808.06226" target="_blank" rel="noopener">SentencePiece: A simple and language independent subword tokenizer and detokenizer for Neural Text Processing</a>
+      <div class="meta">Kudo & Richardson · EMNLP (demo) 2018 · cited in <a href="05-sentencepiece/index.html" style="font-weight:500;color:var(--a)">SentencePiece</a></div>
+      <p>Trains subword models directly from raw sentences (whitespace becomes a symbol), making tokenization lossless and language-independent.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1910.10683" target="_blank" rel="noopener">Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer (T5)</a>
+      <div class="meta">Raffel et al. · JMLR 2020 · cited in <a href="05-sentencepiece/index.html" style="font-weight:500;color:var(--a)">SentencePiece</a>, <a href="08-tokenizers-in-llms/index.html" style="font-weight:500;color:var(--a)">Tokenizers in real LLMs</a></div>
+      <p>Systematic study of encoder-decoder pretraining with a span-corruption objective, framing every task as text-to-text.</p><div class="num">Remember: corrupts 15% of tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1910.13267" target="_blank" rel="noopener">BPE-Dropout: Simple and Effective Subword Regularization</a>
+      <div class="meta">Provilkov et al. · ACL 2020 · cited in <a href="06-many-tokenizations/index.html" style="font-weight:500;color:var(--a)">One text, many tokenizations</a></div>
+      <p>Randomly skips BPE merges during training to expose the model to many segmentations; standard BPE at inference.</p><div class="num">Remember: up to +3 BLEU over BPE</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+      <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024 · cited in <a href="07-vocabulary-size/index.html" style="font-weight:500;color:var(--a)">Vocabulary size trade-offs</a>, <a href="08-tokenizers-in-llms/index.html" style="font-weight:500;color:var(--a)">Tokenizers in real LLMs</a>, <a href="09-multilingual-cost/index.html" style="font-weight:500;color:var(--a)">Multilingual cost</a></div>
+      <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2307.09288" target="_blank" rel="noopener">Llama 2: Open Foundation and Fine-Tuned Chat Models</a>
+      <div class="meta">Touvron et al. · arXiv 2023 · cited in <a href="07-vocabulary-size/index.html" style="font-weight:500;color:var(--a)">Vocabulary size trade-offs</a>, <a href="08-tokenizers-in-llms/index.html" style="font-weight:500;color:var(--a)">Tokenizers in real LLMs</a></div>
+      <p>Adds grouped-query attention for the 34B and 70B models and documents the chat post-training: SFT, two reward models and iterative RLHF (reinforcement learning from human feedback) with rejection sampling and PPO (Proximal Policy Optimization).</p><div class="num">Remember: 27,540 SFT annotations; over 1M human comparisons</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.15425" target="_blank" rel="noopener">Language Model Tokenizers Introduce Unfairness Between Languages</a>
+      <div class="meta">Petrov et al. · NeurIPS 2023 · cited in <a href="09-multilingual-cost/index.html" style="font-weight:500;color:var(--a)">Multilingual cost</a></div>
+      <p>The same text translated into different languages can need very different numbers of tokens, which changes cost, latency and context.</p><div class="num">Remember: up to 15× more tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2207.14255" target="_blank" rel="noopener">Efficient Training of Language Models to Fill in the Middle</a>
+      <div class="meta">Bavarian et al. · arXiv 2022 · cited in <a href="10-tokenization-quirks/index.html" style="font-weight:500;color:var(--a)">Tokenization quirks</a></div>
+      <p>Moves a middle span to the end with special sentinel tokens so a left-to-right model learns infilling, without hurting normal generation.</p></div>
+  </div>
+</div>
+
+</body>
+</html>

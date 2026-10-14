@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM Inference and Serving Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← LLM Inference and Serving</a>
+  <div class="label" style="margin-top:28px">Reading list · 19 papers and docs</div>
+  <h1>LLM Inference and Serving: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://arxiv.org/abs/2211.05102" target="_blank" rel="noopener">Efficiently Scaling Transformer Inference</a>
+      <div class="meta">Pope et al. · MLSys 2023 · cited in <a href="01-inference-workload/index.html" style="font-weight:500;color:var(--a)">The inference workload</a>, <a href="02-kv-cache/index.html" style="font-weight:500;color:var(--a)">KV cache</a>, <a href="08-parallelism/index.html" style="font-weight:500;color:var(--a)">Parallelism for inference</a></div>
+      <p>An analytical model of inference cost that picks how to partition a model across chips for a given latency target; shows prefill and decode need different strategies and that multi-query attention allows much longer contexts.</p><div class="num">Remember: 29 ms/token on PaLM 540B with int8 weights; 76% MFU (model floating-point-operation utilization, the share of peak compute spent on the model's math) on large-batch prefill; MQA enables up to 32× longer context</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2401.09670" target="_blank" rel="noopener">DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving</a>
+      <div class="meta">Zhong et al. · OSDI 2024 · cited in <a href="01-inference-workload/index.html" style="font-weight:500;color:var(--a)">The inference workload</a>, <a href="09-disaggregated-serving/index.html" style="font-weight:500;color:var(--a)">Disaggregated serving</a>, <a href="10-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together</a></div>
+      <p>Defines serving quality as goodput, the request rate served within both TTFT and TPOT targets, and runs prefill and decode on separate GPUs so they stop interfering.</p><div class="num">Remember: 7.4× more requests or 12.6× tighter SLO than colocated systems</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2311.18677" target="_blank" rel="noopener">Splitwise: Efficient Generative LLM Inference Using Phase Splitting</a>
+      <div class="meta">Patel et al. · ISCA 2024 · cited in <a href="01-inference-workload/index.html" style="font-weight:500;color:var(--a)">The inference workload</a>, <a href="09-disaggregated-serving/index.html" style="font-weight:500;color:var(--a)">Disaggregated serving</a></div>
+      <p>Characterizes prompt computation as compute-intensive and token generation as memory-intensive, and splits them onto separate machines, possibly of different GPU types.</p><div class="num">Remember: 1.4× throughput at 20% lower cost, or 2.35× throughput at the same cost and power</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1911.02150" target="_blank" rel="noopener">Fast Transformer Decoding: One Write-Head is All You Need</a>
+      <div class="meta">Shazeer · arXiv 2019 · cited in <a href="02-kv-cache/index.html" style="font-weight:500;color:var(--a)">KV cache</a></div>
+      <p>Introduces multi-query attention: all heads share one key/value head, cutting the memory bandwidth of incremental decoding with only minor quality loss.</p><div class="num">Remember: 1 K/V head instead of h</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.13245" target="_blank" rel="noopener">GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints</a>
+      <div class="meta">Ainslie et al. · EMNLP 2023 · cited in <a href="02-kv-cache/index.html" style="font-weight:500;color:var(--a)">KV cache</a></div>
+      <p>Grouped-query attention: an intermediate number of key/value heads, plus a recipe to convert existing multi-head checkpoints.</p><div class="num">Remember: quality close to MHA, speed close to MQA; uptraining with 5% of the original pretraining compute</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2405.04434" target="_blank" rel="noopener">DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model</a>
+      <div class="meta">DeepSeek-AI · arXiv 2024 · cited in <a href="02-kv-cache/index.html" style="font-weight:500;color:var(--a)">KV cache</a></div>
+      <p>Introduces multi-head latent attention (MLA), which compresses keys and values into a small latent vector per token, alongside a Mixture-of-Experts design.</p><div class="num">Remember: KV cache reduced by 93.3%; maximum generation throughput 5.76× vs DeepSeek 67B</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2309.06180" target="_blank" rel="noopener">Efficient Memory Management for Large Language Model Serving with PagedAttention</a>
+      <div class="meta">Kwon et al. · SOSP 2023 · cited in <a href="05-paged-attention/index.html" style="font-weight:500;color:var(--a)">PagedAttention and prefix caching</a>, <a href="03-batching/index.html" style="font-weight:500;color:var(--a)">Batching</a>, <a href="10-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together</a></div>
+      <p>Stores the KV cache in fixed-size blocks mapped by a block table, like virtual memory pages, giving near-zero fragmentation and sharing with copy-on-write. The basis of vLLM.</p><div class="num">Remember: 2–4× throughput vs FasterTransformer and Orca at the same latency</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2312.07104" target="_blank" rel="noopener">SGLang: Efficient Execution of Structured Language Model Programs</a>
+      <div class="meta">Zheng et al. · NeurIPS 2024 · cited in <a href="05-paged-attention/index.html" style="font-weight:500;color:var(--a)">PagedAttention and prefix caching</a>, <a href="10-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together</a></div>
+      <p>A runtime and frontend for multi-call LLM programs; RadixAttention keeps KV caches in a radix tree so shared prefixes are reused across requests automatically.</p><div class="num">Remember: up to 6.4× higher throughput</div></div>
+    <div class="paper-item"><a href="https://www.usenix.org/conference/osdi22/presentation/yu" target="_blank" rel="noopener">Orca: A Distributed Serving System for Transformer-Based Generative Models</a>
+      <div class="meta">Yu et al. · OSDI 2022 · cited in <a href="03-batching/index.html" style="font-weight:500;color:var(--a)">Batching</a></div>
+      <p>Iteration-level scheduling (requests join and leave the batch after every decode step) plus selective batching (batch the matmuls, run attention per request).</p><div class="num">Remember: 36.9× throughput over FasterTransformer at the same latency (GPT-3 175B)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2308.16369" target="_blank" rel="noopener">SARATHI: Efficient LLM (large language model) Inference by Piggybacking Decodes with Chunked Prefills</a>
+      <div class="meta">Agrawal et al. · arXiv 2023 · cited in <a href="04-chunked-prefill/index.html" style="font-weight:500;color:var(--a)">Chunked prefill</a></div>
+      <p>Splits prefills into equal chunks and fills the rest of each batch with decodes, which "piggyback" on the compute-heavy chunk.</p><div class="num">Remember: up to 10× decode throughput (LLaMA-13B, A6000)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2403.02310" target="_blank" rel="noopener">Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve</a>
+      <div class="meta">Agrawal et al. · OSDI 2024 · cited in <a href="04-chunked-prefill/index.html" style="font-weight:500;color:var(--a)">Chunked prefill</a>, <a href="10-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together</a></div>
+      <p>Chunked prefills plus stall-free scheduling: new requests are added without pausing ongoing decodes, so throughput rises without TPOT spikes.</p><div class="num">Remember: 2.6× serving capacity (Mistral-7B, 1 A100) and up to 3.7× (Yi-34B, 2 A100s) vs vLLM; up to 5.6× with pipeline parallelism (Falcon-180B)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2211.17192" target="_blank" rel="noopener">Fast Inference from Transformers via Speculative Decoding</a>
+      <div class="meta">Leviathan et al. · ICML 2023 · cited in <a href="06-speculative-decoding/index.html" style="font-weight:500;color:var(--a)">Speculative decoding</a></div>
+      <p>A small model drafts tokens, the large model verifies them in parallel, and a modified rejection rule keeps the output distribution exactly unchanged.</p><div class="num">Remember: 2–3× faster on T5-XXL with identical outputs</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2302.01318" target="_blank" rel="noopener">Accelerating Large Language Model Decoding with Speculative Sampling</a>
+      <div class="meta">Chen et al. · arXiv 2023 · cited in <a href="06-speculative-decoding/index.html" style="font-weight:500;color:var(--a)">Speculative decoding</a></div>
+      <p>Independent derivation of speculative sampling with a modified rejection scheme that preserves the target distribution.</p><div class="num">Remember: 2–2.5× decoding speedup on Chinchilla 70B</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2208.07339" target="_blank" rel="noopener">LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale</a>
+      <div class="meta">Dettmers et al. · NeurIPS 2022 · cited in <a href="07-quantization/index.html" style="font-weight:500;color:var(--a)">Quantization</a></div>
+      <p>Finds systematic outlier features in large transformers and handles them with a mixed-precision decomposition: outlier dimensions in 16-bit, everything else in 8-bit.</p><div class="num">Remember: more than 99.9% of values multiplied in 8-bit, no degradation up to 175B</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2211.10438" target="_blank" rel="noopener">SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models</a>
+      <div class="meta">Xiao et al. · ICML 2023 · cited in <a href="07-quantization/index.html" style="font-weight:500;color:var(--a)">Quantization</a></div>
+      <p>Migrates quantization difficulty from activation outliers to weights with a mathematically equivalent per-channel scaling, enabling W8A8 (8-bit weights and activations).</p><div class="num">Remember: up to 1.56× speedup and 2× memory reduction</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2210.17323" target="_blank" rel="noopener">GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers</a>
+      <div class="meta">Frantar et al. · ICLR 2023 · cited in <a href="07-quantization/index.html" style="font-weight:500;color:var(--a)">Quantization</a></div>
+      <p>One-shot weight quantization using approximate second-order information, quantizing one column at a time and compensating the error in the rest.</p><div class="num">Remember: 175B model to 3–4 bits in about four GPU hours</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2306.00978" target="_blank" rel="noopener">AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration</a>
+      <div class="meta">Lin et al. · MLSys 2024 · cited in <a href="07-quantization/index.html" style="font-weight:500;color:var(--a)">Quantization</a></div>
+      <p>Weight-only low-bit quantization that protects the most important weight channels, chosen by activation magnitude, by scaling them up before quantizing.</p><div class="num">Remember: protecting 1% of salient weights greatly reduces error; >3× over Hugging Face FP16 with its TinyChat kernels</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2209.05433" target="_blank" rel="noopener">FP8 Formats for Deep Learning</a>
+      <div class="meta">Micikevicius et al. · arXiv 2022 · cited in <a href="07-quantization/index.html" style="font-weight:500;color:var(--a)">Quantization</a></div>
+      <p>Defines the two FP8 encodings, E4M3 (more precision) and E5M2 (more range), and shows FP8 training and post-training quantization matching 16-bit results.</p><div class="num">Remember: E4M3 max 448, E5M2 max 57,344</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener">Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism</a>
+      <div class="meta">Shoeybi et al. · arXiv 2019 · cited in <a href="08-parallelism/index.html" style="font-weight:500;color:var(--a)">Parallelism for inference</a></div>
+      <p>Intra-layer (tensor) model parallelism that splits each attention and MLP block across GPUs with only a few all-reduce operations, implemented in plain PyTorch.</p><div class="num">Remember: 2 all-reduces per transformer block in the forward pass; 76% scaling efficiency on 512 GPUs</div></div>
+  </div>
+</div>
+
+</body>
+</html>

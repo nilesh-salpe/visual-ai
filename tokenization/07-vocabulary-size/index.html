@@ -224,7 +224,7 @@
     <div class="take-line">Vocabulary size trades compression against parameters. Large models can afford 100K–200K tokens, and the extra tokens help non-English text far more than English.</div>
     <div class="explain"><b>Say it in 30 seconds</b><p>Vocabulary size V sets how many characters each token covers and how big the embedding and output layers are (V × d each, unless tied). Too small means long sequences, more compute and less text per context window. Too large adds parameters and rarely seen, under-trained tokens. Llama 3 went from 32K to 128K tokens (100K from tiktoken plus 28K multilingual) and improved English compression from 3.17 to 3.94 characters per token. In my measurements, larger vocabularies mostly help under-served languages.</p></div>
     <div class="recap"><div><span><b>Problem:</b> V controls sequence length, parameter count and language coverage all at once.</span></div><div><span><b>Core idea:</b> balance characters per token against V × d, and measure on your target languages.</span></div></div>
-    <p class="start-hint">Next: <a href="../08-tokenizers-in-llms/index.html">08 · Tokenizers in real LLMs (large language models) →</a> · Previous: <a href="../06-many-tokenizations/index.html">← 06</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+    <p class="start-hint">Next: <a href="../08-tokenizers-in-llms/index.html">08 · Tokenizers in real LLMs →</a> · Previous: <a href="../06-many-tokenizations/index.html">← 06</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
   </div>
 </section>
 

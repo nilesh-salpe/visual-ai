@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Post-training LLMs Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Post-training LLMs</a>
+  <div class="label" style="margin-top:28px">Reading list · 15 papers and docs</div>
+  <h1>Post-training LLMs: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://arxiv.org/abs/2203.02155" target="_blank" rel="noopener">Training language models to follow instructions with human feedback (InstructGPT)</a>
+      <div class="meta">Ouyang et al. · NeurIPS 2022 · cited in <a href="01-pipeline/index.html" style="font-weight:500;color:var(--a)">The post-training pipeline</a>, <a href="02-supervised-fine-tuning/index.html" style="font-weight:500;color:var(--a)">Supervised fine-tuning</a>, <a href="04-reward-models/index.html" style="font-weight:500;color:var(--a)">Reward models</a>, <a href="05-rlhf-ppo/index.html" style="font-weight:500;color:var(--a)">RLHF with PPO</a>, <a href="06-reward-hacking/index.html" style="font-weight:500;color:var(--a)">Reward hacking and overoptimization</a>, <a href="09-rlaif-constitutional-ai/index.html" style="font-weight:500;color:var(--a)">RLAIF and Constitutional AI</a></div>
+      <p>SFT on demonstrations, a reward model from rankings, then PPO with a per-token KL penalty and a pretraining mix (PPO-ptx).</p><div class="num">Remember: 1.3B InstructGPT preferred over 175B GPT-3</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1706.03741" target="_blank" rel="noopener">Deep reinforcement learning from human preferences</a>
+      <div class="meta">Christiano et al. · NeurIPS 2017 · cited in <a href="01-pipeline/index.html" style="font-weight:500;color:var(--a)">The post-training pipeline</a>, <a href="04-reward-models/index.html" style="font-weight:500;color:var(--a)">Reward models</a></div>
+      <p>Learns a reward model from human comparisons of behaviour clips and trains RL against it.</p><div class="num">Remember: feedback on <1% of interactions; ~1 hour of human time</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2009.01325" target="_blank" rel="noopener">Learning to summarize from human feedback</a>
+      <div class="meta">Stiennon et al. · NeurIPS 2020 · cited in <a href="01-pipeline/index.html" style="font-weight:500;color:var(--a)">The post-training pipeline</a>, <a href="05-rlhf-ppo/index.html" style="font-weight:500;color:var(--a)">RLHF with PPO</a>, <a href="06-reward-hacking/index.html" style="font-weight:500;color:var(--a)">Reward hacking and overoptimization</a></div>
+      <p>RLHF for summarization: reward model from human comparisons, PPO with a KL penalty; also gives the analytic KL of best-of-n.</p><div class="num">Remember: KL_bon = log n − (n−1)/n</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+      <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024 · cited in <a href="01-pipeline/index.html" style="font-weight:500;color:var(--a)">The post-training pipeline</a></div>
+      <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT, rejection sampling and DPO in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2307.09288" target="_blank" rel="noopener">Llama 2: Open Foundation and Fine-Tuned Chat Models</a>
+      <div class="meta">Touvron et al. · arXiv 2023 · cited in <a href="02-supervised-fine-tuning/index.html" style="font-weight:500;color:var(--a)">Supervised fine-tuning</a>, <a href="04-reward-models/index.html" style="font-weight:500;color:var(--a)">Reward models</a>, <a href="07-dpo-and-friends/index.html" style="font-weight:500;color:var(--a)">DPO, KTO and rejection sampling</a></div>
+      <p>Adds grouped-query attention for the 34B and 70B models and documents the chat post-training: SFT, two reward models and iterative RLHF (reinforcement learning from human feedback) with rejection sampling and PPO.</p><div class="num">Remember: 27,540 SFT annotations; over 1M human comparisons</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2106.09685" target="_blank" rel="noopener">LoRA: Low-Rank Adaptation of Large Language Models</a>
+      <div class="meta">Hu et al. · ICLR 2022 · cited in <a href="03-lora-qlora/index.html" style="font-weight:500;color:var(--a)">LoRA and QLoRA</a></div>
+      <p>Freezes the pretrained weights and trains a low-rank update BA (B initialized to zero) that can be merged after training.</p><div class="num">Remember: 10,000× fewer trainable parameters, 3× less GPU memory (GPT-3 175B)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.14314" target="_blank" rel="noopener">QLoRA: Efficient Finetuning of Quantized LLMs</a>
+      <div class="meta">Dettmers et al. · NeurIPS 2023 · cited in <a href="03-lora-qlora/index.html" style="font-weight:500;color:var(--a)">LoRA and QLoRA</a></div>
+      <p>Fine-tunes LoRA adapters through a frozen 4-bit NormalFloat base, with double quantization and paged optimizers.</p><div class="num">Remember: 65B on one 48 GB GPU; Guanaco 99.3% of ChatGPT on Vicuna</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1707.06347" target="_blank" rel="noopener">Proximal Policy Optimization Algorithms</a>
+      <div class="meta">Schulman et al. · arXiv 2017 · cited in <a href="05-rlhf-ppo/index.html" style="font-weight:500;color:var(--a)">RLHF with PPO</a></div>
+      <p>A clipped surrogate objective that allows several gradient steps per batch while keeping the new policy close to the old one.</p><div class="num">Remember: ε = 0.2</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2210.10760" target="_blank" rel="noopener">Scaling Laws for Reward Model Overoptimization</a>
+      <div class="meta">Gao, Schulman & Hilton · ICML 2023 · cited in <a href="06-reward-hacking/index.html" style="font-weight:500;color:var(--a)">Reward hacking and overoptimization</a></div>
+      <p>Uses a "gold" reward model as ground truth to measure how true reward changes as a policy optimizes a proxy RM.</p><div class="num">Remember: best-of-n: d(α − βd); RL: d(α − β log d), d = √KL</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.18290" target="_blank" rel="noopener">Direct Preference Optimization: Your Language Model is Secretly a Reward Model</a>
+      <div class="meta">Rafailov et al. · NeurIPS 2023 · cited in <a href="07-dpo-and-friends/index.html" style="font-weight:500;color:var(--a)">DPO, KTO and rejection sampling</a></div>
+      <p>Shows the KL-regularized RLHF objective can be optimized with a classification loss on preference pairs, with no reward model or RL loop.</p><div class="num">Remember: implicit reward β·log(π/π_ref)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2402.01306" target="_blank" rel="noopener">KTO: Model Alignment as Prospect Theoretic Optimization</a>
+      <div class="meta">Ethayarajh et al. · ICML 2024 · cited in <a href="07-dpo-and-friends/index.html" style="font-weight:500;color:var(--a)">DPO, KTO and rejection sampling</a></div>
+      <p>Alignment from a binary desirable/undesirable signal per output, using a prospect-theory utility instead of pairwise preferences.</p><div class="num">Remember: matches or exceeds DPO from 1B to 30B</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2402.03300" target="_blank" rel="noopener">DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models</a>
+      <div class="meta">Shao et al. · arXiv 2024 · cited in <a href="08-rlvr-grpo/index.html" style="font-weight:500;color:var(--a)">RLVR and GRPO</a></div>
+      <p>Introduces GRPO: PPO without a critic, using the mean and std of rewards within a group of samples as the baseline.</p><div class="num">Remember: MATH 46.8% → 51.7%, GSM8K (Grade School Math 8K) 82.9% → 88.2%</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2501.12948" target="_blank" rel="noopener">DeepSeek-R1: Incentivizing Reasoning Capability in LLMs (large language models) via Reinforcement Learning</a>
+      <div class="meta">DeepSeek-AI · arXiv 2025 · cited in <a href="08-rlvr-grpo/index.html" style="font-weight:500;color:var(--a)">RLVR and GRPO</a></div>
+      <p>R1-Zero: RL with rule-based accuracy and format rewards directly on a base model; R1 adds cold-start data and a multi-stage pipeline.</p><div class="num">Remember: AIME 2024 pass@1 15.6% → 77.9% (R1-Zero)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2411.15124" target="_blank" rel="noopener">Tülu 3: Pushing Frontiers in Open Language Model Post-Training</a>
+      <div class="meta">Lambert et al. · arXiv 2024 · cited in <a href="08-rlvr-grpo/index.html" style="font-weight:500;color:var(--a)">RLVR and GRPO</a></div>
+      <p>An open post-training recipe (SFT → DPO (Direct Preference Optimization) → RL) that names Reinforcement Learning with Verifiable Rewards (RLVR).</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2212.08073" target="_blank" rel="noopener">Constitutional AI: Harmlessness from AI Feedback</a>
+      <div class="meta">Bai et al. · arXiv 2022 · cited in <a href="09-rlaif-constitutional-ai/index.html" style="font-weight:500;color:var(--a)">RLAIF and Constitutional AI</a></div>
+      <p>Self-critique and revision against written principles for SFT, then RL from AI preference labels (RLAIF) for harmlessness.</p><div class="num">Remember: 16 principles, one sampled per comparison label</div></div>
+  </div>
+</div>
+
+</body>
+</html>

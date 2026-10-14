@@ -62,8 +62,25 @@
   </div>
 
   <div class="group"><h2>Motivation and big picture</h2><p>Why move away from recurrence, and what replaces it.</p>
+<!--x:map--><style>
+.bigmap { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding: 4px 2px 10px; }
+.bigmap .stage { flex: 1 1 0; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
+.bigmap .stage h4 { margin: 0 0 2px; font: 700 11.5px 'JetBrains Mono', monospace; letter-spacing: .05em; text-transform: uppercase; color: var(--a); }
+.bigmap .stage a { display: block; padding: 9px 11px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 14px; line-height: 1.3; }
+.bigmap .stage a:hover { border-color: var(--a); background: var(--a-soft); }
+.bigmap .stage a span { display: block; font: 600 11px 'JetBrains Mono', monospace; color: var(--faint); }
+.bigmap .arrow { align-self: center; color: var(--faint); font-size: 20px; }
+.hub-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+@media (max-width: 700px) { .bigmap { flex-direction: column; } .bigmap .arrow { transform: rotate(90deg); } }
+</style>
+  <div class="visual" style="margin-top:22px">
+    <h3 style="margin:0 0 10px">The big picture</h3>
+    <div class="bigmap"><div class="stage"><h4>Why</h4><a href="01-sequential-bottleneck/index.html"><span>01</span>Sequential bottleneck</a><a href="02-transformer-architecture/index.html"><span>02</span>Transformer architecture</a></div><div class="arrow">→</div><div class="stage"><h4>Attention</h4><a href="03-self-attention/index.html"><span>03</span>Self-attention</a><a href="04-queries-keys-values/index.html"><span>04</span>Queries, keys, values</a><a href="05-scaled-dot-product-attention/index.html"><span>05</span>Scaled dot-product attention</a><a href="06-multi-head-attention/index.html"><span>06</span>Multi-head attention</a></div><div class="arrow">→</div><div class="stage"><h4>Order and decoding</h4><a href="07-positional-encoding/index.html"><span>07</span>Positional encoding</a><a href="08-encoder-decoder-attention/index.html"><span>08</span>Encoder-decoder attention</a><a href="09-masked-self-attention/index.html"><span>09</span>Masked self-attention</a></div><div class="arrow">→</div><div class="stage"><h4>The rest of the block</h4><a href="10-residual-layernorm/index.html"><span>10</span>Residuals + LayerNorm</a><a href="11-position-wise-ffn/index.html"><span>11</span>Position-wise FFN (feed-forward network)</a><a href="12-parallel-training-vs-generation/index.html"><span>12</span>Training vs generation</a></div><div class="arrow">→</div><div class="stage"><h4>Evidence</h4><a href="13-why-it-works/index.html"><span>13</span>Why it works</a><a href="14-experimental-results/index.html"><span>14</span>Experimental results</a></div></div>
+    <div class="hub-links"><a class="btn" href="reading-list.html">📚 Reading list</a><a class="btn" href="../glossary/index.html">🔤 Glossary</a></div>
+  </div>
+<!--/x:map-->
     <div class="hub-grid">
-      <a class="hub-card" href="01-sequential-bottleneck/index.html"><div class="n">01</div><h3>Sequential processing bottleneck</h3><p>RNNs process one step at a time, with O(n) paths between distant words. Self-attention needs O(1) of both.</p></a>
+      <a class="hub-card" href="01-sequential-bottleneck/index.html"><div class="n">01</div><h3>Sequential processing bottleneck</h3><p>RNNs (recurrent neural networks) process one step at a time, with O(n) paths between distant words. Self-attention needs O(1) of both.</p></a>
       <a class="hub-card" href="02-transformer-architecture/index.html"><div class="n">02</div><h3>The Transformer architecture</h3><p>Interactive Figure 1: encoder and decoder stacks of attention and FFN sub-layers, N = 6.</p></a>
     </div>
   </div>
@@ -81,14 +98,14 @@
     <div class="hub-grid">
       <a class="hub-card" href="07-positional-encoding/index.html"><div class="n">07</div><h3>Positional encoding</h3><p>Attention ignores order. Sinusoids at many frequencies fix that, and offsets become rotations.</p></a>
       <a class="hub-card" href="10-residual-layernorm/index.html"><div class="n">10</div><h3>Residuals + layer normalization</h3><p>LayerNorm(x + Sublayer(x)): stable flow through 12+ sub-layers.</p></a>
-      <a class="hub-card" href="11-position-wise-ffn/index.html"><div class="n">11</div><h3>Position-wise feed-forward</h3><p>512 → 2048 → 512 with ReLU, applied to each token separately; about 2/3 of each layer's weights.</p></a>
+      <a class="hub-card" href="11-position-wise-ffn/index.html"><div class="n">11</div><h3>Position-wise feed-forward</h3><p>512 → 2048 → 512 with ReLU (rectified linear unit), applied to each token separately; about 2/3 of each layer's weights.</p></a>
     </div>
   </div>
   <div class="group"><h2>How it runs, why it works, and the results</h2><p>Training vs inference, ablations, and Table 2.</p>
     <div class="hub-grid">
       <a class="hub-card" href="12-parallel-training-vs-generation/index.html"><div class="n">12</div><h3>Parallel training vs generation</h3><p>One teacher-forced pass in training, token-by-token decoding with beam size 4.</p></a>
       <a class="hub-card" href="13-why-it-works/index.html"><div class="n">13</div><h3>Why the Transformer works</h3><p>Four ingredients mapped to four problems, backed by every Table 3 ablation row.</p></a>
-      <a class="hub-card" href="14-experimental-results/index.html"><div class="n">14</div><h3>Experimental results</h3><p>BLEU vs FLOPs (Table 2), how the cost was estimated, and the parsing results (Table 4).</p></a>
+      <a class="hub-card" href="14-experimental-results/index.html"><div class="n">14</div><h3>Experimental results</h3><p>BLEU (Bilingual Evaluation Understudy, an n-gram overlap score for translation) vs FLOPs (Table 2), how the cost was estimated, and the parsing results (Table 4).</p></a>
     </div>
   </div>
   <p class="cite" style="margin-top:30px">Source of truth: A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, Ł. Kaiser, I. Polosukhin. "Attention Is All You Need." NeurIPS 2017. arXiv:1706.03762v7. These explainers cover only the 2017 architecture and add no later Transformer variants.</p>
