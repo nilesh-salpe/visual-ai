@@ -63,3 +63,18 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/post-training/
 | [04 · LLM judges and arena ratings](evals/04_judges_and_arenas.ipynb) | 45 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb) |
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/evals/
+
+## Phase 5 · Distributed training & reliability
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · Ring all-reduce from scratch](distributed/01_ring_allreduce.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/01_ring_allreduce.ipynb) |
+| [02 · ZeRO / FSDP: sharded data parallelism](distributed/02_zero_sharding.ipynb) | 45 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/02_zero_sharding.ipynb) |
+| [03 · Tensor-parallel MLP: forward and backward](distributed/03_tensor_parallel_training.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/03_tensor_parallel_training.ipynb) |
+| [04 · Pipeline schedules: GPipe vs 1F1B](distributed/04_pipeline_schedules.ipynb) | 45 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/04_pipeline_schedules.ipynb) |
+| [05 · Activation checkpointing](distributed/05_activation_checkpointing.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/05_activation_checkpointing.ipynb) |
+| [06 · Mixed precision: FP16, BF16 and loss scaling](distributed/06_mixed_precision.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/06_mixed_precision.ipynb) |
+| [07 · Context parallelism: ring attention](distributed/07_ring_attention.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/07_ring_attention.ipynb) |
+| [08 · Failures, checkpoints and goodput](distributed/08_checkpoint_failures.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/08_checkpoint_failures.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/distributed/

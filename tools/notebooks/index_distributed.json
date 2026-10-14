@@ -1,0 +1,66 @@
+[
+ {
+  "slug": "01_ring_allreduce",
+  "title": "01 \u00b7 Ring all-reduce from scratch",
+  "path": "build-it/distributed/01_ring_allreduce.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/01_ring_allreduce.ipynb",
+  "deck": "distributed/02-data-parallelism/",
+  "minutes": 35
+ },
+ {
+  "slug": "02_zero_sharding",
+  "title": "02 \u00b7 ZeRO / FSDP: sharded data parallelism",
+  "path": "build-it/distributed/02_zero_sharding.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/02_zero_sharding.ipynb",
+  "deck": "distributed/03-zero-fsdp/",
+  "minutes": 45
+ },
+ {
+  "slug": "03_tensor_parallel_training",
+  "title": "03 \u00b7 Tensor-parallel MLP: forward and backward",
+  "path": "build-it/distributed/03_tensor_parallel_training.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/03_tensor_parallel_training.ipynb",
+  "deck": "distributed/04-tensor-sequence-parallelism/",
+  "minutes": 40
+ },
+ {
+  "slug": "04_pipeline_schedules",
+  "title": "04 \u00b7 Pipeline schedules: GPipe vs 1F1B",
+  "path": "build-it/distributed/04_pipeline_schedules.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/04_pipeline_schedules.ipynb",
+  "deck": "distributed/05-pipeline-parallelism/",
+  "minutes": 45
+ },
+ {
+  "slug": "05_activation_checkpointing",
+  "title": "05 \u00b7 Activation checkpointing",
+  "path": "build-it/distributed/05_activation_checkpointing.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/05_activation_checkpointing.ipynb",
+  "deck": "distributed/08-activation-memory/",
+  "minutes": 35
+ },
+ {
+  "slug": "06_mixed_precision",
+  "title": "06 \u00b7 Mixed precision: FP16, BF16 and loss scaling",
+  "path": "build-it/distributed/06_mixed_precision.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/06_mixed_precision.ipynb",
+  "deck": "distributed/09-mixed-precision-fp8/",
+  "minutes": 40
+ },
+ {
+  "slug": "07_ring_attention",
+  "title": "07 \u00b7 Context parallelism: ring attention",
+  "path": "build-it/distributed/07_ring_attention.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/07_ring_attention.ipynb",
+  "deck": "distributed/06-context-parallelism/",
+  "minutes": 40
+ },
+ {
+  "slug": "08_checkpoint_failures",
+  "title": "08 \u00b7 Failures, checkpoints and goodput",
+  "path": "build-it/distributed/08_checkpoint_failures.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/08_checkpoint_failures.ipynb",
+  "deck": "distributed/11-reliability-stability/",
+  "minutes": 35
+ }
+]

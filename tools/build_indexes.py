@@ -12,6 +12,7 @@ PHASES = [  # (heading, notebook folder, index json)
     ('Phase 2 · The modern LLM architecture', 'architecture', 'index_architecture.json'),
     ('Phase 3 · Post-training', 'post-training', 'index_post_training.json'),
     ('Phase 4 · Evaluating LLMs', 'evals', 'index_evals.json'),
+    ('Phase 5 · Distributed training & reliability', 'distributed', 'index_distributed.json'),
 ]
 
 
@@ -216,3 +217,53 @@ def evals_hub():
 if __name__ == '__main__':
     open(os.path.join(REPO, 'evals', 'index.html'), 'w').write(evals_hub())
     print('wrote evals/index.html')
+
+
+DIST_CARDS = [
+    ('01-why-distribute', 'Why training must be distributed', 'The memory and time walls; the four axes of parallelism.'),
+    ('02-data-parallelism', 'Data parallelism', 'Ring all-reduce (≈ 2·S per GPU) and bucketed overlap.'),
+    ('03-zero-fsdp', 'ZeRO and FSDP', 'Shard optimizer state, gradients and parameters: 4×, 8×, N×.'),
+    ('04-tensor-sequence-parallelism', 'Tensor and sequence parallelism', 'Megatron column/row splits, sequence parallelism, selective recompute.'),
+    ('05-pipeline-parallelism', 'Pipeline parallelism', 'GPipe, 1F1B, interleaved and zero-bubble schedules; the (p−1)/m bubble.'),
+    ('06-context-parallelism', 'Context parallelism', 'Ring attention, all-gather K/V (Llama 3) and Ulysses all-to-all.'),
+    ('07-expert-parallelism', 'Expert parallelism', 'All-to-all dispatch and combine; DeepSeek-V3 at 64-way EP.'),
+    ('08-activation-memory', 'Activation memory and recomputation', 'sbh(34 + 5as/h), √n checkpointing, selective recompute.'),
+    ('09-mixed-precision-fp8', 'Mixed precision and FP8 training', 'FP32 master weights, loss scaling, BF16, fine-grained FP8 scales.'),
+    ('10-putting-it-together', 'Putting it together: 4D layouts', 'TP ⊂ CP ⊂ PP ⊂ DP; Llama 3 405B on 16,384 GPUs.'),
+    ('11-reliability-stability', 'Reliability and stability', 'Checkpoint intervals, stragglers, loss spikes, z-loss and QK-norm.'),
+]
+
+
+def dist_hub():
+    cards = ''.join(f'<a class="hub-card" href="{s}/index.html"><div class="n">{s[:2]}</div><h3>{t}</h3><p>{p}</p></a>' for s, t, p in DIST_CARDS)
+    n_nb = len(load('index_distributed.json'))
+    return f'''<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Distributed Training</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body {{ overflow-y: auto; }}</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="label" style="margin-top:28px">Visual guide · {len(DIST_CARDS)} decks + {n_nb} Colab notebooks</div>
+  <h1>Distributed training &amp; reliability</h1>
+  <p class="lede">How frontier models are trained across thousands of GPUs: data, sharded, tensor, sequence, pipeline, context and expert parallelism, activation recomputation, mixed precision and FP8, 4D layouts, and keeping a months-long run alive. Every deck follows the 9-beat template and numbers are checked against the source papers.</p>
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: {n_nb} Colab notebooks</h3><p class="caption" style="margin:0">Implement ring all-reduce, ZeRO sharding, tensor-parallel training, pipeline schedules, activation checkpointing, loss scaling, ring attention and a checkpoint/failure simulator in NumPy.</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>
+  <div class="hub-grid">{cards}</div>
+  <p class="cite" style="margin-top:26px">Sources: Li et al. 2020 (PyTorch DDP); Rajbhandari et al. 2020 (ZeRO); Zhao et al. 2023 (FSDP); Shoeybi et al. 2019 and Narayanan et al. 2021 (Megatron-LM); Korthikanti et al. 2022; Huang et al. 2019 (GPipe); Narayanan et al. 2019 (PipeDream); Qi et al. 2023 (Zero Bubble); Liu et al. 2023 (Ring Attention); Jacobs et al. 2023 (Ulysses); Lepikhin et al. 2020 (GShard); Chen et al. 2016; Micikevicius et al. 2018; DeepSeek-AI 2024 (V3); Llama Team 2024 (Llama 3); Jiang et al. 2024 (MegaScale); Wang et al. 2023 (Gemini); Chowdhery et al. 2022 (PaLM); Dehghani et al. 2023 (ViT-22B).</p>
+</div>
+</body>
+</html>
+'''
+
+
+if __name__ == '__main__':
+    open(os.path.join(REPO, 'distributed', 'index.html'), 'w').write(dist_hub())
+    print('wrote distributed/index.html')

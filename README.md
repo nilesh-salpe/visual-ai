@@ -120,6 +120,24 @@ Seven 9-beat decks plus 4 hands-on [Colab notebooks](build-it/).
 | 06 | [LLM-as-judge](evals/06-llm-as-judge/) |
 | 07 | [Arenas and ratings](evals/07-arenas/) |
 
+## Distributed training & reliability
+
+Eleven 9-beat decks plus 8 hands-on [Colab notebooks](build-it/).
+
+| # | Deck |
+|---|------|
+| 01 | [Why training must be distributed](distributed/01-why-distribute/) |
+| 02 | [Data parallelism](distributed/02-data-parallelism/) |
+| 03 | [ZeRO and FSDP](distributed/03-zero-fsdp/) |
+| 04 | [Tensor and sequence parallelism](distributed/04-tensor-sequence-parallelism/) |
+| 05 | [Pipeline parallelism](distributed/05-pipeline-parallelism/) |
+| 06 | [Context parallelism](distributed/06-context-parallelism/) |
+| 07 | [Expert parallelism](distributed/07-expert-parallelism/) |
+| 08 | [Activation memory and recomputation](distributed/08-activation-memory/) |
+| 09 | [Mixed precision and FP8 training](distributed/09-mixed-precision-fp8/) |
+| 10 | [Putting it together: 4D layouts](distributed/10-putting-it-together/) |
+| 11 | [Reliability and stability](distributed/11-reliability-stability/) |
+
 ## Editing and regenerating
 
 Deck content lives in [`content/`](content/) as Markdown (`deck.md`) plus each deck's interactive code (`widget.js`); see [`content/README.md`](content/README.md) for the format. To rebuild the site:

@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reliability and Stability</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Reliability and stability" data-home="../index.html" data-home-label="Distributed">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Distributed Training · 11</div>
+    <h1>Reliability and stability</h1>
+    <p class="sub">Keeping a months-long, 16,000-GPU run alive: fast checkpoint and restart, straggler detection, and the loss-spike playbook (rollback, skip data, z-loss, QK-norm).</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>At 16K GPUs (graphics processing units) something fails every few hours, a single slow GPU slows every step, and the loss can suddenly spike and diverge, each threatening weeks of compute.</div>
+      <div class="c"><b>Core idea</b>Make every failure <b>cheap</b>: frequent, fast (async or in-memory) checkpoints and automated restart; detect and evict <b>stragglers</b>; and handle <b>instability</b> with rollback-and-skip, FP32 (32-bit floating point) reductions, z-loss and QK normalization.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Goodput vs checkpoint interval</h2>
+    <hr>
+<p class="lede">Expected fraction of wall-clock time spent on useful training, from a simple model: overhead ≈ C/τ (saving) + τ/(2·MTBF (mean time between failures)) (lost work) + R/MTBF (restarts). Move the checkpoint cost and interval.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">checkpoint cost C (s) <input type="range" id="yC" min="1" max="600" step="1" value="300"> <output id="yCo"></output></label><label class="ctl">job MTBF (h) <input type="range" id="yM" min="0.5" max="24" step="0.1" value="3.1"> <output id="yMo"></output></label></div>
+  <svg id="ySvg" viewBox="0 0 660 230" style="margin-top:10px" role="img" aria-label="Goodput vs interval"></svg>
+  <p class="readout" id="yOut"></p>
+</div>
+<p class="caption">Analytic approximation with a 10-minute restart; notebook 08 checks it with a Monte Carlo simulation of a 54-day run.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Three ways a big run loses time</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Hard failures</h3><p>GPU, memory, network and host faults: Llama 3 saw 419 unexpected interruptions in 54 days (~78% hardware). See <a href="../../gpu/06-gpu-failures/index.html">GPU deck 06</a>.</p></div>
+      <div class="card b"><h3>Stragglers</h3><p>A GPU that is slow but alive (thermal throttling, a bad link) delays every synchronous step for everyone.</p></div>
+      <div class="card c"><h3>Instability</h3><p>Loss spikes and divergence: PaLM saw about 20 spikes in its largest run.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What fixes a loss spike?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">PaLM's largest run hit a loss spike. What did the team do?</p>
+      <div class="opts">
+      <button>A. Lowered the learning rate permanently</button>
+      <button data-ok>B. Restarted about 100 steps before the spike and skipped 200–500 batches</button>
+      <button>C. Ignored it</button>
+      <button>D. Retrained from scratch</button>
+      </div>
+      <div class="why"><b>B.</b> They rolled back to a checkpoint about 100 steps earlier and skipped roughly 200–500 data batches around the spike. The spikes were tied to specific data and model-state combinations rather than "bad data" alone.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Make failures cheap, slow nodes visible, training stable</h2>
+    <hr>
+<div class="grid3">
+      <div class="card a"><h3>Fast checkpoint and restart</h3><p>Async writes, in-memory copies on peer hosts (Gemini: &gt;13× faster recovery), sharded checkpoints and automated restart.</p></div>
+      <div class="card b"><h3>Detect stragglers</h3><p>Per-rank step-time and heartbeat monitoring; MegaScale built diagnosis tools and recovered its run 100+ times.</p></div>
+      <div class="card e"><h3>Stabilize the math</h3><p>FP32 gradient reductions (Llama 3), z-loss on the softmax normalizer (PaLM), QK normalization against exploding attention logits (ViT-22B (ViT = Vision Transformer)), rollback-and-skip.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 188" role="img" aria-label="Goodput = useful training time ÷ wall-clock time." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">monitor</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">heartbeats, step</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">times, loss</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">detect</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">failure,</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">straggler, spike</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">isolate</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">drain bad node /</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">skip data</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">restore</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">latest checkpoint</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">resume</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">lost work ≈ half</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">an interval</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M593.2 136 V160 H66.8 V138" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="330.0" y="177" text-anchor="middle" class="tm" style="font-size:11px">hundreds of times per run</text></svg><p class="caption" style="margin:4px 0 0">Goodput = useful training time ÷ wall-clock time.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Stragglers: the slowest GPU sets the pace</h2>
+    <hr>
+<p class="lede">Each GPU's step time varies slightly; a synchronous step waits for the slowest. Increase the GPU count and watch the expected slowdown grow, then add one degraded GPU.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">GPUs <input type="range" id="sN" min="0" max="5" step="1" value="3"> <output id="sNo"></output></label><label class="ctl">one GPU slower by <input type="range" id="sS" min="0" max="50" step="5" value="0"> <output id="sSo"></output></label></div>
+  <div id="sBars" style="margin-top:12px"></div>
+</div>
+<p class="caption">Illustrative: each GPU's step time is 1 + noise with 2% standard deviation; the step takes the maximum.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: what checkpoint speed buys</h2>
+    <hr>
+    <p class="lede">Llama 3 405B: 419 interruptions in 54 days → MTBF (mean time between failures) ≈ 3.1 h. Restart cost 10 minutes. Simulated in notebook 08 (5 seeds each).</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Synchronous checkpoint to storage, 5 min: Young's interval √(2 × 5 min × 3.1 h) ≈ <b>43 min</b> → goodput <b>74.5%</b>.</li><li>Async checkpoint, 30-second pause: interval ≈ 14 min → goodput <b>88.3%</b>.</li><li>In-memory checkpoint, 5 seconds (Gemini-style): interval ≈ 5.6 min → goodput <b>92.2%</b>.</li><li>Llama 3 reported more than 90% effective training time over its 54-day run.</li></ol><div class="result">The checkpoint cost, not the failure rate, is the lever you control; cutting it from minutes to seconds recovers most lost goodput.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why these measures work</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Lost work scales with the interval</h3><p>Each failure costs about half an interval plus restart; cheaper checkpoints allow shorter intervals.</p></div>
+      <div class="card e"><h3>Automation beats heroics</h3><p>Llama 3: only three interruptions needed significant manual intervention; the rest were handled automatically.</p></div>
+      <div class="card b"><h3>Spikes are often transient</h3><p>Rolling back and skipping the triggering batches let PaLM continue; architectural fixes like QK-norm prevent some spikes entirely.</p></div>
+      <div class="card c"><h3>Stable training is possible</h3><p>DeepSeek-V3 reported no irrecoverable loss spikes and no rollbacks over its whole run.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"With reliable hardware you can skip checkpoints."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Even very reliable GPUs fail every few hours in aggregate at 16K scale.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"A loss spike means the data is bad."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">PaLM found spikes weren't reproduced by the same data alone; they depend on data and model state together.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Stragglers only slow their own work."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">In synchronous training every GPU waits for the slowest at each collective.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Interval ≈ √(2·C·MTBF).</b> Young's approximation.</li><li><b>Rollback and skip.</b> PaLM restarted ~100 steps before a spike and skipped 200–500 batches.</li><li><b>Stability knobs.</b> z-loss 10⁻⁴·log²Z (PaLM), QK-norm (ViT-22B), FP32 reductions (Llama 3).</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Synchronous saves at scale.</b> Every GPU stalls for the whole write.</li><li><b>Treating slow nodes as healthy.</b> A straggler slows all 16K GPUs every step.</li><li><b>Restarting into the same failure.</b> Drain and test suspect hardware; skip the data that triggered a spike.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Young's interval for C = 5 min and MTBF = 3.1 h?</p>
+      <div class="opts">
+      <button>A. ≈ 5 min</button>
+      <button data-ok>B. ≈ 43 min</button>
+      <button>C. ≈ 3 h</button>
+      <button>D. ≈ 10 h</button>
+      </div>
+      <div class="why">√(2 × 0.083 h × 3.1 h) ≈ 0.72 h ≈ <b>43 min</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Name three stability techniques used in large runs.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Rollback and skip batches (PaLM), z-loss (PaLM), QK normalization (ViT-22B), FP32 gradient accumulation and reduce-scatter (Llama 3).</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why do in-memory checkpoints help so much?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">They take seconds instead of minutes, so you can checkpoint far more often and lose less work per failure, and recovery reads from fast memory instead of remote storage.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">At frontier scale failures, stragglers and loss spikes are routine; fast checkpoints, automated recovery, straggler detection and stability tricks keep goodput above 90%.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>A run on sixteen thousand GPUs fails every few hours, a single slow GPU delays every synchronous step, and losses can spike. The goal is to make each event cheap. Checkpoint often and fast, asynchronously or into peer CPU (central processing unit) memory, which Gemini reports recovers more than thirteen times faster, and restart automatically; the optimal interval is roughly the square root of two times the checkpoint cost times the mean time between failures. Monitor step times to find and evict stragglers. For instability, roll back and skip the batches around a spike as PaLM did, and use FP32 reductions, z-loss and QK normalization. Llama 3 kept effective training time above 90 percent.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> failures every few hours, stragglers, loss spikes.</span></div><div><span><b>Core idea:</b> cheap checkpoints + automated restart; detect stragglers; stabilize the math.</span></div><div><span><b>Numbers:</b> interval ≈ √(2·C·MTBF); Llama 3 >90% effective time.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/08_checkpoint_failures.ipynb" target="_blank" rel="noopener">08 · Failures, checkpoints and goodput</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/distributed/08_checkpoint_failures.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../10-putting-it-together/index.html">← 10</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2402.15627" target="_blank" rel="noopener">MegaScale: Scaling Large Language Model Training to More Than 10,000 GPUs</a>
+        <div class="meta">Jiang et al. · NSDI 2024</div>
+        <p>Production training system at ByteDance: algorithm-system co-design plus diagnosis tools for stragglers and failures at 10,000+ GPU scale.</p><div class="num">Remember: 55.2% MFU (model floating-point-operation utilization, the share of peak compute spent on the model's math) on 12,288 GPUs (175B model), 1.34× Megatron-LM</div></div>
+      <div class="paper-item"><a href="https://www.amazon.science/publications/gemini-fast-failure-recovery-in-distributed-training-with-in-memory-checkpoints" target="_blank" rel="noopener">Gemini: Fast Failure Recovery in Distributed Training with In-Memory Checkpoints</a>
+        <div class="meta">Wang et al. · SOSP 2023</div>
+        <p>Checkpoints to CPU memory across machines instead of remote storage, with placement and traffic scheduling so checkpoints survive failures and don't slow training.</p><div class="num">Remember: more than 13× faster failure recovery</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2204.02311" target="_blank" rel="noopener">PaLM: Scaling Language Modeling with Pathways</a>
+        <div class="meta">Chowdhery et al. · JMLR 2023</div>
+        <p>Reports ~20 loss spikes in its largest run, handled by restarting about 100 steps earlier and skipping 200–500 batches; uses a z-loss on the softmax normalizer.</p><div class="num">Remember: 46.2% MFU across two TPU (tensor processing unit) v4 Pods</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2302.05442" target="_blank" rel="noopener">Scaling Vision Transformers to 22 Billion Parameters</a>
+        <div class="meta">Dehghani et al. · ICML 2023</div>
+        <p>Finds training divergence caused by very large attention logits and fixes it with LayerNorm on queries and keys (QK normalization).</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  Deck.bind(['yC', 'yM'], () => {
+    const C = Deck.val('yC') / 3600, M = Deck.val('yM'), R = 10 / 60; Deck.out('yCo', Deck.val('yC') + ' s'); Deck.out('yMo', M.toFixed(1));
+    const good = t => 1 / (1 + C / t + t / (2 * M) + R / M) ;
+    const s = clear(document.getElementById('ySvg')), X = t => 60 + Math.log10(t / 0.01) / Math.log10(2400) * 570, Y = g => 200 - g * 180;
+    [0, 0.5, 1].forEach(v => { svg('line', { x1: 60, x2: 630, y1: Y(v), y2: Y(v), class: 'ln' }, s); svg('text', { x: 52, y: Y(v) + 4, 'text-anchor': 'end', class: 'tm', text: (100 * v) + '%' }, s); });
+    [[1 / 60, '1 min'], [10 / 60, '10 min'], [1, '1 h'], [10, '10 h']].forEach(([t, l]) => svg('text', { x: X(t), y: 218, 'text-anchor': 'middle', class: 'tm', text: l }, s));
+    let pts = ''; for (let e = 0; e <= 1; e += 0.005) { const t = 0.01 * Math.pow(2400, e); pts += `${X(t)},${Y(good(t))} `; }
+    svg('polyline', { points: pts, fill: 'none', style: 'stroke:var(--a);stroke-width:3' }, s);
+    const ty = Math.sqrt(2 * C * M); svg('circle', { cx: X(ty), cy: Y(good(ty)), r: 7, style: 'fill:var(--b)' }, s);
+    document.getElementById('yOut').innerHTML = `Young's interval √(2·C·MTBF) = <b>${(ty * 60).toFixed(1)} min</b> → goodput ≈ <b>${(100 * good(ty)).toFixed(1)}%</b> in this model.`;
+  });
+  const NS = [8, 64, 512, 2048, 8192, 16384];
+  Deck.bind(['sN', 'sS'], () => {
+    const n = NS[Deck.val('sN')], slow = Deck.val('sS') / 100; Deck.out('sNo', n.toLocaleString()); Deck.out('sSo', (100 * slow).toFixed(0) + '%');
+    const z = Math.sqrt(2 * Math.log(n)) - (Math.log(Math.log(n)) + Math.log(4 * Math.PI)) / (2 * Math.sqrt(2 * Math.log(n)));
+    const healthy = 1 + 0.02 * z, step = Math.max(healthy, 1 + slow);
+    Deck.hbars(document.getElementById('sBars'), [{ label: 'ideal (no variation)', value: 1, color: 'var(--faint)', text: '1.00' }, { label: `max of ${n.toLocaleString()} healthy GPUs`, value: healthy, color: 'var(--a)', text: healthy.toFixed(3) }, { label: 'with the degraded GPU', value: step, color: step > healthy ? 'var(--d)' : 'var(--a)', text: step.toFixed(3) }], { max: 1.6, min: 0.5 });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Distributed Training Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Distributed Training</a>
+  <div class="label" style="margin-top:28px">Reading list · 22 papers and docs</div>
+  <h1>Distributed Training: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://arxiv.org/abs/2104.04473" target="_blank" rel="noopener">Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM</a>
+      <div class="meta">Narayanan et al. · SC 2021 · cited in <a href="01-why-distribute/index.html" style="font-weight:500;color:var(--a)">Why training must be distributed</a>, <a href="02-data-parallelism/index.html" style="font-weight:500;color:var(--a)">Data parallelism</a>, <a href="04-tensor-sequence-parallelism/index.html" style="font-weight:500;color:var(--a)">Tensor and sequence parallelism</a>, <a href="05-pipeline-parallelism/index.html" style="font-weight:500;color:var(--a)">Pipeline parallelism</a>, <a href="10-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together: 4D layouts</a></div>
+      <p>Combines tensor, pipeline and data parallelism (PTD-P) with an interleaved pipeline schedule, placing tensor parallelism inside nodes.</p><div class="num">Remember: 1T parameters at 502 PFLOP (quadrillion floating-point operations)/s on 3,072 GPUs, 52% of peak</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1910.02054" target="_blank" rel="noopener">ZeRO: Memory Optimizations Toward Training Trillion Parameter Models</a>
+      <div class="meta">Rajbhandari et al. · SC 2020 · cited in <a href="01-why-distribute/index.html" style="font-weight:500;color:var(--a)">Why training must be distributed</a>, <a href="03-zero-fsdp/index.html" style="font-weight:500;color:var(--a)">ZeRO and FSDP</a></div>
+      <p>Partitions optimizer states, gradients and parameters across data-parallel workers instead of replicating them.</p><div class="num">Remember: 100B+ parameters on 400 GPUs at 15 PFLOP/s; 8× larger models than prior state of the art</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+      <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024 · cited in <a href="01-why-distribute/index.html" style="font-weight:500;color:var(--a)">Why training must be distributed</a>, <a href="03-zero-fsdp/index.html" style="font-weight:500;color:var(--a)">ZeRO and FSDP</a>, <a href="06-context-parallelism/index.html" style="font-weight:500;color:var(--a)">Context parallelism</a>, <a href="09-mixed-precision-fp8/index.html" style="font-weight:500;color:var(--a)">Mixed precision and FP8 training</a>, <a href="10-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together: 4D layouts</a>, <a href="11-reliability-stability/index.html" style="font-weight:500;color:var(--a)">Reliability and stability</a></div>
+      <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2006.15704" target="_blank" rel="noopener">PyTorch Distributed: Experiences on Accelerating Data Parallel Training</a>
+      <div class="meta">Li et al. · VLDB 2020 · cited in <a href="02-data-parallelism/index.html" style="font-weight:500;color:var(--a)">Data parallelism</a></div>
+      <p>PyTorch's DistributedDataParallel design: gradient bucketing, overlapping all-reduce with the backward pass, and skipping synchronization during gradient accumulation.</p><div class="num">Remember: near-linear scaling on 256 GPUs</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2304.11277" target="_blank" rel="noopener">PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel</a>
+      <div class="meta">Zhao et al. · VLDB 2023 · cited in <a href="03-zero-fsdp/index.html" style="font-weight:500;color:var(--a)">ZeRO and FSDP</a></div>
+      <p>PyTorch's ZeRO-3-style fully sharded data parallelism, with flattened parameter units, prefetching and hybrid sharding.</p><div class="num">Remember: comparable to DDP speed while supporting much larger models</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener">Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism</a>
+      <div class="meta">Shoeybi et al. · arXiv 2019 · cited in <a href="04-tensor-sequence-parallelism/index.html" style="font-weight:500;color:var(--a)">Tensor and sequence parallelism</a></div>
+      <p>Intra-layer (tensor) model parallelism that splits each attention and MLP block across GPUs with only a few all-reduce operations, implemented in plain PyTorch.</p><div class="num">Remember: 2 all-reduces per transformer block in the forward pass; 76% scaling efficiency on 512 GPUs</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2205.05198" target="_blank" rel="noopener">Reducing Activation Recomputation in Large Transformer Models</a>
+      <div class="meta">Korthikanti et al. · MLSys 2023 · cited in <a href="04-tensor-sequence-parallelism/index.html" style="font-weight:500;color:var(--a)">Tensor and sequence parallelism</a>, <a href="08-activation-memory/index.html" style="font-weight:500;color:var(--a)">Activation memory and recomputation</a></div>
+      <p>Sequence parallelism (shard LayerNorm and dropout activations along the sequence) plus selective recomputation of the attention-score part.</p><div class="num">Remember: 5× less activation memory; MFU 54.2% vs 42.1% on a 530B model</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1811.06965" target="_blank" rel="noopener">GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism</a>
+      <div class="meta">Huang et al. · NeurIPS 2019 · cited in <a href="05-pipeline-parallelism/index.html" style="font-weight:500;color:var(--a)">Pipeline parallelism</a></div>
+      <p>Splits a model into stages and the batch into micro-batches; the bubble becomes negligible with enough micro-batches.</p><div class="num">Remember: bubble negligible when micro-batches ≥ 4 × stages</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1806.03377" target="_blank" rel="noopener">PipeDream: Fast and Efficient Pipeline Parallel DNN (deep neural network) Training</a>
+      <div class="meta">Narayanan et al. · SOSP 2019 · cited in <a href="05-pipeline-parallelism/index.html" style="font-weight:500;color:var(--a)">Pipeline parallelism</a></div>
+      <p>Introduces the one-forward-one-backward (1F1B) schedule that interleaves forward and backward passes to bound in-flight activations.</p><div class="num">Remember: up to 5× faster time-to-accuracy than data parallelism</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2401.10241" target="_blank" rel="noopener">Zero Bubble Pipeline Parallelism</a>
+      <div class="meta">Qi et al. · ICLR 2024 · cited in <a href="05-pipeline-parallelism/index.html" style="font-weight:500;color:var(--a)">Pipeline parallelism</a></div>
+      <p>Splits the backward pass into input-gradient and weight-gradient parts and schedules them to fill pipeline bubbles.</p><div class="num">Remember: up to 23% over 1F1B (31% with relaxed memory)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2310.01889" target="_blank" rel="noopener">Ring Attention with Blockwise Transformers for Near-Infinite Context</a>
+      <div class="meta">Liu et al. · ICLR 2024 · cited in <a href="06-context-parallelism/index.html" style="font-weight:500;color:var(--a)">Context parallelism</a></div>
+      <p>Splits the sequence across devices and passes key-value blocks around a ring while computing blockwise attention, overlapping communication with compute; exact.</p><div class="num">Remember: context up to device-count times longer</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2309.14509" target="_blank" rel="noopener">DeepSpeed Ulysses: System Optimizations for Enabling Training of Extreme Long Sequence Transformer Models</a>
+      <div class="meta">Jacobs et al. · arXiv 2023 · cited in <a href="06-context-parallelism/index.html" style="font-weight:500;color:var(--a)">Context parallelism</a></div>
+      <p>Sequence parallelism that uses all-to-all to switch between sequence-sharded and head-sharded layouts around attention.</p><div class="num">Remember: 2.5× faster with 4× longer sequences</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2006.16668" target="_blank" rel="noopener">GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding</a>
+      <div class="meta">Lepikhin et al. · ICLR 2021 · cited in <a href="07-expert-parallelism/index.html" style="font-weight:500;color:var(--a)">Expert parallelism</a></div>
+      <p>Expert parallelism with all-to-all dispatch and automatic sharding annotations for a sparsely gated MoE translation model.</p><div class="num">Remember: 600B+ parameters on 2,048 TPU v3 in 4 days</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2101.03961" target="_blank" rel="noopener">Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity</a>
+      <div class="meta">Fedus et al. · JMLR 2022 · cited in <a href="07-expert-parallelism/index.html" style="font-weight:500;color:var(--a)">Expert parallelism</a></div>
+      <p>Top-1 expert routing, an auxiliary load-balancing loss α·N·Σfᵢ·Pᵢ, expert capacity, and tricks for stable bfloat16 training.</p><div class="num">Remember: up to 7× faster pretraining; α = 10⁻²</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2412.19437" target="_blank" rel="noopener">DeepSeek-V3 Technical Report</a>
+      <div class="meta">DeepSeek-AI · arXiv 2024 · cited in <a href="07-expert-parallelism/index.html" style="font-weight:500;color:var(--a)">Expert parallelism</a>, <a href="09-mixed-precision-fp8/index.html" style="font-weight:500;color:var(--a)">Mixed precision and FP8 training</a></div>
+      <p>671B-parameter MoE trained with FP8 mixed precision (fine-grained 1×128 and 128×128 scaling), DualPipe pipeline scheduling and 64-way expert parallelism with cross-node all-to-all kernels.</p><div class="num">Remember: 2.788M H800 GPU-hours; no irrecoverable loss spikes or rollbacks</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1604.06174" target="_blank" rel="noopener">Training Deep Nets with Sublinear Memory Cost</a>
+      <div class="meta">Chen et al. · arXiv 2016 · cited in <a href="08-activation-memory/index.html" style="font-weight:500;color:var(--a)">Activation memory and recomputation</a></div>
+      <p>Activation checkpointing: store a subset of activations and recompute the rest during backward, giving O(√n) memory.</p><div class="num">Remember: 1,000-layer network from 48 GB to 7 GB for ~30% more time</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1710.03740" target="_blank" rel="noopener">Mixed Precision Training</a>
+      <div class="meta">Micikevicius et al. · ICLR 2018 · cited in <a href="09-mixed-precision-fp8/index.html" style="font-weight:500;color:var(--a)">Mixed precision and FP8 training</a></div>
+      <p>Half-precision weights, activations and gradients with an FP32 master copy of the weights and loss scaling to avoid gradient underflow.</p><div class="num">Remember: nearly 2× less memory</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2209.05433" target="_blank" rel="noopener">FP8 Formats for Deep Learning</a>
+      <div class="meta">Micikevicius et al. · arXiv 2022 · cited in <a href="09-mixed-precision-fp8/index.html" style="font-weight:500;color:var(--a)">Mixed precision and FP8 training</a></div>
+      <p>Defines the two FP8 encodings, E4M3 (more precision) and E5M2 (more range), and shows FP8 training and post-training quantization matching 16-bit results.</p><div class="num">Remember: E4M3 max 448, E5M2 max 57,344</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2402.15627" target="_blank" rel="noopener">MegaScale: Scaling Large Language Model Training to More Than 10,000 GPUs</a>
+      <div class="meta">Jiang et al. · NSDI 2024 · cited in <a href="10-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together: 4D layouts</a>, <a href="11-reliability-stability/index.html" style="font-weight:500;color:var(--a)">Reliability and stability</a></div>
+      <p>Production training system at ByteDance: algorithm-system co-design plus diagnosis tools for stragglers and failures at 10,000+ GPU scale.</p><div class="num">Remember: 55.2% MFU on 12,288 GPUs (175B model), 1.34× Megatron-LM</div></div>
+    <div class="paper-item"><a href="https://www.amazon.science/publications/gemini-fast-failure-recovery-in-distributed-training-with-in-memory-checkpoints" target="_blank" rel="noopener">Gemini: Fast Failure Recovery in Distributed Training with In-Memory Checkpoints</a>
+      <div class="meta">Wang et al. · SOSP 2023 · cited in <a href="11-reliability-stability/index.html" style="font-weight:500;color:var(--a)">Reliability and stability</a></div>
+      <p>Checkpoints to CPU memory across machines instead of remote storage, with placement and traffic scheduling so checkpoints survive failures and don't slow training.</p><div class="num">Remember: more than 13× faster failure recovery</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2204.02311" target="_blank" rel="noopener">PaLM: Scaling Language Modeling with Pathways</a>
+      <div class="meta">Chowdhery et al. · JMLR 2023 · cited in <a href="11-reliability-stability/index.html" style="font-weight:500;color:var(--a)">Reliability and stability</a></div>
+      <p>Reports ~20 loss spikes in its largest run, handled by restarting about 100 steps earlier and skipping 200–500 batches; uses a z-loss on the softmax normalizer.</p><div class="num">Remember: 46.2% MFU across two TPU (tensor processing unit) v4 Pods</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2302.05442" target="_blank" rel="noopener">Scaling Vision Transformers to 22 Billion Parameters</a>
+      <div class="meta">Dehghani et al. · ICML 2023 · cited in <a href="11-reliability-stability/index.html" style="font-weight:500;color:var(--a)">Reliability and stability</a></div>
+      <p>Finds training divergence caused by very large attention logits and fixes it with LayerNorm on queries and keys (QK normalization).</p></div>
+  </div>
+</div>
+
+</body>
+</html>

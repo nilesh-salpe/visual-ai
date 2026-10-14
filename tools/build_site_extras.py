@@ -27,6 +27,9 @@ TOPICS = {  # folder: (title, [(stage, [slug, ...]), ...])
                                              ('Preferences', ['04-reward-models', '05-rlhf-ppo', '06-reward-hacking', '07-dpo-and-friends']), ('Beyond human labels', ['08-rlvr-grpo', '09-rlaif-constitutional-ai'])]),
     'evals': ('Evaluating LLMs', [('What a score is', ['01-what-an-eval-measures']), ('Benchmarks', ['02-benchmarks', '03-pass-at-k']), ('Statistics', ['04-error-bars', '05-contamination']),
                                   ('Judgement', ['06-llm-as-judge', '07-arenas'])]),
+    'distributed': ('Distributed Training', [('Why', ['01-why-distribute']), ('Data axis', ['02-data-parallelism', '03-zero-fsdp']),
+                                             ('Model axes', ['04-tensor-sequence-parallelism', '05-pipeline-parallelism', '06-context-parallelism', '07-expert-parallelism']),
+                                             ('Memory and precision', ['08-activation-memory', '09-mixed-precision-fp8']), ('At scale', ['10-putting-it-together', '11-reliability-stability'])]),
 }
 PAGE = '''<!doctype html>
 <html lang="en">

@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tensor and Sequence Parallelism</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Tensor and sequence parallelism" data-home="../index.html" data-home-label="Distributed">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Distributed Training · 04</div>
+    <h1>Tensor and sequence parallelism</h1>
+    <p class="sub">Split every weight matrix across the GPUs (graphics processing units) of a node (Megatron), and shard the activations that tensor parallelism alone would duplicate (sequence parallelism).</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Some layers are too big for one GPU, and even sharded weights must be gathered whole to compute. Splitting the matrices themselves needs communication inside every layer.</div>
+      <div class="c"><b>Core idea</b><b>Tensor parallelism</b>: split the first matrix of each block by columns and the second by rows, so each GPU computes its share and one all-reduce per block combines them. <b>Sequence parallelism</b>: split the LayerNorm and dropout regions along the sequence, turning each all-reduce into a reduce-scatter + all-gather.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Split the matrix, not the batch</h2>
+    <hr>
+<p class="lede">One MLP (multilayer perceptron) block across t GPUs. Pick t: each GPU holds 1/t of each weight matrix and computes 1/t of the hidden units; partial outputs are summed with an all-reduce.</p>
+<div class="visual">
+  <div class="seg" id="tSeg"><button data-v="1">t = 1</button><button data-v="2">t = 2</button><button data-v="4" class="on">t = 4</button><button data-v="8">t = 8</button></div>
+  <svg id="tSvg" viewBox="0 0 660 200" style="margin-top:10px" role="img" aria-label="Tensor parallel split"></svg>
+  <p class="readout" id="tOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>What data parallelism can't do</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Layer too big</h3><p>FSDP (Fully Sharded Data Parallel) still materializes each full layer on every GPU when it computes; giant layers and their activations may not fit.</p></div>
+      <div class="card b"><h3>Per-GPU work is fixed</h3><p>DP (data parallelism) shortens the step only by splitting the batch, which grows the global batch.</p></div>
+      <div class="card c"><h3>Activations dominate</h3><p>At long sequence lengths, activations per layer exceed the weights.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Where is the communication?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">In a Megatron MLP (A split by columns, B split by rows), when do GPUs need to communicate in the forward pass?</p>
+      <div class="opts">
+      <button>A. After A and after B</button>
+      <button data-ok>B. Only after B (one all-reduce)</button>
+      <button>C. Never</button>
+      <button>D. Before A only</button>
+      </div>
+      <div class="why"><b>B.</b> Column-splitting A gives each GPU complete hidden units, so tanh/GELU (Gaussian Error Linear Unit) is local. Row-splitting B gives partial sums of the output, combined with one all-reduce. The backward pass needs one more, for the input gradient.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Megatron tensor parallelism, plus sequence parallelism</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Attention</h3><p>Split by heads: each GPU computes its heads (column-split Q, K, V), then the output projection is row-split and all-reduced.</p></div>
+      <div class="card c"><h3>MLP</h3><p>First matrix column-split, second row-split: one all-reduce forward, one backward.</p></div>
+      <div class="card b"><h3>Sequence parallelism</h3><p>The regions between blocks (LayerNorm, dropout) are split along the sequence; each all-reduce becomes a reduce-scatter + all-gather of the same total volume.</p></div>
+      <div class="card e"><h3>Selective recompute</h3><p>Recompute only the attention-score part (large memory, few FLOPs (floating-point operations)) in backward instead of whole layers.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="One all-reduce per block forward, one backward; with sequence parallelism, reduce-scatter + all-gather instead." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">X</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">full activations</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">A column-split</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">each GPU: its</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">hidden units</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">local nonlinearity</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">no communication</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">B row-split</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">partial outputs</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">all-reduce</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">sum partials</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">One all-reduce per block forward, one backward; with sequence parallelism, reduce-scatter + all-gather instead.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Activation memory per layer vs strategy</h2>
+    <hr>
+<p class="lede">GPT-3-scale layer (h = 12,288, 96 heads, micro-batch 1). Move the sequence length and tensor-parallel degree.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0">
+    <label class="ctl">Sequence length <input type="range" id="aS" min="0" max="4" step="1" value="1"> <output id="aSo"></output></label>
+    <label class="ctl">TP degree t <input type="range" id="aT" min="0" max="3" step="1" value="3"> <output id="aTo"></output></label>
+  </div>
+  <div id="aBars" style="margin-top:12px"></div>
+</div>
+<p class="caption">Formula from Korthikanti et al.: s·b·h·(34 + 5as/h) bytes per layer without parallelism. Tensor parallelism alone divides only the parts inside the attention and MLP blocks (the paper's 10 + 24/t + 5as/(ht) form); with sequence parallelism everything divides by t.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: activation memory per layer (GPT-3 175B)</h2>
+    <hr>
+    <p class="lede">Korthikanti et al.: activations per layer = s·b·h·(34 + 5as/h) bytes, with s = 2,048, b = 1, h = 12,288, a = 96 heads.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>5as/h = 5 × 96 × 2,048 / 12,288 = <b>80</b> (the attention-score term).</li><li>Per layer, no parallelism: 2,048 × 12,288 × (34 + 80) bytes = <b>2.67 GiB</b>; × 96 layers = 256 GiB.</li><li>Tensor + sequence parallelism over t = 8: ÷ 8 → <b>0.33 GiB</b> per layer.</li><li>Plus selective recomputation (drop the 5as/h part, recompute it): 34·sbh/8 = <b>0.10 GiB</b> per layer.</li></ol><div class="result">The paper reports 5× less activation memory and MFU (model floating-point-operation utilization, the share of peak compute spent on the model's math) rising from 42.1% (full recompute) to 54.2% on a 530B model.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works, and its limits</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Exact</h3><p>Splitting matrices and summing partials gives identical results; notebook 03 checks forward and backward against the unsplit layer.</p></div>
+      <div class="card e"><h3>Cuts per-GPU work and memory</h3><p>Each GPU reads and computes 1/t of every layer, and with sequence parallelism stores 1/t of the activations.</p></div>
+      <div class="card d"><h3>Communication every layer</h3><p>Four collectives per layer per step (two forward, two backward); only NVLink makes them cheap.</p></div>
+      <div class="card b"><h3>Bounded by the node</h3><p>TP (tensor parallelism) scales to the NVLink domain (8 GPUs on HGX, up to 72 on NVL72); beyond that use PP (pipeline parallelism), CP (context parallelism) and DP.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Tensor parallelism is just model sharding like FSDP."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">FSDP gathers whole layers and each GPU computes all of a layer on its own data; TP keeps layers split and each GPU computes part of every layer on the same data.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Sequence parallelism adds communication."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It replaces each all-reduce with a reduce-scatter + all-gather of the same total volume, while sharding activations.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Bigger t is always better."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Communication grows and per-GPU matmuls shrink; past the NVLink domain it slows down.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Column then row.</b> The nonlinearity stays local; one all-reduce per block.</li><li><b>Two all-reduces per layer forward.</b> One after attention, one after the MLP; two more in backward.</li><li><b>TP ≤ GPUs per NVLink domain.</b> Usually TP = 8 on HGX servers.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>TP across nodes.</b> Per-layer all-reduces over the network dominate step time.</li><li><b>TP > KV (key-value) heads.</b> K/V heads get replicated (GQA (grouped-query attention) models).</li><li><b>Forgetting replicated activations.</b> Plain TP keeps LayerNorm/dropout inputs on every GPU; sequence parallelism shards them.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">How many all-reduces does one transformer layer need in the forward pass with Megatron TP?</p>
+      <div class="opts">
+      <button>A. 0</button>
+      <button>B. 1</button>
+      <button data-ok>C. 2</button>
+      <button>D. 4</button>
+      </div>
+      <div class="why"><b>2</b>: one after attention, one after the MLP.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does sequence parallelism shard that plain TP replicates?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Activations in the LayerNorm and dropout regions between the attention and MLP blocks, split along the sequence dimension.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does selective recomputation recompute?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Only the attention-score operations (QKᵀ, softmax, dropout, attention over V): large activations, few FLOPs.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Tensor parallelism splits every matrix inside a node with one all-reduce per block; sequence parallelism and selective recompute shard and shrink the activations.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>When a layer or its activations are too big, split the matrices themselves. Megatron splits the first matrix of each block by columns and the second by rows, so each GPU computes its share of the hidden units and an all-reduce sums the partial outputs, once per block in the forward pass and once in backward. That communication happens in every layer, so tensor parallelism stays inside the fast NVLink domain. Sequence parallelism also shards the activations between blocks along the sequence, and selective recomputation drops only the cheap but huge attention-score activations, cutting activation memory about five times.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> layers and activations too big; FSDP still computes whole layers.</span></div><div><span><b>Core idea:</b> column-then-row splits, one all-reduce per block; sequence-parallel activations.</span></div><div><span><b>Placement:</b> inside the NVLink domain (TP ≈ 8).</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/03_tensor_parallel_training.ipynb" target="_blank" rel="noopener">03 · Tensor-parallel MLP: forward and backward</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/distributed/03_tensor_parallel_training.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../05-pipeline-parallelism/index.html">05 · Pipeline parallelism →</a> · Previous: <a href="../03-zero-fsdp/index.html">← 03</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener">Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism</a>
+        <div class="meta">Shoeybi et al. · arXiv 2019</div>
+        <p>Intra-layer (tensor) model parallelism that splits each attention and MLP block across GPUs with only a few all-reduce operations, implemented in plain PyTorch.</p><div class="num">Remember: 2 all-reduces per transformer block in the forward pass; 76% scaling efficiency on 512 GPUs</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2205.05198" target="_blank" rel="noopener">Reducing Activation Recomputation in Large Transformer Models</a>
+        <div class="meta">Korthikanti et al. · MLSys 2023</div>
+        <p>Sequence parallelism (shard LayerNorm and dropout activations along the sequence) plus selective recomputation of the attention-score part.</p><div class="num">Remember: 5× less activation memory; MFU 54.2% vs 42.1% on a 530B model</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2104.04473" target="_blank" rel="noopener">Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM</a>
+        <div class="meta">Narayanan et al. · SC 2021</div>
+        <p>Combines tensor, pipeline and data parallelism (PTD-P) with an interleaved pipeline schedule, placing tensor parallelism inside nodes.</p><div class="num">Remember: 1T parameters at 502 PFLOP (quadrillion floating-point operations)/s on 3,072 GPUs, 52% of peak</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  Deck.seg('tSeg', v => {
+    const t = +v, s = clear(document.getElementById('tSvg')), cols = ['var(--a)', 'var(--b)', 'var(--c)', 'var(--e)', 'var(--d)', 'var(--a)', 'var(--b)', 'var(--c)'];
+    svg('text', { x: 40, y: 20, class: 'tm', text: 'A (d × 4d): split by columns' }, s); svg('text', { x: 380, y: 20, class: 'tm', text: 'B (4d × d): split by rows' }, s);
+    for (let i = 0; i < t; i++) {
+      svg('rect', { x: 40 + i * 240 / t, y: 30, width: 240 / t - 3, height: 110, rx: 4, style: `fill:${cols[i]}` }, s);
+      svg('rect', { x: 380, y: 30 + i * 110 / t, width: 240, height: 110 / t - 3, rx: 4, style: `fill:${cols[i]}` }, s);
+    }
+    svg('text', { x: 330, y: 175, 'text-anchor': 'middle', class: 't', text: t === 1 ? 'one GPU, no communication' : `${t} GPUs → partial outputs → 1 all-reduce of n × d values` }, s);
+    document.getElementById('tOut').innerHTML = `Each GPU stores and computes 1/${t} of both matrices (${(100 / t).toFixed(t > 4 ? 1 : 0)}%). Colour = which GPU owns which slice.`;
+  });
+  const SS = [1024, 2048, 8192, 32768, 131072], TS = [1, 2, 4, 8];
+  Deck.bind(['aS', 'aT'], () => {
+    const s = SS[Deck.val('aS')], t = TS[Deck.val('aT')], h = 12288, a = 96, b = 1; Deck.out('aSo', s.toLocaleString()); Deck.out('aTo', t);
+    const sbh = s * b * h, none = sbh * (34 + 5 * a * s / h), tp = sbh * (10 + 24 / t + 5 * a * s / (h * t)), sp = none / t, sel = 34 * sbh / t;
+    Deck.hbars(document.getElementById('aBars'), [['no parallelism', none, 'var(--d)'], [`TP only (t=${t})`, tp, 'var(--b)'], [`TP + sequence parallel`, sp, 'var(--a)'], ['+ selective recompute', sel, 'var(--e)']].map(([l, v, c]) => ({ label: l, value: v, color: c, text: (v / 2 ** 30).toFixed(v / 2 ** 30 < 10 ? 2 : 0) + ' GiB' })), { log: true, min: 1e7 });
+  });
+})();
+</script>
+</body>
+</html>

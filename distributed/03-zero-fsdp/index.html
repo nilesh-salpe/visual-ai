@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZeRO and FSDP</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="ZeRO and FSDP" data-home="../index.html" data-home-label="Distributed">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Distributed Training · 03</div>
+    <h1>ZeRO and FSDP: sharded data parallelism</h1>
+    <p class="sub">Data parallelism without the copies: shard optimizer state, gradients and parameters across GPUs (graphics processing units), and fetch each layer's weights just in time.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Plain data parallelism stores the full 16 bytes per parameter on every GPU, most of it optimizer state that each GPU only needs a slice of.</div>
+      <div class="c"><b>Core idea</b><b>ZeRO (Zero Redundancy Optimizer)</b> (Zero Redundancy Optimizer) partitions optimizer state (stage 1), then gradients (stage 2), then parameters (stage 3) across the data-parallel GPUs. Stage 3 / <b>FSDP (Fully Sharded Data Parallel)</b> all-gathers each layer's weights right before use and reduce-scatters its gradients right after.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Most of the memory is redundant</h2>
+    <hr>
+<p class="lede">Memory per GPU for model states, by ZeRO stage. Move the model size and the number of data-parallel GPUs; the dashed line is one 80 GB GPU.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0">
+    <label class="ctl">Parameters <input type="range" id="zP" min="0" max="4" step="1" value="2"> <output id="zPo"></output></label>
+    <label class="ctl">Data-parallel GPUs <input type="range" id="zN" min="0" max="6" step="1" value="3"> <output id="zNo"></output></label>
+  </div>
+  <div id="zBars" style="margin-top:12px"></div>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not just shard by hand?</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Replicated optimizer state</h3><p>Adam's FP32 (32-bit floating point) master weights, momentum and variance are 12 of the 16 bytes per parameter, copied on every GPU.</p></div>
+      <div class="card b"><h3>Model parallelism is intrusive</h3><p>Tensor and pipeline parallelism require changing the model code and its layout.</p></div>
+      <div class="card c"><h3>Communication must stay modest</h3><p>Any sharding scheme must not multiply the per-step traffic, or DP (data parallelism) stops scaling.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What is sharded first?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">Which part of the 16 bytes per parameter does ZeRO stage 1 shard?</p>
+      <div class="opts">
+      <button>A. BF16 weights</button>
+      <button>B. BF16 gradients</button>
+      <button data-ok>C. Optimizer state (FP32 master, momentum, variance)</button>
+      <button>D. Activations</button>
+      </div>
+      <div class="why"><b>C.</b> It is 12 of the 16 bytes and each GPU only needs its own slice to update its own slice of the parameters. That alone gives up to 4× at the same communication volume.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Three stages of sharding</h2>
+    <hr>
+<div class="grid3">
+      <div class="card a"><h3>Stage 1: optimizer state</h3><p>Each GPU keeps Adam state for 1/N of the parameters and updates only that slice; then the updated weights are all-gathered. "4x memory reduction, same communication volume."</p></div>
+      <div class="card b"><h3>Stage 2: + gradients</h3><p>Gradients are reduce-scattered instead of all-reduced: each GPU keeps only the averaged slice it updates. "8x memory reduction, same communication volume."</p></div>
+      <div class="card e"><h3>Stage 3: + parameters (FSDP)</h3><p>Weights live sharded; each layer is all-gathered just before its forward and backward and freed after. "Memory reduction is linear with DP degree."</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 188" role="img" aria-label="Same math as plain data parallelism; memory per GPU falls ≈ N×." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">shard everything</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">params, grads,</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">Adam state ÷ N</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">all-gather layer weights</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">just before</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">forward/backward</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">compute</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">on the full layer</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">free + reduce-scatter grads</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">each GPU keeps its</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">slice</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">sharded Adam</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">update own slice</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M593.2 136 V160 H198.4 V138" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="395.8" y="177" text-anchor="middle" class="tm" style="font-size:11px">layer by layer, every step</text></svg><p class="caption" style="margin:4px 0 0">Same math as plain data parallelism; memory per GPU falls ≈ N×.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>One FSDP step for one layer</h2>
+    <hr>
+<div class="grid4">
+      <div class="card c"><h3>1 · all-gather</h3><p>Collect the layer's weight shards from all GPUs into a full copy.</p></div>
+      <div class="card a"><h3>2 · forward</h3><p>Compute the layer, then free the gathered weights (or keep them for backward, trading memory for one less all-gather).</p></div>
+      <div class="card b"><h3>3 · backward</h3><p>All-gather again if freed, compute gradients for the full layer.</p></div>
+      <div class="card e"><h3>4 · reduce-scatter</h3><p>Average gradients across GPUs; each keeps the slice for its shard, then updates it with sharded Adam.</p></div>
+    </div>
+<div class="deep"><h4>How Llama 3 tuned it</h4><p>Llama 3 used FSDP and chose "not reshard after forward computation to avoid an extra all-gather communication during backward passes", and accumulated and reduce-scattered gradients in FP32 for numerical stability.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: a 70B model on 64 GPUs</h2>
+    <hr>
+    <p class="lede">70B parameters, 16 bytes per parameter of model states, 64 data-parallel GPUs with 80 GB each (activations not included).</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Stage 0 (DDP (distributed data parallel)): <b>1,120 GB</b> per GPU.</li><li>Stage 1 (optimizer state sharded): 4P + 12P/64 = <b>293 GB</b>.</li><li>Stage 2 (+ gradients): 2P + 14P/64 = <b>155 GB</b>.</li><li>Stage 3 (+ parameters): 16P/64 = <b>17.5 GB</b>, the only stage that fits in 80 GB.</li></ol><div class="result">ZeRO reports 4× (stage 1) and 8× (stage 2) reductions for large N and N× for stage 3; communication rises from ≈ 2·P to ≈ 3·P elements per step.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why sharding is exact and cheap enough</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Exact</h3><p>Every GPU sees the full layer when computing and the averaged gradient when updating; notebook 02 matches single-GPU training exactly.</p></div>
+      <div class="card e"><h3>Communication only rises modestly</h3><p>Stages 1–2 keep DP's ≈ 2·P traffic; stage 3 adds one parameter all-gather (≈ 3·P total), overlapped by prefetching.</p></div>
+      <div class="card b"><h3>No model rewrite</h3><p>FSDP wraps modules; the model code stays the same, unlike tensor or pipeline parallelism.</p></div>
+      <div class="card d"><h3>What it doesn't fix</h3><p>Activations and the per-layer full-weight peak still need memory; very large layers still need tensor parallelism.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"ZeRO is a different optimizer."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is the same Adam, partitioned: each GPU updates its slice with identical math.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Stage 3 triples communication."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Per step it is about 1.5× plain DP (all-gather in forward and backward plus reduce-scatter), much of it overlapped.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"FSDP replaces tensor parallelism."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">FSDP shards storage, but every GPU still computes whole layers on its own data; huge layers and per-GPU latency still need TP.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Stage 1 → 4×, stage 2 → 8×, stage 3 → N×.</b> As the DP degree grows (ZeRO paper).</li><li><b>Prefetch.</b> All-gather layer k+1 while computing layer k.</li><li><b>Hybrid sharding.</b> Shard within a node, replicate across nodes, to keep all-gathers on NVLink.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Assuming stage 3 is free.</b> It adds a parameter all-gather in backward (≈1.5× DP traffic).</li><li><b>Tiny shards at huge N.</b> Per-message latency dominates; shard groups are often limited.</li><li><b>Forgetting activations.</b> ZeRO shards model states, not activations (decks 04 and 08).</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Model states per GPU for 7B parameters with ZeRO-3 on 8 GPUs?</p>
+      <div class="opts">
+      <button>A. 112 GB</button>
+      <button>B. 28 GB</button>
+      <button data-ok>C. 14 GB</button>
+      <button>D. 7 GB</button>
+      </div>
+      <div class="why">16 × 7B / 8 = <b>14 GB</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why does stage 2 use reduce-scatter instead of all-reduce for gradients?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Each GPU only updates its own slice, so it only needs the averaged gradient for that slice; reduce-scatter delivers exactly that at half the all-reduce traffic.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does FSDP prefetching overlap?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The all-gather of the next layer's weights with the computation of the current layer.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">ZeRO/FSDP keeps data parallelism's simplicity but shards optimizer state, gradients and parameters, cutting model-state memory up to N× for modestly more communication.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Plain data parallelism copies 16 bytes per parameter to every GPU, most of it Adam state. ZeRO removes the redundancy in stages: shard the optimizer state, then the gradients, which become a reduce-scatter instead of an all-reduce, then the parameters themselves. With full sharding, which PyTorch implements as FSDP, each layer's weights are all-gathered just before use and freed afterwards, so memory per GPU falls roughly with the number of GPUs. The math is identical to ordinary data parallel training, and the extra parameter all-gathers are hidden by prefetching.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> DP replicates 16 B/param; Adam state is 12 of them.</span></div><div><span><b>Core idea:</b> shard optimizer (1), gradients (2), parameters (3); gather just in time.</span></div><div><span><b>Cost:</b> ≈ 1.5× DP traffic for stage 3; activations still separate.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/02_zero_sharding.ipynb" target="_blank" rel="noopener">02 · ZeRO / FSDP: sharded data parallelism</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/distributed/02_zero_sharding.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../04-tensor-sequence-parallelism/index.html">04 · Tensor and sequence parallelism →</a> · Previous: <a href="../02-data-parallelism/index.html">← 02</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1910.02054" target="_blank" rel="noopener">ZeRO: Memory Optimizations Toward Training Trillion Parameter Models</a>
+        <div class="meta">Rajbhandari et al. · SC 2020</div>
+        <p>Partitions optimizer states, gradients and parameters across data-parallel workers instead of replicating them.</p><div class="num">Remember: 100B+ parameters on 400 GPUs at 15 PFLOP (quadrillion floating-point operations)/s; 8× larger models than prior state of the art</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2304.11277" target="_blank" rel="noopener">PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel</a>
+        <div class="meta">Zhao et al. · VLDB 2023</div>
+        <p>PyTorch's ZeRO-3-style fully sharded data parallelism, with flattened parameter units, prefetching and hybrid sharding.</p><div class="num">Remember: comparable to DDP speed while supporting much larger models</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const PS = [1e9, 7e9, 70e9, 405e9, 1e12], NS = [1, 8, 16, 64, 256, 1024, 4096];
+  const zb = (P, N, s) => [16 * P, 4 * P + 12 * P / N, 2 * P + 14 * P / N, 16 * P / N][s];
+  Deck.bind(['zP', 'zN'], () => {
+    const P = PS[Deck.val('zP')], N = NS[Deck.val('zN')]; Deck.out('zPo', P >= 1e12 ? '1T' : (P / 1e9) + 'B'); Deck.out('zNo', N.toLocaleString());
+    Deck.hbars(document.getElementById('zBars'), [0, 1, 2, 3].map(s => { const b = zb(P, N, s); return { label: ['stage 0 (DDP)', 'stage 1: + shard optimizer', 'stage 2: + shard grads', 'stage 3 / FSDP: + shard params'][s], value: b, color: b <= 80e9 ? 'var(--e)' : 'var(--d)', text: (b / 1e9 >= 1000 ? (b / 1e12).toFixed(1) + ' TB' : (b / 1e9).toFixed(b < 10e9 ? 1 : 0) + ' GB') + (b <= 80e9 ? ' ✓ fits' : '') }; }), { log: true, min: 1e8 });
+  });
+})();
+</script>
+</body>
+</html>

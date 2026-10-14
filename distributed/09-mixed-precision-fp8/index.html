@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mixed Precision and FP8 Training</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Mixed precision and FP8 training" data-home="../index.html" data-home-label="Distributed">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Distributed Training · 09</div>
+    <h1>Mixed precision and FP8 training</h1>
+    <p class="sub">Training in 16-bit and 8-bit formats without losing accuracy: FP32 (32-bit floating point) master weights, loss scaling for FP16 (16-bit floating point), why BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats) usually needs none, and the fine-grained scaling FP8 (8-bit floating point) training needs.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Low-precision math is 2–4× faster and halves memory, but small gradients underflow to zero in FP16 and FP8 has very few bits of precision and range.</div>
+      <div class="c"><b>Core idea</b>Keep an <b>FP32 master copy</b> of the weights and accumulate in FP32. For FP16, <b>scale the loss</b> so gradients stay representable. BF16 has FP32's range, so it usually needs no scaling. FP8 needs <b>per-block scales</b> (DeepSeek-V3: 1×128 tiles for activations, 128×128 blocks for weights).</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Will this gradient survive?</h2>
+    <hr>
+<p class="lede">Pick a gradient magnitude and a loss scale. The number line shows each format's representable range (log scale); a red marker means the value underflows to 0 or overflows to infinity.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">gradient = 10^ <input type="range" id="gE" min="-12" max="6" step="0.5" value="-8"> <output id="gEo"></output></label><label class="ctl">loss scale = 2^ <input type="range" id="gS" min="0" max="24" step="1" value="0"> <output id="gSo"></output></label></div>
+  <svg id="gSvg" viewBox="0 0 660 220" style="margin-top:10px" role="img" aria-label="Number format ranges"></svg>
+  <p class="readout" id="gOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>What goes wrong in low precision</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Underflow</h3><p>FP16's smallest subnormal is about 6 × 10⁻⁸; many gradients are smaller and become exactly zero.</p></div>
+      <div class="card b"><h3>Lost updates</h3><p>Adding a tiny update to a large weight in 16-bit rounds it away; the weight never changes.</p></div>
+      <div class="card c"><h3>Outliers</h3><p>With 8 bits, one large value sets the scale for a whole tensor and pushes small values to zero.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Why keep FP32 weights?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">A BF16 weight of 1.0 receives an update of 10⁻⁴. What happens if you add it directly in BF16?</p>
+      <div class="opts">
+      <button>A. It becomes 1.0001</button>
+      <button data-ok>B. It stays 1.0: the update is below BF16's resolution near 1</button>
+      <button>C. It overflows</button>
+      <button>D. It becomes 0</button>
+      </div>
+      <div class="why"><b>B.</b> BF16 has 7 mantissa bits, so values near 1 are spaced 2⁻⁷ ≈ 0.0078 apart; 1 + 10⁻⁴ rounds back to 1. Keeping an FP32 master copy accumulates small updates correctly.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>The mixed-precision recipe</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>FP32 master weights</h3><p>The optimizer updates an FP32 copy; a low-precision copy is used for compute (Micikevicius et al., 2018).</p></div>
+      <div class="card b"><h3>Loss scaling (FP16)</h3><p>Multiply the loss by S before backward, divide gradients by S before the update; adjust S dynamically.</p></div>
+      <div class="card e"><h3>BF16 by default</h3><p>Same range as FP32, so no loss scaling in most LLM (large language model) training; FP32 accumulation for reductions.</p></div>
+      <div class="card c"><h3>FP8 with fine-grained scales</h3><p>DeepSeek-V3: activations scaled per 1×128 tile (per token per 128 channels), weights per 128×128 block, with increased-precision accumulation.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 188" role="img" aria-label="Low-precision math, high-precision bookkeeping." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">FP32 master weights</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">optimizer updates</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">here</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">cast to BF16 / FP8</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">with scales</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">forward + backward</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">low-precision</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">matmuls</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">FP32 accumulation</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">gradients and</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">reductions</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">unscale + update</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">skip on overflow</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">(FP16)</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M593.2 136 V160 H66.8 V138" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="330.0" y="177" text-anchor="middle" class="tm" style="font-size:11px">every step</text></svg><p class="caption" style="margin:4px 0 0">Low-precision math, high-precision bookkeeping.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Dynamic loss scaling, step by step</h2>
+    <hr>
+<div class="grid4">
+      <div class="card a"><h3>1 · scale</h3><p>Multiply the loss by S (e.g. 2¹⁵) before backward.</p></div>
+      <div class="card c"><h3>2 · check</h3><p>If any gradient is inf or NaN (not a number), skip the step and halve S.</p></div>
+      <div class="card b"><h3>3 · unscale</h3><p>Otherwise divide gradients by S in FP32 and update the master weights.</p></div>
+      <div class="card e"><h3>4 · grow</h3><p>After N clean steps, double S to keep using the available range.</p></div>
+    </div>
+<div class="deep"><h4>What notebook 06 shows</h4><p>On a toy problem with tiny features, FP16 gradients without scaling mostly flush to zero and training stalls at about a third of the starting loss; with dynamic scaling, training matches FP32. Casting a realistic spread of gradient values to FP16 keeps 37% of them non-zero without scaling and 100% with a 2¹⁵ scale or with BF16.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: what each format can hold</h2>
+    <hr>
+    <p class="lede">Largest and smallest normal values (subnormals extend the small end a little).</p>
+    <div class="example"><h4>Worked example</h4><ol><li>FP32: max ≈ 3.4 × 10³⁸, smallest normal ≈ 1.2 × 10⁻³⁸, 23 mantissa bits.</li><li>BF16: same exponent range as FP32, only 7 mantissa bits (≈ 2–3 decimal digits).</li><li>FP16: max <b>65,504</b>, smallest normal ≈ 6.1 × 10⁻⁵ (subnormals down to ≈ 6 × 10⁻⁸), 10 mantissa bits. A gradient of 10⁻⁸ becomes 0.</li><li>FP8 E4M3: max <b>448</b>; E5M2: max <b>57,344</b>. With so little range, one scale per tensor is not enough, hence per-tile scaling.</li></ol><div class="result">FP16 needs loss scaling to protect tiny gradients; BF16 trades precision for FP32's range; FP8 needs scales per small block.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why low precision is worth the trouble</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Speed</h3><p>Tensor Cores run BF16 at twice FP32-TF32 rates and FP8 at twice BF16 (H100: 989 vs 1,979 TFLOP (trillion floating-point operations)/s dense).</p></div>
+      <div class="card e"><h3>Memory and bandwidth</h3><p>Half the bytes for activations and communication; Micikevicius et al. report nearly 2× less memory.</p></div>
+      <div class="card b"><h3>Accuracy holds</h3><p>With master weights, FP32 accumulation and scaling, low-precision training matches FP32; DeepSeek-V3 trained in FP8 at 671B scale.</p></div>
+      <div class="card c"><h3>Stability tools</h3><p>FP32 reductions (Llama 3), skipping overflow steps, and fine-grained scales keep training stable.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"BF16 is more accurate than FP16."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">BF16 has more range but less precision (7 vs 10 mantissa bits); it is preferred because range problems are harder to fix than precision.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Mixed precision means everything is 16-bit."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Master weights, optimizer states and many reductions stay FP32.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"FP8 training is just FP8 casting."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It needs fine-grained scaling, higher-precision accumulation and careful choice of which ops stay in BF16.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Master weights in FP32.</b> Small updates vanish if added directly to BF16 weights.</li><li><b>Dynamic loss scaling.</b> Halve on overflow and skip the step; double after N good steps.</li><li><b>Accumulate in FP32.</b> Llama 3 accumulates and reduce-scatters gradients in FP32.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>FP16 without loss scaling.</b> Small gradients flush to zero and training stalls.</li><li><b>BF16 weight updates.</b> lr × gradient is often below BF16's resolution at the weight's magnitude.</li><li><b>Per-tensor FP8 scales.</b> One outlier forces a scale that crushes the rest; use fine-grained blocks.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Largest finite FP16 value?</p>
+      <div class="opts">
+      <button>A. 448</button>
+      <button>B. 57,344</button>
+      <button data-ok>C. 65,504</button>
+      <button>D. 3.4 × 10³⁸</button>
+      </div>
+      <div class="why"><b>65,504</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why does BF16 training usually not need loss scaling?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">BF16 has the same 8-bit exponent as FP32, so small gradients don't underflow.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What scaling granularity did DeepSeek-V3 use for FP8?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">1×128 tiles for activations (per token per 128 channels) and 128×128 blocks for weights.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Mixed precision computes in BF16/FP8 but keeps FP32 master weights and accumulations; FP16 needs loss scaling, FP8 needs fine-grained scales.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Low-precision math is faster and halves memory and communication, but it loses range and precision. Mixed precision training keeps an FP32 master copy of the weights and accumulates gradients in FP32, while matmuls run in 16 or 8 bits. FP16's narrow range makes small gradients underflow, so the loss is scaled up before backward and the gradients scaled down before the update, with dynamic scaling that halves the scale and skips the step on overflow. BF16 has FP32's exponent range, so it usually needs no scaling. FP8 has so few bits that DeepSeek-V3 scales activations per 1 by 128 tile and weights per 128 by 128 block.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> underflow, lost updates and outliers in low precision.</span></div><div><span><b>Core idea:</b> FP32 master weights + accumulation; loss scaling (FP16); fine-grained FP8 scales.</span></div><div><span><b>Default:</b> BF16 compute, FP32 bookkeeping.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/06_mixed_precision.ipynb" target="_blank" rel="noopener">06 · Mixed precision: FP16, BF16 and loss scaling</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/distributed/06_mixed_precision.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../10-putting-it-together/index.html">10 · Putting it together: 4D layouts →</a> · Previous: <a href="../08-activation-memory/index.html">← 08</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1710.03740" target="_blank" rel="noopener">Mixed Precision Training</a>
+        <div class="meta">Micikevicius et al. · ICLR 2018</div>
+        <p>Half-precision weights, activations and gradients with an FP32 master copy of the weights and loss scaling to avoid gradient underflow.</p><div class="num">Remember: nearly 2× less memory</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2209.05433" target="_blank" rel="noopener">FP8 Formats for Deep Learning</a>
+        <div class="meta">Micikevicius et al. · arXiv 2022</div>
+        <p>Defines the two FP8 encodings, E4M3 (more precision) and E5M2 (more range), and shows FP8 training and post-training quantization matching 16-bit results.</p><div class="num">Remember: E4M3 max 448, E5M2 max 57,344</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2412.19437" target="_blank" rel="noopener">DeepSeek-V3 Technical Report</a>
+        <div class="meta">DeepSeek-AI · arXiv 2024</div>
+        <p>671B-parameter MoE (Mixture of Experts) trained with FP8 mixed precision (fine-grained 1×128 and 128×128 scaling), DualPipe pipeline scheduling and 64-way expert parallelism with cross-node all-to-all kernels.</p><div class="num">Remember: 2.788M H800 GPU-hours (GPU = graphics processing unit); no irrecoverable loss spikes or rollbacks</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const F = [['FP32', -44.85, 38.53, 'var(--faint)'], ['BF16', -40.04, 38.53, 'var(--a)'], ['FP16', -7.22, 4.82, 'var(--b)'], ['FP8 E5M2', -4.82, 4.76, 'var(--c)'], ['FP8 E4M3', -2.7, 2.65, 'var(--e)']];
+  Deck.bind(['gE', 'gS'], () => {
+    const e = Deck.val('gE'), S = Deck.val('gS'); Deck.out('gEo', e); Deck.out('gSo', S);
+    const v = e + S * Math.log10(2), s = clear(document.getElementById('gSvg')), X = x => 120 + (x + 46) / 86 * 520;
+    F.forEach(([n, lo, hi, c], i) => { const y = 20 + i * 36; svg('text', { x: 110, y: y + 15, 'text-anchor': 'end', class: 't', text: n }, s); svg('rect', { x: X(lo), y, width: X(hi) - X(lo), height: 22, rx: 4, style: `fill:${c};opacity:.85` }, s);
+      const ok = v >= lo && v <= hi; svg('circle', { cx: X(Math.max(-46, Math.min(40, v))), cy: y + 11, r: 7, style: `fill:${ok ? 'var(--ink)' : 'var(--d)'};stroke:var(--panel);stroke-width:2` }, s); });
+    [-40, -20, 0, 20, 38].forEach(t => svg('text', { x: X(t), y: 205, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: '1e' + t }, s));
+    const fp16 = v >= -7.22 && v <= 4.82;
+    document.getElementById('gOut').innerHTML = `Scaled value ≈ 10^${v.toFixed(1)}. FP16: <b>${fp16 ? 'representable' : v < -7.22 ? 'underflows to 0' : 'overflows to ∞'}</b>; BF16: <b>${v >= -40.04 ? 'representable' : 'underflows'}</b>.`;
+  });
+})();
+</script>
+</body>
+</html>

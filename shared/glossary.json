@@ -65,8 +65,14 @@
   "DCGM": {
    "exp": "NVIDIA Data Center GPU Manager"
   },
+  "DDP": {
+   "exp": "distributed data parallel"
+  },
   "DDR5": {
    "exp": "fifth-generation double-data-rate memory"
+  },
+  "DNN": {
+   "exp": "deep neural network"
   },
   "DP": {
    "exp": "data parallelism"
@@ -296,6 +302,9 @@
   "MXFP8": {
    "exp": "8-bit microscaling floating point"
   },
+  "NaN": {
+   "exp": "not a number"
+  },
   "NCCL": {
    "exp": "NVIDIA Collective Communications Library"
   },
@@ -333,7 +342,7 @@
    "exp": "Peripheral Component Interconnect"
   },
   "PCIe": {
-   "exp": "PCI Express, the standard expansion bus"
+   "exp": "Peripheral Component Interconnect Express, the standard expansion bus"
   },
   "PE": {
    "exp": "positional encoding"
@@ -404,6 +413,9 @@
   "RMSNorm": {
    "exp": "root-mean-square normalization"
   },
+  "RNG": {
+   "exp": "random number generator"
+  },
   "RNN": {
    "exp": "recurrent neural network"
   },
@@ -463,6 +475,9 @@
   },
   "SMEM": {
    "exp": "shared memory, on-chip per streaming multiprocessor"
+  },
+  "SP": {
+   "exp": "sequence parallelism"
   },
   "SRAM": {
    "exp": "static random-access memory, fast on-chip memory"
@@ -529,6 +544,9 @@
   },
   "UTF": {
    "exp": "Unicode Transformation Format"
+  },
+  "ViT": {
+   "exp": "Vision Transformer"
   },
   "VM": {
    "exp": "virtual machine"
@@ -706,6 +724,13 @@
   "ONE",
   "HELLO",
   "SolidGoldMagikarp",
-  "KC"
+  "KC",
+  "VLDB",
+  "DistributedDataParallel",
+  "GPipe",
+  "PipeDream",
+  "DeepSpeed",
+  "DualPipe",
+  "GShard"
  ]
 }

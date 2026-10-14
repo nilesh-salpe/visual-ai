@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why Training Must Be Distributed</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Why training must be distributed" data-home="../index.html" data-home-label="Distributed">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Distributed Training · 01</div>
+    <h1>Why training must be distributed</h1>
+    <p class="sub">The two walls a single GPU (graphics processing unit) hits when training a large model, memory and time, and the four ways of splitting the work across thousands of GPUs.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A 70B-parameter model needs over a terabyte just for weights, gradients and optimizer state, and training it on one GPU would take centuries.</div>
+      <div class="c"><b>Core idea</b>Split the work along four axes: <b>data</b> (different examples per GPU), <b>tensor</b> (split each matrix), <b>pipeline</b> (split the layers) and <b>context</b> (split the sequence), plus <b>expert</b> parallelism for MoE (Mixture of Experts) models.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Two walls: memory and time</h2>
+    <hr>
+<p class="lede">Pick a model size and training-token count. The bars show model-state memory per parameter (16 bytes with mixed-precision Adam) against one 80 GB GPU, and how long the run would take.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0">
+    <label class="ctl">Parameters <input type="range" id="wN" min="0" max="5" step="1" value="2"> <output id="wNo"></output></label>
+    <label class="ctl">Tokens <input type="range" id="wD" min="0" max="3" step="1" value="2"> <output id="wDo"></output></label>
+    <label class="ctl">GPUs <input type="range" id="wG" min="0" max="5" step="1" value="4"> <output id="wGo"></output></label>
+  </div>
+  <div class="grid3" style="margin-top:14px">
+    <div class="stat"><div class="num" id="wM" style="color:var(--d)"></div><div class="lbl">model states (16 B/param)</div></div>
+    <div class="stat"><div class="num" id="wF"></div><div class="lbl">training FLOPs (6·N·D)</div></div>
+    <div class="stat"><div class="num" id="wT" style="color:var(--a)"></div><div class="lbl">days at 40% MFU (model floating-point-operation utilization, the share of peak compute spent on the model's math) on H100s</div></div>
+  </div>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why a bigger GPU is not the answer</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Memory grows with the model</h3><p>Weights, gradients and optimizer state alone take 16 bytes per parameter; the largest GPUs hold 80–192 GB.</p></div>
+      <div class="card b"><h3>Compute grows with model × data</h3><p>Compute-optimal training scales tokens with parameters, so FLOPs grow roughly with the square of model size.</p></div>
+      <div class="card c"><h3>One chip improves slowly</h3><p>A new GPU generation every ~2 years gives a few × more FLOPs; model training compute grew far faster.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which split helps memory?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">Plain data parallelism copies the whole model to every GPU. What does it reduce?</p>
+      <div class="opts">
+      <button>A. Memory per GPU</button>
+      <button data-ok>B. Time per step for a fixed global batch</button>
+      <button>C. Both equally</button>
+      <button>D. Neither</button>
+      </div>
+      <div class="why"><b>B.</b> Each GPU processes a slice of the batch, so the step finishes sooner, but every GPU still holds the full model, gradients and optimizer state. Fitting the model needs sharding (ZeRO (Zero Redundancy Optimizer)/FSDP (Fully Sharded Data Parallel)), tensor or pipeline parallelism.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Four axes of parallelism</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Data (DP)</h3><p>Each GPU gets different examples; gradients are averaged with an all-reduce. Sharded variants (ZeRO, FSDP) also split the model states.</p></div>
+      <div class="card c"><h3>Tensor (TP)</h3><p>Split every weight matrix across GPUs; partial results are combined with all-reduces in every layer. Needs NVLink-class bandwidth.</p></div>
+      <div class="card b"><h3>Pipeline (PP)</h3><p>Give each GPU a contiguous block of layers; activations flow stage to stage. Costs pipeline "bubbles".</p></div>
+      <div class="card e"><h3>Context (CP)</h3><p>Split a long sequence across GPUs; attention exchanges keys and values. MoE models add expert parallelism (EP).</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Real runs combine all of them (deck 10)." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">one model, one GPU</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">too little memory,</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">too slow</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">data parallel</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">copy the model,</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">split the batch</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">tensor parallel</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">split each matrix</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">pipeline parallel</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">split the layers</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">context parallel</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">split the sequence</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Real runs combine all of them (deck 10).</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>What each axis splits, and what it costs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Axis</th><th>Splits</th><th>Communication</th><th>Typical placement</th><th>Deck</th></tr>
+  <tr><td>Data (DDP (distributed data parallel))</td><td>the batch</td><td>gradient all-reduce once per step</td><td>across nodes</td><td>02</td></tr>
+  <tr><td>Sharded data (ZeRO/FSDP)</td><td>batch + model states</td><td>all-gather params, reduce-scatter grads</td><td>across nodes</td><td>03</td></tr>
+  <tr><td>Tensor + sequence</td><td>each matrix; activations</td><td>all-reduce (or reduce-scatter + all-gather) every layer</td><td>inside a node (NVLink)</td><td>04</td></tr>
+  <tr><td>Pipeline</td><td>the layers</td><td>point-to-point activations per micro-batch</td><td>across nodes</td><td>05</td></tr>
+  <tr><td>Context</td><td>the sequence</td><td>K/V exchange in attention</td><td>inside or across nodes</td><td>06</td></tr>
+  <tr><td>Expert</td><td>MoE experts</td><td>all-to-all dispatch and combine</td><td>across nodes</td><td>07</td></tr>
+</table></div>
+<div class="deep"><h4>Hardware context</h4><p>Bandwidth falls about 10× per step away from the GPU (HBM (high-bandwidth memory) 3,350 · NVLink 450 · network 50 GB/s per direction on H100 systems). The chattiest parallelism goes on the fastest links. See <a href="../../gpu/05-cluster-topology/index.html">GPU deck 05</a> for the network and collectives.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: one GPU vs a 70B model</h2>
+    <hr>
+    <p class="lede">70B parameters, 15T training tokens, mixed-precision Adam (16 bytes per parameter), H100 at 989 TFLOP (trillion floating-point operations)/s with 40% MFU (model FLOPs utilization).</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Model states: 16 × 70B = <b>1.12 TB</b>, versus 80 GB of HBM (high-bandwidth memory) on one GPU: 14× too much.</li><li>Compute: 6 × N × D = 6 × 70B × 15T = <b>6.3e+24 FLOPs</b>.</li><li>On one GPU: 6.3e+24 ÷ (989 TFLOP/s × 0.4) ≈ <b>505 GPU-years</b>.</li><li>On 16,384 GPUs at the same efficiency: ≈ <b>11 days</b>.</li></ol><div class="result">Memory forces the model to be split; time forces thousands of GPUs. Both must happen without wasting the GPUs on communication.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why combining axes works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Each axis has a different cost</h3><p>TP (tensor parallelism) communicates most and needs NVLink; DP (data parallelism) communicates least per FLOP and tolerates the network; PP (pipeline parallelism) sits in between.</p></div>
+      <div class="card e"><h3>Memory and speed are separate knobs</h3><p>Sharding and TP/PP make it fit; DP and CP (context parallelism) add throughput; recomputation trades compute for memory.</p></div>
+      <div class="card b"><h3>Overlap hides traffic</h3><p>Gradient all-reduce overlaps the backward pass; pipeline sends overlap compute; ring attention overlaps K/V passing.</p></div>
+      <div class="card c"><h3>Real systems prove it</h3><p>Llama 3 405B trained on 16,384 H100s with TP, CP, PP and FSDP-style DP at 38–43% MFU.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Just use more GPUs with data parallelism."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">DP alone keeps a full copy of the model on every GPU; past ~1–2B parameters it no longer fits without sharding or model parallelism.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Model parallelism is always slower."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It costs communication, but it is the only way large models fit, and with good placement (TP on NVLink) the overhead is moderate.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Linear scaling is the default."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Communication, bubbles and stragglers grow with scale; 40% MFU at 16K GPUs is considered very good.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Training FLOPs ≈ 6·N·D.</b> Forward 2, backward 4 per parameter per token.</li><li><b>Model states ≈ 16 bytes per parameter.</b> BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats) weights and grads + FP32 (32-bit floating point) master, m and v.</li><li><b>Activations are the third bill.</b> They scale with batch × sequence × layers (deck 08).</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Thinking more GPUs only add speed.</b> Many techniques exist mainly to make the model fit.</li><li><b>Ignoring communication.</b> Every split adds traffic; the art is hiding it behind compute.</li><li><b>Counting peak FLOPs.</b> Plan with realistic MFU (~40% for large runs).</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Model states for a 7B model with mixed-precision Adam?</p>
+      <div class="opts">
+      <button>A. 14 GB</button>
+      <button>B. 28 GB</button>
+      <button data-ok>C. 112 GB</button>
+      <button>D. 7 GB</button>
+      </div>
+      <div class="why">16 bytes × 7B = <b>112 GB</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Which parallelism axes reduce memory per GPU, and which mainly add throughput?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Memory: sharded DP (ZeRO/FSDP), TP, PP, CP (activations). Throughput: plain DP (more examples in parallel) and CP for long sequences.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why is tensor parallelism usually kept inside one node?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">It all-reduces activations in every layer, many times per step; only NVLink-class bandwidth makes that cheap.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Large-model training is distributed because the model does not fit and one GPU is far too slow; four axes (data, tensor, pipeline, context) plus experts split the work.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>A 70 billion parameter model needs about 1.1 terabytes for weights, gradients and Adam state and would take decades of GPU time on one H100. So training is split. Data parallelism gives each GPU different examples and averages gradients; sharded data parallelism also splits the model states. Tensor parallelism splits each matrix and needs fast NVLink. Pipeline parallelism splits the layers into stages. Context parallelism splits long sequences, and MoE models add expert parallelism. Real runs combine them so that the chattiest communication rides the fastest links.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> memory (16 B/param) and time (6·N·D) both exceed one GPU by orders of magnitude.</span></div><div><span><b>Core idea:</b> split along data, tensor, pipeline, context (and expert) axes.</span></div><div><span><b>Practice:</b> combine axes; put the chattiest on NVLink; overlap communication with compute.</span></div></div>
+    <p class="start-hint">Next: <a href="../02-data-parallelism/index.html">02 · Data parallelism →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2104.04473" target="_blank" rel="noopener">Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM</a>
+        <div class="meta">Narayanan et al. · SC 2021</div>
+        <p>Combines tensor, pipeline and data parallelism (PTD-P) with an interleaved pipeline schedule, placing tensor parallelism inside nodes.</p><div class="num">Remember: 1T parameters at 502 PFLOP (quadrillion floating-point operations)/s on 3,072 GPUs, 52% of peak</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1910.02054" target="_blank" rel="noopener">ZeRO: Memory Optimizations Toward Training Trillion Parameter Models</a>
+        <div class="meta">Rajbhandari et al. · SC 2020</div>
+        <p>Partitions optimizer states, gradients and parameters across data-parallel workers instead of replicating them.</p><div class="num">Remember: 100B+ parameters on 400 GPUs at 15 PFLOP/s; 8× larger models than prior state of the art</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const NS = [1e9, 7e9, 70e9, 405e9, 1e12, 2e12], DS = [1e11, 2e12, 15e12, 30e12], GS = [1, 8, 256, 2048, 16384, 65536];
+  const lab = v => v >= 1e12 ? (v / 1e12) + 'T' : (v / 1e9) + 'B';
+  Deck.bind(['wN', 'wD', 'wG'], () => {
+    const N = NS[Deck.val('wN')], D = DS[Deck.val('wD')], G = GS[Deck.val('wG')];
+    Deck.out('wNo', lab(N)); Deck.out('wDo', lab(D) + ' tokens'); Deck.out('wGo', G.toLocaleString());
+    Deck.out('wM', (16 * N / 1e12 >= 1 ? (16 * N / 1e12).toFixed(1) + ' TB' : (16 * N / 1e9).toFixed(0) + ' GB') + ` (${(16 * N / 80e9).toFixed(1)}× one GPU)`);
+    Deck.out('wF', (6 * N * D).toExponential(1));
+    const days = 6 * N * D / (989e12 * 0.4 * G) / 86400;
+    Deck.out('wT', days > 3650 ? (days / 365).toFixed(0) + ' years' : days.toFixed(days < 10 ? 1 : 0));
+  });
+})();
+</script>
+</body>
+</html>
