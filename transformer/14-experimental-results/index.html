@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Experimental Results</title>
 <link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
 <link rel="stylesheet" href="../tx.css">
 </head>
 <body data-deck="Experimental results" data-home="../index.html" data-home-label="Transformer">
@@ -13,10 +14,10 @@
   <div class="inner">
     <div class="kicker">Attention Is All You Need · 14</div>
     <h1>Experimental results</h1>
-    <p class="sub">Translation quality (BLEU) against training cost (FLOPs) on WMT 2014, plus training time and a transfer test on English constituency parsing. All figures are from the paper.</p>
+    <p class="sub">Translation quality (BLEU (Bilingual Evaluation Understudy, an n-gram overlap score for translation)) against training cost (FLOPs (floating-point operations)) on WMT (Workshop on Machine Translation) 2014, plus training time and a transfer test on English constituency parsing. All figures are from the paper.</p>
     <div class="ps">
       <div class="p"><b>What is the problem?</b>The best translation systems of 2016–17 needed large ensembles and 10<sup>19</sup>–10<sup>21</sup> FLOPs of training to reach state-of-the-art BLEU.</div>
-      <div class="c"><b>Core idea</b>The Transformer (big) set a new state of the art on EN-DE (28.4 BLEU) and EN-FR (41.8), at a fraction of the training cost: 3.5 days on 8 P100 GPUs.</div>
+      <div class="c"><b>Core idea</b>The Transformer (big) set a new state of the art on EN-DE (28.4 BLEU) and EN-FR (41.8), at a fraction of the training cost: 3.5 days on 8 P100 GPUs (graphics processing units).</div>
     </div>
     <div class="toc" data-auto></div>
   </div>
@@ -47,7 +48,7 @@
     <hr>
     <div class="grid3">
       <div class="card d"><h3>Ensembles cost more</h3><p>The best EN-DE result (ConvS2S ensemble, 26.36 BLEU) took 7.7·10¹⁹ training FLOPs; the best EN-FR ensembles took about 10²¹ (Table 2).</p></div>
-      <div class="card b"><h3>Small gains</h3><p>On EN-DE, the best single model reached 26.03 (MoE) and the best ensemble only 26.36.</p></div>
+      <div class="card b"><h3>Small gains</h3><p>On EN-DE, the best single model reached 26.03 (MoE (Mixture of Experts)) and the best ensemble only 26.36.</p></div>
       <div class="card c"><h3>Slow to train</h3><p>Recurrent models can't parallelize across positions within a sentence, so every experiment takes longer (deck 01).</p></div>
     </div>
   </div>
@@ -82,7 +83,7 @@
         <tr><th>Model</th><th>BLEU EN-DE</th><th>BLEU EN-FR</th><th>FLOPs EN-DE</th><th>FLOPs EN-FR</th></tr>
         <tr><td>ByteNet</td><td>23.75</td><td></td><td></td><td></td></tr>
         <tr><td>Deep-Att + PosUnk</td><td></td><td>39.2</td><td></td><td>1.0·10²⁰</td></tr>
-        <tr><td>GNMT + RL</td><td>24.6</td><td>39.92</td><td>2.3·10¹⁹</td><td>1.4·10²⁰</td></tr>
+        <tr><td>GNMT (Google's Neural Machine Translation system) + RL (reinforcement learning)</td><td>24.6</td><td>39.92</td><td>2.3·10¹⁹</td><td>1.4·10²⁰</td></tr>
         <tr><td>ConvS2S</td><td>25.16</td><td>40.46</td><td>9.6·10¹⁸</td><td>1.5·10²⁰</td></tr>
         <tr><td>MoE</td><td>26.03</td><td>40.56</td><td>2.0·10¹⁹</td><td>1.2·10²⁰</td></tr>
         <tr><td>Deep-Att + PosUnk Ensemble</td><td></td><td>40.4</td><td></td><td>8.0·10²⁰</td></tr>
@@ -98,6 +99,8 @@
       <div class="stat"><div class="num" style="color:var(--e)">&lt; ¼</div><div class="lbl">the training cost of the previous state of the art on EN-FR (big model, §6.1)</div></div>
     </div>
     <div class="cite">Metric: BLEU on WMT 2014 newstest2014 (case and tokenization as in the paper). On EN-FR the abstract and Table 2 report 41.8, while §6.1's text says 41.0; this deck uses the table value.</div>
+  
+    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 138" role="img" aria-label="Better BLEU at a fraction of the training cost of earlier systems." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--faint)"/><text x="83.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">train</text><text x="83.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">WMT 2014 EN-DE, EN-FR</text><rect x="174.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--c)"/><text x="247.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">decode</text><text x="247.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">beam 4, α = 0.6</text><line x1="158.5" y1="60.0" x2="172.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="339.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--a)"/><text x="412.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">score</text><text x="412.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">BLEU on newstest2014</text><line x1="323.0" y1="60.0" x2="337.0" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="503.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--e)"/><text x="576.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">compare cost</text><text x="576.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">training FLOPs</text><line x1="487.5" y1="60.0" x2="501.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Better BLEU at a fraction of the training cost of earlier systems.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -106,7 +109,7 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Where the training-cost numbers come from</h2>
     <hr>
-    <p class="lede">The paper estimates FLOPs as <b>training time × number of GPUs × sustained single-precision throughput per GPU</b>, using 9.5 TFLOPS for a P100 (footnote 5). You can reproduce the Table 2 values below.</p>
+    <p class="lede">The paper estimates FLOPs as <b>training time × number of GPUs × sustained single-precision throughput per GPU</b>, using 9.5 TFLOPS (trillion floating-point operations per second) for a P100 (footnote 5). You can reproduce the Table 2 values below.</p>
     <div class="visual">
       <div class="seg" id="cSeg"><button data-v="base" class="on">Base model</button><button data-v="big">Big model</button></div>
       <div class="eq" id="cEq"></div>
@@ -120,13 +123,23 @@
   </div>
 </section>
 
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: reproducing the training-cost column</h2>
+    <hr>
+    <p class="lede">The paper estimates FLOPs = GPUs × sustained single-precision TFLOPS × training time, with 9.5 TFLOPS for a P100.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Base: 8 × 9.5 TFLOPS × 12 h = <b>3.3e+18 FLOPs</b> (Table 2: 3.3 × 10¹⁸).</li><li>Big: 8 × 9.5 TFLOPS × 3.5 days = <b>2.3e+19 FLOPs</b> (Table 2: 2.3 × 10¹⁹).</li><li>Big model BLEU: 28.4 on EN-DE and 41.8 on EN-FR (Table 2; the text says 41.0 for EN-FR).</li><li>The strongest earlier EN-DE ensembles cost 7.7 × 10¹⁹ (ConvS2S) and 1.8 × 10²⁰ (GNMT + RL) FLOPs and scored 26.4 and 26.3 BLEU, below the big model's 28.4.</li></ol><div class="result">The headline is a cost-quality frontier shift: higher BLEU at much lower training FLOPs.</div></div>
+  </div>
+</section>
+
 <section class="slide" id="s-paper" data-chapter="How">
   <div class="inner">
     <span class="qtag b5">5 · How it works</span> <span class="ill" style="color:var(--c);border-color:var(--c)">from the paper · Abstract, §6.1</span>
     <h2>The headline claims</h2>
     <hr>
     <div class="paper"><b>Abstract:</b> 28.4 BLEU on WMT 2014 English-to-German, "improving over the existing best results, including ensembles, by over 2 BLEU", and a new single-model state of the art of 41.8 BLEU on English-to-French "after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature."</div>
-    <div class="paper"><b>Setup (§5):</b> WMT 2014 EN-DE, ~4.5M sentence pairs with a shared BPE vocabulary of ~37K; EN-FR, 36M sentences with a 32K word-piece vocabulary. Adam (β₁ = 0.9, β₂ = 0.98, ε = 10⁻⁹) with 4,000 warmup steps, then inverse-square-root decay.</div>
+    <div class="paper"><b>Setup (§5):</b> WMT 2014 EN-DE, ~4.5M sentence pairs with a shared BPE (byte-pair encoding) vocabulary of ~37K; EN-FR, 36M sentences with a 32K word-piece vocabulary. Adam (β₁ = 0.9, β₂ = 0.98, ε = 10⁻⁹) with 4,000 warmup steps, then inverse-square-root decay.</div>
     <div class="paper"><b>Decoding (§6.1):</b> beam size 4, length penalty α = 0.6, checkpoint averaging (last 5 for base, last 20 for big).</div>
   </div>
 </section>
@@ -150,7 +163,7 @@
     <span class="qtag b6">6 · Why it works</span>
     <h2>Does it generalize? English constituency parsing (Table 4)</h2>
     <hr>
-    <p class="lede">A 4-layer Transformer (d<sub>model</sub> = 1024) trained on the WSJ portion of the Penn Treebank (~40K sentences), and in a semi-supervised setting (~17M sentences), with little task-specific tuning. Metric: F1 on WSJ section 23.</p>
+    <p class="lede">A 4-layer Transformer (d<sub>model</sub> = 1024) trained on the WSJ (Wall Street Journal) portion of the Penn Treebank (~40K sentences), and in a semi-supervised setting (~17M sentences), with little task-specific tuning. Metric: F1 on WSJ section 23.</p>
     <div class="visual">
       <div class="seg" id="pSeg"><button data-v="wsj" class="on">WSJ only</button><button data-v="semi">Semi-supervised / other</button></div>
       <div id="pBars" style="margin-top:14px"></div>
@@ -179,6 +192,19 @@
       <p class="qq">"The Transformer won EN-FR by a large margin."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">On EN-FR the gain is small: 41.8 vs 41.29 for the ConvS2S ensemble. The big win there is <b>cost</b>: under 1/4 of the previous state of the art's training cost (§6.1).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>FLOPs = GPUs × TFLOPS × time.</b> The paper's own estimate method.</li><li><b>28.4 / 41.8.</b> Big model, EN-DE / EN-FR.</li><li><b>Checkpoint averaging.</b> Last 5 (base) or 20 (big) checkpoints averaged.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>41.0 vs 41.8.</b> EN-FR differs between the text and Table 2; cite the table.</li><li><b>Comparing ensembles with single models.</b> Table 2 mixes both; read the labels.</li><li><b>Ignoring parsing.</b> The paper also shows English constituency parsing generalization (Table 4).</li></ul></div>
     </div>
   </div>
 </section>
@@ -229,6 +255,29 @@
       <div><span><b>Result:</b> Transformer (big) 28.4 BLEU EN-DE and 41.8 EN-FR at 2.3·10¹⁹ FLOPs (3.5 days, 8 P100s). Base 27.3 EN-DE in 12 hours. Generalizes to parsing (92.7 F1 semi-supervised).</span></div>
     </div>
     <p class="start-hint">You've finished the guide. <a href="../index.html">← Back to all concepts</a> · Previous: <a href="../13-why-it-works/index.html">← 13</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need</a>
+        <div class="meta">Vaswani et al. · NeurIPS 2017</div>
+        <p>The Transformer: attention-only encoder-decoder with post-norm residual blocks, sinusoidal positions and a ReLU (rectified linear unit) FFN (feed-forward network). The baseline every later change is measured against.</p><div class="num">Remember: 28.4 BLEU on WMT 2014 English-German</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1610.10099" target="_blank" rel="noopener">Neural Machine Translation in Linear Time (ByteNet)</a>
+        <div class="meta">Kalchbrenner et al. · arXiv 2016</div>
+        <p>A dilated convolutional encoder-decoder that runs in time linear in sequence length; a parallel alternative to RNNs.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1705.03122" target="_blank" rel="noopener">Convolutional Sequence to Sequence Learning (ConvS2S)</a>
+        <div class="meta">Gehring et al. · ICML 2017</div>
+        <p>A fully convolutional sequence-to-sequence model with gated linear units and per-layer attention, fully parallel in training.</p><div class="num">Remember: beats the deep LSTM (long short-term memory network) of Wu et al. at an order of magnitude faster speed</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1609.08144" target="_blank" rel="noopener">Google's Neural Machine Translation System (GNMT)</a>
+        <div class="meta">Wu et al. · arXiv 2016</div>
+        <p>The production deep-LSTM translation system with attention and wordpieces that the Transformer was compared against.</p><div class="num">Remember: 60% fewer translation errors than phrase-based production in side-by-side evaluation</div></div>
+    </div>
   </div>
 </section>
 

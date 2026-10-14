@@ -64,7 +64,7 @@ def flow(steps, loop=None, caption=''):
 
 def glance_html(g):
     return f'''
-    <div class="glance"><h4>At a glance</h4>{flow(g["steps"], g.get("loop"), g.get("caption", ""))}{f'<p class="caption" style="margin:4px 0 0">{g["caption"]}</p>' if g.get("caption") else ''}</div>'''
+    <!--x:glance--><div class="glance"><h4>At a glance</h4>{flow(g["steps"], g.get("loop"), g.get("caption", ""))}{f'<p class="caption" style="margin:4px 0 0">{g["caption"]}</p>' if g.get("caption") else ''}</div><!--/x:glance-->'''
 
 
 def _section(sid, chapter, tag_cls, tag_text, title, body):
@@ -78,14 +78,14 @@ def _section(sid, chapter, tag_cls, tag_text, title, body):
 </section>'''
 
 
-def example_slide(ex):
+def example_slide(ex, chapter='How', tag=('b5', '5 · How it works')):
     steps = ''.join(f'<li>{s}</li>' for s in ex['steps'])
     body = f'''    <p class="lede">{ex["setup"]}</p>
     <div class="example"><h4>Worked example</h4><ol>{steps}</ol><div class="result">{ex["result"]}</div></div>'''
-    return _section('s-example', 'How', 'b5', '5 · How it works', ex['title'], body)
+    return _section('s-example', chapter, tag[0], tag[1], ex['title'], body)
 
 
-def traps_slide(t):
+def traps_slide(t, tag=('b7', '7 · Tricks and traps')):
     tr = ''.join(f'<li><b>{a}</b> {b}</li>' for a, b in t['tricks'])
     tp = ''.join(f'<li><b>{a}</b> {b}</li>' for a, b in t['traps'])
     body = f'''    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
@@ -93,7 +93,7 @@ def traps_slide(t):
       <div class="tt tricks"><h3>✓ Tricks</h3><ul>{tr}</ul></div>
       <div class="tt traps"><h3>⚠ Traps</h3><ul>{tp}</ul></div>
     </div>'''
-    return _section('s-traps', 'Traps', 'b7', '7 · Tricks and traps', 'Tricks and traps', body)
+    return _section('s-traps', 'Traps', tag[0], tag[1], 'Tricks and traps', body)
 
 
 def papers_slide(papers):

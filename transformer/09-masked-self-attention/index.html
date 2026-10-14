@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Masked Self-Attention</title>
 <link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
 <link rel="stylesheet" href="../tx.css">
 </head>
 <body data-deck="Masked self-attention" data-home="../index.html" data-home-label="Transformer">
@@ -83,6 +84,8 @@
         <div class="infobox" id="mInfo" style="margin-top:0"></div>
       </div>
     </div>
+  
+    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Training sees the whole target but each position only sees its past." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">shift right</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">input = &lt;bos&gt; +</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">target[:−1]</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">scores</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">all pairs</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">mask j &gt; i</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">set to −∞</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">softmax</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">future gets weight</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">0</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">predict token i+1</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">from positions ≤ i</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Training sees the whole target but each position only sees its past.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -98,6 +101,16 @@
       <div class="infobox" id="nInfo"></div>
     </div>
     <div class="takeaway">Because the mask is just −∞ entries in one matrix, all positions are still computed <b>in parallel</b> during training, and none of them can see the future (deck 12).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: one masked row</h2>
+    <hr>
+    <p class="lede">Four target positions. Position 1 (second token) has raw scores [1.0, 2.0, 3.0, 0.5] against positions 0–3.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Mask positions 2 and 3 (future): [1.0, 2.0, −∞, −∞].</li><li>softmax = <b>[0.269, 0.731, 0, 0]</b>.</li><li>Without the mask the row would be [0.085, 0.232, 0.631, 0.052]: most weight on a future token, which would let the model copy the answer.</li><li>All 4 rows are computed in one pass; the mask makes that equivalent to 4 sequential steps.</li></ol><div class="result">Masking turns one parallel pass into m correct next-token predictions.</div></div>
   </div>
 </section>
 
@@ -150,6 +163,19 @@
   </div>
 </section>
 
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Mask = lower-triangular.</b> Position i sees 0…i.</li><li><b>Shift right.</b> Input at i is target i−1, so the prediction at i is target i.</li><li><b>Same mask at inference.</b> There, future tokens simply don't exist yet.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Masking after softmax.</b> Weights must be zeroed before normalization.</li><li><b>Masking the encoder.</b> The encoder is bidirectional.</li><li><b>Off-by-one shifts.</b> Without the shift the model sees the token it must predict.</li></ul></div>
+    </div>
+  </div>
+</section>
+
 <section class="slide" id="s-check" data-chapter="Check">
   <div class="inner">
     <span class="qtag b8">8 · Check yourself</span>
@@ -196,6 +222,23 @@
       <div><span><b>Core idea:</b> output embeddings offset by one, plus −∞ on future scores, means position i depends only on positions &lt; i in the target, while every position is still trained in parallel.</span></div>
     </div>
     <p class="start-hint">Next: <a href="../10-residual-layernorm/index.html">10 · Residuals and layer normalization →</a> · Previous: <a href="../08-encoder-decoder-attention/index.html">← 08</a> · <a href="../index.html">All concepts</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need</a>
+        <div class="meta">Vaswani et al. · NeurIPS 2017</div>
+        <p>The Transformer: attention-only encoder-decoder with post-norm residual blocks, sinusoidal positions and a ReLU (rectified linear unit) FFN (feed-forward network). The baseline every later change is measured against.</p><div class="num">Remember: 28.4 BLEU (Bilingual Evaluation Understudy, an n-gram overlap score for translation) on WMT (Workshop on Machine Translation) 2014 English-German</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1409.3215" target="_blank" rel="noopener">Sequence to Sequence Learning with Neural Networks</a>
+        <div class="meta">Sutskever et al. · NeurIPS 2014</div>
+        <p>A deep LSTM (long short-term memory network) encodes the source into one fixed vector and another LSTM decodes it: the encoder-decoder the Transformer replaced.</p><div class="num">Remember: 34.8 BLEU on WMT'14 English-French</div></div>
+    </div>
   </div>
 </section>
 

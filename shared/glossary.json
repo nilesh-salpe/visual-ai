@@ -53,6 +53,9 @@
   "CNN": {
    "exp": "convolutional neural network"
   },
+  "CP": {
+   "exp": "context parallelism"
+  },
   "CPU": {
    "exp": "central processing unit"
   },
@@ -61,6 +64,9 @@
   },
   "DCGM": {
    "exp": "NVIDIA Data Center GPU Manager"
+  },
+  "DDR5": {
+   "exp": "fifth-generation double-data-rate memory"
   },
   "DP": {
    "exp": "data parallelism"
@@ -149,6 +155,12 @@
   "GLUE": {
    "exp": "General Language Understanding Evaluation benchmark"
   },
+  "GNMT": {
+   "exp": "Google's Neural Machine Translation system"
+  },
+  "GPC": {
+   "exp": "graphics processing cluster"
+  },
   "GPQA": {
    "exp": "Graduate-level Google-Proof Q&A benchmark"
   },
@@ -164,8 +176,14 @@
   "GSM8K": {
    "exp": "Grade School Math 8K"
   },
+  "GSP": {
+   "exp": "GPU System Processor"
+  },
   "HBM": {
    "exp": "high-bandwidth memory"
+  },
+  "HBM3": {
+   "exp": "third-generation high-bandwidth memory"
   },
   "HELM": {
    "exp": "Holistic Evaluation of Language Models"
@@ -176,6 +194,15 @@
   "HFU": {
    "exp": "hardware floating-point-operation utilization, which also counts recomputed work"
   },
+  "HIP": {
+   "exp": "AMD's Heterogeneous-computing Interface for Portability"
+  },
+  "IB": {
+   "exp": "InfiniBand"
+  },
+  "INT": {
+   "exp": "integer"
+  },
   "INT4": {
    "exp": "4-bit integer"
   },
@@ -183,7 +210,10 @@
    "exp": "8-bit integer"
   },
   "IO": {
-   "exp": "input/output (memory reads and writes)"
+   "exp": "input/output, memory reads and writes"
+  },
+  "IT": {
+   "exp": "information technology"
   },
   "KL": {
    "exp": "Kullback-Leibler divergence"
@@ -233,6 +263,9 @@
   "MLP": {
    "exp": "multilayer perceptron"
   },
+  "MMA": {
+   "exp": "matrix multiply-accumulate"
+  },
   "MMLU": {
    "exp": "Massive Multitask Language Understanding"
   },
@@ -250,6 +283,12 @@
   },
   "MTBF": {
    "exp": "mean time between failures"
+  },
+  "MX": {
+   "exp": "microscaling, block-scaled number formats"
+  },
+  "MXFP8": {
+   "exp": "8-bit microscaling floating point"
   },
   "NCCL": {
    "exp": "NVIDIA Collective Communications Library"
@@ -275,14 +314,26 @@
   "NUMA": {
    "exp": "non-uniform memory access"
   },
+  "NVFP4": {
+   "exp": "NVIDIA's block-scaled 4-bit floating point"
+  },
+  "NVMe": {
+   "exp": "Non-Volatile Memory Express, the fast interface for flash storage"
+  },
   "OS": {
    "exp": "operating system"
+  },
+  "PCI": {
+   "exp": "Peripheral Component Interconnect"
   },
   "PCIe": {
    "exp": "PCI Express, the standard expansion bus"
   },
   "PE": {
    "exp": "positional encoding"
+  },
+  "PEFT": {
+   "exp": "parameter-efficient fine-tuning"
   },
   "PFC": {
    "exp": "priority flow control"
@@ -305,11 +356,20 @@
   "PUE": {
    "exp": "power usage effectiveness"
   },
+  "QKV": {
+   "exp": "query, key and value"
+  },
   "QLoRA": {
    "exp": "Quantized Low-Rank Adaptation"
   },
+  "QoS": {
+   "exp": "quality of service"
+  },
   "RAM": {
    "exp": "random-access memory"
+  },
+  "RCCL": {
+   "exp": "AMD's ROCm Communication Collectives Library"
   },
   "RDMA": {
    "exp": "remote direct memory access"
@@ -353,6 +413,9 @@
   "RS": {
    "exp": "rejection sampling"
   },
+  "SaaS": {
+   "exp": "software as a service"
+  },
   "SDC": {
    "exp": "silent data corruption"
   },
@@ -364,6 +427,9 @@
   },
   "SGD": {
    "exp": "stochastic gradient descent"
+  },
+  "SGMV": {
+   "exp": "segmented gather matrix-vector multiplication"
   },
   "SHARP": {
    "exp": "Scalable Hierarchical Aggregation and Reduction Protocol, in-network reduction on NVIDIA switches"
@@ -390,7 +456,10 @@
    "exp": "shared memory, on-chip per streaming multiprocessor"
   },
   "SRAM": {
-   "exp": "static random-access memory (fast on-chip memory)"
+   "exp": "static random-access memory, fast on-chip memory"
+  },
+  "SSD": {
+   "exp": "solid-state drive"
   },
   "STEM": {
    "exp": "science, technology, engineering and mathematics"
@@ -419,11 +488,20 @@
   "TFLOPS": {
    "exp": "trillion floating-point operations per second"
   },
+  "TGI": {
+   "exp": "Hugging Face's Text Generation Inference server"
+  },
   "TMA": {
    "exp": "Tensor Memory Accelerator"
   },
+  "TOPS": {
+   "exp": "trillion operations per second"
+  },
   "TP": {
    "exp": "tensor parallelism"
+  },
+  "TPC": {
+   "exp": "texture processing cluster"
   },
   "TPOT": {
    "exp": "time per output token"
@@ -437,14 +515,23 @@
   "UNK": {
    "exp": "unknown token"
   },
+  "UPI": {
+   "exp": "Intel's Ultra Path Interconnect between CPU sockets"
+  },
   "UTF": {
    "exp": "Unicode Transformation Format"
+  },
+  "VM": {
+   "exp": "virtual machine"
   },
   "W8A8": {
    "exp": "8-bit weights and 8-bit activations"
   },
   "WMT": {
    "exp": "Workshop on Machine Translation"
+  },
+  "WSJ": {
+   "exp": "Wall Street Journal"
   },
   "XID": {
    "exp": "NVIDIA driver error code"
@@ -567,6 +654,34 @@
   "GSM1k",
   "AlpacaEval",
   "FlashAttn",
-  "QK"
+  "QK",
+  "CUTLASS",
+  "GH100",
+  "SXM5",
+  "TensorFloat",
+  "SC",
+  "GPUDirect",
+  "NV18",
+  "PIX",
+  "PTD",
+  "PXN",
+  "XW",
+  "SoftMax",
+  "CVPR",
+  "ImageNet",
+  "PosUnk",
+  "BerkeleyParser",
+  "GB200",
+  "NVL72",
+  "DeepEP",
+  "ByteDance",
+  "MegaScale",
+  "NSDI",
+  "HexiScale",
+  "KVCache",
+  "LoRAX",
+  "ByteNet",
+  "ConvS2S",
+  "HBM3e"
  ]
 }

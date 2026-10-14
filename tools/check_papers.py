@@ -16,7 +16,7 @@ for key, p in PAPERS.items():
             code = urllib.request.urlopen(urllib.request.Request(url, method='HEAD', headers={'User-Agent': 'Mozilla/5.0'}), timeout=30).status
         except Exception as e:
             code = str(e)
-        print(f"{'ok ' if code == 200 else 'BAD'} {key}: {code} (non-arXiv)"); bad += code != 200
+        ok_ = isinstance(code, int) and 200 <= code < 300; print(f"{'ok ' if ok_ else 'BAD'} {key}: {code} (non-arXiv)"); bad += not ok_
         continue
     f = os.path.join(cache, m.group(1).replace('/', '_') + '.html')
     if not os.path.exists(f) or os.path.getsize(f) < 1000:

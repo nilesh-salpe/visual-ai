@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Why the Transformer Works</title>
 <link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
 <link rel="stylesheet" href="../tx.css">
 <style>#mapSvg [data-i] { cursor: pointer; }</style>
 </head>
@@ -43,9 +44,9 @@
     <hr>
     <p class="lede">§4 compares layer types on three criteria. For translation-length sequences (n &lt; d), recurrence loses on all three.</p>
     <div class="grid3">
-      <div class="card d"><h3>Parallelism</h3><p>Sequential operations per layer: <b>RNN O(n)</b> vs self-attention O(1). Training time grows with sequence length.</p></div>
+      <div class="card d"><h3>Parallelism</h3><p>Sequential operations per layer: <b>RNN (recurrent neural network) O(n)</b> vs self-attention O(1). Training time grows with sequence length.</p></div>
       <div class="card d"><h3>Long-range paths</h3><p>Maximum path length: <b>RNN O(n)</b> vs self-attention O(1). Distant dependencies are harder to learn.</p></div>
-      <div class="card b"><h3>Compute per layer</h3><p><b>RNN O(n·d²)</b> vs self-attention O(n²·d). Self-attention is cheaper when n &lt; d, as in sentence-level translation with BPE.</p></div>
+      <div class="card b"><h3>Compute per layer</h3><p><b>RNN O(n·d²)</b> vs self-attention O(n²·d). Self-attention is cheaper when n &lt; d, as in sentence-level translation with BPE (byte-pair encoding).</p></div>
     </div>
     <div class="takeaway">Attention fixes parallelism and path length, but on its own it brings two new problems: it is <b>order-blind</b>, and averaging <b>blurs</b> distinct relationships. The other ingredients address those.</div>
   </div>
@@ -80,6 +81,8 @@
       <div class="visual" style="margin-top:0"><svg id="mapSvg" viewBox="0 0 520 330" role="img" aria-label="Ingredients to problems map"></svg></div>
       <div class="infobox" id="mapInfo" style="margin-top:0;min-height:200px"></div>
     </div>
+  
+    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Four ingredients, each patching a specific weakness of plain attention." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">self-attention</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">path length 1,</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">parallel</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">multi-head</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">several relations</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">at once</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">positional encoding</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">restores order</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">residual + LayerNorm</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">trainable depth</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">FFN</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">per-position</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">compute</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Four ingredients, each patching a specific weakness of plain attention.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -94,7 +97,7 @@
         <tr><td>0</td><td>Embedding × √d<sub>model</sub> + positional encoding</td><td>Order</td><td><a href="../07-positional-encoding/index.html">07</a></td></tr>
         <tr><td>1</td><td>Multi-head self-attention</td><td>Parallel computation, one-hop paths, several relationships</td><td><a href="../03-self-attention/index.html">03</a>–<a href="../06-multi-head-attention/index.html">06</a></td></tr>
         <tr><td>2</td><td>Add &amp; Norm</td><td>Stable signal and gradient flow</td><td><a href="../10-residual-layernorm/index.html">10</a></td></tr>
-        <tr><td>3</td><td>Position-wise FFN</td><td>Per-token non-linear processing</td><td><a href="../11-position-wise-ffn/index.html">11</a></td></tr>
+        <tr><td>3</td><td>Position-wise FFN (feed-forward network)</td><td>Per-token non-linear processing</td><td><a href="../11-position-wise-ffn/index.html">11</a></td></tr>
         <tr><td>4</td><td>Add &amp; Norm, then repeat × 6</td><td>Depth</td><td><a href="../10-residual-layernorm/index.html">10</a></td></tr>
         <tr><td>Decoder</td><td>+ masked self-attention, + encoder-decoder attention</td><td>Causal generation, reading the source</td><td><a href="../09-masked-self-attention/index.html">09</a>, <a href="../08-encoder-decoder-attention/index.html">08</a></td></tr>
       </table>
@@ -107,7 +110,7 @@
     <span class="qtag b6">6 · Why it works</span>
     <h2>The evidence: Table 3 model variations</h2>
     <hr>
-    <p class="lede">Each row changes one thing relative to the base model and reports BLEU and perplexity on the EN-DE development set (newstest2013). Pick a group.</p>
+    <p class="lede">Each row changes one thing relative to the base model and reports BLEU (Bilingual Evaluation Understudy, an n-gram overlap score for translation) and perplexity on the EN-DE development set (newstest2013). Pick a group.</p>
     <div class="visual">
       <div class="seg" id="aSeg"><button data-v="A" class="on">(A) heads</button><button data-v="B">(B) key size</button><button data-v="C">(C) model size</button><button data-v="D">(D) regularization</button><button data-v="E">(E) positions</button><button data-v="big">big</button></div>
       <div class="grid2" style="margin-top:14px">
@@ -132,6 +135,16 @@
       <div class="card e"><h3>Figure 5</h3><p>Two heads with different, structure-related patterns over the same sentence: "The heads clearly learned to perform different tasks."</p></div>
     </div>
     <div class="cite">See deck 03 for a redraw of Figures 3 and 4.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: reading the ablations (Table 3, newstest2013)</h2>
+    <hr>
+    <p class="lede">Base: perplexity 4.92, BLEU 25.8. Each row changes one setting.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Single head (h = 1): BLEU <b>24.9</b> → multiple heads matter.</li><li>Smaller keys (d_k = 16): BLEU <b>25.1</b> → compatibility needs enough dimensions.</li><li>No label smoothing (ε_ls = 0): perplexity improves to 4.67 but BLEU falls to <b>25.3</b>.</li><li>Learned instead of sinusoidal positions: BLEU <b>25.7</b> → nearly identical.</li></ol><div class="result">The evidence supports multi-head attention and adequate key size; the specific position encoding mattered little.</div></div>
   </div>
 </section>
 
@@ -167,6 +180,19 @@
       <p class="qq">"The gains come from one key trick."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Table 3 shows <b>many</b> design choices each matter: heads, key size, depth, width, dropout and label smoothing.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Read ablations as one-change-at-a-time.</b> Compare each row with the base row.</li><li><b>Perplexity ≠ BLEU.</b> Label smoothing hurts perplexity but helps BLEU.</li><li><b>Dev set.</b> Table 3 uses newstest2013, not the test set.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Over-reading small differences.</b> A 0.1 BLEU change is within run-to-run noise.</li><li><b>Generalizing to LLMs (large language models) directly.</b> These are translation models at 65M parameters.</li><li><b>Treating attention maps as proof.</b> They are suggestive, not causal explanations.</li></ul></div>
     </div>
   </div>
 </section>
@@ -217,6 +243,26 @@
       <div><span><b>Core idea:</b> direct attention (parallel, O(1) paths) + multiple heads (several relationships) + positional encoding (order) + stacked residual layers with FFNs (depth), each backed by the Table 3 ablations.</span></div>
     </div>
     <p class="start-hint">Next: <a href="../14-experimental-results/index.html">14 · Experimental results →</a> · Previous: <a href="../12-parallel-training-vs-generation/index.html">← 12</a> · <a href="../index.html">All concepts</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need</a>
+        <div class="meta">Vaswani et al. · NeurIPS 2017</div>
+        <p>The Transformer: attention-only encoder-decoder with post-norm residual blocks, sinusoidal positions and a ReLU (rectified linear unit) FFN (feed-forward network). The baseline every later change is measured against.</p><div class="num">Remember: 28.4 BLEU on WMT (Workshop on Machine Translation) 2014 English-German</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1905.10650" target="_blank" rel="noopener">Are Sixteen Heads Really Better than One?</a>
+        <div class="meta">Michel et al. · NeurIPS 2019</div>
+        <p>Finds that a large percentage of attention heads can be removed at test time without much loss; some layers work with a single head.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1803.02155" target="_blank" rel="noopener">Self-Attention with Relative Position Representations</a>
+        <div class="meta">Shaw et al. · NAACL 2018</div>
+        <p>Adds learned relative-distance representations inside self-attention instead of absolute position vectors at the input.</p><div class="num">Remember: +1.3 BLEU (EN-DE) and +0.3 BLEU (EN-FR) over absolute positions</div></div>
+    </div>
   </div>
 </section>
 

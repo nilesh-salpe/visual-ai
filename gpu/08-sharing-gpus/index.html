@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sharing GPUs</title>
 <link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
 <style>
   .infobox { min-height: 80px; background: var(--panel-2); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--muted); margin-top: 12px; }
   .infobox b { color: var(--ink); }
@@ -22,7 +23,7 @@
   <div class="inner">
     <div class="kicker">GPU for GenAI · 08</div>
     <h1>Sharing GPUs:<br>from time-slices to multi-tenant serving</h1>
-    <p class="sub">An idle H100 still costs money. This deck covers the ways to share one GPU (time-slicing, MPS, MIG), the ways to share a model across users (continuous batching, multi-LoRA), and the ways to share a cluster (gang scheduling, quotas, preemption).</p>
+    <p class="sub">An idle H100 still costs money. This deck covers the ways to share one GPU (time-slicing, MPS (NVIDIA Multi-Process Service), MIG (Multi-Instance GPU, hardware partitioning of one GPU)), the ways to share a model across users (continuous batching, multi-LoRA), and the ways to share a cluster (gang scheduling, quotas, preemption).</p>
     <div class="toc" data-auto></div>
     <p class="start-hint">Press <kbd>→</kbd> or <kbd>Space</kbd> to begin.</p>
   </div>
@@ -33,7 +34,7 @@
     <div class="label">01 · Why share</div>
     <h2>Most small workloads use a fraction of a GPU</h2>
     <hr>
-    <p class="lede">Notebooks, small inference services, embedding models and CI jobs often use 5–30% of a GPU. If each gets a whole H100, most of the fleet sits idle. Choose the workloads and compare how many GPUs they need with and without packing.</p>
+    <p class="lede">Notebooks, small inference services, embedding models and CI (confidence interval) jobs often use 5–30% of a GPU. If each gets a whole H100, most of the fleet sits idle. Choose the workloads and compare how many GPUs they need with and without packing.</p>
     <div class="visual">
       <div class="wl" id="wl"></div>
       <div class="grid2" style="margin-top:14px;align-items:center">
@@ -46,7 +47,7 @@
         </div>
       </div>
     </div>
-    <p class="caption">Packing uses first-fit by compute share and memory (80 GB). Real packing also has to respect isolation and latency SLOs, which the rest of this deck covers.</p>
+    <p class="caption">Packing uses first-fit by compute share and memory (80 GB). Real packing also has to respect isolation and latency SLOs (service-level objectives), which the rest of this deck covers.</p>
   </div>
 </section>
 
@@ -60,10 +61,10 @@
       <div class="visual scroll-x" style="margin-top:0">
         <table class="tbl">
           <tr><th></th><th>Time-slice</th><th>MPS</th><th>MIG</th></tr>
-          <tr><td>Runs concurrently</td><td>✗ takes turns</td><td>✓ shares SMs</td><td>✓ separate SMs</td></tr>
+          <tr><td>Runs concurrently</td><td>✗ takes turns</td><td>✓ shares SMs (streaming multiprocessors)</td><td>✓ separate SMs</td></tr>
           <tr><td>Memory isolation</td><td>✗</td><td>~ limit only</td><td>✓ hardware</td></tr>
           <tr><td>Fault isolation</td><td>~</td><td>✗ shared</td><td>✓</td></tr>
-          <tr><td>Performance QoS</td><td>✗</td><td>~ thread %</td><td>✓ L2/DRAM partitioned</td></tr>
+          <tr><td>Performance QoS (quality of service)</td><td>✗</td><td>~ thread %</td><td>✓ L2/DRAM (dynamic random-access memory) partitioned</td></tr>
           <tr><td>Granularity</td><td>any</td><td>any %</td><td>fixed profiles, ≤7</td></tr>
           <tr><td>Reconfiguration</td><td>instant</td><td>restart daemon</td><td>GPU must be idle</td></tr>
         </table>
@@ -71,6 +72,8 @@
     </div>
     <div class="infobox" id="spInfo">Click a point on the chart.</div>
     <div class="takeaway">Use MIG when tenants don't trust each other or need guaranteed QoS, MPS for cooperating processes that each underuse the GPU (for example several inference workers), and time-slicing for dev and notebook clusters where convenience matters most.</div>
+  
+    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="From splitting the hardware to sharing the model." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">time-slicing</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">take turns, no</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">isolation</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">MPS</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">run side by side,</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">soft limits</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">MIG</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">hardware</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">partitions, ≤ 7</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">continuous batching</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">one model, many</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">users</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">multi-LoRA</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">one base, many</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">adapters</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">From splitting the hardware to sharing the model.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -133,7 +136,7 @@
         <div class="stat"><div class="num" id="cbW"></div><div class="lbl">avg. wait before a request starts</div></div>
       </div>
     </div>
-    <div class="takeaway">Continuous batching combined with paged KV (deck 03) is what made vLLM, TGI, SGLang and TensorRT-LLM several times faster than naive serving. It is the default way a single model is shared among many users.</div>
+    <div class="takeaway">Continuous batching combined with paged KV (deck 03) is what made vLLM, TGI (Hugging Face's Text Generation Inference server), SGLang and TensorRT-LLM several times faster than naive serving. It is the default way a single model is shared among many users.</div>
     <div class="cite">Yu et al., "Orca: A Distributed Serving System for Transformer-Based Generative Models" (OSDI 2022).</div>
   </div>
 </section>
@@ -143,7 +146,7 @@
     <div class="label">06 · One model</div>
     <h2>Multi-LoRA: hundreds of fine-tuned variants sharing one base model</h2>
     <hr>
-    <p class="lede">A LoRA adapter for a 70B model is only a few hundred MB. Keep one copy of the base weights and load adapters as needed. Requests for <em>different</em> adapters can still go in the same batch, using custom kernels (Punica's SGMV, S-LoRA).</p>
+    <p class="lede">A LoRA (Low-Rank Adaptation) adapter for a 70B model is only a few hundred MB. Keep one copy of the base weights and load adapters as needed. Requests for <em>different</em> adapters can still go in the same batch, using custom kernels (Punica's SGMV (segmented gather matrix-vector multiplication), S-LoRA).</p>
     <div class="visual">
       <div class="controls" style="margin-top:0">
         <label class="ctl">Fine-tuned variants <input type="range" id="lN" min="1" max="500" step="1" value="50"> <output id="lNo"></output></label>
@@ -151,13 +154,23 @@
       </div>
       <div id="lBars" style="margin-top:14px"></div>
       <div class="grid3" style="margin-top:10px">
-        <div class="stat"><div class="num" id="lAd"></div><div class="lbl">one adapter (BF16)</div></div>
+        <div class="stat"><div class="num" id="lAd"></div><div class="lbl">one adapter (BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats))</div></div>
         <div class="stat"><div class="num" id="lFull" style="color:var(--d)"></div><div class="lbl">H100s for full copies</div></div>
         <div class="stat"><div class="num" id="lMulti" style="color:var(--e)"></div><div class="lbl">H100s with multi-LoRA</div></div>
       </div>
     </div>
-    <p class="caption">Llama-3-70B shapes. LoRA is applied to all attention and MLP projections: r × (d_in + d_out) parameters per matrix × 7 matrices × 80 layers. GPU count covers weights only; add KV cache on top.</p>
-    <div class="takeaway">For SaaS-style per-customer fine-tunes, multi-LoRA changes the cost from roughly N × (a whole deployment) to one deployment plus small adapters. The trade-off is some kernel overhead and adapter-swap latency for adapters that are rarely used.</div>
+    <p class="caption">Llama-3-70B shapes. LoRA is applied to all attention and MLP (multilayer perceptron) projections: r × (d_in + d_out) parameters per matrix × 7 matrices × 80 layers. GPU count covers weights only; add KV cache on top.</p>
+    <div class="takeaway">For SaaS-style (SaaS = software as a service) per-customer fine-tunes, multi-LoRA changes the cost from roughly N × (a whole deployment) to one deployment plus small adapters. The trade-off is some kernel overhead and adapter-swap latency for adapters that are rarely used.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="Example">
+  <div class="inner">
+    <span class="qtag b5">Worked example</span>
+    <h2>Worked example: one H100 for seven small services</h2>
+    <hr>
+    <p class="lede">Seven internal services each need ~8 GB of memory and a small share of compute.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Time-slicing: all seven take turns on the whole GPU; a busy service delays the others, and memory isn't isolated.</li><li>MIG: seven 1g.10gb instances, each with its own SMs, L2 slice and ~10 GB of memory: guaranteed isolation and QoS.</li><li>MPS: processes share SMs concurrently with soft limits: better utilization, weaker isolation.</li><li>If all seven are LoRA variants of one base model, multi-LoRA serving keeps one copy of the base and batches them together (Punica: 12× throughput).</li></ol><div class="result">Use MIG when tenants need isolation, MPS for cooperating processes, and model-level sharing (batching, multi-LoRA) when they share a model.</div></div>
   </div>
 </section>
 
@@ -178,6 +191,19 @@
       <div class="card a"><h3>Gang / all-or-nothing</h3><p>Kueue, Volcano, Slurm: either all N pods start or none do, so a half-placed job never holds GPUs while it waits.</p></div>
       <div class="card b"><h3>Topology-aware placement</h3><p>Place by node, then rail or pod. Fill nodes completely before spilling over, so large jobs keep contiguous blocks.</p></div>
       <div class="card c"><h3>Quotas and preemption</h3><p>Teams get guaranteed quotas and can borrow idle capacity. Borrowed, low-priority work is preempted (after a checkpoint) when the owner needs it back.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>MIG ≤ 7 instances on H100.</b> Fixed profiles; reconfigure only when idle.</li><li><b>Share the model, not just the GPU.</b> Continuous batching and multi-LoRA beat partitioning for same-model traffic.</li><li><b>Gang scheduling.</b> Distributed jobs need all their GPUs at once.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Time-slicing for latency-sensitive work.</b> Turns add unpredictable delay.</li><li><b>Fragmentation.</b> Leftover GPUs that no job can use idle a cluster.</li><li><b>Assuming MPS isolates faults.</b> A crashing client can affect others.</li></ul></div>
     </div>
   </div>
 </section>
@@ -206,6 +232,29 @@
       <div><span><b>To share a cluster:</b> gang scheduling, topology-aware packing, quotas with borrowing, and preemption after checkpoint.</span></div>
     </div>
     <p class="start-hint">You've finished the series. <a href="../index.html">← Back to all GPU decks</a> · Previous: <a href="../07-heterogeneous-gpus/index.html">← 07</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://docs.nvidia.com/datacenter/tesla/mig-user-guide/" target="_blank" rel="noopener">NVIDIA Multi-Instance GPU User Guide</a>
+        <div class="meta">NVIDIA · docs 2024</div>
+        <p>How to partition a supported GPU into hardware-isolated instances with dedicated SMs, L2 slices and memory.</p><div class="num">Remember: up to 7 instances per H100</div></div>
+      <div class="paper-item"><a href="https://www.usenix.org/conference/osdi22/presentation/yu" target="_blank" rel="noopener">Orca: A Distributed Serving System for Transformer-Based Generative Models</a>
+        <div class="meta">Yu et al. · OSDI 2022</div>
+        <p>Iteration-level scheduling (requests join and leave the batch after every decode step) plus selective batching (batch the matmuls, run attention per request).</p><div class="num">Remember: 36.9× throughput over FasterTransformer at the same latency (GPT-3 175B)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2311.03285" target="_blank" rel="noopener">S-LoRA: Serving Thousands of Concurrent LoRA Adapters</a>
+        <div class="meta">Sheng et al. · MLSys 2024</div>
+        <p>Keeps adapters in host memory, pages them into a unified GPU memory pool and batches requests for different adapters together.</p><div class="num">Remember: up to 4× throughput vs Hugging Face PEFT (parameter-efficient fine-tuning) and naive vLLM LoRA</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2310.18547" target="_blank" rel="noopener">Punica: Multi-Tenant LoRA Serving</a>
+        <div class="meta">Chen et al. · MLSys 2024</div>
+        <p>A CUDA (Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors) kernel (SGMV) that batches requests for many different LoRA adapters through one shared base model.</p><div class="num">Remember: 12× throughput, +2 ms latency per token</div></div>
+    </div>
   </div>
 </section>
 

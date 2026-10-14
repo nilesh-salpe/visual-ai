@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>What a GPU Is</title>
 <link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
 <style>
   #dieSvg g[data-info], #chipSvg [data-info] { cursor: pointer; }
   #dieSvg g[data-info]:hover rect, #chipSvg [data-info]:hover { filter: brightness(1.15); }
@@ -27,7 +28,7 @@
   <div class="inner">
     <div class="kicker">GPU for GenAI · 01</div>
     <h1>What a GPU is,<br>and how it thinks</h1>
-    <p class="sub">A CPU is built to finish one task quickly. A GPU is built to finish a huge number of tasks at once. This deck covers the chip, its execution model, and the details that matter in practice: warps, occupancy, Tensor Cores and wave quantization.</p>
+    <p class="sub">A CPU (central processing unit) is built to finish one task quickly. A GPU (graphics processing unit) is built to finish a huge number of tasks at once. This deck covers the chip, its execution model, and the details that matter in practice: warps, occupancy, Tensor Cores and wave quantization.</p>
     <div class="toc" data-auto></div>
     <p class="start-hint">Press <kbd>→</kbd> or <kbd>Space</kbd> to begin.</p>
   </div>
@@ -45,8 +46,10 @@
       <div class="infobox" id="dieInfo">Hover or tap a block to see what it does.</div>
       <div class="legend"><span><i style="background:var(--a)"></i>Arithmetic (ALUs)</span><span><i style="background:var(--b)"></i>Control / scheduling</span><span><i style="background:var(--c)"></i>Cache</span><span><i style="background:var(--faint)"></i>Memory interface</span></div>
     </div>
-    <p class="caption">Schematic, not to scale. An H100 has 132 active SMs, each with 128 FP32 lanes and 4 Tensor Cores, which comes to roughly 17,000 FP32 lanes. A server CPU has a few dozen cores, each with a 16-lane SIMD unit.</p>
+    <p class="caption">Schematic, not to scale. An H100 has 132 active SMs (streaming multiprocessors), each with 128 FP32 (32-bit floating point) lanes and 4 Tensor Cores, which comes to roughly 17,000 FP32 lanes. A server CPU has a few dozen cores, each with a 16-lane SIMD (single instruction, multiple data) unit.</p>
     <div class="takeaway">A CPU minimizes latency: one thread finishes as fast as possible. A GPU maximizes throughput: the most total work per second, even if each thread is slow.</div>
+  
+    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="You write one thread; the hardware runs thousands at once in warps of 32 across 132 SMs (streaming multiprocessors)." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">grid</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">all blocks of one</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">kernel</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">blocks</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">scheduled onto SMs</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">warps of 32</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">one instruction,</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">32 lanes</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">Tensor Cores</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">matrix multiply</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">per SM</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">HBM</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">shared memory pool</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">You write one thread; the hardware runs thousands at once in warps of 32 across 132 SMs (streaming multiprocessors).</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -64,8 +67,8 @@
       <div class="race" id="raceBars"></div>
       <p class="winner" id="raceWin"></p>
     </div>
-    <p class="caption">Illustrative model: CPU at about 4 TFLOPS of FP32 with no launch cost. GPU at about 60 TFLOPS of FP32 (no Tensor Cores) plus about 10 µs of launch and sync overhead. With Tensor Cores the GPU side gets about 15× faster still.</p>
-    <div class="takeaway">This is why small kernels hurt. A transformer step that runs thousands of tiny kernels is limited by launch overhead, not math. CUDA Graphs and <code>torch.compile</code> fusion exist to fix exactly that.</div>
+    <p class="caption">Illustrative model: CPU at about 4 TFLOPS (trillion floating-point operations per second) of FP32 with no launch cost. GPU at about 60 TFLOPS of FP32 (no Tensor Cores) plus about 10 µs of launch and sync overhead. With Tensor Cores the GPU side gets about 15× faster still.</p>
+    <div class="takeaway">This is why small kernels hurt. A transformer step that runs thousands of tiny kernels is limited by launch overhead, not math. CUDA (Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors) Graphs and <code>torch.compile</code> fusion exist to fix exactly that.</div>
   </div>
 </section>
 
@@ -75,12 +78,12 @@
     <div class="label">03 · Anatomy</div>
     <h2>Inside an H100: GPCs, SMs, L2, and HBM</h2>
     <hr>
-    <p class="lede">The basic building block is the <b>Streaming Multiprocessor (SM)</b>. SMs are grouped into GPCs, they share one L2 cache, and they read from HBM stacks placed next to the die. Click any part.</p>
+    <p class="lede">The basic building block is the <b>Streaming Multiprocessor (SM)</b>. SMs are grouped into GPCs (graphics processing clusters), they share one L2 cache, and they read from HBM (high-bandwidth memory) stacks placed next to the die. Click any part.</p>
     <div class="grid2">
       <div class="visual" style="margin-top:0"><svg id="chipSvg" viewBox="0 0 640 380" role="img" aria-label="H100 chip layout"></svg></div>
       <div class="visual" style="margin-top:0"><svg id="smSvg" viewBox="0 0 400 380" role="img" aria-label="Inside one SM"></svg></div>
     </div>
-    <div class="infobox" id="chipInfo" style="margin-top:12px"><b>Full GH100 die:</b> 8 GPCs × 9 TPCs × 2 SMs = 144 SMs. The H100 SXM product enables <b>132</b>; the rest are fused off to improve manufacturing yield (shown greyed out).</div>
+    <div class="infobox" id="chipInfo" style="margin-top:12px"><b>Full GH100 die:</b> 8 GPCs × 9 TPCs (texture processing clusters) × 2 SMs = 144 SMs. The H100 SXM (NVIDIA's socketed module form factor for data-center graphics processors) product enables <b>132</b>; the rest are fused off to improve manufacturing yield (shown greyed out).</div>
     <div class="cite">NVIDIA H100 Tensor Core GPU Architecture whitepaper (2022). Which SMs are disabled varies from chip to chip; the pattern here is illustrative.</div>
   </div>
 </section>
@@ -129,7 +132,7 @@
         <div class="stat"><div class="num" id="divUtil"></div><div class="lbl">lane utilization</div></div>
         <div class="stat"><div class="num" id="divNote" style="font-size:15px;font-family:Inter"></div><div class="lbl">why</div></div></div>
     </div>
-    <div class="takeaway">Dense linear algebra rarely branches, which is one reason it suits GPUs so well. Data-dependent control flow, such as MoE routing, sampling or sparse ops, is where divergence and imbalance show up.</div>
+    <div class="takeaway">Dense linear algebra rarely branches, which is one reason it suits GPUs so well. Data-dependent control flow, such as MoE (Mixture of Experts) routing, sampling or sparse ops, is where divergence and imbalance show up.</div>
   </div>
 </section>
 
@@ -160,7 +163,7 @@
     <div class="label">07 · Tensor Cores</div>
     <h2>Tensor Cores: hardware that does a matrix multiply in one step</h2>
     <hr>
-    <p class="lede">A CUDA core does one fused multiply-add per lane per cycle. A Tensor Core does a whole small <b>matrix multiply-accumulate</b>, <code>D = A·B + C</code>, on a tile in a single operation. Almost all of an H100's headline FLOPs come from Tensor Cores.</p>
+    <p class="lede">A CUDA core does one fused multiply-add per lane per cycle. A Tensor Core does a whole small <b>matrix multiply-accumulate</b>, <code>D = A·B + C</code>, on a tile in a single operation. Almost all of an H100's headline FLOPs (floating-point operations) come from Tensor Cores.</p>
     <div class="grid2">
       <div class="visual" style="margin-top:0">
         <svg id="mmaSvg" viewBox="0 0 380 220" role="img" aria-label="Matrix multiply accumulate"></svg>
@@ -169,10 +172,10 @@
       <div class="visual" style="margin-top:0">
         <div class="seg" id="tcSeg"><button data-v="dense" class="on">Dense</button><button data-v="sparse">2:4 sparse</button></div>
         <div id="tcBars" style="margin-top:14px"></div>
-        <p class="caption">H100 SXM peak throughput in TFLOPS (TOPS for INT8). Log scale.</p>
+        <p class="caption">H100 SXM peak throughput in TFLOPS (TOPS (trillion operations per second) for INT8 (8-bit integer)). Log scale.</p>
       </div>
     </div>
-    <div class="takeaway">If your work isn't a matmul in BF16 or FP8, you are using about 7% of the chip. That's why everything in a transformer is arranged around GEMMs.</div>
+    <div class="takeaway">If your work isn't a matmul in BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats) or FP8 (8-bit floating point), you are using about 7% of the chip. That's why everything in a transformer is arranged around GEMMs (general matrix multiplications).</div>
     <div class="cite">NVIDIA H100 datasheet (SXM5): FP64 34, FP64 Tensor 67, FP32 67, TF32 Tensor 495, BF16 Tensor 989, FP8 Tensor 1,979, INT8 Tensor 1,979 (dense). The 2:4 structured sparsity numbers are twice these.</div>
   </div>
 </section>
@@ -203,6 +206,16 @@
   </div>
 </section>
 
+<section class="slide" id="s-example" data-chapter="Example">
+  <div class="inner">
+    <span class="qtag b5">Worked example</span>
+    <h2>Worked example: wave quantization</h2>
+    <hr>
+    <p class="lede">An H100 SXM has 132 SMs. A matmul is split into 128 × 128 output tiles, and each SM runs one tile at a time.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Output 1,408 × 1,536 → 11 × 12 = <b>132 tiles</b> → exactly 1 wave: every SM busy, 100% use.</li><li>Output 1,536 × 1,536 → 12 × 12 = <b>144 tiles</b> → ⌈144/132⌉ = <b>2 waves</b>; the second wave has only 12 tiles.</li><li>Efficiency = 144 tiles / (2 waves × 132 SMs) = <b>55%</b>: 9% more work takes about twice as long.</li><li>Fixes: choose shapes whose tile count fills whole waves, use smaller tiles, or split K (split-K) to create more tiles.</li></ol><div class="result">GPU time is quantized in waves of 132 tiles; matrix sizes just above a wave boundary are the most wasteful.</div></div>
+  </div>
+</section>
+
 <!-- 10 · Software stack -->
 <section class="slide" id="s-stack" data-chapter="Software">
   <div class="inner">
@@ -212,13 +225,26 @@
     <div class="visual stack">
       <div class="layer"><b>PyTorch / JAX</b><span>The ops in your graph. Eager mode launches each op as its own kernel; <code>torch.compile</code> and XLA fuse ops together.</span></div>
       <div class="arrow">↓ dispatch</div>
-      <div class="layer" style="border-color:var(--c)"><b>Kernel libraries</b><span>cuBLAS and CUTLASS (GEMMs), cuDNN, FlashAttention, Triton-generated kernels, and NCCL for communication.</span></div>
+      <div class="layer" style="border-color:var(--c)"><b>Kernel libraries</b><span>cuBLAS and CUTLASS (GEMMs), cuDNN, FlashAttention, Triton-generated kernels, and NCCL (NVIDIA Collective Communications Library) for communication.</span></div>
       <div class="arrow">↓ launch &lt;&lt;&lt;grid, block&gt;&gt;&gt;</div>
       <div class="layer" style="border-color:var(--b)"><b>CUDA runtime + driver</b><span>Queues kernels on <b>streams</b>, which run asynchronously. CUDA Graphs record a whole sequence and replay it, avoiding most of the CPU launch overhead.</span></div>
       <div class="arrow">↓ hardware scheduler</div>
       <div class="layer" style="border-color:var(--e)"><b>GPU</b><span>The block scheduler assigns thread blocks to SMs; inside each SM, warp schedulers issue instructions to the CUDA cores and Tensor Cores.</span></div>
     </div>
     <div class="takeaway">The CPU only enqueues work. If the GPU sits idle between kernels in a profile, the CPU is the bottleneck. The usual fixes are bigger kernels, fusion and CUDA Graphs.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Warp = 32 threads.</b> Branches inside a warp run one after another (divergence).</li><li><b>Occupancy hides latency.</b> Enough resident warps per SM let the scheduler switch while others wait on memory.</li><li><b>Count waves.</b> tiles ÷ SMs, rounded up, sets the runtime.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Counting CUDA cores as speed.</b> For AI (artificial intelligence), Tensor Core throughput and memory bandwidth matter far more.</li><li><b>Divergent branches.</b> A warp with an if/else pays for both paths.</li><li><b>Shapes just past a wave.</b> A slightly larger matrix can take ~2× the time.</li></ul></div>
+    </div>
   </div>
 </section>
 
@@ -229,10 +255,10 @@
     <h2>Questions to test your understanding</h2>
     <hr>
     <details class="qa"><summary>Why does a GPU need tens of thousands of threads in flight?</summary><div class="ans">To <b>hide latency</b>. An HBM access takes hundreds of cycles, and a GPU core has no large caches or out-of-order engine to cover that. Instead, every cycle the warp scheduler picks a warp that is ready to run. With too few resident warps (low occupancy), the units sit idle waiting on memory. By Little's law, the parallelism you need equals latency × throughput.</div></details>
-    <details class="qa"><summary>What is a warp, and why does divergence hurt?</summary><div class="ans">A warp is a group of <b>32 threads that execute one instruction together</b> (SIMT). When threads in a warp take different branches, the paths run one after another with lanes masked off, so utilization drops by the number of distinct paths. Fixes: arrange data so the threads in a warp take the same branch, or use branch-free arithmetic.</div></details>
+    <details class="qa"><summary>What is a warp, and why does divergence hurt?</summary><div class="ans">A warp is a group of <b>32 threads that execute one instruction together</b> (SIMT (single instruction, multiple threads)). When threads in a warp take different branches, the paths run one after another with lanes masked off, so utilization drops by the number of distinct paths. Fixes: arrange data so the threads in a warp take the same branch, or use branch-free arithmetic.</div></details>
     <details class="qa"><summary>A 1536×1536 GEMM gets fewer TFLOPS than a 2048×2048 one. Why?</summary><div class="ans"><b>Wave quantization.</b> With 128×128 tiles there are 144 output tiles. On 132 SMs that means 2 waves, and the second runs only 12 tiles, so about 45% of SM time is wasted. The 2048 case gives 256 tiles, also 2 waves but much better filled. Small matrices also have low arithmetic intensity. Fixes: pad dimensions, use split-K or stream-K kernels, or choose a different tile size.</div></details>
-    <details class="qa"><summary>What's the difference between CUDA cores and Tensor Cores?</summary><div class="ans">CUDA cores are scalar FP32/INT lanes, each doing one FMA per cycle. Tensor Cores are dedicated matrix-multiply-accumulate units working in BF16, FP16, TF32, FP8 and, on Blackwell, FP4. On an H100, BF16 Tensor Core throughput (989 TFLOPS dense) is about <b>15× the FP32 CUDA-core peak</b>. Softmax, layernorm and activation functions run on CUDA cores. That's why fusing them, or overlapping them with GEMMs as FlashAttention-3 does, matters so much.</div></details>
-    <details class="qa"><summary>What limits occupancy, and is higher occupancy always better?</summary><div class="ans">Three things limit it: <b>registers per thread</b> (64K registers per SM, so 128 registers per thread allows at most 512 threads, or 16 warps), <b>shared memory per block</b> (up to 228 KB per SM on H100), and the cap on threads and blocks per SM (64 warps). Higher occupancy is <b>not always better</b>. Well-tuned GEMM and attention kernels often run at low occupancy with big tiles held in registers, and hide latency through instruction-level parallelism and asynchronous copies (TMA) instead.</div></details>
+    <details class="qa"><summary>What's the difference between CUDA cores and Tensor Cores?</summary><div class="ans">CUDA cores are scalar FP32/INT (integer) lanes, each doing one FMA (fused multiply-add) per cycle. Tensor Cores are dedicated matrix-multiply-accumulate units working in BF16, FP16 (16-bit floating point), TF32 (TensorFloat-32), FP8 and, on Blackwell, FP4 (4-bit floating point). On an H100, BF16 Tensor Core throughput (989 TFLOPS dense) is about <b>15× the FP32 CUDA-core peak</b>. Softmax, layernorm and activation functions run on CUDA cores. That's why fusing them, or overlapping them with GEMMs as FlashAttention-3 does, matters so much.</div></details>
+    <details class="qa"><summary>What limits occupancy, and is higher occupancy always better?</summary><div class="ans">Three things limit it: <b>registers per thread</b> (64K registers per SM, so 128 registers per thread allows at most 512 threads, or 16 warps), <b>shared memory per block</b> (up to 228 KB per SM on H100), and the cap on threads and blocks per SM (64 warps). Higher occupancy is <b>not always better</b>. Well-tuned GEMM and attention kernels often run at low occupancy with big tiles held in registers, and hide latency through instruction-level parallelism and asynchronous copies (TMA (Tensor Memory Accelerator)) instead.</div></details>
   </div>
 </section>
 
@@ -249,6 +275,23 @@
       <div><span><b>Tile counts and SM counts interact.</b> Wave quantization and launch overhead are the most common causes of "the GPU isn't busy".</span></div>
     </div>
     <p class="start-hint">Next: <a href="../02-why-gpus-for-ai/index.html">02 · Why GPUs for AI →</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://resources.nvidia.com/en-us-tensor-core" target="_blank" rel="noopener">NVIDIA H100 Tensor Core GPU Architecture (whitepaper)</a>
+        <div class="meta">NVIDIA · whitepaper 2022</div>
+        <p>The reference for Hopper: SM layout, fourth-generation Tensor Cores, FP8, TMA, thread-block clusters and the memory system.</p><div class="num">Remember: 132 SMs (H100 SXM5), 989 TFLOP (trillion floating-point operations)/s dense BF16</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2402.13499" target="_blank" rel="noopener">Benchmarking and Dissecting the Nvidia Hopper GPU Architecture</a>
+        <div class="meta">Luo et al. · arXiv 2024</div>
+        <p>Microbenchmarks of Hopper's memory hierarchy, FP8 tensor cores and distributed shared memory.</p></div>
+    </div>
   </div>
 </section>
 

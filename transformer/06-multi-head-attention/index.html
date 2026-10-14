@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Multi-Head Attention</title>
 <link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
 <link rel="stylesheet" href="../tx.css">
 <style>#mhSvg [data-h] { cursor: pointer; }</style>
 </head>
@@ -83,6 +84,8 @@
       <p class="caption" id="headCap"></p>
     </div>
     <div class="cite">Head patterns are illustrative. The paper reports that individual heads "clearly learn to perform different tasks", with behaviour related to the syntactic and semantic structure of sentences (§4, Figures 3–5).</div>
+  
+    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Same parameter budget as one 512-dim head, split into 8 subspaces." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">x</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">[n, 512]</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">8 heads</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">each projects to</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">64 dims</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">attention per head</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">in parallel</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">concat</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">[n, 512]</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">W_O</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">mix heads</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Same parameter budget as one 512-dim head, split into 8 subspaces.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -103,6 +106,16 @@
       </table>
     </div>
     <div class="paper"><b>Parameter check:</b> Q, K, V projections = 3 × 8 × (512 × 64) = 3 × 512² ; W<sup>O</sup> = 512². Total 4 × 512², the same as a single head with full 512-dim projections. That is why the cost is "similar to that of single-head attention with full dimensionality" (§3.2.2).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: the head-count experiment (Table 3)</h2>
+    <hr>
+    <p class="lede">Base model on newstest2013 (dev): perplexity 4.92, BLEU (Bilingual Evaluation Understudy, an n-gram overlap score for translation) 25.8, with h = 8 heads of 64 dims.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>h = 1, d_k = 512: BLEU <b>24.9</b> (−0.9).</li><li>h = 4, d_k = 128: BLEU <b>25.5</b>.</li><li>h = 16, d_k = 32: BLEU <b>25.8</b> (same as base).</li><li>h = 32, d_k = 16: BLEU <b>25.4</b>: too many tiny heads also hurts.</li></ol><div class="result">Several heads beat one big head at the same cost, but there is a sweet spot; later work found many trained heads can be pruned (Michel et al.).</div></div>
   </div>
 </section>
 
@@ -161,6 +174,19 @@
   </div>
 </section>
 
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Same cost for any h.</b> h × d_k = d_model, so parameters and FLOPs (floating-point operations) stay constant.</li><li><b>Heads specialize.</b> Some track syntax, some coreference (paper Figures 3–5).</li><li><b>Concat then project.</b> W_O mixes information across heads.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>More heads always better.</b> Table 3: 32 heads did worse than 8 or 16.</li><li><b>Each head sees a slice of the input.</b> Each head sees the full input, projected to a smaller subspace.</li><li><b>Heads are independent forever.</b> W_O and later layers combine them.</li></ul></div>
+    </div>
+  </div>
+</section>
+
 <section class="slide" id="s-check" data-chapter="Check">
   <div class="inner">
     <span class="qtag b8">8 · Check yourself</span>
@@ -207,6 +233,23 @@
       <div><span><b>Core idea:</b> 8 heads × 64 dims attend in parallel, in different subspaces, then Concat → W<sup>O</sup>. Same cost, and measurably better than 1 head (Table 3A).</span></div>
     </div>
     <p class="start-hint">Next: <a href="../07-positional-encoding/index.html">07 · Positional encoding →</a> · Previous: <a href="../05-scaled-dot-product-attention/index.html">← 05</a> · <a href="../index.html">All concepts</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need</a>
+        <div class="meta">Vaswani et al. · NeurIPS 2017</div>
+        <p>The Transformer: attention-only encoder-decoder with post-norm residual blocks, sinusoidal positions and a ReLU (rectified linear unit) FFN (feed-forward network). The baseline every later change is measured against.</p><div class="num">Remember: 28.4 BLEU on WMT (Workshop on Machine Translation) 2014 English-German</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1905.10650" target="_blank" rel="noopener">Are Sixteen Heads Really Better than One?</a>
+        <div class="meta">Michel et al. · NeurIPS 2019</div>
+        <p>Finds that a large percentage of attention heads can be removed at test time without much loss; some layers work with a single head.</p></div>
+    </div>
   </div>
 </section>
 

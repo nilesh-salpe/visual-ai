@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Scaled Dot-Product Attention</title>
 <link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
 <link rel="stylesheet" href="../tx.css">
 </head>
 <body data-deck="Scaled dot-product attention" data-home="../index.html" data-home-label="Transformer">
@@ -31,7 +32,7 @@
     <div class="grid3">
       <div class="card d"><h3>n² scores per head</h3><p>A 50-token sentence means 2,500 scores per head per layer.</p></div>
       <div class="card b"><h3>Two known options</h3><p><b>Additive</b> attention (a small feed-forward network per pair) and <b>dot-product</b> attention (q·k) (§3.2.1).</p></div>
-      <div class="card a"><h3>Must map to GPUs</h3><p>The fastest operation on a GPU is a large matrix multiply.</p></div>
+      <div class="card a"><h3>Must map to GPUs</h3><p>The fastest operation on a GPU (graphics processing unit) is a large matrix multiply.</p></div>
     </div>
   </div>
 </section>
@@ -107,6 +108,8 @@
       <div class="card e"><h3>÷ √d<sub>k</sub></h3><p>Brings score variance back to about 1, so the softmax stays responsive.</p></div>
       <div class="card b"><h3>softmax, then × V</h3><p>Row-wise weights, then a weighted sum of values: a second matrix multiply.</p></div>
     </div>
+  
+    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 138" role="img" aria-label="Equation 1: Attention(Q, K, V) = softmax(QKᵀ / √d_k) V." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">Q·Kᵀ</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">raw scores</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">÷ √d_k</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">keep variance ≈ 1</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">mask (optional)</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">−∞ for future</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">softmax</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">row-wise</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">× V</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">weighted values</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Equation 1: Attention(Q, K, V) = softmax(QKᵀ / √d_k) V.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -122,6 +125,16 @@
       <div class="infobox" id="eqInfo"></div>
     </div>
     <p class="caption">Toy example: n = 4 tokens, d<sub>k</sub> = d<sub>v</sub> = 4, random values with a fixed seed. Every number is computed in the page.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: why divide by √d_k?</h2>
+    <hr>
+    <p class="lede">With d_k = 64 and unit-variance components, a dot product has standard deviation √64 = 8.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Unscaled scores [8, 0, −8] → softmax = <b>[0.9997, 0.0003, 0.0000]</b>: almost one-hot, gradients nearly zero.</li><li>Scaled by 1/8 → [1, 0, −1] → softmax = <b>[0.665, 0.245, 0.090]</b>: soft, trainable.</li><li>The largest weight drops from 0.9997 to 0.665.</li><li>The paper: for large d_k dot products grow large, pushing softmax "into regions where it has extremely small gradients".</li></ol><div class="result">Scaling by 1/√d_k keeps scores at unit scale regardless of head size.</div></div>
   </div>
 </section>
 
@@ -175,6 +188,19 @@
   </div>
 </section>
 
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Var(q·k) = d_k.</b> For independent unit-variance components; hence 1/√d_k.</li><li><b>Dot-product = matmul.</b> Fast on GPUs, unlike additive attention.</li><li><b>Mask before softmax.</b> Set disallowed scores to −∞ so they get weight 0.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Dividing by d_k.</b> Over-shrinks scores; the paper uses √d_k.</li><li><b>Masking after softmax.</b> Rows would no longer sum to 1.</li><li><b>Thinking scaling changes expressiveness.</b> It only changes the softmax temperature at initialization.</li></ul></div>
+    </div>
+  </div>
+</section>
+
 <section class="slide" id="s-check" data-chapter="Check">
   <div class="inner">
     <span class="qtag b8">8 · Check yourself</span>
@@ -221,6 +247,23 @@
       <div><span><b>Core idea:</b> scores = QKᵀ / √d<sub>k</sub>, then a row-wise softmax gives weights, then weights × V gives outputs. That is two matrix multiplications and a softmax.</span></div>
     </div>
     <p class="start-hint">Next: <a href="../06-multi-head-attention/index.html">06 · Multi-head attention →</a> · Previous: <a href="../04-queries-keys-values/index.html">← 04</a> · <a href="../index.html">All concepts</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need</a>
+        <div class="meta">Vaswani et al. · NeurIPS 2017</div>
+        <p>The Transformer: attention-only encoder-decoder with post-norm residual blocks, sinusoidal positions and a ReLU (rectified linear unit) FFN (feed-forward network). The baseline every later change is measured against.</p><div class="num">Remember: 28.4 BLEU (Bilingual Evaluation Understudy, an n-gram overlap score for translation) on WMT (Workshop on Machine Translation) 2014 English-German</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1508.04025" target="_blank" rel="noopener">Effective Approaches to Attention-based Neural Machine Translation</a>
+        <div class="meta">Luong et al. · EMNLP 2015</div>
+        <p>Compares global and local attention and simpler (dot-product) scoring functions for encoder-decoder translation.</p></div>
+    </div>
   </div>
 </section>
 

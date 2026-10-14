@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Inside a GPU Server</title>
 <link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
 <style>
   .node-svg [data-info] { cursor: pointer; }
   .node-svg [data-info]:hover { filter: brightness(1.12); }
@@ -28,7 +29,7 @@
   <div class="inner">
     <div class="kicker">GPU for GenAI · 04</div>
     <h1>Inside a GPU server:<br>8 GPUs, 4 switches, 1 box</h1>
-    <p class="sub">The 8-GPU HGX/DGX node is the basic unit of AI infrastructure. This deck shows what is inside it, how data moves between its parts, and which link is the bottleneck for each kind of traffic.</p>
+    <p class="sub">The 8-GPU HGX/DGX node is the basic unit of AI (artificial intelligence) infrastructure. This deck shows what is inside it, how data moves between its parts, and which link is the bottleneck for each kind of traffic.</p>
     <div class="toc" data-auto></div>
     <p class="start-hint">Press <kbd>→</kbd> or <kbd>Space</kbd> to begin.</p>
   </div>
@@ -39,9 +40,9 @@
     <div class="label">01 · The box</div>
     <h2>An HGX H100 node, opened up</h2>
     <hr>
-    <p class="lede">Hover or tap any component. Two separate networks run through this box: <span class="em-e">NVLink</span> connects the GPUs to each other through NVSwitch, and <span class="em-c">PCIe</span> connects the GPUs to the CPUs, NICs and storage.</p>
+    <p class="lede">Hover or tap any component. Two separate networks run through this box: <span class="em-e">NVLink</span> connects the GPUs (graphics processing units) to each other through NVSwitch, and <span class="em-c">PCIe (PCI (Peripheral Component Interconnect) Express, the standard expansion bus)</span> connects the GPUs to the CPUs (central processing units), NICs (network interface cards) and storage.</p>
     <div class="visual"><svg id="mapSvg" class="node-svg" viewBox="0 0 900 360" role="img" aria-label="HGX H100 node diagram"></svg>
-      <div class="infobox" id="mapInfo"><b>DGX H100</b>: 8× H100 SXM (640 GB HBM3 in total), 4× NVSwitch, 8× ConnectX-7 400 Gb/s compute NICs, 2× Xeon CPUs, 2 TB DDR5, about 30 TB of NVMe, up to about 10.2 kW.</div>
+      <div class="infobox" id="mapInfo"><b>DGX H100</b>: 8× H100 SXM (640 GB HBM3 (third-generation high-bandwidth memory) in total), 4× NVSwitch, 8× ConnectX-7 400 Gb/s compute NICs, 2× Xeon CPUs, 2 TB DDR5 (fifth-generation double-data-rate memory), about 30 TB of NVMe (Non-Volatile Memory Express, the fast interface for flash storage), up to about 10.2 kW.</div>
     </div>
     <div class="cite">NVIDIA DGX H100 user guide and datasheet. PCIe switch arrangement simplified; it varies by OEM (HGX boards go into Dell, Supermicro, HPE and other servers).</div>
   </div>
@@ -68,6 +69,8 @@
       <div class="infobox" id="pathInfo"></div>
     </div>
     <div class="takeaway">Inside the node a GPU gets about 450 GB/s per direction; to another node it gets about 50 GB/s. That 9× gap determines how every parallelism strategy is mapped onto the hardware: tensor parallelism stays on NVLink, and only data and pipeline parallelism cross the network.</div>
+  
+    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Bandwidth falls roughly 10× at each step away from the GPU." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">GPU ↔ HBM</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">3,350 GB/s</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">GPU ↔ GPU</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">NVLink 450 GB/s</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">per direction</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">GPU ↔ CPU / NIC</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">PCIe Gen5 64 GB/s</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">node ↔ node</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">NIC 50 GB/s</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">storage</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">NVMe ~7 GB/s</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Bandwidth falls roughly 10× at each step away from the GPU.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -83,8 +86,18 @@
         <div class="stat"><div class="num" id="arOut" style="color:var(--d)"></div><div class="lbl">same, 8 GPUs on 8 nodes over 400G NICs</div></div>
       </div>
     </div>
-    <p class="caption">All-reduce time ≈ 2·(n−1)/n × size ÷ per-GPU bandwidth, ignoring latency. Default: 7 GB, the BF16 gradients of a 3.5B model. In-node bandwidth uses 450 GB/s; the NVLink SHARP in-switch reduction on NVSwitch can do better.</p>
-    <div class="takeaway">Per GPU and per direction: HBM 3,350 · NVLink 450 · PCIe Gen5 64 · NIC 50 · NVMe ~7 GB/s. Memorize these five numbers.</div>
+    <p class="caption">All-reduce time ≈ 2·(n−1)/n × size ÷ per-GPU bandwidth, ignoring latency. Default: 7 GB, the BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats) gradients of a 3.5B model. In-node bandwidth uses 450 GB/s; the NVLink SHARP (Scalable Hierarchical Aggregation and Reduction Protocol, in-network reduction on NVIDIA switches) in-switch reduction on NVSwitch can do better.</p>
+    <div class="takeaway">Per GPU and per direction: HBM (high-bandwidth memory) 3,350 · NVLink 450 · PCIe Gen5 64 · NIC 50 · NVMe ~7 GB/s. Memorize these five numbers.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="Example">
+  <div class="inner">
+    <span class="qtag b5">Worked example</span>
+    <h2>Worked example: moving 1 GB</h2>
+    <hr>
+    <p class="lede">Per-GPU, per-direction bandwidths from the deck.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>HBM: 1 GB ÷ 3,350 GB/s = <b>0.3 ms</b>.</li><li>NVLink: 1 GB ÷ 450 GB/s = <b>2.2 ms</b>.</li><li>PCIe Gen5: 1 GB ÷ 64 GB/s = <b>15.6 ms</b>.</li><li>NIC (400 Gb/s): 1 GB ÷ 50 GB/s = <b>20.0 ms</b>.</li><li>NVMe: 1 GB ÷ 7 GB/s = <b>142.9 ms</b>.</li><li>Implication: keep tensor-parallel traffic on NVLink, data-parallel gradients on the network, and checkpoints off the critical path.</li></ol><div class="result">The same gigabyte takes 0.3 ms in HBM and 143 ms from NVMe: placement decides speed.</div></div>
   </div>
 </section>
 
@@ -93,20 +106,20 @@
     <div class="label">04 · Affinity</div>
     <h2><code>nvidia-smi topo -m</code>: which GPUs, NICs and CPUs are close to each other</h2>
     <hr>
-    <p class="lede">A node has two CPU sockets (two NUMA domains). If a dataloader on socket 1 feeds GPU 0, or GPU 0 sends through a NIC on the other socket, traffic crosses the inter-socket link (UPI) and loses bandwidth. Hover any cell.</p>
+    <p class="lede">A node has two CPU sockets (two NUMA (non-uniform memory access) domains). If a dataloader on socket 1 feeds GPU 0, or GPU 0 sends through a NIC on the other socket, traffic crosses the inter-socket link (UPI (Intel's Ultra Path Interconnect between CPU sockets)) and loses bandwidth. Hover any cell.</p>
     <div>
       <div class="visual scroll-x"><table class="topo" id="topo" style="margin:0 auto"></table>
         <div class="infobox" id="topoInfo">Hover a cell.</div></div>
       <div class="visual">
         <table class="tbl" style="margin-top:12px">
           <tr><td><code>NV#</code></td><td>Connected by # NVLinks (NV18 = 18 NVLink 4 links ≈ 900 GB/s bidirectional)</td></tr>
-          <tr><td><code>PIX</code></td><td>Same PCIe switch, so the shortest PCIe path. Best GPU↔NIC pairing for GPUDirect RDMA.</td></tr>
+          <tr><td><code>PIX</code></td><td>Same PCIe switch, so the shortest PCIe path. Best GPU↔NIC pairing for GPUDirect RDMA (remote direct memory access).</td></tr>
           <tr><td><code>NODE</code></td><td>Same CPU socket, different PCIe switch: goes through the CPU root complex.</td></tr>
           <tr><td><code>SYS</code></td><td>Crosses sockets over UPI, which is slower and less predictable.</td></tr>
         </table>
       </div>
     </div>
-    <div class="takeaway">NCCL reads this topology and picks the NIC for each GPU, ideally PIX. When jobs are slow, check the pinning: <code>numactl</code> and CPU affinity for dataloaders, and <code>NCCL_IB_HCA</code> or <code>NCCL_TOPO_FILE</code> when auto-detection gets it wrong (common in VMs).</div>
+    <div class="takeaway">NCCL (NVIDIA Collective Communications Library) reads this topology and picks the NIC for each GPU, ideally PIX. When jobs are slow, check the pinning: <code>numactl</code> and CPU affinity for dataloaders, and <code>NCCL_IB_HCA</code> or <code>NCCL_TOPO_FILE</code> when auto-detection gets it wrong (common in VMs (virtual machines)).</div>
     <div class="cite">Illustrative matrix for a 2-socket, 8-GPU, 8-NIC node. Run the command on your own hardware.</div>
   </div>
 </section>
@@ -135,7 +148,7 @@
       </div>
       <svg id="pwSvg" viewBox="0 0 660 120" style="margin-top:12px" role="img" aria-label="Racks"></svg>
     </div>
-    <p class="caption">Typical air-cooled data-center racks were designed for about 10–20 kW. A single DGX H100 nearly fills one. Blackwell rack-scale systems need direct liquid cooling. PUE (power usage effectiveness) = facility power ÷ IT power.</p>
+    <p class="caption">Typical air-cooled data-center racks were designed for about 10–20 kW. A single DGX H100 nearly fills one. Blackwell rack-scale systems need direct liquid cooling. PUE (power usage effectiveness) = facility power ÷ IT (information technology) power.</p>
     <div class="takeaway">"Why don't you just add more GPUs?" Because of power, cooling and floor space. A 16K-GPU H100 cluster draws about 25 MW, which is roughly the consumption of a small town.</div>
   </div>
 </section>
@@ -156,7 +169,7 @@
         <div class="stat"><div class="num" id="sdMem"></div><div class="lbl">HBM in domain</div></div>
       </div>
     </div>
-    <div class="takeaway">A bigger scale-up domain means tensor parallelism and MoE all-to-all traffic can span more GPUs without touching the slower network. Frontier labs care about this because MoE inference is limited by all-to-all bandwidth.</div>
+    <div class="takeaway">A bigger scale-up domain means tensor parallelism and MoE (Mixture of Experts) all-to-all traffic can span more GPUs without touching the slower network. Frontier labs care about this because MoE inference is limited by all-to-all bandwidth.</div>
     <div class="cite">NVIDIA GB200 NVL72 product page: 72 GPUs, 130 TB/s aggregate NVLink, ~13.5 TB HBM3e. HGX H100: 900 GB/s per GPU over NVLink 4.</div>
   </div>
 </section>
@@ -168,11 +181,24 @@
     <hr>
     <div class="grid2">
       <div class="card a"><h3>1 · Clocks and throttling</h3><p><code>nvidia-smi -q -d PERFORMANCE,CLOCK,POWER,TEMPERATURE</code>: look for thermal or power-cap throttling, or clocks locked low. One hot GPU slows the whole job.</p></div>
-      <div class="card b"><h3>2 · Errors</h3><p><code>dmesg | grep -i xid</code>, ECC counters and row remapping (<code>nvidia-smi -q -d ECC,ROW_REMAPPER</code>), NVLink error counters.</p></div>
+      <div class="card b"><h3>2 · Errors</h3><p><code>dmesg | grep -i xid</code>, ECC (error-correcting code) counters and row remapping (<code>nvidia-smi -q -d ECC,ROW_REMAPPER</code>), NVLink error counters.</p></div>
       <div class="card c"><h3>3 · Topology and links</h3><p><code>nvidia-smi topo -m</code>, <code>nvidia-smi nvlink -s</code> (are all links up?), <code>lspci -vv</code> for the negotiated PCIe width and speed (x16 Gen5, not x8 Gen3).</p></div>
-      <div class="card e"><h3>4 · Microbenchmarks</h3><p><code>dcgmi diag -r 3</code>, <code>nccl-tests all_reduce_perf</code> (compare busbw with a known-good node), and a GEMM burn-in to check sustained TFLOPS.</p></div>
+      <div class="card e"><h3>4 · Microbenchmarks</h3><p><code>dcgmi diag -r 3</code>, <code>nccl-tests all_reduce_perf</code> (compare busbw with a known-good node), and a GEMM (general matrix multiplication) burn-in to check sustained TFLOPS (trillion floating-point operations per second).</p></div>
     </div>
     <div class="takeaway">Labs run these as <b>preflight checks</b> before admitting a node into a training job, and keep a quarantine pool for nodes that fail. Deck 06 covers this in detail.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Memorize the ladder.</b> HBM 3,350 · NVLink 450 · PCIe 64 · NIC 50 · NVMe 7 GB/s.</li><li><b>Check affinity.</b> nvidia-smi topo -m shows which NIC and CPU socket sit closest to each GPU.</li><li><b>Power sets capacity.</b> A DGX H100 draws ~10.2 kW; racks are sized in kilowatts, not GPUs.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Cross-socket traffic.</b> A GPU using a NIC on the other CPU socket pays extra hops.</li><li><b>PCIe as GPU-to-GPU path.</b> Without NVLink, tensor parallelism is much slower.</li><li><b>Ignoring thermals.</b> Hot GPUs throttle clocks and become stragglers.</li></ul></div>
+    </div>
   </div>
 </section>
 
@@ -182,9 +208,9 @@
     <h2>Questions to test your understanding</h2>
     <hr>
     <details class="qa"><summary>Walk me through what's in an 8×H100 server and how the GPUs talk.</summary><div class="ans">There are 8 SXM GPUs on an HGX baseboard. Each has 18 NVLink 4 links that go to <b>4 NVSwitch chips</b>, so any GPU can reach any other at 900 GB/s bidirectional, all-to-all, without blocking. Separately, PCIe Gen5 switches connect GPUs to <b>one 400G NIC per GPU</b> (ConnectX-7, used with GPUDirect RDMA), to NVMe, and to the 2 CPU sockets. The CPUs handle orchestration and data loading but sit off the hot path.</div></details>
-    <details class="qa"><summary>What does GPUDirect RDMA do and why does it matter?</summary><div class="ans">It lets the NIC <b>read and write GPU memory directly</b> over PCIe, with no staging copy in host DRAM and no CPU involvement. Without it, every inter-node message is copied GPU → host → NIC, which doubles the PCIe traffic, adds latency and uses CPU memory bandwidth. NCCL depends on it for inter-node collectives. GPUDirect Storage does the same for NVMe and parallel file systems.</div></details>
+    <details class="qa"><summary>What does GPUDirect RDMA do and why does it matter?</summary><div class="ans">It lets the NIC <b>read and write GPU memory directly</b> over PCIe, with no staging copy in host DRAM (dynamic random-access memory) and no CPU involvement. Without it, every inter-node message is copied GPU → host → NIC, which doubles the PCIe traffic, adds latency and uses CPU memory bandwidth. NCCL depends on it for inter-node collectives. GPUDirect Storage does the same for NVMe and parallel file systems.</div></details>
     <details class="qa"><summary>Why is there one NIC per GPU?</summary><div class="ans">So that each GPU gets <b>its own 400 Gb/s (50 GB/s) path</b> to the network behind a nearby PCIe switch (PIX affinity), which avoids PCIe and UPI contention. It also matches the rail-optimized network design: GPU i in every node connects to the same leaf switch (rail i). See deck 05.</div></details>
-    <details class="qa"><summary>Can you train with PCIe H100 cards instead of SXM? What changes?</summary><div class="ans">PCIe H100s have a lower TDP (about 350 W vs 700 W), fewer SMs and lower HBM bandwidth, and only an optional NVLink <b>bridge between pairs</b> rather than NVSwitch all-to-all. Tensor parallelism across 8 GPUs would then go over PCIe (~64 GB/s), which is far too slow. They suit inference of models that fit on 1–2 GPUs, but not large-scale training.</div></details>
+    <details class="qa"><summary>Can you train with PCIe H100 cards instead of SXM? What changes?</summary><div class="ans">PCIe H100s have a lower TDP (about 350 W vs 700 W), fewer SMs (streaming multiprocessors) and lower HBM bandwidth, and only an optional NVLink <b>bridge between pairs</b> rather than NVSwitch all-to-all. Tensor parallelism across 8 GPUs would then go over PCIe (~64 GB/s), which is far too slow. They suit inference of models that fit on 1–2 GPUs, but not large-scale training.</div></details>
     <details class="qa"><summary>What's the practical limit on how many H100s you can put in a data hall?</summary><div class="ans"><b>Power and cooling</b>, not floor space. Each DGX H100 draws about 10 kW, so a 16K-GPU cluster is about 20 MW of IT load and about 25 MW of facility load at PUE 1.2. Many existing data centers can't deliver 40+ kW per rack, which is why new AI builds are designed around power and use liquid cooling for Blackwell-class racks.</div></details>
   </div>
 </section>
@@ -201,6 +227,23 @@
       <div><span><b>Power is the binding constraint.</b> NVL72-style racks make the scale-up domain bigger at about 120 kW per rack.</span></div>
     </div>
     <p class="start-hint">Next: <a href="../05-cluster-topology/index.html">05 · Cluster topology →</a> · Previous: <a href="../03-memory-hierarchy/index.html">← 03</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://www.nvidia.com/en-us/data-center/gb200-nvl72/" target="_blank" rel="noopener">NVIDIA GB200 NVL72</a>
+        <div class="meta">NVIDIA · product page 2024</div>
+        <p>A rack-scale NVLink domain: 72 Blackwell GPUs connected all-to-all by NVLink switches.</p><div class="num">Remember: 130 TB/s aggregate NVLink bandwidth</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    </div>
   </div>
 </section>
 

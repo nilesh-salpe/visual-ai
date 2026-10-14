@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GPU Failures at Scale</title>
 <link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
 <style>
   .xid { display: flex; flex-wrap: wrap; gap: 6px; }
   .xid button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 6px 10px; cursor: pointer; font: 600 13px 'JetBrains Mono', monospace; }
@@ -28,7 +29,7 @@
   <div class="inner">
     <div class="kicker">GPU for GenAI · 06</div>
     <h1>GPU failures:<br>at scale they are routine</h1>
-    <p class="sub">With 16,000 GPUs, something breaks every few hours. The question is how quickly you notice, how much work you lose and how fast you resume. This deck covers failure rates, failure types, why a single fault stops the whole job, checkpointing maths, and silent data corruption.</p>
+    <p class="sub">With 16,000 GPUs (graphics processing units), something breaks every few hours. The question is how quickly you notice, how much work you lose and how fast you resume. This deck covers failure rates, failure types, why a single fault stops the whole job, checkpointing maths, and silent data corruption.</p>
     <div class="toc" data-auto></div>
     <p class="start-hint">Press <kbd>→</kbd> or <kbd>Space</kbd> to begin.</p>
   </div>
@@ -50,8 +51,10 @@
       <div id="llBars" style="margin-top:14px"></div>
     </div>
     <p class="caption">Counts of unexpected interruptions by root cause. A further 47 interruptions were planned (466 in total). Only 3 needed significant manual intervention; automation handled the rest.</p>
-    <div class="takeaway">The GPU itself (faulty GPU, HBM3, SRAM, the GSP system processor and thermal issues) accounts for more than half of all interruptions. Plan as though hardware will fail during the run.</div>
+    <div class="takeaway">The GPU itself (faulty GPU, HBM3 (third-generation high-bandwidth memory), SRAM (static random-access memory, fast on-chip memory), the GSP (GPU System Processor) and thermal issues) accounts for more than half of all interruptions. Plan as though hardware will fail during the run.</div>
     <div class="cite">Llama Team, "The Llama 3 Herd of Models" (2024), Table 5. The paper lists Faulty GPU as 30.1% next to a count of 148; the counts are shown here.</div>
+  
+    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 166" role="img" aria-label="At 16K GPUs, failures are routine; the goal is to make each one cheap." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">fault</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">GPU, NIC, host,</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">software</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">detect</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">Xid errors,</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">timeouts, health</text><text x="198.4" y="137.0" text-anchor="middle" class="tm" style="font-size:11px">checks</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">stop job</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">one rank down</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">halts all</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">replace / restart</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">from last</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">checkpoint</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">resume</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">lost work = time</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">since checkpoint</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">At 16K GPUs, failures are routine; the goal is to make each one cheap.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -87,8 +90,8 @@
       <div class="legend"><span><i style="background:var(--d)"></i>usually hardware: drain the node</span><span><i style="background:var(--c)"></i>could be either</span><span><i style="background:var(--b)"></i>usually software / application</span></div>
     </div>
     <div class="grid4" style="margin-top:14px">
-      <div class="card d"><h3>Fail-stop</h3><p>GPU off the bus, uncorrectable ECC, node crash. Loud and easy to detect.</p></div>
-      <div class="card c"><h3>Network</h3><p>Link flaps, bad optics or cables, switch reboots. They show up as NCCL timeouts or hangs.</p></div>
+      <div class="card d"><h3>Fail-stop</h3><p>GPU off the bus, uncorrectable ECC (error-correcting code), node crash. Loud and easy to detect.</p></div>
+      <div class="card c"><h3>Network</h3><p>Link flaps, bad optics or cables, switch reboots. They show up as NCCL (NVIDIA Collective Communications Library) timeouts or hangs.</p></div>
       <div class="card b"><h3>Fail-slow</h3><p>Thermal throttling, degraded links, a slow host. No error at all, just a slower job.</p></div>
       <div class="card a"><h3>Silent (SDC)</h3><p>The arithmetic is wrong and nothing reports an error. The hardest to detect (slide 08).</p></div>
     </div>
@@ -128,7 +131,7 @@
         <div class="stat"><div class="num" id="sCost"></div><div class="lbl">GPU-hours wasted per day (16K GPUs)</div></div>
       </div>
     </div>
-    <div class="takeaway">Detect stragglers by timing each rank's compute and communication, for example with the NCCL flight recorder, per-rank step-time histograms, or comparing a rank's GEMM TFLOPS with its peers. Then evict the slow node like a dead one.</div>
+    <div class="takeaway">Detect stragglers by timing each rank's compute and communication, for example with the NCCL flight recorder, per-rank step-time histograms, or comparing a rank's GEMM (general matrix multiplication) TFLOPS (trillion floating-point operations per second) with its peers. Then evict the slow node like a dead one.</div>
   </div>
 </section>
 
@@ -158,7 +161,17 @@
         </div>
       </div>
     </div>
-    <div class="takeaway">Lowering δ is what moves the curve, and <b>async checkpointing</b> does that: snapshot the state to CPU memory in seconds, then write it to storage in the background. Then you can checkpoint every few minutes.</div>
+    <div class="takeaway">Lowering δ is what moves the curve, and <b>async checkpointing</b> does that: snapshot the state to CPU (central processing unit) memory in seconds, then write it to storage in the background. Then you can checkpoint every few minutes.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="Example">
+  <div class="inner">
+    <span class="qtag b5">Worked example</span>
+    <h2>Worked example: how often to checkpoint</h2>
+    <hr>
+    <p class="lede">Llama 3 405B: 419 unexpected interruptions in 54 days on 16,384 GPUs. Assume a checkpoint takes 5 minutes to write.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Job MTBF (mean time between failures) = 54 × 24 h ÷ 419 ≈ <b>3.1 h</b>.</li><li>Per-GPU MTBF ≈ 3.1 h × 16,384 ≈ <b>5.8 years</b>: each GPU is reliable; the fleet is not.</li><li>Young's approximation: interval ≈ √(2 × checkpoint cost × MTBF) = √(2 × 0.083 h × 3.1 h) ≈ <b>43 min</b>.</li><li>Expected loss per failure ≈ half an interval (22 min) plus restart time; faster checkpoints shorten the interval.</li></ol><div class="result">Checkpoint cost and failure rate together set the interval; cutting checkpoint time (async, in-memory) is the main lever.</div></div>
   </div>
 </section>
 
@@ -193,7 +206,7 @@
     <div class="label">08 · Silent errors</div>
     <h2>Silent data corruption: the GPU gives a wrong answer and reports nothing</h2>
     <hr>
-    <p class="lede">A defective ALU, a marginal voltage or an aging part can flip bits in a computation without triggering ECC. Training continues on bad numbers. Sometimes the loss spikes; sometimes the model just gets subtly worse.</p>
+    <p class="lede">A defective ALU (arithmetic logic unit), a marginal voltage or an aging part can flip bits in a computation without triggering ECC. Training continues on bad numbers. Sometimes the loss spikes; sometimes the model just gets subtly worse.</p>
     <div class="visual">
       <div class="controls" style="margin-top:0"><button class="btn primary" id="sdcGo">Inject SDC at step 600</button><button class="btn" id="sdcReset">Reset</button>
         <label class="ctl">Detector threshold (σ) <input type="range" id="sdcZ" min="2" max="8" step="0.5" value="4"> <output id="sdcZo"></output></label></div>
@@ -202,7 +215,7 @@
     </div>
     <div class="grid4" style="margin-top:12px">
       <div class="card a"><h3>Loss / grad-norm monitors</h3><p>Flag spikes against a rolling z-score, then roll back and skip the batch.</p></div>
-      <div class="card c"><h3>Cross-replica checks</h3><p>DP replicas should hold identical weights. Compare checksums periodically.</p></div>
+      <div class="card c"><h3>Cross-replica checks</h3><p>DP (data parallelism) replicas should hold identical weights. Compare checksums periodically.</p></div>
       <div class="card b"><h3>Deterministic replay</h3><p>Re-run the suspicious step on other hardware and diff the results.</p></div>
       <div class="card e"><h3>Known-answer tests</h3><p>Periodic GEMM tests with known answers, run during the job or in preflight.</p></div>
     </div>
@@ -216,12 +229,25 @@
     <h2>The node lifecycle in a well-run cluster</h2>
     <hr>
     <div class="flow">
-      <div class="card e"><h3>1 · Burn-in</h3><p>New nodes run multi-day stress tests (GEMM, HBM, NVLink, NCCL) to catch early failures before they join production.</p></div>
+      <div class="card e"><h3>1 · Burn-in</h3><p>New nodes run multi-day stress tests (GEMM, HBM (high-bandwidth memory), NVLink, NCCL) to catch early failures before they join production.</p></div>
       <div class="card a"><h3>2 · Preflight</h3><p>Before each job: <code>dcgmi diag</code>, an NCCL all-reduce check against expected busbw, a GEMM TFLOPS check, and ECC / row-remap counters.</p></div>
-      <div class="card b"><h3>3 · In-job monitoring</h3><p>Xid watchers, per-rank step-time telemetry, NIC counters, temperature and clocks. Automatic cordon on anomalies.</p></div>
+      <div class="card b"><h3>3 · In-job monitoring</h3><p>Xid watchers, per-rank step-time telemetry, NIC (network interface card) counters, temperature and clocks. Automatic cordon on anomalies.</p></div>
       <div class="card d"><h3>4 · Quarantine / RMA</h3><p>Failing nodes are drained, re-tested, repaired or sent back to the vendor. A node returns only after it passes burn-in again.</p></div>
     </div>
-    <div class="takeaway">"How would you design fault tolerance for a 10K-GPU training job?" Cover five layers: <b>prevent</b> (burn-in, preflight), <b>detect</b> (fast, per-rank), <b>contain</b> (cordon, spares), <b>recover</b> (async and in-memory checkpoints, warm restart), <b>verify</b> (SDC checks).</div>
+    <div class="takeaway">"How would you design fault tolerance for a 10K-GPU training job?" Cover five layers: <b>prevent</b> (burn-in, preflight), <b>detect</b> (fast, per-rank), <b>contain</b> (cordon, spares), <b>recover</b> (async and in-memory checkpoints, warm restart), <b>verify</b> (SDC (silent data corruption) checks).</div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Cluster MTBF = GPU MTBF ÷ N.</b> Double the GPUs, halve the time between failures.</li><li><b>Checkpoint interval ≈ √(2·C·MTBF).</b> Young's approximation.</li><li><b>Stragglers matter.</b> A slow GPU slows every synchronous step.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Waiting for hard failures only.</b> Silent data corruption gives wrong numbers with no error.</li><li><b>Restarting on the same bad node.</b> Drain and test before returning it to the pool.</li><li><b>Synchronous checkpoint writes.</b> They stall all GPUs for the whole write.</li></ul></div>
+    </div>
   </div>
 </section>
 
@@ -233,7 +259,7 @@
     <details class="qa"><summary>Your 4K-GPU job hangs at step 30,000 with no error. How do you debug it?</summary><div class="ans">A hang means some rank isn't entering, or isn't finishing, a collective. Steps: (1) Use the <b>NCCL flight recorder</b> or dumps to see which collective each rank is stuck in and which rank is missing. (2) Use <code>py-spy dump</code> on the stuck ranks for the Python stack. (3) Check that node's <code>dmesg</code> for Xid errors, NIC and link counters, and thermal throttling. (4) Look for a code-level cause, such as data-dependent control flow making ranks issue collectives in different orders. Then cordon the node and restart from checkpoint, with a shorter watchdog timeout in future.</div></details>
     <details class="qa"><summary>How often should you checkpoint a 16K-GPU run?</summary><div class="ans">Use Young/Daly: τ* ≈ √(2δM). With an MTBF of about 3 h and a 5-minute blocking checkpoint, τ* ≈ √(2 × 5 × 180) ≈ 42 minutes. With async checkpointing the stall drops to about 10–30 s, which gives τ* ≈ 10 minutes and much less lost work. Also check storage bandwidth: a 405B model with optimizer state is about 6 TB, so how fast you can write it (and spreading the writes across ranks) matters.</div></details>
     <details class="qa"><summary>What's the difference between fail-stop, fail-slow and silent failures?</summary><div class="ans"><b>Fail-stop</b>: the component dies and reports an error (Xid 79, uncorrectable ECC), so it's easy to detect and the response is restart. <b>Fail-slow</b>: it works, but degraded (throttling, link down-training), so the whole synchronous job slows and you need per-rank telemetry to find it. <b>Silent</b> (SDC): wrong results with no error. You need numerical monitors, cross-replica checksums and replay. Many teams consider SDC the most dangerous because it can damage the model without anyone noticing.</div></details>
-    <details class="qa"><summary>Why not just make training asynchronous so failures don't block everyone?</summary><div class="ans">Asynchronous or stale-gradient SGD hurts convergence and reproducibility at LLM scale. Synchronous data parallelism with large batches is the proven approach. The industry made synchronous training <em>resilient</em> instead: fast detection, hot spares and cheap checkpoints. There is research on elastic and partial-failure-tolerant training (for example dropping a DP replica for a few steps), but it isn't yet the default.</div></details>
+    <details class="qa"><summary>Why not just make training asynchronous so failures don't block everyone?</summary><div class="ans">Asynchronous or stale-gradient SGD (stochastic gradient descent) hurts convergence and reproducibility at LLM (large language model) scale. Synchronous data parallelism with large batches is the proven approach. The industry made synchronous training <em>resilient</em> instead: fast detection, hot spares and cheap checkpoints. There is research on elastic and partial-failure-tolerant training (for example dropping a DP replica for a few steps), but it isn't yet the default.</div></details>
   </div>
 </section>
 
@@ -249,6 +275,29 @@
       <div><span><b>Prevent, detect, contain, recover, verify</b>, with SDC as the silent risk that needs active checks.</span></div>
     </div>
     <p class="start-hint">Next: <a href="../07-heterogeneous-gpus/index.html">07 · Heterogeneous GPUs →</a> · Previous: <a href="../05-cluster-topology/index.html">← 05</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2402.15627" target="_blank" rel="noopener">MegaScale: Scaling Large Language Model Training to More Than 10,000 GPUs</a>
+        <div class="meta">Jiang et al. · NSDI 2024</div>
+        <p>Production training system at ByteDance: algorithm-system co-design plus diagnosis tools for stragglers and failures at 10,000+ GPU scale.</p><div class="num">Remember: 55.2% MFU (model floating-point-operation utilization, the share of peak compute spent on the model's math) on 12,288 GPUs (175B model), 1.34× Megatron-LM</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2102.11245" target="_blank" rel="noopener">Silent Data Corruptions at Scale</a>
+        <div class="meta">Dixit et al. · arXiv 2021</div>
+        <p>Meta's account of silent data corruption: defective silicon that returns wrong results without raising errors, how one case was debugged, and mitigations.</p></div>
+      <div class="paper-item"><a href="https://sigops.org/s/conferences/hotos/2021/papers/hotos21-s01-hochschild.pdf" target="_blank" rel="noopener">Cores that don't count</a>
+        <div class="meta">Hochschild et al. · HotOS 2021</div>
+        <p>Google's report that a few "mercurial" CPU cores in a large fleet silently compute wrong answers.</p></div>
+    </div>
   </div>
 </section>
 

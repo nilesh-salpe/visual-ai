@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GPU Cluster Topology</title>
 <link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
 <style>
   #ftSvg circle.ep { cursor: pointer; }
   .warn { color: var(--d); font-weight: 600; }
@@ -19,7 +20,7 @@
   <div class="inner">
     <div class="kicker">GPU for GenAI · 05</div>
     <h1>Cluster topology:<br>wiring 16,000 GPUs together</h1>
-    <p class="sub">Above about 8 GPUs, the network is the computer. This deck covers scale-up vs scale-out, fat trees and rails, the collective operations, why ring all-reduce works, and how TP, PP, DP and EP are placed onto the network.</p>
+    <p class="sub">Above about 8 GPUs (graphics processing units), the network is the computer. This deck covers scale-up vs scale-out, fat trees and rails, the collective operations, why ring all-reduce works, and how TP (tensor parallelism), PP (pipeline parallelism), DP (data parallelism) and EP (expert parallelism) are placed onto the network.</p>
     <div class="toc" data-auto></div>
     <p class="start-hint">Press <kbd>→</kbd> or <kbd>Space</kbd> to begin.</p>
   </div>
@@ -37,6 +38,8 @@
       <p class="readout" id="tierOut"></p>
     </div>
     <div class="takeaway">The rule of thumb: the chattiest parallelism goes on the fastest links. TP is synchronous on every layer, so it stays in the node. PP sends activations point-to-point between stages. DP all-reduces gradients once per step and can overlap that with the backward pass.</div>
+  
+    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Scale-up inside the node (NVLink), scale-out between nodes (InfiniBand or RoCE)." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">GPU</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">in an NVLink</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">domain</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">node</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">8 GPUs, NVSwitch</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">leaf switch</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">rail-optimized</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">spine</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">fat tree</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">cluster</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">16K GPUs</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Scale-up inside the node (NVLink), scale-out between nodes (InfiniBand or RoCE (remote direct memory access over Converged Ethernet)).</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -45,7 +48,7 @@
     <div class="label">02 · Network shape</div>
     <h2>Leaf-spine (fat tree): every endpoint is a few hops from every other</h2>
     <hr>
-    <p class="lede">NICs connect to <b>leaf</b> switches, and every leaf connects to every <b>spine</b>. If uplink capacity equals downlink capacity, the network is <b>non-blocking</b>: any half of the cluster can talk to the other half at full rate. Click two endpoints, then reduce the uplinks.</p>
+    <p class="lede">NICs (network interface cards) connect to <b>leaf</b> switches, and every leaf connects to every <b>spine</b>. If uplink capacity equals downlink capacity, the network is <b>non-blocking</b>: any half of the cluster can talk to the other half at full rate. Click two endpoints, then reduce the uplinks.</p>
     <div class="visual">
       <div class="controls" style="margin-top:0">
         <label class="ctl">Uplinks per leaf <input type="range" id="ftU" min="1" max="4" step="1" value="4"> <output id="ftUo"></output></label>
@@ -73,7 +76,7 @@
       <svg id="railSvg" viewBox="0 0 660 320" style="margin-top:12px" role="img" aria-label="Rail topology"></svg>
       <p class="readout" id="railOut"></p>
     </div>
-    <div class="takeaway">NCCL's <b>PXN</b> (PCIe × NVLink) uses this: to reach rail 3 on another node, GPU 0 first moves its data over NVLink to local GPU 3, which then sends it out on its own rail. The NVLink hop is nearly free, and the expensive spine hop is avoided.</div>
+    <div class="takeaway">NCCL (NVIDIA Collective Communications Library)'s <b>PXN</b> (PCIe (PCI (Peripheral Component Interconnect) Express, the standard expansion bus) × NVLink) uses this: to reach rail 3 on another node, GPU 0 first moves its data over NVLink to local GPU 3, which then sends it out on its own rail. The NVLink hop is nearly free, and the expensive spine hop is avoided.</div>
   </div>
 </section>
 
@@ -88,7 +91,7 @@
     <div class="visual"><svg id="collSvg" viewBox="0 0 660 250" role="img" aria-label="Collective before and after"></svg>
       <div class="infobox" id="collInfo" style="background:var(--panel-2);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:14px;color:var(--muted)"></div>
     </div>
-    <div class="takeaway">All-reduce = reduce-scatter + all-gather. FSDP and ZeRO-3 split this in two: they <b>all-gather</b> the weights before each layer and <b>reduce-scatter</b> the gradients after it, so each GPU only keeps its own shard.</div>
+    <div class="takeaway">All-reduce = reduce-scatter + all-gather. FSDP (Fully Sharded Data Parallel) and ZeRO-3 (ZeRO = Zero Redundancy Optimizer) split this in two: they <b>all-gather</b> the weights before each layer and <b>reduce-scatter</b> the gradients after it, so each GPU only keeps its own shard.</div>
   </div>
 </section>
 
@@ -120,7 +123,17 @@
       <svg id="costSvg" viewBox="0 0 660 300" style="margin-top:10px" role="img" aria-label="Collective cost vs N"></svg>
       <div class="legend"><span><i style="background:var(--a)"></i>ring</span><span><i style="background:var(--b)"></i>tree (pipelined, approx.)</span></div>
     </div>
-    <div class="takeaway">For large gradient buckets (hundreds of MB), ring is near optimal. For small, latency-sensitive collectives such as MoE dispatch, decode-time TP all-reduce or many-node all-reduce, trees or in-network reduction (SHARP) win. NCCL picks the algorithm automatically based on size and topology.</div>
+    <div class="takeaway">For large gradient buckets (hundreds of MB), ring is near optimal. For small, latency-sensitive collectives such as MoE (Mixture of Experts) dispatch, decode-time TP all-reduce or many-node all-reduce, trees or in-network reduction (SHARP (Scalable Hierarchical Aggregation and Reduction Protocol, in-network reduction on NVIDIA switches)) win. NCCL picks the algorithm automatically based on size and topology.</div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="Example">
+  <div class="inner">
+    <span class="qtag b5">Worked example</span>
+    <h2>Worked example: one all-reduce of gradients</h2>
+    <hr>
+    <p class="lede">An 8B-parameter model has 16 GB of BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats) gradients. Ring all-reduce over N = 8 participants sends 2(N − 1)/N × S per GPU.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Data per GPU: 2 × 7/8 × 16 GB = <b>28 GB</b>.</li><li>Inside one node over NVLink (450 GB/s): <b>62 ms</b>.</li><li>Across 8 nodes over 400 Gb/s NICs (50 GB/s): <b>560 ms</b>.</li><li>The bandwidth term barely changes with N (2(N−1)/N → 2), but the latency term grows with N, which is where trees win.</li></ol><div class="result">Put the chattiest parallelism (tensor) on NVLink and the bulk all-reduce (data) on the network, overlapped with compute.</div></div>
   </div>
 </section>
 
@@ -169,7 +182,7 @@
       <div class="card c"><h3>PP = 16 → across nodes</h3><p>Only activations are sent point-to-point between stages. Meta modified the schedule to reduce bubbles and balance memory.</p></div>
       <div class="card b"><h3>DP / FSDP outermost</h3><p>Gradient reduce-scatter overlaps with the backward pass. It is the most tolerant of the slower, oversubscribed links.</p></div>
     </div>
-    <div class="takeaway">The order (inner to outer) is TP → CP → PP → DP. The rank layout follows bandwidth needs: the innermost dimension gets the fastest links. CP (context parallel) was added to train on 128K-token sequences.</div>
+    <div class="takeaway">The order (inner to outer) is TP → CP (context parallelism) → PP → DP. The rank layout follows bandwidth needs: the innermost dimension gets the fastest links. CP (context parallel) was added to train on 128K-token sequences.</div>
     <div class="cite">Llama Team, "The Llama 3 Herd of Models" (2024), Table 4 and §3.3.2.</div>
   </div>
 </section>
@@ -200,16 +213,29 @@
   </div>
 </section>
 
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Ring all-reduce sends ≈ 2S per GPU.</b> Independent of N for large N.</li><li><b>Place TP inside the node.</b> Llama 3 405B: TP = 8, PP = 16, DP = 128 on 16,384 GPUs.</li><li><b>Rail-optimized networks.</b> GPU i of every node shares a leaf switch.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Ignoring latency at scale.</b> Ring latency grows linearly with N; small messages need trees.</li><li><b>TP across nodes.</b> Per-layer all-reduces over the network stall every step.</li><li><b>Expert parallel imbalance.</b> All-to-all waits for the busiest GPU.</li></ul></div>
+    </div>
+  </div>
+</section>
+
 <section class="slide" id="s-qa" data-chapter="Test yourself">
   <div class="inner">
     <div class="label">10 · Test yourself</div>
     <h2>Questions to test your understanding</h2>
     <hr>
-    <details class="qa"><summary>You have 1,024 H100s and a 70B model. How do you lay out the parallelism?</summary><div class="ans">Start with <b>TP=8 inside each node</b> on NVLink, which is enough to shard the layers and keep the GEMMs efficient. Add PP of 2–4 across nodes only if memory or activations require it, and run enough micro-batches to keep the bubble small. Put the rest into <b>DP with FSDP or ZeRO-1</b>: 1024 / (8 × 2) = 64 replicas. Check memory per GPU, the global batch size (DP × micro-batch × grad accumulation must stay within a good batch size), and that DP communication overlaps with backward. Then say what you would measure: MFU, exposed communication time, and bubble fraction.</div></details>
+    <details class="qa"><summary>You have 1,024 H100s and a 70B model. How do you lay out the parallelism?</summary><div class="ans">Start with <b>TP=8 inside each node</b> on NVLink, which is enough to shard the layers and keep the GEMMs (general matrix multiplications) efficient. Add PP of 2–4 across nodes only if memory or activations require it, and run enough micro-batches to keep the bubble small. Put the rest into <b>DP with FSDP or ZeRO-1</b>: 1024 / (8 × 2) = 64 replicas. Check memory per GPU, the global batch size (DP × micro-batch × grad accumulation must stay within a good batch size), and that DP communication overlaps with backward. Then say what you would measure: MFU (model floating-point-operation utilization, the share of peak compute spent on the model's math), exposed communication time, and bubble fraction.</div></details>
     <details class="qa"><summary>Why is ring all-reduce bandwidth-optimal, and when is it a bad choice?</summary><div class="ans">Every GPU sends and receives 2(N−1)/N × S, which is the lower bound for all-reduce, and all links are used in every step. But it takes 2(N−1) sequential steps, so the latency term grows linearly. At thousands of GPUs, or for small messages, that dominates. Hierarchical schemes (reduce inside the node, then a ring or tree across nodes), double binary trees, and in-network reduction (SHARP) handle that case.</div></details>
     <details class="qa"><summary>What does "rail-optimized" mean, and why do labs build networks that way?</summary><div class="ans">NIC i of every node connects to leaf (rail) i, so same-rank GPUs across nodes, which are exactly the DP and PP peers, are one switch hop apart. Most training traffic stays inside a rail and never touches the spine. Fewer spine ports are needed and tail latency is lower. Cross-rail traffic is routed over NVLink first (NCCL PXN).</div></details>
-    <details class="qa"><summary>InfiniBand vs RoCE: what's the trade-off?</summary><div class="ans"><b>InfiniBand</b> has lossless credit-based flow control, adaptive routing, SHARP in-network reduction and mature NCCL support, and it is a single-vendor ecosystem. <b>RoCE v2</b> runs RDMA over Ethernet, which is cheaper and more widely available, but it needs PFC/ECN tuning and congestion control, and ECMP hash collisions on large flows hurt it. Meta trained Llama 3 on RoCE and other labs use IB, so both work at scale. The newer Ultra Ethernet specification aims to close the gap.</div></details>
-    <details class="qa"><summary>What is an MoE all-to-all bottleneck, and how do you reduce it?</summary><div class="ans">Dispatch and combine move every token's hidden state to its experts' GPUs and back, which is bandwidth-heavy and latency-sensitive, and router skew creates hot GPUs. Mitigations: keep EP within the NVLink domain (8, or 72 on NVL72), limit how many nodes each token can be sent to, add load-balancing terms to the router, overlap communication with computation (for example micro-batch interleaving and DeepEP-style kernels), and compress the dispatch data to FP8.</div></details>
+    <details class="qa"><summary>InfiniBand vs RoCE: what's the trade-off?</summary><div class="ans"><b>InfiniBand</b> has lossless credit-based flow control, adaptive routing, SHARP in-network reduction and mature NCCL support, and it is a single-vendor ecosystem. <b>RoCE v2</b> runs RDMA (remote direct memory access) over Ethernet, which is cheaper and more widely available, but it needs PFC (priority flow control)/ECN (explicit congestion notification) tuning and congestion control, and ECMP (equal-cost multi-path routing) hash collisions on large flows hurt it. Meta trained Llama 3 on RoCE and other labs use IB (InfiniBand), so both work at scale. The newer Ultra Ethernet specification aims to close the gap.</div></details>
+    <details class="qa"><summary>What is an MoE all-to-all bottleneck, and how do you reduce it?</summary><div class="ans">Dispatch and combine move every token's hidden state to its experts' GPUs and back, which is bandwidth-heavy and latency-sensitive, and router skew creates hot GPUs. Mitigations: keep EP within the NVLink domain (8, or 72 on NVL72), limit how many nodes each token can be sent to, add load-balancing terms to the router, overlap communication with computation (for example micro-batch interleaving and DeepEP-style kernels), and compress the dispatch data to FP8 (8-bit floating point).</div></details>
   </div>
 </section>
 
@@ -225,6 +251,26 @@
       <div><span><b>MoE all-to-all is limited by the busiest GPU.</b> Keep EP in the NVLink domain and balance the router.</span></div>
     </div>
     <p class="start-hint">Next: <a href="../06-gpu-failures/index.html">06 · GPU failures →</a> · Previous: <a href="../04-inside-gpu-server/index.html">← 04</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2104.04473" target="_blank" rel="noopener">Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM</a>
+        <div class="meta">Narayanan et al. · SC 2021</div>
+        <p>Combines tensor, pipeline and data parallelism (PTD-P) with an interleaved pipeline schedule, placing tensor parallelism inside nodes.</p><div class="num">Remember: 1T parameters at 502 PFLOP (quadrillion floating-point operations)/s on 3,072 GPUs, 52% of peak</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+      <div class="paper-item"><a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/index.html" target="_blank" rel="noopener">NVIDIA Collective Communications Library (NCCL) documentation</a>
+        <div class="meta">NVIDIA · docs 2024</div>
+        <p>The library that implements all-reduce, all-gather, reduce-scatter, broadcast and all-to-all over NVLink and the network, choosing ring or tree algorithms.</p></div>
+    </div>
   </div>
 </section>
 
