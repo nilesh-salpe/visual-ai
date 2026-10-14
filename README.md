@@ -197,6 +197,7 @@ Deck content lives in [`content/`](content/) as Markdown (`deck.md`) plus each d
 pip install -r tools/requirements.txt
 python3 tools/build_decks.py        # content/ → <topic>/<slug>/index.html
 python3 tools/build_indexes.py      # notebook index and generated hub pages
+python3 tools/build_home.py         # landing pages: index.html (chooser), llm/, agents/
 python3 tools/build_site_extras.py  # glossary, reading lists, hub maps (run last)
 python3 tools/decks/acronyms.py lint */[0-9][0-9]-*/index.html   # every acronym explained at first use
 python3 tools/check_papers.py       # paper links and arXiv titles

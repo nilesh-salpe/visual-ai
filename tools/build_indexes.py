@@ -105,7 +105,7 @@ def arch_hub():
 </head>
 <body>
 <div class="hub">
-  <a class="brand" href="../index.html">← Visual AI</a>
+  <a class="brand" href="../llm/index.html">← Visual LLM</a>
   <div class="label" style="margin-top:28px">Visual guide · {len(ARCH_CARDS)} decks + {n_nb} Colab notebooks</div>
   <h1>The Modern LLM Architecture</h1>
   <p class="lede">What changed after the 2017 Transformer, and why: pre-norm and RMSNorm, RoPE, SwiGLU, MQA/GQA/MLA, decoder-only stacks, long-context methods, FlashAttention and Mixture of Experts. Every deck follows the 9-beat template, numbers are checked against the source papers and model configs, and each concept has a hands-on Colab notebook. Start with the <a href="../transformer/index.html">Attention Is All You Need</a> guide if the 2017 block is new to you.</p>
@@ -155,7 +155,7 @@ def post_hub():
 </head>
 <body>
 <div class="hub">
-  <a class="brand" href="../index.html">← Visual AI</a>
+  <a class="brand" href="../llm/index.html">← Visual LLM</a>
   <div class="label" style="margin-top:28px">Visual guide · {len(POST_CARDS)} decks + {n_nb} Colab notebooks</div>
   <h1>Post-training LLMs</h1>
   <p class="lede">How a pretrained model becomes an assistant: supervised fine-tuning, LoRA and QLoRA, reward models, RLHF with PPO, reward hacking, DPO and its relatives, RL with verifiable rewards (GRPO), and Constitutional AI. Every deck follows the 9-beat template, numbers are checked against the source papers, and most concepts have a hands-on Colab notebook.</p>
@@ -201,7 +201,7 @@ def evals_hub():
 </head>
 <body>
 <div class="hub">
-  <a class="brand" href="../index.html">← Visual AI</a>
+  <a class="brand" href="../llm/index.html">← Visual LLM</a>
   <div class="label" style="margin-top:28px">Visual guide · {len(EVAL_CARDS)} decks + {n_nb} Colab notebooks</div>
   <h1>Evaluating LLMs</h1>
   <p class="lede">What an eval score really measures and how much to trust it: benchmark design and failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases, and arena ratings. Every deck follows the 9-beat template, numbers are checked against the source papers, and the statistics have hands-on Colab notebooks.</p>
@@ -251,7 +251,7 @@ def dist_hub():
 </head>
 <body>
 <div class="hub">
-  <a class="brand" href="../index.html">← Visual AI</a>
+  <a class="brand" href="../llm/index.html">← Visual LLM</a>
   <div class="label" style="margin-top:28px">Visual guide · {len(DIST_CARDS)} decks + {n_nb} Colab notebooks</div>
   <h1>Distributed training &amp; reliability</h1>
   <p class="lede">How frontier models are trained across thousands of GPUs: data, sharded, tensor, sequence, pipeline, context and expert parallelism, activation recomputation, mixed precision and FP8, 4D layouts, and keeping a months-long run alive. Every deck follows the 9-beat template and numbers are checked against the source papers.</p>
@@ -287,7 +287,7 @@ def topic_hub(folder, title, label, lede, nb_index, nb_blurb, cards, sources):
 </head>
 <body>
 <div class="hub">
-  <a class="brand" href="../index.html">← Visual AI</a>
+  <a class="brand" href="../llm/index.html">← Visual LLM</a>
   <div class="label" style="margin-top:28px">Visual guide · {len(cards)} decks + {n_nb} Colab notebooks</div>
   <h1>{title}</h1>
   <p class="lede">{lede}</p>

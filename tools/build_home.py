@@ -1,0 +1,120 @@
+"""Landing pages: the root chooser (index.html), the LLM guide (llm/index.html) and the agents guide (agents/index.html).
+
+Card text is written without acronym expansions; build_site_extras.py expands each acronym at its first use per page.
+Run before build_site_extras.py:
+    python3 tools/build_home.py
+"""
+import glob, html, os
+
+REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
+    ('Foundations', [
+        ('math', 'Foundations · 10 decks + 6 Colab notebooks', 'Math for LLMs and neural networks', 'Vectors, matrices, SVD and low rank, the chain rule, probability and sampling, maximum likelihood, entropy and KL, stable softmax, optimization and floating point.', ['dot products', 'backprop', 'KL', 'softmax']),
+        ('nn-fundamentals', 'Foundations · 10 decks + 7 Colab notebooks', 'Neural network fundamentals for LLMs', 'MLPs, activations, backpropagation, losses, AdamW and schedules, initialization, normalization and residuals, regularization, embeddings and a first language model.', ['backprop', 'AdamW', 'init', 'embeddings']),
+    ]),
+    ('Hardware', [
+        ('gpu', 'Topic · 8 decks', 'GPU for GenAI', 'What a GPU is, why AI runs on it, the memory hierarchy, servers, clusters, failures, mixed fleets and sharing.', ['roofline', 'NVLink', 'all-reduce', 'MIG']),
+    ]),
+    ('The model', [
+        ('transformer', 'Paper · 14 decks', 'Attention Is All You Need', 'The original Transformer paper, explained visually: the problem each piece solves and the core idea behind it, checked against arXiv v7.', ['self-attention', 'multi-head', 'positional encoding', 'results']),
+        ('tokenization', 'Topic · 10 decks + playground', 'Tokenization for LLMs', 'How text becomes token ids: BPE, byte-level BPE, WordPiece, unigram LM and SentencePiece, plus vocabulary trade-offs, multilingual cost and quirks. Includes a live tokenizer playground.', ['BPE', 'tiktoken', 'SentencePiece', 'playground']),
+        ('architecture', 'Topic · 11 decks + 10 Colab notebooks', 'The Modern LLM Architecture', 'What changed after 2017: pre-norm and RMSNorm, RoPE, SwiGLU, MQA/GQA/MLA, decoder-only stacks, long context (RoPE scaling, sliding window), FlashAttention internals and Mixture of Experts.', ['RoPE', 'GQA', 'FlashAttention', 'MoE']),
+    ]),
+    ('Data and training', [
+        ('pretraining-data', 'Topic · 10 decks + 6 Colab notebooks', 'Web crawling and pretraining data', 'How crawlers work and stay polite, robots.txt and consent, text extraction, quality filtering, MinHash deduplication, PII and safety filtering, data mixtures and the C4 → FineWeb → Llama 3 pipelines.', ['crawler', 'robots.txt', 'MinHash', 'FineWeb']),
+        ('distributed', 'Topic · 11 decks + 8 Colab notebooks', 'Distributed training &amp; reliability', 'Data, sharded (ZeRO/FSDP), tensor, pipeline, context and expert parallelism, activation recomputation, mixed precision and FP8, 4D layouts, checkpointing and loss spikes.', ['FSDP', 'pipeline', 'ring attention', 'FP8']),
+        ('post-training', 'Topic · 9 decks + 8 Colab notebooks', 'Post-training LLMs', 'SFT, LoRA and QLoRA, reward models, RLHF with PPO, reward hacking, DPO and KTO, RL with verifiable rewards (GRPO, DeepSeek-R1), and Constitutional AI.', ['RLHF', 'DPO', 'GRPO', 'LoRA']),
+    ]),
+    ('Serving and evaluation', [
+        ('inference', 'Topic · 10 decks + 12 Colab notebooks', 'LLM Inference and Serving', 'Prefill vs decode, KV cache, continuous batching, chunked prefill, PagedAttention, speculative decoding, quantization, tensor parallelism, disaggregation, with hands-on notebooks.', ['KV cache', 'vLLM', 'speculative', 'Colab']),
+        ('evals', 'Topic · 7 decks + 4 Colab notebooks', 'Evaluating LLMs', 'What a score measures, benchmark failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases and arena ratings.', ['pass@k', 'error bars', 'LLM judge', 'Arena']),
+    ]),
+]
+
+AGENT_SECTIONS = [  # same shape as LLM_SECTIONS; empty until the first agent topic ships
+]
+AGENT_PLANNED = ['What an agent is: an LLM in a loop', 'Tool calling and function schemas', 'ReAct: interleaving reasoning and actions', 'Planning and task decomposition',
+                 'Memory: context, retrieval and long-term stores', 'Retrieval for agents', 'MCP and tool ecosystems', 'Multi-agent patterns', 'Computer and browser use',
+                 'Evaluating agents', 'Reliability and safety: prompt injection, sandboxing, human oversight', 'Cost and latency of agent loops']
+
+PAGE = '''<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+<link rel="stylesheet" href="{up}shared/deck.css">
+<style>body {{ overflow-y: auto; }} .sec {{ margin: 30px 0 4px; font: 700 12px 'JetBrains Mono', monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--a); }} .hub-card.planned {{ opacity: .72; cursor: default; }} .hub-card.big h3 {{ font-size: 26px; }} .hub-card.big {{ padding: 26px; }}</style>
+</head>
+<body>
+<div class="hub">
+{body}
+</div>
+</body>
+</html>
+'''
+
+
+def n_decks(folder):
+    return len(glob.glob(os.path.join(REPO, folder, '[0-9][0-9]-*', 'index.html')))
+
+
+def card(folder, label, title, blurb, tags, up='../'):
+    t = ''.join(f'<span>{x}</span>' for x in tags)
+    return f'<a class="hub-card" href="{up}{folder}/index.html"><div class="n">{label}</div><h3>{title}</h3><p>{blurb}</p><div class="tags">{t}</div></a>'
+
+
+def sections_html(sections):
+    return ''.join(f'\n  <div class="sec">{name}</div>\n  <div class="hub-grid">\n    ' + '\n    '.join(card(*c) for c in cards) + '\n  </div>' for name, cards in sections)
+
+
+def links(up):
+    return f'<p style="margin:6px 0 0;display:flex;gap:10px;flex-wrap:wrap"><a class="btn" href="{up}glossary/index.html">🔤 Glossary of acronyms</a><a class="btn" href="{up}build-it/index.html">🛠 All Colab notebooks</a></p>'
+
+
+def llm_page():
+    topics = sum(len(c) for _, c in LLM_SECTIONS); decks = sum(n_decks(c[0]) for _, cs in LLM_SECTIONS for c in cs)
+    body = f'''  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="label" style="margin-top:28px">Visual LLM · {topics} topics · {decks} decks</div>
+  <h1>How large language models work</h1>
+  <p class="lede">Interactive slide decks on LLM systems, from the math and hardware underneath to architecture, data, training, serving and evaluation. Each topic is a folder, and each subtopic is a deck inside it.</p>
+  {links('../')}{sections_html(LLM_SECTIONS)}
+  <p style="margin-top:28px"><a class="btn" href="../agents/index.html">Next: Visual Agents →</a></p>'''
+    return PAGE.format(title='Visual LLM', up='../', body=body)
+
+
+def agents_page():
+    if AGENT_SECTIONS:
+        content = sections_html(AGENT_SECTIONS)
+    else:
+        items = '\n    '.join(f'<div class="hub-card planned"><div class="n">Planned</div><h3>{html.escape(t)}</h3></div>' for t in AGENT_PLANNED)
+        content = f'\n  <div class="sec">In preparation · draft outline</div>\n  <div class="hub-grid">\n    {items}\n  </div>'
+    body = f'''  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="label" style="margin-top:28px">Visual Agents</div>
+  <h1>How LLM agents work</h1>
+  <p class="lede">Interactive slide decks on agentic systems built on LLMs: tool use, planning, memory, retrieval, multi-agent patterns, evaluation and safety. They build on the <a href="../llm/index.html">Visual LLM</a> guide and link back to it.</p>
+  {links('../')}{content}
+  <p style="margin-top:28px"><a class="btn" href="../llm/index.html">← Visual LLM</a></p>'''
+    return PAGE.format(title='Visual Agents', up='../', body=body)
+
+
+def root_page():
+    llm_decks = sum(n_decks(c[0]) for _, cs in LLM_SECTIONS for c in cs)
+    agent_decks = sum(n_decks(c[0]) for _, cs in AGENT_SECTIONS for c in cs)
+    body = f'''  <div class="label">Visual AI</div>
+  <h1>AI concepts, explained visually</h1>
+  <p class="lede">Interactive slide decks and hands-on Colab notebooks that explain how modern AI systems work. Pick a guide.</p>
+  <div class="hub-grid" style="margin-top:22px">
+    <a class="hub-card big" href="llm/index.html"><div class="n">Visual LLM · {sum(len(c) for _, c in LLM_SECTIONS)} topics · {llm_decks} decks</div><h3>Large language models</h3><p>Math and neural-network foundations, GPUs, the Transformer and modern architectures, tokenization, pretraining data, distributed training, post-training, inference and evaluation.</p><div class="tags"><span>Transformer</span><span>KV cache</span><span>RLHF</span><span>FSDP</span></div></a>
+    <a class="hub-card big" href="agents/index.html"><div class="n">Visual Agents · {f"{agent_decks} decks" if agent_decks else "in preparation"}</div><h3>LLM agents</h3><p>Agentic systems built on LLMs: tool calling, reasoning-action loops, planning, memory and retrieval, multi-agent patterns, evaluation and safety.</p><div class="tags"><span>tool use</span><span>ReAct</span><span>memory</span><span>MCP</span></div></a>
+  </div>
+  {links('')}'''
+    return PAGE.format(title='Visual AI', up='', body=body)
+
+
+if __name__ == '__main__':
+    for path, page in [('index.html', root_page()), ('llm/index.html', llm_page()), ('agents/index.html', agents_page())]:
+        os.makedirs(os.path.dirname(os.path.join(REPO, path)) or REPO, exist_ok=True)
+        open(os.path.join(REPO, path), 'w').write(page)
+        print('wrote', path)

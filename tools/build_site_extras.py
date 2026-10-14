@@ -1,6 +1,6 @@
 """Site-wide extras: glossary page, per-topic reading lists, and a "big picture" map on each topic hub.
 
-Run after the deck generators and tools/build_indexes.py:
+Run after the deck generators, tools/build_indexes.py and tools/build_home.py:
     python3 tools/build_site_extras.py
 Reading lists are collected from the Key papers slide of every deck, so they never drift from the decks.
 Hub pages get a block between <!--x:map--> markers (replaced on every run).
@@ -183,5 +183,6 @@ if __name__ == '__main__':
         print(f'{folder}: reading list with {n} entries, hub map updated')
     print(f'glossary: {glossary()} terms')
     link_glossary_from_home()
-    expand_page('index.html')
+    for page in ['index.html', 'llm/index.html', 'agents/index.html']:
+        expand_page(page)
     expand_page('build-it/index.html')
