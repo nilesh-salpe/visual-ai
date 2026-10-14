@@ -86,6 +86,9 @@
   "ECN": {
    "exp": "explicit congestion notification"
   },
+  "EM": {
+   "exp": "expectation-maximization"
+  },
   "EOS": {
    "exp": "end of sequence"
   },
@@ -100,6 +103,9 @@
   },
   "FA3": {
    "exp": "FlashAttention-3"
+  },
+  "FFBS": {
+   "exp": "forward-filtering backward-sampling"
   },
   "FFN": {
    "exp": "feed-forward network"
@@ -422,6 +428,9 @@
   "SE": {
    "exp": "standard error"
   },
+  "SEP": {
+   "exp": "separator token"
+  },
   "SFT": {
    "exp": "supervised fine-tuning"
   },
@@ -682,6 +691,21 @@
   "LoRAX",
   "ByteNet",
   "ConvS2S",
-  "HBM3e"
+  "HBM3e",
+  "ACL",
+  "TACL",
+  "SentencePiece",
+  "WordPiece",
+  "WordPieces",
+  "ByT5",
+  "AB",
+  "ABC",
+  "BLOCK",
+  "EIGHTH",
+  "LOWER",
+  "ONE",
+  "HELLO",
+  "SolidGoldMagikarp",
+  "KC"
  ]
 }

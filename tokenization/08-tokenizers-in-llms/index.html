@@ -15,7 +15,7 @@
   <div class="inner">
     <div class="kicker">Tokenization for LLMs · 08</div>
     <h1>Tokenizers in real LLMs</h1>
-    <p class="sub">What GPT-2, GPT-4, GPT-4o, Llama, BERT and T5 actually use: algorithm, vocabulary size, pre-tokenization rules and special tokens. Every row is checked against the model's paper or the tokenizer source.</p>
+    <p class="sub">What GPT-2, GPT-4, GPT-4o, Llama, BERT (Bidirectional Encoder Representations from Transformers) and T5 actually use: algorithm, vocabulary size, pre-tokenization rules and special tokens. Every row is checked against the model's paper or the tokenizer source.</p>
     <div class="ps">
       <div class="p"><b>What is the problem?</b>Every model family ships its own tokenizer, so token counts, costs and behaviour differ, and ids mean nothing outside their own model.</div>
       <div class="c"><b>Core idea</b>A tokenizer is part of the model: a vocabulary (merges or scored pieces), a pre-tokenization rule, normalization, and special tokens, all frozen at training time.</div>
@@ -73,11 +73,13 @@
     <h2>What a tokenizer actually consists of</h2>
     <hr>
     <div class="grid2">
-      <div class="card a"><h3>Vocabulary</h3><p>BPE merge ranks (tiktoken: about 100K–200K byte sequences with ranks), or scored pieces (a SentencePiece unigram model).</p></div>
+      <div class="card a"><h3>Vocabulary</h3><p>BPE (byte-pair encoding) merge ranks (tiktoken: about 100K–200K byte sequences with ranks), or scored pieces (a SentencePiece unigram model).</p></div>
       <div class="card b"><h3>Pre-tokenization</h3><p>A regex or rule that splits text into chunks before subword merging: words with their leading space, digit groups, punctuation.</p></div>
-      <div class="card c"><h3>Normalization</h3><p>Optional Unicode normalization (SentencePiece defaults to NFKC). Byte-level BPE keeps raw bytes.</p></div>
+      <div class="card c"><h3>Normalization</h3><p>Optional Unicode normalization (SentencePiece defaults to NFKC (Unicode Normalization Form KC (compatibility composition))). Byte-level BPE keeps raw bytes.</p></div>
       <div class="card e"><h3>Special tokens</h3><p>Reserved ids for document boundaries, padding, fill-in-the-middle or chat structure, never produced from ordinary text.</p></div>
     </div>
+
+    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="All four parts must match the ones used in training." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">normalizer</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">e.g. NFKC or none</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">pre-tokenizer</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">regex split</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">model</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">merges or pieces +</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">ids</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">special tokens</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">reserved ids</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">post-processor</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">add BOS, templates</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">All four parts must match the ones used in training.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -90,11 +92,11 @@
       <table class="tbl">
         <tr><th>Model</th><th>Algorithm</th><th>Vocabulary</th><th>Notable rules</th><th>Source</th></tr>
         <tr><td>GPT-2</td><td>Byte-level BPE</td><td>50,257</td><td>256 bytes + 50,000 merges + &lt;|endoftext|&gt;; no merges across character categories</td><td>GPT-2 §2.2; tiktoken</td></tr>
-        <tr><td>GPT-4 (cl100k_base)</td><td>Byte-level BPE</td><td>100,277 ids</td><td>Numbers split into ≤3-digit groups; FIM special tokens</td><td>tiktoken source</td></tr>
+        <tr><td>GPT-4 (cl100k_base)</td><td>Byte-level BPE</td><td>100,277 ids</td><td>Numbers split into ≤3-digit groups; FIM (fill-in-the-middle) special tokens</td><td>tiktoken source</td></tr>
         <tr><td>GPT-4o (o200k_base)</td><td>Byte-level BPE</td><td>200,019 ids</td><td>Different regex and merges; ≤3-digit number groups</td><td>tiktoken source</td></tr>
-        <tr><td>Llama 1 / 2</td><td>BPE via SentencePiece</td><td>32K</td><td>Numbers split into <b>individual digits</b>; bytes for unknown UTF-8 characters</td><td>Llama 2 §2.2</td></tr>
+        <tr><td>Llama 1 / 2</td><td>BPE via SentencePiece</td><td>32K</td><td>Numbers split into <b>individual digits</b>; bytes for unknown UTF-8 (UTF = Unicode Transformation Format) characters</td><td>Llama 2 §2.2</td></tr>
         <tr><td>Llama 3</td><td>BPE (tiktoken-based)</td><td>128K</td><td>100K tiktoken tokens + 28K non-English tokens</td><td>Llama 3 §3.2</td></tr>
-        <tr><td>BERT</td><td>WordPiece</td><td>30,000</td><td>[CLS] starts every sequence; [SEP] separates segments</td><td>BERT §3</td></tr>
+        <tr><td>BERT</td><td>WordPiece</td><td>30,000</td><td>[CLS (classification token)] starts every sequence; [SEP (separator token)] separates segments</td><td>BERT §3</td></tr>
         <tr><td>T5</td><td>SentencePiece (wordpieces)</td><td>32,000</td><td>Shared input/output vocabulary; covers EN, DE, FR, RO</td><td>T5 §3.1.3</td></tr>
       </table>
     </div>
@@ -134,6 +136,17 @@
   </div>
 </section>
 
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: same text, three tokenizers</h2>
+    <hr>
+    <p class="lede">"Tokenizers turn text into integers: 12345, naïve café 👋 and def f(x): return x"</p>
+    <div class="example"><h4>Worked example</h4><ol><li>GPT-2: <b>22</b> tokens; cl100k_base: <b>23</b>; o200k_base: <b>23</b>.</li><li>Code "for i in range(10):
+    print(i)": GPT-2 15 tokens vs cl100k_base 11: newer vocabularies merge runs of spaces.</li><li>"12345678": 3 tokens in all three; Llama 2 instead splits every digit (8 tokens).</li><li><|endoftext|> is id 50256 in GPT-2 and 100257 in cl100k_base: the same string means different ids.</li></ol><div class="result">Token counts, digit handling and special ids differ by tokenizer; a model is only correct with its own.</div></div>
+  </div>
+</section>
+
 <section class="slide" id="s-why" data-chapter="Why">
   <div class="inner">
     <span class="qtag b6">6 · Why it works</span>
@@ -143,7 +156,7 @@
       <div class="card a"><h3>Different data</h3><p>Tokenizers are trained on their model's data mix. More code and multilingual text in training produces tokens for those.</p></div>
       <div class="card b"><h3>Different goals</h3><p>Splitting digits individually (Llama) or into groups of three (cl100k/o200k) gives numbers a consistent structure. GPT-2's unbounded digit chunks don't.</p></div>
       <div class="card c"><h3>Different eras</h3><p>Vocabularies grew from about 30K (BERT, T5, Llama 2) to 100K–200K (GPT-4, Llama 3, GPT-4o) as models grew and multilingual use mattered more.</p></div>
-      <div class="card e"><h3>Tooling</h3><p>SentencePiece (raw text, ▁) and tiktoken (byte-level BPE, regex pre-split) are the two families most LLMs build on.</p></div>
+      <div class="card e"><h3>Tooling</h3><p>SentencePiece (raw text, ▁) and tiktoken (byte-level BPE, regex pre-split) are the two families most LLMs (large language models) build on.</p></div>
     </div>
   </div>
 </section>
@@ -168,6 +181,19 @@
       <p class="qq">"o200k_base is cl100k_base with more tokens added."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">It is a <b>separate encoding</b>: its own merge ranks and its own pre-tokenization pattern (tiktoken source).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>GPT-2: 50,257 = 256 + 50,000 + 1.</b> Bytes + merges + <|endoftext|>.</li><li><b>Llama 2 splits digits.</b> Every number is one token per digit.</li><li><b>Count with the real tokenizer.</b> Estimates from characters can be far off for code and non-English text.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Swapping tokenizers.</b> Ids index the embedding table; a different tokenizer scrambles the input.</li><li><b>Special tokens from user text.</b> Literal "<|endoftext|>" in input must not become the special id.</li><li><b>Assuming same family, same tokenizer.</b> Llama 2 (32K SentencePiece) and Llama 3 (128K tiktoken-based) differ.</li></ul></div>
     </div>
   </div>
 </section>
@@ -215,6 +241,32 @@
     <div class="explain"><b>Say it in 30 seconds</b><p>GPT-2 uses byte-level BPE with 50,257 tokens; GPT-4's cl100k_base and GPT-4o's o200k_base are larger byte-level BPE encodings that split numbers into groups of up to three digits. Llama 1 and 2 use SentencePiece BPE with 32K tokens and individual digits; Llama 3 uses 128K tokens (100K from tiktoken plus 28K multilingual). BERT uses 30,000 WordPieces and T5 32,000 SentencePiece pieces. Special tokens are reserved ids, and ids only make sense with the model's own tokenizer.</p></div>
     <div class="recap"><div><span><b>Problem:</b> tokenizers differ per model, so counts, costs and ids don't transfer.</span></div><div><span><b>Core idea:</b> tokenizer = vocabulary + pre-tokenization + normalization + special tokens, frozen with the model.</span></div></div>
     <p class="start-hint">Next: <a href="../09-multilingual-cost/index.html">09 · Multilingual cost →</a> · Previous: <a href="../07-vocabulary-size/index.html">← 07</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf" target="_blank" rel="noopener">Language Models are Unsupervised Multitask Learners (GPT-2)</a>
+        <div class="meta">Radford et al. · OpenAI 2019</div>
+        <p>Decoder-only language model that moved layer normalization to the input of each sub-block (pre-norm) and added a final norm.</p><div class="num">Remember: context 1,024 tokens, vocabulary 50,257</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2307.09288" target="_blank" rel="noopener">Llama 2: Open Foundation and Fine-Tuned Chat Models</a>
+        <div class="meta">Touvron et al. · arXiv 2023</div>
+        <p>Adds grouped-query attention for the 34B and 70B models and documents the chat post-training: SFT (supervised fine-tuning), two reward models and iterative RLHF (reinforcement learning from human feedback) with rejection sampling and PPO (Proximal Policy Optimization).</p><div class="num">Remember: 27,540 SFT annotations; over 1M human comparisons</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT, rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1810.04805" target="_blank" rel="noopener">BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding</a>
+        <div class="meta">Devlin et al. · NAACL 2019</div>
+        <p>Encoder-only model pretrained with masked language modelling; bidirectional context, but not built to generate text.</p><div class="num">Remember: masks 15% of tokens</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1910.10683" target="_blank" rel="noopener">Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer (T5)</a>
+        <div class="meta">Raffel et al. · JMLR 2020</div>
+        <p>Systematic study of encoder-decoder pretraining with a span-corruption objective, framing every task as text-to-text.</p><div class="num">Remember: corrupts 15% of tokens</div></div>
+    </div>
   </div>
 </section>
 
