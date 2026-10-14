@@ -6,7 +6,6 @@
 <title>LLM-as-Judge</title>
 <link rel="stylesheet" href="../../shared/deck.css">
 <link rel="stylesheet" href="../../shared/learn.css">
-
 </head>
 <body data-deck="LLM-as-judge" data-home="../index.html" data-home-label="Evals">
 
@@ -28,7 +27,7 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>Agreement with people</h2>
     <hr>
-    <div class="grid3">
+<div class="grid3">
       <div class="card a"><h3>As good as another human</h3><p>MT-Bench (MT = machine translation): strong LLM judges like GPT-4 "match both controlled and crowdsourced human preferences well, achieving over 80% agreement, the same level of agreement between humans".</p></div>
       <div class="card b"><h3>Fast and cheap</h3><p>A judge model can grade thousands of answers per checkpoint, so open-ended quality can be tracked during development.</p></div>
       <div class="card e"><h3>Explainable</h3><p>Judges can be asked to reason before deciding, which makes their verdicts easier to audit.</p></div>
@@ -41,7 +40,7 @@
     <span class="qtag b2">2 · Limitation</span>
     <h2>Three documented biases</h2>
     <hr>
-    <div class="grid3">
+<div class="grid3">
       <div class="card d"><h3>Position bias</h3><p>Favouring whichever answer is shown first (or second). With the answers swapped, Claude-v1 gave a consistent verdict only 23.8% of the time with the default prompt, GPT-3.5 46.2%, GPT-4 65.0%.</p></div>
       <div class="card b"><h3>Verbosity bias</h3><p>Favouring longer answers. MT-Bench's "repetitive list" attack (padding a list with rephrased duplicates) fooled Claude-v1 and GPT-3.5 91.3% of the time, GPT-4 8.7%.</p></div>
       <div class="card c"><h3>Self-enhancement bias</h3><p>Favouring answers written by the judge itself, or by similar models. A model shouldn't be the only judge of its own outputs.</p></div>
@@ -54,8 +53,8 @@
     <span class="qtag b3">3 · Your turn</span>
     <h2>Catch the bias</h2>
     <hr>
-    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
-    <div class="quiz">
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
       <p class="qq">You ask a judge "Is A or B better?" and it says A. You swap them, asking "Is B or A better?", and it says the first one again (now B). What happened?</p>
       <div class="opts">
       <button>A. The judge is consistent</button>
@@ -73,14 +72,13 @@
     <span class="qtag b4">4 · Core idea</span>
     <h2>Using a judge responsibly</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card a"><h3>Swap and aggregate</h3><p>Ask both orders; only count a win if the judge picks the same answer twice, otherwise call it a tie (the MT-Bench approach for pairwise comparisons).</p></div>
       <div class="card b"><h3>Control for length</h3><p>Length-controlled AlpacaEval predicts preferences while conditioning on the length difference, which raised its Spearman correlation with Chatbot Arena from 0.94 to 0.98.</p></div>
       <div class="card e"><h3>Use references for hard questions</h3><p>For maths and reasoning, judges can be fooled by wrong answers; giving the judge a reference solution helps.</p></div>
       <div class="card c"><h3>Calibrate against humans</h3><p>Check agreement on a human-labelled sample before trusting a judge on a new task, and re-check when the judge or the task changes.</p></div>
     </div>
-
-    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Swap positions, control for length, give references for hard questions, and never let a model grade itself alone." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">answers A, B</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">same prompt</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">judge (A, B)</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">first order</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">judge (B, A)</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">swapped</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">consistent?</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">win, else tie</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">length control</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">condition on</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">length</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Swap positions, control for length, give references for hard questions, and never let a model grade itself alone.</p></div><!--/x:glance-->
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Swap positions, control for length, give references for hard questions, and never let a model grade itself alone." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">answers A, B</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">same prompt</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">judge (A, B)</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">first order</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">judge (B, A)</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">swapped</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">consistent?</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">win, else tie</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">length control</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">condition on</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">length</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Swap positions, control for length, give references for hard questions, and never let a model grade itself alone.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -89,12 +87,13 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Position-swap test <span class="ill">simulation</span></h2>
     <hr>
-    <p class="lede">A simulated judge that adds a bias (in log-odds) to whichever answer is shown first. Ask about 500 answer pairs twice, swapping positions. Watch consistency fall as bias grows. Notebook 04 builds this test.</p>
-    <div class="visual">
-      <div class="controls" style="margin-top:0"><label class="ctl">first-position bias <input type="range" id="jB" min="0" max="3" step="0.1" value="1"> <output id="jBo"></output></label><label class="ctl">judge noise <input type="range" id="jN" min="0.2" max="2" step="0.1" value="1"> <output id="jNo"></output></label></div>
-      <div id="jBars" style="margin-top:12px"></div>
-    </div>
-    <p class="caption">For reference, MT-Bench (default prompt): consistency GPT-4 65.0%, GPT-3.5 46.2%, Claude-v1 23.8%.</p>
+<p class="lede">A simulated judge that adds a bias (in log-odds) to whichever answer is shown first. Ask about 500 answer pairs twice, swapping positions. Watch consistency fall as bias grows. Notebook 04 builds this test.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">first-position bias <input type="range" id="jB" min="0" max="3" step="0.1" value="1"> <output id="jBo"></output></label><label class="ctl">judge noise <input type="range" id="jN" min="0.2" max="2" step="0.1" value="1"> <output id="jNo"></output></label></div>
+  <div id="jBars" style="margin-top:12px"></div>
+</div>
+
+<p class="caption">For reference, MT-Bench (default prompt): consistency GPT-4 65.0%, GPT-3.5 46.2%, Claude-v1 23.8%.</p>
   </div>
 </section>
 
@@ -103,8 +102,9 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Verbosity bias and length control</h2>
     <hr>
-    <div class="visual"><div id="vBars"></div><p class="caption">MT-Bench Table 3: failure rate of judges under the "repetitive list" attack on 23 answers (padding without new information).</p></div>
-    <div class="deep"><h4>How length control works</h4><p>Length-controlled AlpacaEval fits a model of the judge's preferences that includes the length difference between the two answers, then reports the win rate predicted with that length term set to zero: "what would the judge prefer if the answers were the same length?" This made the ranking agree better with human votes in Chatbot Arena (Spearman 0.94 → 0.98).</p></div>
+<div class="visual"><div id="vBars"></div><p class="caption">MT-Bench Table 3: failure rate of judges under the "repetitive list" attack on 23 answers (padding without new information).</p></div>
+
+<div class="deep"><h4>How length control works</h4><p>Length-controlled AlpacaEval fits a model of the judge's preferences that includes the length difference between the two answers, then reports the win rate predicted with that length term set to zero: "what would the judge prefer if the answers were the same length?" This made the ranking agree better with human votes in Chatbot Arena (Spearman 0.94 → 0.98).</p></div>
   </div>
 </section>
 
@@ -123,7 +123,7 @@
     <span class="qtag b6">6 · Why it works</span>
     <h2>Why judges work, and where they fail</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card a"><h3>Judging is easier than writing</h3><p>Comparing two answers is often easier than producing the best one, so a strong model can grade answers from comparable models reasonably well.</p></div>
       <div class="card e"><h3>Scales with automation</h3><p>Cheap enough to grade every checkpoint and every ablation.</p></div>
       <div class="card d"><h3>Biases are systematic</h3><p>Unlike random noise, position, length and self-preference push in consistent directions, so they can change rankings, and models can be tuned to exploit them.</p></div>
@@ -137,18 +137,18 @@
     <span class="qtag b7">7 · Misconceptions</span>
     <h2>Common misconceptions</h2>
     <hr>
-    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
-    <div class="quiz myth">
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
       <p class="qq">"80% agreement means the judge is right 80% of the time."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">It means it agrees with humans as often as humans agree with each other. Both can be wrong, and agreement varies by task.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"Asking once is enough if the judge is strong."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Even GPT-4 was position-consistent only 65% of the time in MT-Bench. Swap positions and aggregate.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"Longer answers winning means they're more helpful."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Judges have verbosity bias; length-controlled metrics agree better with human preference.</div>
@@ -174,8 +174,8 @@
     <span class="qtag b8">8 · Check yourself</span>
     <h2>Check yourself</h2>
     <hr>
-    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
-    <div class="quiz">
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
       <p class="qq">Which judge resisted MT-Bench's "repetitive list" verbosity attack best?</p>
       <div class="opts">
       <button>A. Claude-v1</button>
@@ -185,16 +185,17 @@
       </div>
       <div class="why"><b>GPT-4</b>: 8.7% failure vs 91.3% for Claude-v1 and GPT-3.5.</div>
     </div>
-    <div class="quiz ">
-      <p class="qq">Describe a protocol that removes position bias from pairwise judging.</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">Ask with both orders. Count a win only when the judge picks the same underlying answer both times; otherwise record a tie (or ask more times).</div>
-    </div>
-    <div class="quiz ">
-      <p class="qq">What does length-controlled AlpacaEval change, and what was the effect?</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">It conditions the judge's preference on the length difference and reports the length-neutral win rate. Correlation with Chatbot Arena rose from 0.94 to 0.98 (Spearman).</div>
-    </div>
+<div class="quiz ">
+  <p class="qq">Describe a protocol that removes position bias from pairwise judging.</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">Ask with both orders. Count a win only when the judge picks the same underlying answer both times; otherwise record a tie (or ask more times).</div>
+</div>
+
+<div class="quiz ">
+  <p class="qq">What does length-controlled AlpacaEval change, and what was the effect?</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">It conditions the judge's preference on the length difference and reports the length-neutral win rate. Correlation with Chatbot Arena rose from 0.94 to 0.98 (Spearman).</div>
+</div>
   </div>
 </section>
 
@@ -203,11 +204,17 @@
     <span class="qtag b9">9 · Key takeaway</span>
     <h2>Key takeaway</h2>
     <hr>
-    <div class="take-line">LLM judges agree with people about as often as people agree with each other, but they are biased by position, length and self-preference, so swap, length-control and calibrate.</div>
-    <div class="explain"><b>Say it in 30 seconds</b><p>Open-ended answers need a grader, and a strong model can do it: MT-Bench found GPT-4's verdicts agree with human preferences over 80 percent of the time, about the same as humans agree with each other. But judges have systematic biases. Swapping the two answers changed GPT-4's verdict a third of the time and Claude-v1's most of the time. Padding answers with repeated content fooled weaker judges over 90 percent of the time. And models may favour their own outputs. So ask in both orders and count disagreements as ties, control for length, as length-controlled AlpacaEval did to raise its correlation with Chatbot Arena from 0.94 to 0.98, give references for hard questions, and check agreement with humans.</p></div>
-    <div class="recap"><div><span><b>Problem:</b> open-ended answers need scalable grading.</span></div><div><span><b>Core idea:</b> LLM judges ≈ human agreement (>80%), but biased.</span></div><div><span><b>Controls:</b> position swap, length control, references, human calibration, no self-judging.</span></div></div>
-    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb" target="_blank" rel="noopener">04 · LLM judges and arena ratings</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
-    <p class="start-hint">Next: <a href="../07-arenas/index.html">07 · Arenas and ratings →</a> · Previous: <a href="../05-contamination/index.html">← 05</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Zheng et al. 2023, "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena" (>80% agreement; Table 2 position consistency; Table 3 "repetitive list" attack); Dubois et al. 2024, "Length-Controlled AlpacaEval" (Spearman 0.94 → 0.98 with Chatbot Arena).</p>
+<div class="take-line">LLM judges agree with people about as often as people agree with each other, but they are biased by position, length and self-preference, so swap, length-control and calibrate.</div>
+
+<div class="explain"><b>Say it in 30 seconds</b><p>Open-ended answers need a grader, and a strong model can do it: MT-Bench found GPT-4's verdicts agree with human preferences over 80 percent of the time, about the same as humans agree with each other. But judges have systematic biases. Swapping the two answers changed GPT-4's verdict a third of the time and Claude-v1's most of the time. Padding answers with repeated content fooled weaker judges over 90 percent of the time. And models may favour their own outputs. So ask in both orders and count disagreements as ties, control for length, as length-controlled AlpacaEval did to raise its correlation with Chatbot Arena from 0.94 to 0.98, give references for hard questions, and check agreement with humans.</p></div>
+
+<div class="recap"><div><span><b>Problem:</b> open-ended answers need scalable grading.</span></div><div><span><b>Core idea:</b> LLM judges ≈ human agreement (>80%), but biased.</span></div><div><span><b>Controls:</b> position swap, length control, references, human calibration, no self-judging.</span></div></div>
+
+<div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb" target="_blank" rel="noopener">04 · LLM judges and arena ratings</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+
+<p class="start-hint">Next: <a href="../07-arenas/index.html">07 · Arenas and ratings →</a> · Previous: <a href="../05-contamination/index.html">← 05</a> · <a href="../index.html">All decks</a></p>
+
+<p class="cite">Sources: Zheng et al. 2023, "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena" (>80% agreement; Table 2 position consistency; Table 3 "repetitive list" attack); Dubois et al. 2024, "Length-Controlled AlpacaEval" (Spearman 0.94 → 0.98 with Chatbot Arena).</p>
   </div>
 </section>
 

@@ -6,7 +6,6 @@
 <title>Error Bars and Comparing Models</title>
 <link rel="stylesheet" href="../../shared/deck.css">
 <link rel="stylesheet" href="../../shared/learn.css">
-
 </head>
 <body data-deck="Error bars and comparing models" data-home="../index.html" data-home-label="Evals">
 
@@ -28,15 +27,15 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>How wide is the error bar?</h2>
     <hr>
-    <p class="lede">95% confidence interval half-width for an accuracy-style score: 1.96·√(p(1−p)/n). Move the number of questions and the accuracy.</p>
-    <div class="visual">
-      <div class="controls" style="margin-top:0">
-        <label class="ctl">questions n <input type="range" id="eN" min="1.7" max="4.3" step="0.05" value="3"> <output id="eNo"></output></label>
-        <label class="ctl">accuracy <input type="range" id="eP" min="0.05" max="0.95" step="0.05" value="0.7"> <output id="ePo"></output></label>
-      </div>
-      <svg id="eSvg" viewBox="0 0 660 120" style="margin-top:10px" role="img" aria-label="Confidence interval"></svg>
-      <p class="readout" id="eOut"></p>
-    </div>
+<p class="lede">95% confidence interval half-width for an accuracy-style score: 1.96·√(p(1−p)/n). Move the number of questions and the accuracy.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0">
+    <label class="ctl">questions n <input type="range" id="eN" min="1.7" max="4.3" step="0.05" value="3"> <output id="eNo"></output></label>
+    <label class="ctl">accuracy <input type="range" id="eP" min="0.05" max="0.95" step="0.05" value="0.7"> <output id="ePo"></output></label>
+  </div>
+  <svg id="eSvg" viewBox="0 0 660 120" style="margin-top:10px" role="img" aria-label="Confidence interval"></svg>
+  <p class="readout" id="eOut"></p>
+</div>
   </div>
 </section>
 
@@ -45,7 +44,7 @@
     <span class="qtag b2">2 · Limitation</span>
     <h2>Three common statistical mistakes</h2>
     <hr>
-    <div class="grid3">
+<div class="grid3">
       <div class="card d"><h3>No error bars</h3><p>Reporting 71.3 vs 70.1 with no uncertainty invites over-reading a gap that may be noise.</p></div>
       <div class="card b"><h3>Ignoring clusters</h3><p>Ten questions about one passage, or one problem in ten languages, are not ten independent samples. Treating them as independent understates the error.</p></div>
       <div class="card c"><h3>Comparing separate intervals</h3><p>"The intervals overlap, so no difference" throws away the fact that both models answered the <b>same</b> questions, which a paired test exploits.</p></div>
@@ -58,8 +57,8 @@
     <span class="qtag b3">3 · Your turn</span>
     <h2>Is it a real improvement?</h2>
     <hr>
-    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
-    <div class="quiz">
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
       <p class="qq">Model B scores 2 points higher than model A on the same 1,000 questions. Each score alone has a 95% interval of about ±2.8 points. What is the right next step?</p>
       <div class="opts">
       <button>A. Conclude there is no difference because the intervals overlap</button>
@@ -77,14 +76,13 @@
     <span class="qtag b4">4 · Core idea</span>
     <h2>Four tools</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card a"><h3>Standard error (CLT)</h3><p>SE (standard error) = √( (1/n) · (1/(n−1)) Σ(sᵢ − μ̂)² ); 95% CI (confidence interval) = μ̂ ± 1.96·SE. Miller recommends this over bootstrapping as the default.</p></div>
       <div class="card b"><h3>Clustered SE</h3><p>Sum residuals within each cluster before squaring: SE = (1/n)·√(Σ<sub>c</sub>(Σ<sub>i∈c</sub>(sᵢ − μ̂))²). Report the cluster count next to the question count.</p></div>
       <div class="card e"><h3>Paired difference</h3><p>dᵢ = s<sup>A</sup>ᵢ − s<sup>B</sup>ᵢ; test mean(d) with SE = sd(d)/√n. Uses the shared question difficulty to cancel noise.</p></div>
       <div class="card c"><h3>Power analysis</h3><p>Questions needed to detect a gap δ (5% test, 80% power): n = ((1.96 + 0.84)·σ<sub>d</sub>/δ)². Halving δ needs 4× the questions.</p></div>
     </div>
-
-    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Treat every eval as a sample of questions." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">per-question scores</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">0/1 or graded</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">mean ± SE</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">CLT</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">clusters?</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">clustered SE if</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">grouped</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">compare models</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">paired differences</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">enough questions?</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">power analysis</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Treat every eval as a sample of questions.</p></div><!--/x:glance-->
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Treat every eval as a sample of questions." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">per-question scores</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">0/1 or graded</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">mean ± SE</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">CLT</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">clusters?</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">clustered SE if</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">grouped</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">compare models</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">paired differences</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">enough questions?</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">power analysis</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Treat every eval as a sample of questions.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -93,16 +91,17 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Paired vs unpaired <span class="ill">simulation</span></h2>
     <hr>
-    <p class="lede">Two models answer the same questions, simulated 120 times with notebook 02's model. The gap is real in every run. How often does each comparison notice it?</p>
-    <div class="visual">
-      <div class="controls" style="margin-top:0"><label class="ctl">true gap (log-odds) <input type="range" id="sG" min="0" max="0.4" step="0.05" value="0.2"> <output id="sGo"></output></label><label class="ctl">questions <input type="range" id="sN" min="200" max="4000" step="200" value="1000"> <output id="sNo"></output></label></div>
-      <div class="grid3" style="margin-top:14px">
-        <div class="stat"><div class="num" id="sD"></div><div class="lbl">average gap (points)</div></div>
-        <div class="stat"><div class="num" id="sP" style="color:var(--a)"></div><div class="lbl">detected, paired test</div></div>
-        <div class="stat"><div class="num" id="sU" style="color:var(--d)"></div><div class="lbl">detected, separate intervals</div></div>
-      </div>
-    </div>
-    <p class="caption">120 simulated evals per setting, run in your browser. Questions vary in difficulty and the two models tend to fail the same ones (75% shared randomness).</p>
+<p class="lede">Two models answer the same questions, simulated 120 times with notebook 02's model. The gap is real in every run. How often does each comparison notice it?</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">true gap (log-odds) <input type="range" id="sG" min="0" max="0.4" step="0.05" value="0.2"> <output id="sGo"></output></label><label class="ctl">questions <input type="range" id="sN" min="200" max="4000" step="200" value="1000"> <output id="sNo"></output></label></div>
+  <div class="grid3" style="margin-top:14px">
+    <div class="stat"><div class="num" id="sD"></div><div class="lbl">average gap (points)</div></div>
+    <div class="stat"><div class="num" id="sP" style="color:var(--a)"></div><div class="lbl">detected, paired test</div></div>
+    <div class="stat"><div class="num" id="sU" style="color:var(--d)"></div><div class="lbl">detected, separate intervals</div></div>
+  </div>
+</div>
+
+<p class="caption">120 simulated evals per setting, run in your browser. Questions vary in difficulty and the two models tend to fail the same ones (75% shared randomness).</p>
   </div>
 </section>
 
@@ -111,8 +110,9 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Clusters can triple the error</h2>
     <hr>
-    <div class="visual"><div id="cBars"></div><p class="caption">Miller 2024, Table 4 (Anthropic models on real evals): clustered vs naive standard errors on the same data.</p></div>
-    <div class="deep"><h4>Why clusters matter</h4><p>Questions sharing a passage (DROP, RACE) or a source problem (MGSM's translations) succeed or fail together. The effective number of independent samples is closer to the number of <b>clusters</b> than the number of questions. Miller: "clustered standard errors can be over 3X larger than naive standard errors". Ratios above: DROP 3.05, MGSM 1.88, RACE-H 1.10.</p></div>
+<div class="visual"><div id="cBars"></div><p class="caption">Miller 2024, Table 4 (Anthropic models on real evals): clustered vs naive standard errors on the same data.</p></div>
+
+<div class="deep"><h4>Why clusters matter</h4><p>Questions sharing a passage (DROP, RACE) or a source problem (MGSM's translations) succeed or fail together. The effective number of independent samples is closer to the number of <b>clusters</b> than the number of questions. Miller: "clustered standard errors can be over 3X larger than naive standard errors". Ratios above: DROP 3.05, MGSM 1.88, RACE-H 1.10.</p></div>
   </div>
 </section>
 
@@ -131,7 +131,7 @@
     <span class="qtag b6">6 · Why it works</span>
     <h2>Why this matters for decisions</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card a"><h3>Avoid chasing noise</h3><p>Without error bars, teams "optimize" towards random fluctuations and pick checkpoints by luck.</p></div>
       <div class="card e"><h3>Get more from the same eval</h3><p>Paired tests detect real gaps that unpaired comparisons miss, with no extra questions.</p></div>
       <div class="card b"><h3>Design better evals</h3><p>Power analysis tells you before building an eval whether it can detect the differences you care about.</p></div>
@@ -145,18 +145,18 @@
     <span class="qtag b7">7 · Misconceptions</span>
     <h2>Common misconceptions</h2>
     <hr>
-    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
-    <div class="quiz myth">
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
       <p class="qq">"Overlapping confidence intervals mean no significant difference."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Not for paired data. Two overlapping intervals can still hide a highly significant paired difference.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"More questions from the same passages give proportionally more precision."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Correlated questions add less information. Use clustered standard errors and count clusters.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"Bootstrapping is always needed for evals."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">For mean scores the central-limit-theorem standard error is standard and simpler; Miller recommends it as the default.</div>
@@ -182,27 +182,29 @@
     <span class="qtag b8">8 · Check yourself</span>
     <h2>Check yourself</h2>
     <hr>
-    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
-    <div class="quiz">
-      <p class="qq">Roughly what is the 95% CI half-width for 70% accuracy on 1,000 questions?</p>
-      <div class="opts">
-      <button>A. ±0.3 points</button>
-      <button>B. ±1 point</button>
-      <button data-ok>C. ±2.8 points</button>
-      <button>D. ±10 points</button>
-      </div>
-      <div class="why">1.96·√(0.7·0.3/1000) ≈ 0.028, so <b>±2.8 points</b>.</div>
-    </div>
-    <div class="quiz ">
-      <p class="qq">Write the clustered standard error and say when to use it.</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">SE = (1/n)·√(Σ_c (Σ_{i∈c} (s_i − μ̂))²). Use it when questions come in correlated groups (shared passage, translations of one problem, multiple samples per prompt).</div>
-    </div>
-    <div class="quiz ">
-      <p class="qq">You want to detect a 1-point gap and σ_d = 0.3. How many questions?</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">n = ((1.96 + 0.84)·0.3/0.01)² ≈ <b>7,060</b>. Small gaps need large evals.</div>
-    </div>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+  <p class="qq">Roughly what is the 95% CI half-width for 70% accuracy on 1,000 questions?</p>
+  <div class="opts">
+  <button>A. ±0.3 points</button>
+  <button>B. ±1 point</button>
+  <button data-ok>C. ±2.8 points</button>
+  <button>D. ±10 points</button>
+  </div>
+  <div class="why">1.96·√(0.7·0.3/1000) ≈ 0.028, so <b>±2.8 points</b>.</div>
+</div>
+
+<div class="quiz ">
+  <p class="qq">Write the clustered standard error and say when to use it.</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">SE = (1/n)·√(Σ_c (Σ_{i∈c} (s_i − μ̂))²). Use it when questions come in correlated groups (shared passage, translations of one problem, multiple samples per prompt).</div>
+</div>
+
+<div class="quiz ">
+  <p class="qq">You want to detect a 1-point gap and σ_d = 0.3. How many questions?</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">n = ((1.96 + 0.84)·0.3/0.01)² ≈ <b>7,060</b>. Small gaps need large evals.</div>
+</div>
   </div>
 </section>
 
@@ -211,11 +213,17 @@
     <span class="qtag b9">9 · Key takeaway</span>
     <h2>Key takeaway</h2>
     <hr>
-    <div class="take-line">Every eval score needs an error bar: CLT (central limit theorem) standard errors, clustered when questions are grouped, paired tests for model comparisons, and power analysis to size the eval.</div>
-    <div class="explain"><b>Say it in 30 seconds</b><p>An eval is a finite sample of questions, so its score has sampling error: at 70 percent on a thousand questions the 95 percent interval is about plus or minus 2.8 points. Report the central-limit-theorem standard error with every score. When questions come in correlated groups, like many questions about one passage, use clustered standard errors, which on real evals can be over three times larger. When comparing two models on the same questions, test the per-question differences: shared difficulty cancels, so a paired test detects gaps that overlapping intervals hide. And use power analysis: detecting half the gap needs four times the questions.</p></div>
-    <div class="recap"><div><span><b>Problem:</b> leaderboard gaps are often smaller than the sampling error.</span></div><div><span><b>Tools:</b> CLT SE, clustered SE, paired differences, power analysis.</span></div><div><span><b>Numbers:</b> ±2.8 pts at n = 1,000; clustered SE up to 3× naive; n ∝ 1/δ².</span></div></div>
-    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/02_error_bars.ipynb" target="_blank" rel="noopener">02 · Error bars, clustered errors and paired comparisons</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/evals/02_error_bars.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
-    <p class="start-hint">Next: <a href="../05-contamination/index.html">05 · Contamination →</a> · Previous: <a href="../03-pass-at-k/index.html">← 03</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Miller 2024, "Adding Error Bars to Evals: A Statistical Approach to Language Model Evaluations" (CLT standard errors, clustered SEs "can be over 3X larger", paired differences, power analysis); Chiang et al. 2024 (Chatbot Arena confidence intervals).</p>
+<div class="take-line">Every eval score needs an error bar: CLT (central limit theorem) standard errors, clustered when questions are grouped, paired tests for model comparisons, and power analysis to size the eval.</div>
+
+<div class="explain"><b>Say it in 30 seconds</b><p>An eval is a finite sample of questions, so its score has sampling error: at 70 percent on a thousand questions the 95 percent interval is about plus or minus 2.8 points. Report the central-limit-theorem standard error with every score. When questions come in correlated groups, like many questions about one passage, use clustered standard errors, which on real evals can be over three times larger. When comparing two models on the same questions, test the per-question differences: shared difficulty cancels, so a paired test detects gaps that overlapping intervals hide. And use power analysis: detecting half the gap needs four times the questions.</p></div>
+
+<div class="recap"><div><span><b>Problem:</b> leaderboard gaps are often smaller than the sampling error.</span></div><div><span><b>Tools:</b> CLT SE, clustered SE, paired differences, power analysis.</span></div><div><span><b>Numbers:</b> ±2.8 pts at n = 1,000; clustered SE up to 3× naive; n ∝ 1/δ².</span></div></div>
+
+<div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/02_error_bars.ipynb" target="_blank" rel="noopener">02 · Error bars, clustered errors and paired comparisons</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/evals/02_error_bars.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+
+<p class="start-hint">Next: <a href="../05-contamination/index.html">05 · Contamination →</a> · Previous: <a href="../03-pass-at-k/index.html">← 03</a> · <a href="../index.html">All decks</a></p>
+
+<p class="cite">Sources: Miller 2024, "Adding Error Bars to Evals: A Statistical Approach to Language Model Evaluations" (CLT standard errors, clustered SEs "can be over 3X larger", paired differences, power analysis); Chiang et al. 2024 (Chatbot Arena confidence intervals).</p>
   </div>
 </section>
 

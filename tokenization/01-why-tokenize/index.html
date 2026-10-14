@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="../../shared/deck.css">
 <link rel="stylesheet" href="../../shared/learn.css">
 <link rel="stylesheet" href="../tk.css">
-
 </head>
 <body data-deck="Why tokenize?" data-home="../index.html" data-home-label="Tokenization">
 
@@ -29,14 +28,16 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>A model never sees text, only integer ids</h2>
     <hr>
-    <p class="lede">Before an LLM (large language model) does anything, the input string is cut into <b>tokens</b>, and each token is replaced by its id in a fixed vocabulary. The model's first layer looks up one embedding row per id. Below is a real tokenization with <code>cl100k_base</code> (GPT-4's encoding).</p>
-    <div class="visual">
-      <h3>"Tokenization turns text into numbers."</h3>
-      <div id="introToks" style="margin-top:10px"></div>
-      <p class="caption">Hover a token for its id. <span class="ws">·</span> marks a space, which belongs to the token that follows it.</p>
-      <div class="paper" style="margin-top:14px"><b>Next step inside the model:</b> each id selects one row of the embedding matrix (vocabulary size V × model width d). The model's output layer then scores all V ids to predict the next token.</div>
-    </div>
-    <div class="takeaway">Everything the model learns, it learns over these ids. How text is split decides what each id means.</div>
+<p class="lede">Before an LLM (large language model) does anything, the input string is cut into <b>tokens</b>, and each token is replaced by its id in a fixed vocabulary. The model's first layer looks up one embedding row per id. Below is a real tokenization with <code>cl100k_base</code> (GPT-4's encoding).</p>
+
+<div class="visual">
+  <h3>"Tokenization turns text into numbers."</h3>
+  <div id="introToks" style="margin-top:10px"></div>
+  <p class="caption">Hover a token for its id. <span class="ws">·</span> marks a space, which belongs to the token that follows it.</p>
+  <div class="paper" style="margin-top:14px"><b>Next step inside the model:</b> each id selects one row of the embedding matrix (vocabulary size V × model width d). The model's output layer then scores all V ids to predict the next token.</div>
+</div>
+
+<div class="takeaway">Everything the model learns, it learns over these ids. How text is split decides what each id means.</div>
   </div>
 </section>
 
@@ -45,13 +46,14 @@
     <span class="qtag b2">2 · Limitation</span>
     <h2>The two obvious units both break</h2>
     <hr>
-    <p class="lede">Split by <b>characters</b> and the vocabulary is tiny, but sequences get long, and attention cost grows with the square of the length. Split by <b>words</b> and sequences are short, but any word outside the vocabulary becomes an unknown token. Pick a sentence.</p>
-    <div class="visual">
-      <div class="seg" id="limSeg"><button data-v="s_animal" class="on">Everyday sentence</button><button data-v="s_rare">Rare word + number</button><button data-v="s_code">Code</button></div>
-      <div id="limRows" style="margin-top:12px"></div>
-      <p class="caption">Characters and words are split in the browser. The word row uses a <span class="ill">toy</span> vocabulary of about 100 common English words, and anything else becomes [UNK]. The subword row is the real <code>cl100k_base</code> output.</p>
-    </div>
-    <div class="cite">Sennrich et al. (2016) put the trade-off this way: an increase in text length "reduces efficiency and increases the distances over which neural models need to pass information", while large vocabularies cost time and space.</div>
+<p class="lede">Split by <b>characters</b> and the vocabulary is tiny, but sequences get long, and attention cost grows with the square of the length. Split by <b>words</b> and sequences are short, but any word outside the vocabulary becomes an unknown token. Pick a sentence.</p>
+<div class="visual">
+  <div class="seg" id="limSeg"><button data-v="s_animal" class="on">Everyday sentence</button><button data-v="s_rare">Rare word + number</button><button data-v="s_code">Code</button></div>
+  <div id="limRows" style="margin-top:12px"></div>
+  <p class="caption">Characters and words are split in the browser. The word row uses a <span class="ill">toy</span> vocabulary of about 100 common English words, and anything else becomes [UNK]. The subword row is the real <code>cl100k_base</code> output.</p>
+</div>
+
+<div class="cite">Sennrich et al. (2016) put the trade-off this way: an increase in text length "reduces efficiency and increases the distances over which neural models need to pass information", while large vocabularies cost time and space.</div>
   </div>
 </section>
 
@@ -60,8 +62,8 @@
     <span class="qtag b3">3 · Your turn</span>
     <h2>Pick the unit</h2>
     <hr>
-    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
-    <div class="quiz">
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
       <p class="qq">Which unit gives a fixed, modest vocabulary, reasonably short sequences, and no unknown words?</p>
       <div class="opts">
       <button>A. Whole words</button>
@@ -79,14 +81,14 @@
     <span class="qtag b4">4 · Core idea</span>
     <h2>Subwords: common words stay whole, rare words split</h2>
     <hr>
-    <p class="lede">Real tokenizer output. Note the leading space: in these tokenizers a word and the space before it usually form one token.</p>
-    <div class="visual">
-      <div class="seg" id="coreEnc"><button data-v="gpt2">gpt2</button><button data-v="cl100k_base" class="on">cl100k_base</button><button data-v="o200k_base">o200k_base</button></div>
-      <div id="coreRows" style="margin-top:12px"></div>
-    </div>
-    <div class="takeaway">The vocabulary is fixed (about 100K tokens for cl100k_base), yet any word can still be written, from "the" to "Abwasserbehandlungsanlage" (Sennrich et al.'s example of a German compound).</div>
+<p class="lede">Real tokenizer output. Note the leading space: in these tokenizers a word and the space before it usually form one token.</p>
+<div class="visual">
+  <div class="seg" id="coreEnc"><button data-v="gpt2">gpt2</button><button data-v="cl100k_base" class="on">cl100k_base</button><button data-v="o200k_base">o200k_base</button></div>
+  <div id="coreRows" style="margin-top:12px"></div>
+</div>
 
-    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Decoding runs the same pipeline backwards: ids → pieces → text." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">raw text</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">any string</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">normalize</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">optional (e.g.</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">NFKC)</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">pre-tokenize</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">split on spaces,</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">punctuation</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">subword model</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">BPE, WordPiece,</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">unigram</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">ids</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">integers into the</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">embedding table</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Decoding runs the same pipeline backwards: ids → pieces → text.</p></div><!--/x:glance-->
+<div class="takeaway">The vocabulary is fixed (about 100K tokens for cl100k_base), yet any word can still be written, from "the" to "Abwasserbehandlungsanlage" (Sennrich et al.'s example of a German compound).</div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Decoding runs the same pipeline backwards: ids → pieces → text." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">raw text</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">any string</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">normalize</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">optional (e.g.</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">NFKC)</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">pre-tokenize</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">split on spaces,</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">punctuation</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">subword model</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">BPE, WordPiece,</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">unigram</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">ids</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">integers into the</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">embedding table</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Decoding runs the same pipeline backwards: ids → pieces → text.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -95,12 +97,13 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>The tokenization pipeline, end to end</h2>
     <hr>
-    <p class="lede">Tokenizers differ in detail, but most follow the same stages. Below, one sentence goes through them with real GPT-2-style pre-tokenization and real <code>cl100k_base</code> tokens.</p>
-    <div class="visual">
-      <div class="steps" id="pipeSteps"></div>
-      <div id="pipeOut" style="margin-top:14px"></div>
-      <div class="infobox" id="pipeInfo"></div>
-    </div>
+<p class="lede">Tokenizers differ in detail, but most follow the same stages. Below, one sentence goes through them with real GPT-2-style pre-tokenization and real <code>cl100k_base</code> tokens.</p>
+
+<div class="visual">
+  <div class="steps" id="pipeSteps"></div>
+  <div id="pipeOut" style="margin-top:14px"></div>
+  <div class="infobox" id="pipeInfo"></div>
+</div>
   </div>
 </section>
 
@@ -119,12 +122,12 @@
     <span class="qtag b6">6 · Why it works</span>
     <h2>Why subwords work</h2>
     <hr>
-    <div class="grid2">
-      <div class="card a"><h3>Compression</h3><p>tiktoken's README puts typical BPE (byte-pair encoding) compression at about <b>4 bytes per token</b>. On this guide's 408-character English sample, <code>cl100k_base</code> uses 79 tokens, about 5.2 characters per token.</p></div>
-      <div class="card b"><h3>Fixed output layer</h3><p>The model predicts one of V ids at every step. A fixed V (50K–200K) keeps that softmax bounded.</p></div>
-      <div class="card c"><h3>Open vocabulary</h3><p>Rare words are spelled with smaller pieces, and byte-level tokenizers (deck 03) can encode any string at all.</p></div>
-      <div class="card e"><h3>Shorter sequences</h3><p>Fewer tokens means less attention compute (it grows with n²) and more text in a fixed context window (deck 07).</p></div>
-    </div>
+<div class="grid2">
+  <div class="card a"><h3>Compression</h3><p>tiktoken's README puts typical BPE (byte-pair encoding) compression at about <b>4 bytes per token</b>. On this guide's 408-character English sample, <code>cl100k_base</code> uses 79 tokens, about 5.2 characters per token.</p></div>
+  <div class="card b"><h3>Fixed output layer</h3><p>The model predicts one of V ids at every step. A fixed V (50K–200K) keeps that softmax bounded.</p></div>
+  <div class="card c"><h3>Open vocabulary</h3><p>Rare words are spelled with smaller pieces, and byte-level tokenizers (deck 03) can encode any string at all.</p></div>
+  <div class="card e"><h3>Shorter sequences</h3><p>Fewer tokens means less attention compute (it grows with n²) and more text in a fixed context window (deck 07).</p></div>
+</div>
   </div>
 </section>
 
@@ -133,18 +136,19 @@
     <span class="qtag b7">7 · Misconceptions</span>
     <h2>Common misconceptions</h2>
     <hr>
-    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
-    <div class="quiz myth">
-      <p class="qq">"A token is a word."</p>
-      <button class="reveal">Why is this wrong?</button>
-      <div class="why">Often it is a <b>piece</b> of a word, and it usually includes the space before it: " strawberry" is one token in cl100k_base, but "strawberry" without the space is three (deck 10).</div>
-    </div>
-    <div class="quiz myth">
-      <p class="qq">"Every model counts tokens the same way."</p>
-      <button class="reveal">Why is this wrong?</button>
-      <div class="why">Each model has its own tokenizer. The sentence on the "Characters or words?" slide gets different token counts in gpt2, cl100k_base and o200k_base (deck 08).</div>
-    </div>
-    <div class="quiz myth">
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+  <p class="qq">"A token is a word."</p>
+  <button class="reveal">Why is this wrong?</button>
+  <div class="why">Often it is a <b>piece</b> of a word, and it usually includes the space before it: " strawberry" is one token in cl100k_base, but "strawberry" without the space is three (deck 10).</div>
+</div>
+
+<div class="quiz myth">
+  <p class="qq">"Every model counts tokens the same way."</p>
+  <button class="reveal">Why is this wrong?</button>
+  <div class="why">Each model has its own tokenizer. The sentence on the "Characters or words?" slide gets different token counts in gpt2, cl100k_base and o200k_base (deck 08).</div>
+</div>
+<div class="quiz myth">
       <p class="qq">"Tokenization throws information away."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Modern BPE tokenizers are <b>reversible and lossless</b> (tiktoken README): concatenating the tokens' bytes gives back the original text exactly.</div>
@@ -170,8 +174,8 @@
     <span class="qtag b8">8 · Check yourself</span>
     <h2>Check yourself</h2>
     <hr>
-    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
-    <div class="quiz">
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
       <p class="qq">Roughly how many bytes of text does one BPE token cover on average, according to tiktoken's README?</p>
       <div class="opts">
       <button>A. 1</button>
@@ -181,21 +185,22 @@
       </div>
       <div class="why"><b>About 4 bytes per token</b> in practice. It varies with language and content.</div>
     </div>
-    <div class="quiz ">
-      <p class="qq">Why not just use characters as tokens?</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">Sequences become several times longer, and attention cost grows with the square of the length, so compute rises and less text fits in the context window.</div>
-    </div>
-    <div class="quiz">
-      <p class="qq">A subword tokenizer meets a word it has never seen. What happens?</p>
-      <div class="opts">
-      <button>A. It outputs [UNK]</button>
-      <button data-ok>B. It splits the word into smaller known pieces</button>
-      <button>C. It skips the word</button>
-      <button>D. It raises an error</button>
-      </div>
-      <div class="why"><b>It splits the word into known pieces</b>, down to single characters or bytes if needed.</div>
-    </div>
+<div class="quiz ">
+  <p class="qq">Why not just use characters as tokens?</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">Sequences become several times longer, and attention cost grows with the square of the length, so compute rises and less text fits in the context window.</div>
+</div>
+
+<div class="quiz">
+  <p class="qq">A subword tokenizer meets a word it has never seen. What happens?</p>
+  <div class="opts">
+  <button>A. It outputs [UNK]</button>
+  <button data-ok>B. It splits the word into smaller known pieces</button>
+  <button>C. It skips the word</button>
+  <button>D. It raises an error</button>
+  </div>
+  <div class="why"><b>It splits the word into known pieces</b>, down to single characters or bytes if needed.</div>
+</div>
   </div>
 </section>
 
@@ -204,10 +209,13 @@
     <span class="qtag b9">9 · Key takeaway</span>
     <h2>Key takeaway</h2>
     <hr>
-    <div class="take-line">Tokenization maps text to integer ids from a fixed vocabulary. Subwords keep common words whole and spell rare ones in pieces, balancing vocabulary size against sequence length.</div>
-    <div class="explain"><b>Say it in 30 seconds</b><p>Models work on integers, so text is split into tokens and each token becomes an id from a fixed vocabulary. Characters give tiny vocabularies but long sequences, and words give short sequences but unknown words. Subword tokenizers keep frequent strings as single tokens and split rare words into known pieces. The pipeline is normalize, pre-tokenize, apply the subword model, then map to ids, and decoding reverses it losslessly.</p></div>
-    <div class="recap"><div><span><b>Problem:</b> characters make sequences long; words leave rare words unknown.</span></div><div><span><b>Core idea:</b> subword tokens: a fixed vocabulary where any text is spelled with known pieces, about 4 bytes per token.</span></div></div>
-    <p class="start-hint">Next: <a href="../02-bpe-from-scratch/index.html">02 · BPE from scratch →</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+<div class="take-line">Tokenization maps text to integer ids from a fixed vocabulary. Subwords keep common words whole and spell rare ones in pieces, balancing vocabulary size against sequence length.</div>
+
+<div class="explain"><b>Say it in 30 seconds</b><p>Models work on integers, so text is split into tokens and each token becomes an id from a fixed vocabulary. Characters give tiny vocabularies but long sequences, and words give short sequences but unknown words. Subword tokenizers keep frequent strings as single tokens and split rare words into known pieces. The pipeline is normalize, pre-tokenize, apply the subword model, then map to ids, and decoding reverses it losslessly.</p></div>
+
+<div class="recap"><div><span><b>Problem:</b> characters make sequences long; words leave rare words unknown.</span></div><div><span><b>Core idea:</b> subword tokens: a fixed vocabulary where any text is spelled with known pieces, about 4 bytes per token.</span></div></div>
+
+<p class="start-hint">Next: <a href="../02-bpe-from-scratch/index.html">02 · BPE from scratch →</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
   </div>
 </section>
 

@@ -28,8 +28,8 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>Attention needs a compatibility score for every query-key pair, and it must be fast</h2>
     <hr>
-    <p class="lede">With n tokens, a single head computes <b>n²</b> query-key scores. The base model runs 8 heads in each of its 18 attention sub-layers (6 encoder + 12 decoder), on every training step. Whatever function produces the scores has to be cheap and has to train well.</p>
-    <div class="grid3">
+<p class="lede">With n tokens, a single head computes <b>n²</b> query-key scores. The base model runs 8 heads in each of its 18 attention sub-layers (6 encoder + 12 decoder), on every training step. Whatever function produces the scores has to be cheap and has to train well.</p>
+<div class="grid3">
       <div class="card d"><h3>n² scores per head</h3><p>A 50-token sentence means 2,500 scores per head per layer.</p></div>
       <div class="card b"><h3>Two known options</h3><p><b>Additive</b> attention (a small feed-forward network per pair) and <b>dot-product</b> attention (q·k) (§3.2.1).</p></div>
       <div class="card a"><h3>Must map to GPUs</h3><p>The fastest operation on a GPU (graphics processing unit) is a large matrix multiply.</p></div>
@@ -42,13 +42,13 @@
     <span class="qtag b2">2 · Limitation</span>
     <h2>Why dot products, and why the scaling?</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card a"><h3>Dot-product attention</h3><p>Compatibility = q·k. It's fast and memory-efficient "since it can be implemented using highly optimized matrix multiplication code" (§3.2.1). The paper's version is identical to this except for the 1/√d<sub>k</sub> factor.</p></div>
       <div class="card b"><h3>Additive attention</h3><p>Compatibility is computed by a feed-forward network with one hidden layer. Its theoretical complexity is similar, but it is slower in practice.</p></div>
       <div class="card e"><h3>Small d<sub>k</sub></h3><p>The two mechanisms perform similarly.</p></div>
       <div class="card d"><h3>Large d<sub>k</sub></h3><p>Additive attention outperforms <em>unscaled</em> dot-product attention. The paper attributes this to large dot products saturating the softmax, so it scales by 1/√d<sub>k</sub>.</p></div>
     </div>
-    <div class="takeaway">Scaling keeps the fast matrix-multiply form of dot-product attention and avoids its large-d<sub>k</sub> problem.</div>
+<div class="takeaway">Scaling keeps the fast matrix-multiply form of dot-product attention and avoids its large-d<sub>k</sub> problem.</div>
   </div>
 </section>
 
@@ -57,24 +57,25 @@
     <span class="qtag b2">2 · Limitation</span>
     <h2>Bigger d<sub>k</sub> → bigger dot products → saturated softmax</h2>
     <hr>
-    <p class="lede">If the components of q and k are independent with mean 0 and variance 1, then q·k has <b>variance d<sub>k</sub></b>. With d<sub>k</sub> = 64 the scores spread over roughly ±8, the softmax puts nearly all its weight on one key, and its gradients become very small. Drag d<sub>k</sub>.</p>
-    <div class="visual">
-      <div class="controls" style="margin-top:0">
-        <label class="ctl">d<sub>k</sub> <input type="range" id="pD" min="0" max="10" step="1" value="6"> <output id="pDo"></output></label>
-        <div class="seg" id="pScale"><button data-v="0" class="on">Unscaled q·k</button><button data-v="1">Scaled q·k / √d<sub>k</sub></button></div>
-        <button class="btn" id="pResample">Resample q, k</button>
-      </div>
-      <div class="grid2" style="margin-top:12px">
-        <div><h3>Scores for 8 keys</h3><svg id="pScores" viewBox="0 0 320 200" role="img" aria-label="Scores"></svg></div>
-        <div><h3>Softmax weights</h3><svg id="pSoft" viewBox="0 0 320 200" role="img" aria-label="Softmax weights"></svg></div>
-      </div>
-      <div class="grid3">
-        <div class="stat"><div class="num" id="pStd"></div><div class="lbl">std of scores (theory: √d<sub>k</sub> unscaled, 1 scaled)</div></div>
-        <div class="stat"><div class="num" id="pMax"></div><div class="lbl">largest weight</div></div>
-        <div class="stat"><div class="num" id="pGrad"></div><div class="lbl">largest softmax gradient term max pᵢ(1−pᵢ)</div></div>
-      </div>
-    </div>
-    <div class="cite">§3.2.1 and footnote 4. The paper states this as the reason it <em>suspects</em> unscaled dot products underperform for large d<sub>k</sub>. Random q, k are drawn from N(0, 1).</div>
+<p class="lede">If the components of q and k are independent with mean 0 and variance 1, then q·k has <b>variance d<sub>k</sub></b>. With d<sub>k</sub> = 64 the scores spread over roughly ±8, the softmax puts nearly all its weight on one key, and its gradients become very small. Drag d<sub>k</sub>.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0">
+    <label class="ctl">d<sub>k</sub> <input type="range" id="pD" min="0" max="10" step="1" value="6"> <output id="pDo"></output></label>
+    <div class="seg" id="pScale"><button data-v="0" class="on">Unscaled q·k</button><button data-v="1">Scaled q·k / √d<sub>k</sub></button></div>
+    <button class="btn" id="pResample">Resample q, k</button>
+  </div>
+  <div class="grid2" style="margin-top:12px">
+    <div><h3>Scores for 8 keys</h3><svg id="pScores" viewBox="0 0 320 200" role="img" aria-label="Scores"></svg></div>
+    <div><h3>Softmax weights</h3><svg id="pSoft" viewBox="0 0 320 200" role="img" aria-label="Softmax weights"></svg></div>
+  </div>
+  <div class="grid3">
+    <div class="stat"><div class="num" id="pStd"></div><div class="lbl">std of scores (theory: √d<sub>k</sub> unscaled, 1 scaled)</div></div>
+    <div class="stat"><div class="num" id="pMax"></div><div class="lbl">largest weight</div></div>
+    <div class="stat"><div class="num" id="pGrad"></div><div class="lbl">largest softmax gradient term max pᵢ(1−pᵢ)</div></div>
+  </div>
+</div>
+
+<div class="cite">§3.2.1 and footnote 4. The paper states this as the reason it <em>suspects</em> unscaled dot products underperform for large d<sub>k</sub>. Random q, k are drawn from N(0, 1).</div>
   </div>
 </section>
 
@@ -83,17 +84,17 @@
     <span class="qtag b3">3 · Your turn</span>
     <h2>Fix the saturation, keep the speed</h2>
     <hr>
-    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
-    <div class="quiz">
-      <p class="qq">Dot products of unit-variance vectors have variance d<sub>k</sub>. What is the simplest fix that keeps the matrix-multiply speed?</p>
-      <div class="opts">
-      <button>A. Switch to additive attention</button>
-      <button>B. Divide the scores by d<sub>k</sub></button>
-      <button data-ok>C. Divide the scores by √d<sub>k</sub></button>
-      <button>D. Clip the scores to [−1, 1]</button>
-      </div>
-      <div class="why"><b>C.</b> Dividing by √d<sub>k</sub> brings the variance back to exactly 1, whatever d<sub>k</sub> is. Dividing by d<sub>k</sub> (B) shrinks the variance to 1/d<sub>k</sub>, so the softmax becomes nearly uniform. Additive attention (A) is slower in practice, and clipping (D) throws away information and breaks gradients.</div>
-    </div>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+  <p class="qq">Dot products of unit-variance vectors have variance d<sub>k</sub>. What is the simplest fix that keeps the matrix-multiply speed?</p>
+  <div class="opts">
+  <button>A. Switch to additive attention</button>
+  <button>B. Divide the scores by d<sub>k</sub></button>
+  <button data-ok>C. Divide the scores by √d<sub>k</sub></button>
+  <button>D. Clip the scores to [−1, 1]</button>
+  </div>
+  <div class="why"><b>C.</b> Dividing by √d<sub>k</sub> brings the variance back to exactly 1, whatever d<sub>k</sub> is. Dividing by d<sub>k</sub> (B) shrinks the variance to 1/d<sub>k</sub>, so the softmax becomes nearly uniform. Additive attention (A) is slower in practice, and clipping (D) throws away information and breaks gradients.</div>
+</div>
   </div>
 </section>
 
@@ -102,14 +103,14 @@
     <span class="qtag b4">4 · Core idea</span>
     <h2>Use dot products, and divide them by √d<sub>k</sub></h2>
     <hr>
-    <div class="eq">Attention(Q, K, V) = softmax( QKᵀ / √d<sub>k</sub> ) V</div>
-    <div class="grid3" style="margin-top:14px">
-      <div class="card a"><h3>Dot product</h3><p>Every query-key score in one matrix multiply, QKᵀ.</p></div>
-      <div class="card e"><h3>÷ √d<sub>k</sub></h3><p>Brings score variance back to about 1, so the softmax stays responsive.</p></div>
-      <div class="card b"><h3>softmax, then × V</h3><p>Row-wise weights, then a weighted sum of values: a second matrix multiply.</p></div>
-    </div>
-  
-    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 138" role="img" aria-label="Equation 1: Attention(Q, K, V) = softmax(QKᵀ / √d_k) V." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">Q·Kᵀ</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">raw scores</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">÷ √d_k</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">keep variance ≈ 1</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">mask (optional)</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">−∞ for future</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">softmax</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">row-wise</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">× V</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">weighted values</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Equation 1: Attention(Q, K, V) = softmax(QKᵀ / √d_k) V.</p></div><!--/x:glance-->
+<div class="eq">Attention(Q, K, V) = softmax( QKᵀ / √d<sub>k</sub> ) V</div>
+
+<div class="grid3" style="margin-top:14px">
+  <div class="card a"><h3>Dot product</h3><p>Every query-key score in one matrix multiply, QKᵀ.</p></div>
+  <div class="card e"><h3>÷ √d<sub>k</sub></h3><p>Brings score variance back to about 1, so the softmax stays responsive.</p></div>
+  <div class="card b"><h3>softmax, then × V</h3><p>Row-wise weights, then a weighted sum of values: a second matrix multiply.</p></div>
+</div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 138" role="img" aria-label="Equation 1: Attention(Q, K, V) = softmax(QKᵀ / √d_k) V." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">Q·Kᵀ</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">raw scores</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">÷ √d_k</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">keep variance ≈ 1</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">mask (optional)</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">−∞ for future</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">softmax</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">row-wise</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">× V</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">weighted values</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Equation 1: Attention(Q, K, V) = softmax(QKᵀ / √d_k) V.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -118,13 +119,15 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Equation 1, one step at a time</h2>
     <hr>
-    <div class="eq">Attention(Q, K, V) = softmax( Q Kᵀ / √d<sub>k</sub> ) · V</div>
-    <div class="visual">
-      <div class="steps" id="eqSteps"></div>
-      <svg id="eqSvg" viewBox="0 0 660 250" style="margin-top:10px" role="img" aria-label="Matrices at each step"></svg>
-      <div class="infobox" id="eqInfo"></div>
-    </div>
-    <p class="caption">Toy example: n = 4 tokens, d<sub>k</sub> = d<sub>v</sub> = 4, random values with a fixed seed. Every number is computed in the page.</p>
+<div class="eq">Attention(Q, K, V) = softmax( Q Kᵀ / √d<sub>k</sub> ) · V</div>
+
+<div class="visual">
+  <div class="steps" id="eqSteps"></div>
+  <svg id="eqSvg" viewBox="0 0 660 250" style="margin-top:10px" role="img" aria-label="Matrices at each step"></svg>
+  <div class="infobox" id="eqInfo"></div>
+</div>
+
+<p class="caption">Toy example: n = 4 tokens, d<sub>k</sub> = d<sub>v</sub> = 4, random values with a fixed seed. Every number is computed in the page.</p>
   </div>
 </section>
 
@@ -155,7 +158,7 @@
     <span class="qtag b6">6 · Why it works</span>
     <h2>Why it works</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card e"><h3>Variance stays at 1</h3><p>If q and k have independent components with mean 0 and variance 1, q·k has variance d<sub>k</sub> (footnote 4). Dividing by √d<sub>k</sub> brings it back to 1 for any d<sub>k</sub>.</p></div>
       <div class="card a"><h3>Softmax stays in its sensitive range</h3><p>Moderate scores give a soft distribution with useful gradients instead of a one-hot one with "extremely small gradients" (§3.2.1).</p></div>
       <div class="card b"><h3>Hardware-friendly</h3><p>Two matrix multiplies and a softmax: "much faster and more space-efficient in practice" than additive attention.</p></div>
@@ -169,18 +172,18 @@
     <span class="qtag b7">7 · Misconceptions</span>
     <h2>Common misconceptions</h2>
     <hr>
-    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
-    <div class="quiz myth">
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
       <p class="qq">"The √d<sub>k</sub> factor is a learned temperature."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">It is a <b>fixed constant</b> (√64 = 8 in the base model). Nothing about it is learned.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"Scaling changes which key gets the most attention."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Dividing every score by the same positive number keeps their <b>order</b>. Only the sharpness of the softmax changes.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"The softmax is taken over the whole score matrix."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">It is applied <b>row by row</b>: each query gets its own distribution over the keys.</div>
@@ -206,8 +209,8 @@
     <span class="qtag b8">8 · Check yourself</span>
     <h2>Check yourself</h2>
     <hr>
-    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
-    <div class="quiz">
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
       <p class="qq">In the base model (d<sub>k</sub> = 64), what are the scores divided by?</p>
       <div class="opts">
       <button>A. 4</button>
@@ -217,12 +220,12 @@
       </div>
       <div class="why"><b>8</b> = √64.</div>
     </div>
-    <div class="quiz ">
-      <p class="qq">With unit-variance components and d<sub>k</sub> = 64, what is the standard deviation of an unscaled dot product q·k?</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">√64 = <b>8</b>. Variance is d<sub>k</sub> = 64 (footnote 4), so scores routinely reach ±8 to ±16, enough to saturate a softmax.</div>
-    </div>
-    <div class="quiz">
+<div class="quiz ">
+  <p class="qq">With unit-variance components and d<sub>k</sub> = 64, what is the standard deviation of an unscaled dot product q·k?</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">√64 = <b>8</b>. Variance is d<sub>k</sub> = 64 (footnote 4), so scores routinely reach ±8 to ±16, enough to saturate a softmax.</div>
+</div>
+<div class="quiz">
       <p class="qq">For n queries and m keys, what is the shape of softmax(QKᵀ/√d<sub>k</sub>)?</p>
       <div class="opts">
       <button>A. n × n</button>
@@ -240,13 +243,16 @@
     <span class="qtag b9">9 · Key takeaway</span>
     <h2>Key takeaway</h2>
     <hr>
-    <div class="take-line">Score with dot products, divide by √d<sub>k</sub> to keep the variance at 1, softmax each row, and take the weighted sum of V: two matrix multiplies and a softmax.</div>
-    <div class="explain"><b>Say it in 30 seconds</b><p>Scaled dot-product attention computes softmax(QKᵀ/√d<sub>k</sub>)V. Dot products are fast because they are a matrix multiply, but with unit-variance components q·k has variance d<sub>k</sub>, so large d<sub>k</sub> pushes the softmax toward one-hot and its gradients vanish. Dividing by √d<sub>k</sub> restores unit variance. The paper notes that unscaled dot-product attention underperforms additive attention at large d<sub>k</sub>; scaling fixes this while keeping the speed.</p></div>
-    <div class="recap">
-      <div><span><b>Problem:</b> raw dot products have variance d<sub>k</sub>, so the softmax saturates and gradients shrink as d<sub>k</sub> grows.</span></div>
-      <div><span><b>Core idea:</b> scores = QKᵀ / √d<sub>k</sub>, then a row-wise softmax gives weights, then weights × V gives outputs. That is two matrix multiplications and a softmax.</span></div>
-    </div>
-    <p class="start-hint">Next: <a href="../06-multi-head-attention/index.html">06 · Multi-head attention →</a> · Previous: <a href="../04-queries-keys-values/index.html">← 04</a> · <a href="../index.html">All concepts</a></p>
+<div class="take-line">Score with dot products, divide by √d<sub>k</sub> to keep the variance at 1, softmax each row, and take the weighted sum of V: two matrix multiplies and a softmax.</div>
+
+<div class="explain"><b>Say it in 30 seconds</b><p>Scaled dot-product attention computes softmax(QKᵀ/√d<sub>k</sub>)V. Dot products are fast because they are a matrix multiply, but with unit-variance components q·k has variance d<sub>k</sub>, so large d<sub>k</sub> pushes the softmax toward one-hot and its gradients vanish. Dividing by √d<sub>k</sub> restores unit variance. The paper notes that unscaled dot-product attention underperforms additive attention at large d<sub>k</sub>; scaling fixes this while keeping the speed.</p></div>
+
+<div class="recap">
+  <div><span><b>Problem:</b> raw dot products have variance d<sub>k</sub>, so the softmax saturates and gradients shrink as d<sub>k</sub> grows.</span></div>
+  <div><span><b>Core idea:</b> scores = QKᵀ / √d<sub>k</sub>, then a row-wise softmax gives weights, then weights × V gives outputs. That is two matrix multiplications and a softmax.</span></div>
+</div>
+
+<p class="start-hint">Next: <a href="../06-multi-head-attention/index.html">06 · Multi-head attention →</a> · Previous: <a href="../04-queries-keys-values/index.html">← 04</a> · <a href="../index.html">All concepts</a></p>
   </div>
 </section>
 

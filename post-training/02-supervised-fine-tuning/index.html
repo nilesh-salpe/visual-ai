@@ -6,7 +6,6 @@
 <title>Supervised Fine-tuning</title>
 <link rel="stylesheet" href="../../shared/deck.css">
 <link rel="stylesheet" href="../../shared/learn.css">
-
 </head>
 <body data-deck="Supervised fine-tuning" data-home="../index.html" data-home-label="Post-training">
 
@@ -28,13 +27,14 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>One conversation, one token sequence</h2>
     <hr>
-    <p class="lede">A chat model sees a single flat sequence. The template inserts role markers and end-of-turn tokens. Colour shows what the loss is computed on. Toggle to compare training on everything vs only the assistant's answers.</p>
-    <div class="visual">
-      <div class="seg" id="mSeg"><button data-v="1" class="on">Loss on assistant tokens only</button><button data-v="0">Loss on every token</button></div>
-      <div id="mToks" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:14px;font:500 13px 'JetBrains Mono',monospace"></div>
-      <p class="readout" id="mOut"></p>
-    </div>
-    <p class="caption">Illustrative template with generic role tokens. Real models define their own (each tokenizer's chat template), but the structure is the same.</p>
+<p class="lede">A chat model sees a single flat sequence. The template inserts role markers and end-of-turn tokens. Colour shows what the loss is computed on. Toggle to compare training on everything vs only the assistant's answers.</p>
+<div class="visual">
+  <div class="seg" id="mSeg"><button data-v="1" class="on">Loss on assistant tokens only</button><button data-v="0">Loss on every token</button></div>
+  <div id="mToks" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:14px;font:500 13px 'JetBrains Mono',monospace"></div>
+  <p class="readout" id="mOut"></p>
+</div>
+
+<p class="caption">Illustrative template with generic role tokens. Real models define their own (each tokenizer's chat template), but the structure is the same.</p>
   </div>
 </section>
 
@@ -43,7 +43,7 @@
     <span class="qtag b2">2 · Limitation</span>
     <h2>What a base model gets wrong</h2>
     <hr>
-    <div class="grid3">
+<div class="grid3">
       <div class="card d"><h3>No turn structure</h3><p>It has never seen consistent role markers, so it may keep writing the user's next message, or invent a whole dialogue.</p></div>
       <div class="card b"><h3>No stopping point</h3><p>It doesn't know an answer is finished. Without a trained end-of-turn token it rambles until the length limit.</p></div>
       <div class="card c"><h3>Style follows the prompt</h3><p>Ask casually and you get forum-style text; ask formally and you get a paper. SFT (supervised fine-tuning) pins down one consistent assistant style.</p></div>
@@ -56,8 +56,8 @@
     <span class="qtag b3">3 · Your turn</span>
     <h2>Which tokens should be trained?</h2>
     <hr>
-    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
-    <div class="quiz">
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
       <p class="qq">In a two-turn chat (system, user, assistant, user, assistant), where should the SFT loss be computed?</p>
       <div class="opts">
       <button>A. On every token</button>
@@ -75,14 +75,14 @@
     <span class="qtag b4">4 · Core idea</span>
     <h2>SFT in one paragraph</h2>
     <hr>
-    <div class="grid3">
-      <div class="card a"><h3>Render</h3><p>Messages → template → token ids, plus a mask marking the assistant's content and closing end-of-turn token as trainable.</p></div>
-      <div class="card b"><h3>Shift and mask</h3><p>Inputs = tokens[:-1], labels = tokens[1:]. Set untrained labels to −100, the value standard cross-entropy implementations ignore.</p></div>
-      <div class="card e"><h3>Train</h3><p>Average next-token loss over trained positions only. Small learning rate (Llama 2: 2×10⁻⁵), few epochs (Llama 2: 2), sequences up to 4,096 tokens.</p></div>
-    </div>
-    <div class="deep"><h4>Epochs and overfitting</h4><p>InstructGPT found its SFT models "overfit on validation loss after 1 epoch", yet "training for more epochs helps both the RM (reward model) score and human preference ratings, despite this overfitting". Validation loss on demonstrations is not the goal; behaviour is. That is one reason labs judge SFT checkpoints with preference models and evals rather than perplexity.</p></div>
+<div class="grid3">
+  <div class="card a"><h3>Render</h3><p>Messages → template → token ids, plus a mask marking the assistant's content and closing end-of-turn token as trainable.</p></div>
+  <div class="card b"><h3>Shift and mask</h3><p>Inputs = tokens[:-1], labels = tokens[1:]. Set untrained labels to −100, the value standard cross-entropy implementations ignore.</p></div>
+  <div class="card e"><h3>Train</h3><p>Average next-token loss over trained positions only. Small learning rate (Llama 2: 2×10⁻⁵), few epochs (Llama 2: 2), sequences up to 4,096 tokens.</p></div>
+</div>
 
-    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Ordinary next-token training, applied only to what the assistant should produce." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">messages</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">system, user,</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">assistant</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">chat template</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">role tokens +</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">end-of-turn</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">tokens + mask</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">assistant tokens =</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">1</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">shift labels</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">mask → −100</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">masked loss</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">average over</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">trained tokens</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Ordinary next-token training, applied only to what the assistant should produce.</p></div><!--/x:glance-->
+<div class="deep"><h4>Epochs and overfitting</h4><p>InstructGPT found its SFT models "overfit on validation loss after 1 epoch", yet "training for more epochs helps both the RM (reward model) score and human preference ratings, despite this overfitting". Validation loss on demonstrations is not the goal; behaviour is. That is one reason labs judge SFT checkpoints with preference models and evals rather than perplexity.</p></div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Ordinary next-token training, applied only to what the assistant should produce." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">messages</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">system, user,</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">assistant</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">chat template</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">role tokens +</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">end-of-turn</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">tokens + mask</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">assistant tokens =</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">1</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">shift labels</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">mask → −100</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">masked loss</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">average over</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">trained tokens</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Ordinary next-token training, applied only to what the assistant should produce.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -91,13 +91,14 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Packing: stop paying for padding</h2>
     <hr>
-    <p class="lede">20 examples of random length go into rows of 2,048 tokens. With one example per row, everything is padded to the longest example. Packing fills each row with whole examples, in order, and pads only the tail.</p>
-    <div class="visual">
-      <div class="seg" id="kSeg"><button data-v="pad">One example per row</button><button data-v="pack" class="on">Packed</button></div>
-      <svg id="kSvg" viewBox="0 0 660 260" style="margin-top:10px" role="img" aria-label="Padding vs packing"></svg>
-      <p class="readout" id="kOut"></p>
-    </div>
-    <div class="deep"><h4>Packing needs a document mask</h4><p>Llama 2: "we concatenate all the prompts and answers from the training set", with a special token separating segments. Without a document mask (or position resets), tokens in one example can attend to the previous, unrelated example in the same row. See <a href="../../architecture/06-decoder-only/index.html">Architecture deck 06</a>.</p></div>
+<p class="lede">20 examples of random length go into rows of 2,048 tokens. With one example per row, everything is padded to the longest example. Packing fills each row with whole examples, in order, and pads only the tail.</p>
+<div class="visual">
+  <div class="seg" id="kSeg"><button data-v="pad">One example per row</button><button data-v="pack" class="on">Packed</button></div>
+  <svg id="kSvg" viewBox="0 0 660 260" style="margin-top:10px" role="img" aria-label="Padding vs packing"></svg>
+  <p class="readout" id="kOut"></p>
+</div>
+
+<div class="deep"><h4>Packing needs a document mask</h4><p>Llama 2: "we concatenate all the prompts and answers from the training set", with a special token separating segments. Without a document mask (or position resets), tokens in one example can attend to the previous, unrelated example in the same row. See <a href="../../architecture/06-decoder-only/index.html">Architecture deck 06</a>.</p></div>
   </div>
 </section>
 
@@ -106,7 +107,7 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Quality beats quantity</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card a"><h3>Llama 2: "Quality Is All You Need"</h3><p>Meta found third-party SFT data had "insufficient diversity and quality". They collected their own and stopped at <b>27,540</b> annotations: a small set of high-quality examples beat millions of mediocre ones.</p></div>
       <div class="card e"><h3>InstructGPT: ~13k prompts</h3><p>Written by a vetted team of labelers, covering generation, open QA, brainstorming, chat, rewriting, summarization and more.</p></div>
       <div class="card b"><h3>What makes data good</h3><p>Correct, consistent in format and style, diverse in task, and at the difficulty you want the model to reach. Errors in demonstrations are imitated faithfully.</p></div>
@@ -130,7 +131,7 @@
     <span class="qtag b6">6 · Why it works</span>
     <h2>Why SFT comes first</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card a"><h3>It makes RL feasible</h3><p>RL (reinforcement learning) and preference methods learn from the model's own samples. If the model can't produce a sensible answer at all, there is nothing to compare or reward. SFT puts it in the right region.</p></div>
       <div class="card e"><h3>It defines the reference</h3><p>The SFT model is the reference policy for the KL (Kullback-Leibler divergence) penalty (PPO (Proximal Policy Optimization)) and for DPO (Direct Preference Optimization)'s log-ratios. Later stages stay close to it.</p></div>
       <div class="card b"><h3>Cheap and stable</h3><p>Plain supervised learning: no sampling, no reward model, one model in memory, and with LoRA (Low-Rank Adaptation) it fits on modest hardware (deck 03).</p></div>
@@ -144,18 +145,18 @@
     <span class="qtag b7">7 · Misconceptions</span>
     <h2>Common misconceptions</h2>
     <hr>
-    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
-    <div class="quiz myth">
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
       <p class="qq">"Training on the whole conversation is just as good."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Then the model spends capacity predicting user messages, and the loss is diluted by tokens you never want it to generate. Standard practice (Llama 2) masks prompt tokens.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"More SFT data is always better."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Llama 2 got better results from 27,540 carefully collected examples than from millions of third-party ones. Bad examples are imitated too.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"Lowest validation loss is the best SFT checkpoint."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">InstructGPT trained past the validation-loss minimum because reward-model scores and human preferences kept improving.</div>
@@ -181,27 +182,29 @@
     <span class="qtag b8">8 · Check yourself</span>
     <h2>Check yourself</h2>
     <hr>
-    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
-    <div class="quiz">
-      <p class="qq">Which label value tells a standard cross-entropy loss to skip a position?</p>
-      <div class="opts">
-      <button>A. 0</button>
-      <button>B. −1</button>
-      <button data-ok>C. −100</button>
-      <button>D. the pad token id</button>
-      </div>
-      <div class="why"><b>−100</b> (PyTorch's default ignore_index).</div>
-    </div>
-    <div class="quiz ">
-      <p class="qq">Why must the assistant's end-of-turn token be trained?</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">Otherwise the model never learns when to stop. It would keep generating past the end of the answer, often inventing the next user turn.</div>
-    </div>
-    <div class="quiz ">
-      <p class="qq">What does packing save, and what extra mechanism does it need?</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">It removes padding, so nearly every position is a real token. It needs a document mask (or position resets) so packed examples don't attend to each other.</div>
-    </div>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+  <p class="qq">Which label value tells a standard cross-entropy loss to skip a position?</p>
+  <div class="opts">
+  <button>A. 0</button>
+  <button>B. −1</button>
+  <button data-ok>C. −100</button>
+  <button>D. the pad token id</button>
+  </div>
+  <div class="why"><b>−100</b> (PyTorch's default ignore_index).</div>
+</div>
+
+<div class="quiz ">
+  <p class="qq">Why must the assistant's end-of-turn token be trained?</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">Otherwise the model never learns when to stop. It would keep generating past the end of the answer, often inventing the next user turn.</div>
+</div>
+
+<div class="quiz ">
+  <p class="qq">What does packing save, and what extra mechanism does it need?</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">It removes padding, so nearly every position is a real token. It needs a document mask (or position resets) so packed examples don't attend to each other.</div>
+</div>
   </div>
 </section>
 
@@ -210,11 +213,17 @@
     <span class="qtag b9">9 · Key takeaway</span>
     <h2>Key takeaway</h2>
     <hr>
-    <div class="take-line">SFT is next-token training on demonstrations, rendered with a chat template and with the loss only on the assistant's tokens, using fewer but better examples.</div>
-    <div class="explain"><b>Say it in 30 seconds</b><p>Supervised fine-tuning is the first post-training step. Each conversation is rendered with a chat template into one token sequence, and the model is trained with ordinary next-token loss, but only on the assistant's tokens and its end-of-turn token, so it learns to answer and to stop rather than to predict users. Examples are packed into full-length rows with a document mask to avoid wasted padding. Quality matters more than quantity: Llama 2 stopped at about 27,500 carefully collected examples. SFT teaches format and style and gives the later preference stages a sensible starting point and reference model.</p></div>
-    <div class="recap"><div><span><b>Problem:</b> base models don't follow turns, don't stop, and mimic the prompt's style.</span></div><div><span><b>Core idea:</b> chat template + loss on assistant tokens only (+ end-of-turn).</span></div><div><span><b>Practice:</b> pack with a document mask; a small, high-quality dataset; judge by behaviour, not validation loss.</span></div></div>
-    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/01_sft_loss_masking.ipynb" target="_blank" rel="noopener">01 · Supervised fine-tuning: chat templates, loss masking and packing</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/post-training/01_sft_loss_masking.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
-    <p class="start-hint">Next: <a href="../03-lora-qlora/index.html">03 · LoRA and QLoRA →</a> · Previous: <a href="../01-pipeline/index.html">← 01</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Ouyang et al. 2022 (InstructGPT §3.5, Appendix); Touvron et al. 2023 (Llama 2 §3.1: "Quality Is All You Need", 27,540 annotations, loss on answer tokens only, packing, hyperparameters).</p>
+<div class="take-line">SFT is next-token training on demonstrations, rendered with a chat template and with the loss only on the assistant's tokens, using fewer but better examples.</div>
+
+<div class="explain"><b>Say it in 30 seconds</b><p>Supervised fine-tuning is the first post-training step. Each conversation is rendered with a chat template into one token sequence, and the model is trained with ordinary next-token loss, but only on the assistant's tokens and its end-of-turn token, so it learns to answer and to stop rather than to predict users. Examples are packed into full-length rows with a document mask to avoid wasted padding. Quality matters more than quantity: Llama 2 stopped at about 27,500 carefully collected examples. SFT teaches format and style and gives the later preference stages a sensible starting point and reference model.</p></div>
+
+<div class="recap"><div><span><b>Problem:</b> base models don't follow turns, don't stop, and mimic the prompt's style.</span></div><div><span><b>Core idea:</b> chat template + loss on assistant tokens only (+ end-of-turn).</span></div><div><span><b>Practice:</b> pack with a document mask; a small, high-quality dataset; judge by behaviour, not validation loss.</span></div></div>
+
+<div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/01_sft_loss_masking.ipynb" target="_blank" rel="noopener">01 · Supervised fine-tuning: chat templates, loss masking and packing</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/post-training/01_sft_loss_masking.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+
+<p class="start-hint">Next: <a href="../03-lora-qlora/index.html">03 · LoRA and QLoRA →</a> · Previous: <a href="../01-pipeline/index.html">← 01</a> · <a href="../index.html">All decks</a></p>
+
+<p class="cite">Sources: Ouyang et al. 2022 (InstructGPT §3.5, Appendix); Touvron et al. 2023 (Llama 2 §3.1: "Quality Is All You Need", 27,540 annotations, loss on answer tokens only, packing, hyperparameters).</p>
   </div>
 </section>
 

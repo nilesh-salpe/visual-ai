@@ -1,8 +1,8 @@
 """Verify every paper record: the link resolves and, for arXiv, the title matches the abstract page.
     python3 tools/check_papers.py [cache_dir]"""
 import html, os, re, sys, time, unicodedata, urllib.request
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'decks'))
-from papers import PAPERS
+import yaml
+PAPERS = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), '..', 'content', 'papers.yml')))
 
 cache = sys.argv[1] if len(sys.argv) > 1 else '/tmp/papers_cache'
 os.makedirs(cache, exist_ok=True)

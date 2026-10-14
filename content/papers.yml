@@ -1,0 +1,867 @@
+vaswani:
+  title: Attention Is All You Need
+  authors: Vaswani et al.
+  venue: NeurIPS
+  year: 2017
+  url: https://arxiv.org/abs/1706.03762
+  summary: 'The Transformer: attention-only encoder-decoder with post-norm residual blocks, sinusoidal positions and a ReLU FFN (feed-forward network). The baseline
+    every later change is measured against.'
+  number: 28.4 BLEU on WMT 2014 English-German
+gpt2:
+  title: Language Models are Unsupervised Multitask Learners (GPT-2)
+  authors: Radford et al.
+  venue: OpenAI
+  year: 2019
+  url: https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf
+  summary: Decoder-only language model that moved layer normalization to the input of each sub-block (pre-norm) and added a final norm.
+  number: context 1,024 tokens, vocabulary 50,257
+llama:
+  title: 'LLaMA: Open and Efficient Foundation Language Models'
+  authors: Touvron et al.
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2302.13971
+  summary: 'The recipe most open models followed: pre-normalization with RMSNorm, SwiGLU with a ⅔·4d hidden size, and rotary embeddings.'
+  number: trained on 1.0–1.4T tokens
+llama2:
+  title: 'Llama 2: Open Foundation and Fine-Tuned Chat Models'
+  authors: Touvron et al.
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2307.09288
+  summary: 'Adds grouped-query attention for the 34B and 70B models and documents the chat post-training: SFT, two reward models and iterative RLHF with rejection
+    sampling and PPO.'
+  number: 27,540 SFT annotations; over 1M human comparisons
+llama3:
+  title: The Llama 3 Herd of Models
+  authors: Llama Team, AI @ Meta
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2407.21783
+  summary: Dense Transformer with GQA (8 KV heads), RoPE base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training
+    with SFT, rejection sampling and DPO in six rounds.
+  number: 128K context after six stages over ~800B tokens
+xiong:
+  title: On Layer Normalization in the Transformer Architecture
+  authors: Xiong et al.
+  venue: ICML
+  year: 2020
+  url: https://arxiv.org/abs/2002.04745
+  summary: Mean-field analysis showing post-norm has large gradients near the output at initialization, so it needs learning-rate warm-up; pre-norm does not.
+  number: pre-LN trains without warm-up
+rmsnorm:
+  title: Root Mean Square Layer Normalization
+  authors: Zhang & Sennrich
+  venue: NeurIPS
+  year: 2019
+  url: https://arxiv.org/abs/1910.07467
+  summary: Drops LayerNorm's mean-centring and keeps only re-scaling by the root mean square, with comparable quality.
+  number: 7–64% less running time
+roformer:
+  title: 'RoFormer: Enhanced Transformer with Rotary Position Embedding'
+  authors: Su et al.
+  venue: arXiv
+  year: 2021
+  url: https://arxiv.org/abs/2104.09864
+  summary: Rotates query and key pairs by position-dependent angles so the attention score depends only on relative position, with a long-term decay property.
+  number: θᵢ = 10000^(−2i/d)
+glu:
+  title: GLU Variants Improve Transformer
+  authors: Shazeer
+  venue: arXiv
+  year: 2020
+  url: https://arxiv.org/abs/2002.05202
+  summary: Replaces the Transformer FFN with gated linear units (ReGLU, GEGLU, SwiGLU…) at equal parameters by shrinking the hidden size to ⅔.
+  number: log-perplexity 1.677 (ReLU) → 1.636 (SwiGLU)
+dauphin:
+  title: Language Modeling with Gated Convolutional Networks
+  authors: Dauphin et al.
+  venue: ICML
+  year: 2017
+  url: https://arxiv.org/abs/1612.08083
+  summary: 'Introduces the gated linear unit (GLU): one projection gates another through a sigmoid.'
+  number: ''
+mqa:
+  title: 'Fast Transformer Decoding: One Write-Head is All You Need'
+  authors: Shazeer
+  venue: arXiv
+  year: 2019
+  url: https://arxiv.org/abs/1911.02150
+  summary: 'Multi-query attention: all query heads share one key/value head, cutting decode memory bandwidth with minor quality loss.'
+  number: 1 K/V head instead of h
+gqa:
+  title: 'GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints'
+  authors: Ainslie et al.
+  venue: EMNLP
+  year: 2023
+  url: https://arxiv.org/abs/2305.13245
+  summary: Grouped-query attention plus a recipe to convert multi-head checkpoints by mean-pooling key/value heads and uptraining.
+  number: uptraining with 5% of the original pretraining compute
+dsv2:
+  title: 'DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model'
+  authors: DeepSeek-AI
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2405.04434
+  summary: Multi-head latent attention (MLA) with decoupled RoPE, and DeepSeekMoE with shared and fine-grained routed experts.
+  number: KV cache −93.3%; 236B total / 21B active parameters
+wang22:
+  title: What Language Model Architecture and Pretraining Objective Work Best for Zero-Shot Generalization?
+  authors: Wang et al.
+  venue: ICML
+  year: 2022
+  url: https://arxiv.org/abs/2204.05832
+  summary: Compares causal decoders, non-causal decoders and encoder-decoders with several objectives at scale.
+  number: causal decoders best zero-shot after pretraining alone
+t5:
+  title: Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer (T5)
+  authors: Raffel et al.
+  venue: JMLR
+  year: 2020
+  url: https://arxiv.org/abs/1910.10683
+  summary: Systematic study of encoder-decoder pretraining with a span-corruption objective, framing every task as text-to-text.
+  number: corrupts 15% of tokens
+bert:
+  title: 'BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding'
+  authors: Devlin et al.
+  venue: NAACL
+  year: 2019
+  url: https://arxiv.org/abs/1810.04805
+  summary: Encoder-only model pretrained with masked language modelling; bidirectional context, but not built to generate text.
+  number: masks 15% of tokens
+pi:
+  title: Extending Context Window of Large Language Models via Positional Interpolation
+  authors: Chen et al.
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2306.15595
+  summary: Linearly down-scales position indices so a RoPE model sees only trained angles at longer lengths, then fine-tunes briefly.
+  number: to 32,768 tokens with ~1,000 fine-tuning steps
+yarn:
+  title: 'YaRN: Efficient Context Window Extension of Large Language Models'
+  authors: Peng et al.
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2309.00071
+  summary: Interpolates only low-frequency RoPE pairs (a ramp between α and β) and adds an attention temperature.
+  number: 10× fewer tokens, 2.5× fewer steps; Llama 2 to 128K
+mistral:
+  title: Mistral 7B
+  authors: Jiang et al.
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2310.06825
+  summary: A 7B model with GQA and sliding-window attention (W = 4,096) plus a rolling-buffer KV cache.
+  number: ~131K theoretical span; 8× less cache at 32K
+longformer:
+  title: 'Longformer: The Long-Document Transformer'
+  authors: Beltagy et al.
+  venue: arXiv
+  year: 2020
+  url: https://arxiv.org/abs/2004.05150
+  summary: Combines sliding-window local attention with a few global tokens so attention cost grows linearly with length.
+  number: ''
+alibi:
+  title: 'Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation'
+  authors: Press et al.
+  venue: ICLR
+  year: 2022
+  url: https://arxiv.org/abs/2108.12409
+  summary: 'No position embeddings: each head adds a fixed penalty proportional to query-key distance, with geometric slopes.'
+  number: train on 1,024, test on 2,048; 11% faster, 11% less memory
+fa1:
+  title: 'FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness'
+  authors: Dao et al.
+  venue: NeurIPS
+  year: 2022
+  url: https://arxiv.org/abs/2205.14135
+  summary: Tiles attention so scores never leave on-chip SRAM, using an online softmax and recomputation in the backward pass. Exact, with memory linear in sequence
+    length.
+  number: 'GPT-2 medium: 40.3 → 4.4 GB of memory traffic, 41.7 → 7.3 ms'
+fa2:
+  title: 'FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning'
+  authors: Dao
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2307.08691
+  summary: Fewer non-matmul FLOPs, parallelism across the sequence (outer loop over query blocks) and better work split across warps.
+  number: ~2× FA1; 50–73% of peak on A100
+fa3:
+  title: 'FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision'
+  authors: Shah et al.
+  venue: NeurIPS
+  year: 2024
+  url: https://arxiv.org/abs/2407.08608
+  summary: 'Uses Hopper features: asynchronous Tensor Cores and TMA, warp specialization, interleaved matmul and softmax, and FP8 with block quantization.'
+  number: 740 TFLOP/s FP16 (~75% of H100), ~1.2 PFLOP/s FP8
+milakov:
+  title: Online normalizer calculation for softmax
+  authors: Milakov & Gimelshein
+  venue: arXiv
+  year: 2018
+  url: https://arxiv.org/abs/1805.02867
+  summary: Computes the softmax normalizer in a single pass with a running max and a rescaled running sum, the trick FlashAttention builds on.
+  number: up to 1.3× faster softmax
+switch:
+  title: 'Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity'
+  authors: Fedus et al.
+  venue: JMLR
+  year: 2022
+  url: https://arxiv.org/abs/2101.03961
+  summary: Top-1 expert routing, an auxiliary load-balancing loss α·N·Σfᵢ·Pᵢ, expert capacity, and tricks for stable bfloat16 training.
+  number: up to 7× faster pretraining; α = 10⁻²
+mixtral:
+  title: Mixtral of Experts
+  authors: Jiang et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2401.04088
+  summary: A sparse MoE with 8 SwiGLU experts per layer and top-2 routing on the Mistral 7B architecture, with dense 32K context.
+  number: 47B total, 13B active parameters
+sparse_moe:
+  title: 'Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer'
+  authors: Shazeer et al.
+  venue: ICLR
+  year: 2017
+  url: https://arxiv.org/abs/1701.06538
+  summary: 'The modern sparsely gated MoE layer: a trainable gate picks a few experts per example, decoupling parameters from compute.'
+  number: ''
+instructgpt:
+  title: Training language models to follow instructions with human feedback (InstructGPT)
+  authors: Ouyang et al.
+  venue: NeurIPS
+  year: 2022
+  url: https://arxiv.org/abs/2203.02155
+  summary: SFT on demonstrations, a reward model from rankings, then PPO with a per-token KL penalty and a pretraining mix (PPO-ptx).
+  number: 1.3B InstructGPT preferred over 175B GPT-3
+christiano:
+  title: Deep reinforcement learning from human preferences
+  authors: Christiano et al.
+  venue: NeurIPS
+  year: 2017
+  url: https://arxiv.org/abs/1706.03741
+  summary: Learns a reward model from human comparisons of behaviour clips and trains RL against it.
+  number: feedback on <1% of interactions; ~1 hour of human time
+stiennon:
+  title: Learning to summarize from human feedback
+  authors: Stiennon et al.
+  venue: NeurIPS
+  year: 2020
+  url: https://arxiv.org/abs/2009.01325
+  summary: 'RLHF for summarization: reward model from human comparisons, PPO with a KL penalty; also gives the analytic KL of best-of-n.'
+  number: KL_bon = log n − (n−1)/n
+ppo:
+  title: Proximal Policy Optimization Algorithms
+  authors: Schulman et al.
+  venue: arXiv
+  year: 2017
+  url: https://arxiv.org/abs/1707.06347
+  summary: A clipped surrogate objective that allows several gradient steps per batch while keeping the new policy close to the old one.
+  number: ε = 0.2
+gao:
+  title: Scaling Laws for Reward Model Overoptimization
+  authors: Gao, Schulman & Hilton
+  venue: ICML
+  year: 2023
+  url: https://arxiv.org/abs/2210.10760
+  summary: Uses a "gold" reward model as ground truth to measure how true reward changes as a policy optimizes a proxy RM.
+  number: 'best-of-n: d(α − βd); RL: d(α − β log d), d = √KL'
+dpo:
+  title: 'Direct Preference Optimization: Your Language Model is Secretly a Reward Model'
+  authors: Rafailov et al.
+  venue: NeurIPS
+  year: 2023
+  url: https://arxiv.org/abs/2305.18290
+  summary: Shows the KL-regularized RLHF objective can be optimized with a classification loss on preference pairs, with no reward model or RL loop.
+  number: implicit reward β·log(π/π_ref)
+kto:
+  title: 'KTO: Model Alignment as Prospect Theoretic Optimization'
+  authors: Ethayarajh et al.
+  venue: ICML
+  year: 2024
+  url: https://arxiv.org/abs/2402.01306
+  summary: Alignment from a binary desirable/undesirable signal per output, using a prospect-theory utility instead of pairwise preferences.
+  number: matches or exceeds DPO from 1B to 30B
+lora:
+  title: 'LoRA: Low-Rank Adaptation of Large Language Models'
+  authors: Hu et al.
+  venue: ICLR
+  year: 2022
+  url: https://arxiv.org/abs/2106.09685
+  summary: Freezes the pretrained weights and trains a low-rank update BA (B initialized to zero) that can be merged after training.
+  number: 10,000× fewer trainable parameters, 3× less GPU memory (GPT-3 175B)
+qlora:
+  title: 'QLoRA: Efficient Finetuning of Quantized LLMs'
+  authors: Dettmers et al.
+  venue: NeurIPS
+  year: 2023
+  url: https://arxiv.org/abs/2305.14314
+  summary: Fine-tunes LoRA adapters through a frozen 4-bit NormalFloat base, with double quantization and paged optimizers.
+  number: 65B on one 48 GB GPU; Guanaco 99.3% of ChatGPT on Vicuna
+deepseekmath:
+  title: 'DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models'
+  authors: Shao et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2402.03300
+  summary: 'Introduces GRPO: PPO without a critic, using the mean and std of rewards within a group of samples as the baseline.'
+  number: MATH 46.8% → 51.7%, GSM8K 82.9% → 88.2%
+r1:
+  title: 'DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning'
+  authors: DeepSeek-AI
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2501.12948
+  summary: 'R1-Zero: RL with rule-based accuracy and format rewards directly on a base model; R1 adds cold-start data and a multi-stage pipeline.'
+  number: AIME 2024 pass@1 15.6% → 77.9% (R1-Zero)
+tulu3:
+  title: 'Tülu 3: Pushing Frontiers in Open Language Model Post-Training'
+  authors: Lambert et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2411.15124
+  summary: An open post-training recipe (SFT → DPO → RL) that names Reinforcement Learning with Verifiable Rewards (RLVR).
+  number: ''
+cai:
+  title: 'Constitutional AI: Harmlessness from AI Feedback'
+  authors: Bai et al.
+  venue: arXiv
+  year: 2022
+  url: https://arxiv.org/abs/2212.08073
+  summary: Self-critique and revision against written principles for SFT, then RL from AI preference labels (RLAIF) for harmlessness.
+  number: 16 principles, one sampled per comparison label
+helm:
+  title: Holistic Evaluation of Language Models (HELM)
+  authors: Liang et al.
+  venue: TMLR
+  year: 2023
+  url: https://arxiv.org/abs/2211.09110
+  summary: Standardized evaluation of many models across many scenarios and seven metrics, not accuracy alone.
+  number: 7 metrics × 16 core scenarios; 30 models on 42 scenarios
+sclar:
+  title: Quantifying Language Models' Sensitivity to Spurious Features in Prompt Design
+  authors: Sclar et al.
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2310.11324
+  summary: Shows equivalent prompt formats (separators, casing, spacing) change accuracy dramatically, and proposes reporting the spread (FormatSpread).
+  number: up to 76 accuracy points (LLaMA-2-13B)
+mmlu:
+  title: Measuring Massive Multitask Language Understanding (MMLU)
+  authors: Hendrycks et al.
+  venue: ICLR
+  year: 2021
+  url: https://arxiv.org/abs/2009.03300
+  summary: A 57-task multiple-choice benchmark spanning STEM, humanities and professional subjects.
+  number: GPT-3 175B ≈ chance + 20 points at release
+mmlupro:
+  title: 'MMLU-Pro: A More Robust and Challenging Multi-Task Language Understanding Benchmark'
+  authors: Wang et al.
+  venue: NeurIPS
+  year: 2024
+  url: https://arxiv.org/abs/2406.01574
+  summary: A harder, reasoning-focused successor with ten options per question and noisy questions removed.
+  number: accuracy drops 16–33% vs MMLU
+gpqa:
+  title: 'GPQA: A Graduate-Level Google-Proof Q&A Benchmark'
+  authors: Rein et al.
+  venue: COLM
+  year: 2024
+  url: https://arxiv.org/abs/2311.12022
+  summary: 448 expert-written science questions that skilled non-experts can't answer even with web search.
+  number: experts 65%, non-experts 34%, GPT-4 39%
+swebench:
+  title: 'SWE-bench: Can Language Models Resolve Real-World GitHub Issues?'
+  authors: Jimenez et al.
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2310.06770
+  summary: 'Real GitHub issues: the model edits the repository and the project''s own tests decide success.'
+  number: 2,294 issues; Claude 2 solved 1.96% at release
+codex:
+  title: Evaluating Large Language Models Trained on Code (Codex, HumanEval)
+  authors: Chen et al.
+  venue: arXiv
+  year: 2021
+  url: https://arxiv.org/abs/2107.03374
+  summary: HumanEval's 164 hand-written problems scored by unit tests, and the unbiased pass@k estimator.
+  number: 'Codex-12B: 28.8% pass@1, 70.2% with 100 samples'
+errorbars:
+  title: 'Adding Error Bars to Evals: A Statistical Approach to Language Model Evaluations'
+  authors: Miller
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2411.00640
+  summary: Standard errors from the central limit theorem, clustered standard errors, paired comparisons and power analysis for evals.
+  number: clustered SEs can be over 3× naive ones
+gpt3:
+  title: Language Models are Few-Shot Learners (GPT-3)
+  authors: Brown et al.
+  venue: NeurIPS
+  year: 2020
+  url: https://arxiv.org/abs/2005.14165
+  summary: 'Besides in-context learning, a systematic contamination study: 13-gram overlap flags and clean vs dirty scores.'
+  number: 13-gram overlap; a filtering bug left some overlap in
+gsm1k:
+  title: A Careful Examination of Large Language Model Performance on Grade School Arithmetic (GSM1k)
+  authors: Zhang et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2405.00332
+  summary: A fresh set of GSM8K-style problems that exposes models overfit to the public benchmark.
+  number: accuracy drops of up to 8%
+mtbench:
+  title: Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena
+  authors: Zheng et al.
+  venue: NeurIPS
+  year: 2023
+  url: https://arxiv.org/abs/2306.05685
+  summary: Measures how well strong LLMs judge open-ended answers, and documents position, verbosity and self-enhancement biases.
+  number: '>80% agreement with humans; GPT-4 position consistency 65%'
+lcalpaca:
+  title: 'Length-Controlled AlpacaEval: A Simple Way to Debias Automatic Evaluators'
+  authors: Dubois et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2404.04475
+  summary: Removes the judge's length preference by predicting win rates as if both answers had the same length.
+  number: Spearman with Chatbot Arena 0.94 → 0.98
+arena:
+  title: 'Chatbot Arena: An Open Platform for Evaluating LLMs by Human Preference'
+  authors: Chiang et al.
+  venue: ICML
+  year: 2024
+  url: https://arxiv.org/abs/2403.04132
+  summary: Crowdsourced anonymous pairwise votes on real prompts, ranked with Bradley-Terry maximum likelihood and confidence intervals.
+  number: over 240K votes
+bahdanau:
+  title: Neural Machine Translation by Jointly Learning to Align and Translate
+  authors: Bahdanau et al.
+  venue: ICLR
+  year: 2015
+  url: https://arxiv.org/abs/1409.0473
+  summary: 'Argues a fixed-length sentence vector is the bottleneck of encoder-decoders and lets the decoder (soft-)search the source: the original attention mechanism.'
+  number: ''
+seq2seq:
+  title: Sequence to Sequence Learning with Neural Networks
+  authors: Sutskever et al.
+  venue: NeurIPS
+  year: 2014
+  url: https://arxiv.org/abs/1409.3215
+  summary: 'A deep LSTM encodes the source into one fixed vector and another LSTM decodes it: the encoder-decoder the Transformer replaced.'
+  number: 34.8 BLEU on WMT'14 English-French
+luong:
+  title: Effective Approaches to Attention-based Neural Machine Translation
+  authors: Luong et al.
+  venue: EMNLP
+  year: 2015
+  url: https://arxiv.org/abs/1508.04025
+  summary: Compares global and local attention and simpler (dot-product) scoring functions for encoder-decoder translation.
+  number: ''
+bytenet:
+  title: Neural Machine Translation in Linear Time (ByteNet)
+  authors: Kalchbrenner et al.
+  venue: arXiv
+  year: 2016
+  url: https://arxiv.org/abs/1610.10099
+  summary: A dilated convolutional encoder-decoder that runs in time linear in sequence length; a parallel alternative to RNNs.
+  number: ''
+convs2s:
+  title: Convolutional Sequence to Sequence Learning (ConvS2S)
+  authors: Gehring et al.
+  venue: ICML
+  year: 2017
+  url: https://arxiv.org/abs/1705.03122
+  summary: A fully convolutional sequence-to-sequence model with gated linear units and per-layer attention, fully parallel in training.
+  number: beats the deep LSTM of Wu et al. at an order of magnitude faster speed
+gnmt:
+  title: Google's Neural Machine Translation System (GNMT)
+  authors: Wu et al.
+  venue: arXiv
+  year: 2016
+  url: https://arxiv.org/abs/1609.08144
+  summary: The production deep-LSTM translation system with attention and wordpieces that the Transformer was compared against.
+  number: 60% fewer translation errors than phrase-based production in side-by-side evaluation
+layernorm:
+  title: Layer Normalization
+  authors: Ba et al.
+  venue: arXiv
+  year: 2016
+  url: https://arxiv.org/abs/1607.06450
+  summary: Normalizes over all features of one training case instead of over the mini-batch, so it works for any batch size and for recurrent nets.
+  number: ''
+resnet:
+  title: Deep Residual Learning for Image Recognition (ResNet)
+  authors: He et al.
+  venue: CVPR
+  year: 2016
+  url: https://arxiv.org/abs/1512.03385
+  summary: Residual connections make very deep networks trainable by letting each block learn a correction to the identity.
+  number: 152 layers; 3.57% ImageNet test error (ensemble)
+shaw:
+  title: Self-Attention with Relative Position Representations
+  authors: Shaw et al.
+  venue: NAACL
+  year: 2018
+  url: https://arxiv.org/abs/1803.02155
+  summary: Adds learned relative-distance representations inside self-attention instead of absolute position vectors at the input.
+  number: +1.3 BLEU (EN-DE) and +0.3 BLEU (EN-FR) over absolute positions
+sennrich:
+  title: Neural Machine Translation of Rare Words with Subword Units
+  authors: Sennrich et al.
+  venue: ACL
+  year: 2016
+  url: https://arxiv.org/abs/1508.07909
+  summary: 'Byte-pair encoding for open-vocabulary translation: rare words become sequences of subword units.'
+  number: ''
+michel:
+  title: Are Sixteen Heads Really Better than One?
+  authors: Michel et al.
+  venue: NeurIPS
+  year: 2019
+  url: https://arxiv.org/abs/1905.10650
+  summary: Finds that a large percentage of attention heads can be removed at test time without much loss; some layers work with a single head.
+  number: ''
+inception:
+  title: Rethinking the Inception Architecture for Computer Vision
+  authors: Szegedy et al.
+  venue: CVPR
+  year: 2016
+  url: https://arxiv.org/abs/1512.00567
+  summary: Among other things, introduces label smoothing, the regularizer the Transformer uses with ε = 0.1.
+  number: ''
+kaplan:
+  title: Scaling Laws for Neural Language Models
+  authors: Kaplan et al.
+  venue: arXiv
+  year: 2020
+  url: https://arxiv.org/abs/2001.08361
+  summary: Loss falls as a power law in parameters, data and compute; also gives the ≈ 6·N·D training-compute rule of thumb.
+  number: trends spanning more than seven orders of magnitude
+palm:
+  title: 'PaLM: Scaling Language Modeling with Pathways'
+  authors: Chowdhery et al.
+  venue: JMLR
+  year: 2023
+  url: https://arxiv.org/abs/2204.02311
+  summary: A 540B dense model trained on TPU v4 Pods; introduces model FLOPs utilization (MFU) as the efficiency metric and uses SwiGLU, RoPE and multi-query attention.
+  number: ''
+zero:
+  title: 'ZeRO: Memory Optimizations Toward Training Trillion Parameter Models'
+  authors: Rajbhandari et al.
+  venue: SC
+  year: 2020
+  url: https://arxiv.org/abs/1910.02054
+  summary: Partitions optimizer states, gradients and parameters across data-parallel workers instead of replicating them.
+  number: 100B+ parameters on 400 GPUs at 15 PFLOP/s; 8× larger models than prior state of the art
+megatron21:
+  title: Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM
+  authors: Narayanan et al.
+  venue: SC
+  year: 2021
+  url: https://arxiv.org/abs/2104.04473
+  summary: Combines tensor, pipeline and data parallelism (PTD-P) with an interleaved pipeline schedule, placing tensor parallelism inside nodes.
+  number: 1T parameters at 502 PFLOP/s on 3,072 GPUs, 52% of peak
+megascale:
+  title: 'MegaScale: Scaling Large Language Model Training to More Than 10,000 GPUs'
+  authors: Jiang et al.
+  venue: NSDI
+  year: 2024
+  url: https://arxiv.org/abs/2402.15627
+  summary: 'Production training system at ByteDance: algorithm-system co-design plus diagnosis tools for stragglers and failures at 10,000+ GPU scale.'
+  number: 55.2% MFU on 12,288 GPUs (175B model), 1.34× Megatron-LM
+mooncake:
+  title: 'Mooncake: A KVCache-centric Disaggregated Architecture for LLM Serving'
+  authors: Qin et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2407.00079
+  summary: 'Kimi''s serving platform: separate prefill and decode clusters with a disaggregated KV cache pool built from CPU, DRAM and SSD resources.'
+  number: 75% more requests on real workloads
+slora:
+  title: 'S-LoRA: Serving Thousands of Concurrent LoRA Adapters'
+  authors: Sheng et al.
+  venue: MLSys
+  year: 2024
+  url: https://arxiv.org/abs/2311.03285
+  summary: Keeps adapters in host memory, pages them into a unified GPU memory pool and batches requests for different adapters together.
+  number: up to 4× throughput vs Hugging Face PEFT and naive vLLM LoRA
+punica:
+  title: 'Punica: Multi-Tenant LoRA Serving'
+  authors: Chen et al.
+  venue: MLSys
+  year: 2024
+  url: https://arxiv.org/abs/2310.18547
+  summary: A CUDA kernel (SGMV) that batches requests for many different LoRA adapters through one shared base model.
+  number: 12× throughput, +2 ms latency per token
+sdc:
+  title: Silent Data Corruptions at Scale
+  authors: Dixit et al.
+  venue: arXiv
+  year: 2021
+  url: https://arxiv.org/abs/2102.11245
+  summary: 'Meta''s account of silent data corruption: defective silicon that returns wrong results without raising errors, how one case was debugged, and mitigations.'
+  number: ''
+hopper_bench:
+  title: Benchmarking and Dissecting the Nvidia Hopper GPU Architecture
+  authors: Luo et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2402.13499
+  summary: Microbenchmarks of Hopper's memory hierarchy, FP8 tensor cores and distributed shared memory.
+  number: ''
+cores_count:
+  title: Cores that don't count
+  authors: Hochschild et al.
+  venue: HotOS
+  year: 2021
+  url: https://sigops.org/s/conferences/hotos/2021/papers/hotos21-s01-hochschild.pdf
+  summary: Google's report that a few "mercurial" CPU cores in a large fleet silently compute wrong answers.
+  number: ''
+horowitz:
+  title: Computing's Energy Problem (and what we can do about it)
+  authors: Horowitz
+  venue: ISSCC
+  year: 2014
+  url: https://doi.org/10.1109/ISSCC.2014.6757323
+  summary: 'Energy per operation vs per memory access: moving data costs far more than computing on it.'
+  number: ''
+vllm:
+  title: Efficient Memory Management for Large Language Model Serving with PagedAttention
+  authors: Kwon et al.
+  year: 2023
+  venue: SOSP
+  url: https://arxiv.org/abs/2309.06180
+  summary: Stores the KV cache in fixed-size blocks mapped by a block table, like virtual memory pages, giving near-zero fragmentation and sharing with copy-on-write.
+    The basis of vLLM.
+  number: 2–4× throughput vs FasterTransformer and Orca at the same latency
+orca:
+  title: 'Orca: A Distributed Serving System for Transformer-Based Generative Models'
+  authors: Yu et al.
+  year: 2022
+  venue: OSDI
+  url: https://www.usenix.org/conference/osdi22/presentation/yu
+  summary: Iteration-level scheduling (requests join and leave the batch after every decode step) plus selective batching (batch the matmuls, run attention per request).
+  number: 36.9× throughput over FasterTransformer at the same latency (GPT-3 175B)
+sglang:
+  title: 'SGLang: Efficient Execution of Structured Language Model Programs'
+  authors: Zheng et al.
+  year: 2024
+  venue: NeurIPS
+  url: https://arxiv.org/abs/2312.07104
+  summary: A runtime and frontend for multi-call LLM programs; RadixAttention keeps KV caches in a radix tree so shared prefixes are reused across requests automatically.
+  number: up to 6.4× higher throughput
+pope:
+  title: Efficiently Scaling Transformer Inference
+  authors: Pope et al.
+  year: 2023
+  venue: MLSys
+  url: https://arxiv.org/abs/2211.05102
+  summary: An analytical model of inference cost that picks how to partition a model across chips for a given latency target; shows prefill and decode need different
+    strategies and that multi-query attention allows much longer contexts.
+  number: 29 ms/token on PaLM 540B with int8 weights; 76% MFU on large-batch prefill; MQA enables up to 32× longer context
+megatron:
+  title: 'Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism'
+  authors: Shoeybi et al.
+  year: 2019
+  venue: arXiv
+  url: https://arxiv.org/abs/1909.08053
+  summary: Intra-layer (tensor) model parallelism that splits each attention and MLP block across GPUs with only a few all-reduce operations, implemented in plain
+    PyTorch.
+  number: 2 all-reduces per transformer block in the forward pass; 76% scaling efficiency on 512 GPUs
+splitwise:
+  title: 'Splitwise: Efficient Generative LLM Inference Using Phase Splitting'
+  authors: Patel et al.
+  year: 2024
+  venue: ISCA
+  url: https://arxiv.org/abs/2311.18677
+  summary: Characterizes prompt computation as compute-intensive and token generation as memory-intensive, and splits them onto separate machines, possibly of different
+    GPU types.
+  number: 1.4× throughput at 20% lower cost, or 2.35× throughput at the same cost and power
+distserve:
+  title: 'DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving'
+  authors: Zhong et al.
+  year: 2024
+  venue: OSDI
+  url: https://arxiv.org/abs/2401.09670
+  summary: Defines serving quality as goodput, the request rate served within both TTFT and TPOT targets, and runs prefill and decode on separate GPUs so they stop
+    interfering.
+  number: 7.4× more requests or 12.6× tighter SLO than colocated systems
+mqa_2:
+  title: 'Fast Transformer Decoding: One Write-Head is All You Need'
+  authors: Shazeer
+  year: 2019
+  venue: arXiv
+  url: https://arxiv.org/abs/1911.02150
+  summary: 'Introduces multi-query attention: all heads share one key/value head, cutting the memory bandwidth of incremental decoding with only minor quality loss.'
+  number: 1 K/V head instead of h
+gqa_2:
+  title: 'GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints'
+  authors: Ainslie et al.
+  year: 2023
+  venue: EMNLP
+  url: https://arxiv.org/abs/2305.13245
+  summary: 'Grouped-query attention: an intermediate number of key/value heads, plus a recipe to convert existing multi-head checkpoints.'
+  number: quality close to MHA, speed close to MQA; uptraining with 5% of the original pretraining compute
+dsv2_2:
+  title: 'DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model'
+  authors: DeepSeek-AI
+  year: 2024
+  venue: arXiv
+  url: https://arxiv.org/abs/2405.04434
+  summary: Introduces multi-head latent attention (MLA), which compresses keys and values into a small latent vector per token, alongside a Mixture-of-Experts design.
+  number: KV cache reduced by 93.3%; maximum generation throughput 5.76× vs DeepSeek 67B
+sarathi:
+  title: 'SARATHI: Efficient LLM Inference by Piggybacking Decodes with Chunked Prefills'
+  authors: Agrawal et al.
+  year: 2023
+  venue: arXiv
+  url: https://arxiv.org/abs/2308.16369
+  summary: Splits prefills into equal chunks and fills the rest of each batch with decodes, which "piggyback" on the compute-heavy chunk.
+  number: up to 10× decode throughput (LLaMA-13B, A6000)
+sarathi_serve:
+  title: Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve
+  authors: Agrawal et al.
+  year: 2024
+  venue: OSDI
+  url: https://arxiv.org/abs/2403.02310
+  summary: 'Chunked prefills plus stall-free scheduling: new requests are added without pausing ongoing decodes, so throughput rises without TPOT spikes.'
+  number: 2.6× serving capacity (Mistral-7B, 1 A100) and up to 3.7× (Yi-34B, 2 A100s) vs vLLM; up to 5.6× with pipeline parallelism (Falcon-180B)
+leviathan:
+  title: Fast Inference from Transformers via Speculative Decoding
+  authors: Leviathan et al.
+  year: 2023
+  venue: ICML
+  url: https://arxiv.org/abs/2211.17192
+  summary: A small model drafts tokens, the large model verifies them in parallel, and a modified rejection rule keeps the output distribution exactly unchanged.
+  number: 2–3× faster on T5-XXL with identical outputs
+chen:
+  title: Accelerating Large Language Model Decoding with Speculative Sampling
+  authors: Chen et al.
+  year: 2023
+  venue: arXiv
+  url: https://arxiv.org/abs/2302.01318
+  summary: Independent derivation of speculative sampling with a modified rejection scheme that preserves the target distribution.
+  number: 2–2.5× decoding speedup on Chinchilla 70B
+int8:
+  title: 'LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale'
+  authors: Dettmers et al.
+  year: 2022
+  venue: NeurIPS
+  url: https://arxiv.org/abs/2208.07339
+  summary: 'Finds systematic outlier features in large transformers and handles them with a mixed-precision decomposition: outlier dimensions in 16-bit, everything
+    else in 8-bit.'
+  number: more than 99.9% of values multiplied in 8-bit, no degradation up to 175B
+smoothquant:
+  title: 'SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models'
+  authors: Xiao et al.
+  year: 2023
+  venue: ICML
+  url: https://arxiv.org/abs/2211.10438
+  summary: Migrates quantization difficulty from activation outliers to weights with a mathematically equivalent per-channel scaling, enabling W8A8 (8-bit weights
+    and activations).
+  number: up to 1.56× speedup and 2× memory reduction
+gptq:
+  title: 'GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers'
+  authors: Frantar et al.
+  year: 2023
+  venue: ICLR
+  url: https://arxiv.org/abs/2210.17323
+  summary: One-shot weight quantization using approximate second-order information, quantizing one column at a time and compensating the error in the rest.
+  number: 175B model to 3–4 bits in about four GPU hours
+awq:
+  title: 'AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration'
+  authors: Lin et al.
+  year: 2024
+  venue: MLSys
+  url: https://arxiv.org/abs/2306.00978
+  summary: Weight-only low-bit quantization that protects the most important weight channels, chosen by activation magnitude, by scaling them up before quantizing.
+  number: protecting 1% of salient weights greatly reduces error; >3× over Hugging Face FP16 with its TinyChat kernels
+fp8:
+  title: FP8 Formats for Deep Learning
+  authors: Micikevicius et al.
+  year: 2022
+  venue: arXiv
+  url: https://arxiv.org/abs/2209.05433
+  summary: Defines the two FP8 encodings, E4M3 (more precision) and E5M2 (more range), and shows FP8 training and post-training quantization matching 16-bit results.
+  number: E4M3 max 448, E5M2 max 57,344
+kudo:
+  title: 'Subword Regularization: Improving Neural Network Translation Models with Multiple Subword Candidates'
+  authors: Kudo
+  venue: ACL
+  year: 2018
+  url: https://arxiv.org/abs/1804.10959
+  summary: Introduces the unigram language-model tokenizer and trains on sampled segmentations for robustness.
+  number: consistent gains, especially low-resource and out-of-domain
+sentencepiece:
+  title: 'SentencePiece: A simple and language independent subword tokenizer and detokenizer for Neural Text Processing'
+  authors: Kudo & Richardson
+  venue: EMNLP (demo)
+  year: 2018
+  url: https://arxiv.org/abs/1808.06226
+  summary: Trains subword models directly from raw sentences (whitespace becomes a symbol), making tokenization lossless and language-independent.
+  number: ''
+bpedrop:
+  title: 'BPE-Dropout: Simple and Effective Subword Regularization'
+  authors: Provilkov et al.
+  venue: ACL
+  year: 2020
+  url: https://arxiv.org/abs/1910.13267
+  summary: Randomly skips BPE merges during training to expose the model to many segmentations; standard BPE at inference.
+  number: up to +3 BLEU over BPE
+petrov:
+  title: Language Model Tokenizers Introduce Unfairness Between Languages
+  authors: Petrov et al.
+  venue: NeurIPS
+  year: 2023
+  url: https://arxiv.org/abs/2305.15425
+  summary: The same text translated into different languages can need very different numbers of tokens, which changes cost, latency and context.
+  number: up to 15× more tokens
+fim:
+  title: Efficient Training of Language Models to Fill in the Middle
+  authors: Bavarian et al.
+  venue: arXiv
+  year: 2022
+  url: https://arxiv.org/abs/2207.14255
+  summary: Moves a middle span to the end with special sentinel tokens so a left-to-right model learns infilling, without hurting normal generation.
+  number: ''
+byt5:
+  title: 'ByT5: Towards a token-free future with pre-trained byte-to-byte models'
+  authors: Xue et al.
+  venue: TACL
+  year: 2022
+  url: https://arxiv.org/abs/2105.13626
+  summary: 'A standard Transformer on raw bytes: no tokenizer, more robust to noise and spelling, at the cost of longer sequences.'
+  number: ''
+h100wp:
+  title: NVIDIA H100 Tensor Core GPU Architecture (whitepaper)
+  authors: NVIDIA
+  venue: whitepaper
+  year: 2022
+  url: https://resources.nvidia.com/en-us-tensor-core
+  summary: 'The reference for Hopper: SM layout, fourth-generation Tensor Cores, FP8, TMA, thread-block clusters and the memory system.'
+  number: 132 SMs (H100 SXM5), 989 TFLOP/s dense BF16
+mig:
+  title: NVIDIA Multi-Instance GPU User Guide
+  authors: NVIDIA
+  venue: docs
+  year: 2024
+  url: https://docs.nvidia.com/datacenter/tesla/mig-user-guide/
+  summary: How to partition a supported GPU into hardware-isolated instances with dedicated SMs, L2 slices and memory.
+  number: up to 7 instances per H100
+nccl:
+  title: NVIDIA Collective Communications Library (NCCL) documentation
+  authors: NVIDIA
+  venue: docs
+  year: 2024
+  url: https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/index.html
+  summary: The library that implements all-reduce, all-gather, reduce-scatter, broadcast and all-to-all over NVLink and the network, choosing ring or tree algorithms.
+  number: ''
+nvl72:
+  title: NVIDIA GB200 NVL72
+  authors: NVIDIA
+  venue: product page
+  year: 2024
+  url: https://www.nvidia.com/en-us/data-center/gb200-nvl72/
+  summary: 'A rack-scale NVLink domain: 72 Blackwell GPUs connected all-to-all by NVLink switches.'
+  number: 130 TB/s aggregate NVLink bandwidth

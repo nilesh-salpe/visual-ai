@@ -28,9 +28,10 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>Searching needs a question, an index and the content itself</h2>
     <hr>
-    <p class="lede">Think of a library. You arrive with a <b>question</b>, you compare it with each book's <b>label</b>, and you take <b>content</b> from the books that match. If a token's raw embedding had to be the question, the label and the content all at once, it couldn't specialize for any of those roles.</p>
-    <div class="visual"><svg id="libSvg" viewBox="0 0 660 230" role="img" aria-label="Library metaphor for query key value"></svg></div>
-    <div class="takeaway">"it" should <b>ask</b> for an animate referent, "animal" should be <b>findable</b> as animate, and what "animal" <b>passes on</b> can be different again. These are three different jobs.</div>
+<p class="lede">Think of a library. You arrive with a <b>question</b>, you compare it with each book's <b>label</b>, and you take <b>content</b> from the books that match. If a token's raw embedding had to be the question, the label and the content all at once, it couldn't specialize for any of those roles.</p>
+<div class="visual"><svg id="libSvg" viewBox="0 0 660 230" role="img" aria-label="Library metaphor for query key value"></svg></div>
+
+<div class="takeaway">"it" should <b>ask</b> for an animate referent, "animal" should be <b>findable</b> as animate, and what "animal" <b>passes on</b> can be different again. These are three different jobs.</div>
   </div>
 </section>
 
@@ -39,15 +40,15 @@
     <span class="qtag b2">2 · Limitation</span>
     <h2>Scoring with the raw embeddings, x<sub>i</sub>·x<sub>j</sub>, doesn't work well</h2>
     <hr>
-    <p class="lede">The simplest idea is to score each pair of tokens by the dot product of their embeddings. Below is that score matrix for the toy embeddings used in this deck.</p>
-    <div class="grid2" style="align-items:center">
-      <div class="visual" style="margin-top:0"><svg id="limSvg" viewBox="0 0 330 270" role="img" aria-label="Raw embedding dot products"></svg></div>
-      <div>
-        <div class="card d"><h3>Symmetric</h3><p>x<sub>i</sub>·x<sub>j</sub> = x<sub>j</sub>·x<sub>i</sub>. If "it" looks for "animal", "animal" must look for "it" just as strongly.</p></div>
-        <div class="card d" style="margin-top:8px"><h3>Each word matches itself best</h3><p>The diagonal dominates: "it" scores 1.02 with itself and only 0.10 with "animal".</p></div>
-        <div class="card d" style="margin-top:8px"><h3>One vector, three jobs</h3><p>What a word is matched on and what it passes on are forced to be the same vector.</p></div>
-      </div>
-    </div>
+<p class="lede">The simplest idea is to score each pair of tokens by the dot product of their embeddings. Below is that score matrix for the toy embeddings used in this deck.</p>
+<div class="grid2" style="align-items:center">
+  <div class="visual" style="margin-top:0"><svg id="limSvg" viewBox="0 0 330 270" role="img" aria-label="Raw embedding dot products"></svg></div>
+  <div>
+    <div class="card d"><h3>Symmetric</h3><p>x<sub>i</sub>·x<sub>j</sub> = x<sub>j</sub>·x<sub>i</sub>. If "it" looks for "animal", "animal" must look for "it" just as strongly.</p></div>
+    <div class="card d" style="margin-top:8px"><h3>Each word matches itself best</h3><p>The diagonal dominates: "it" scores 1.02 with itself and only 0.10 with "animal".</p></div>
+    <div class="card d" style="margin-top:8px"><h3>One vector, three jobs</h3><p>What a word is matched on and what it passes on are forced to be the same vector.</p></div>
+  </div>
+</div>
   </div>
 </section>
 
@@ -56,8 +57,8 @@
     <span class="qtag b3">3 · Your turn</span>
     <h2>How would you separate the roles?</h2>
     <hr>
-    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
-    <div class="quiz">
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
       <p class="qq">How can "it" look for animate things without "animal" having to look for pronouns?</p>
       <div class="opts">
       <button>A. Keep using x<sub>i</sub>·x<sub>j</sub> but normalize the embeddings</button>
@@ -75,14 +76,14 @@
     <span class="qtag b4">4 · Core idea</span>
     <h2>Three learned projections of the same token: q = xW<sup>Q</sup>, k = xW<sup>K</sup>, v = xW<sup>V</sup></h2>
     <hr>
-    <p class="lede">Every token's vector x is multiplied by three learned matrices. The toy model below has d<sub>model</sub> = 4 and d<sub>k</sub> = 3; the paper uses 512 and 64. All numbers are computed live. Pick a token.</p>
-    <div class="visual">
-      <div class="seg" id="tokSeg"><button data-v="0">animal</button><button data-v="1">street</button><button data-v="2" class="on">it</button><button data-v="3">tired</button></div>
-      <svg id="projSvg" viewBox="0 0 660 250" style="margin-top:10px" role="img" aria-label="Projection into q k v"></svg>
-    </div>
-    <p class="caption">Toy features of x: [animate, place, pronoun, state]. The projection weights are hand-set so the example is readable; in the paper they are learned.</p>
-  
-    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 138" role="img" aria-label="Three learned projections of the same token give it three separate roles." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">x</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">token vector, 512</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">q = xW_Q</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">what I look for</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">k = xW_K</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">how I can be found</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">v = xW_V</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">what I hand over</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">softmax(qkᵀ/√d_k)·v</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">output</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Three learned projections of the same token give it three separate roles.</p></div><!--/x:glance-->
+<p class="lede">Every token's vector x is multiplied by three learned matrices. The toy model below has d<sub>model</sub> = 4 and d<sub>k</sub> = 3; the paper uses 512 and 64. All numbers are computed live. Pick a token.</p>
+<div class="visual">
+  <div class="seg" id="tokSeg"><button data-v="0">animal</button><button data-v="1">street</button><button data-v="2" class="on">it</button><button data-v="3">tired</button></div>
+  <svg id="projSvg" viewBox="0 0 660 250" style="margin-top:10px" role="img" aria-label="Projection into q k v"></svg>
+</div>
+
+<p class="caption">Toy features of x: [animate, place, pronoun, state]. The projection weights are hand-set so the example is readable; in the paper they are learned.</p>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 138" role="img" aria-label="Three learned projections of the same token give it three separate roles." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">x</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">token vector, 512</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">q = xW_Q</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">what I look for</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">k = xW_K</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">how I can be found</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">v = xW_V</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">what I hand over</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">softmax(qkᵀ/√d_k)·v</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">output</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Three learned projections of the same token give it three separate roles.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -91,12 +92,13 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Compatibility → weights → weighted sum of values</h2>
     <hr>
-    <p class="lede">The query of the selected token is compared with <b>every key</b> by dot product. The scores are scaled by 1/√d<sub>k</sub> and passed through a softmax to give weights that sum to 1. The output is the <b>weighted sum of the values</b>.</p>
-    <div class="visual">
-      <div class="seg" id="qSeg"><button data-v="0">query: animal</button><button data-v="1">query: street</button><button data-v="2" class="on">query: it</button><button data-v="3">query: tired</button></div>
-      <svg id="matchSvg" viewBox="0 0 660 300" style="margin-top:10px" role="img" aria-label="Query key matching"></svg>
-    </div>
-    <div class="takeaway">Because q(it) is aligned with k(animal), "it" ends up taking most of its output from v(animal). That is the attention function from §3.2, computed live.</div>
+<p class="lede">The query of the selected token is compared with <b>every key</b> by dot product. The scores are scaled by 1/√d<sub>k</sub> and passed through a softmax to give weights that sum to 1. The output is the <b>weighted sum of the values</b>.</p>
+<div class="visual">
+  <div class="seg" id="qSeg"><button data-v="0">query: animal</button><button data-v="1">query: street</button><button data-v="2" class="on">query: it</button><button data-v="3">query: tired</button></div>
+  <svg id="matchSvg" viewBox="0 0 660 300" style="margin-top:10px" role="img" aria-label="Query key matching"></svg>
+</div>
+
+<div class="takeaway">Because q(it) is aligned with k(animal), "it" ends up taking most of its output from v(animal). That is the attention function from §3.2, computed live.</div>
   </div>
 </section>
 
@@ -105,9 +107,10 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>All tokens at once, in matrix form</h2>
     <hr>
-    <p class="lede">Stack the token vectors into X (n × d<sub>model</sub>). Then Q = XW<sup>Q</sup>, K = XW<sup>K</sup> and V = XW<sup>V</sup> are three matrix multiplications, and every query is matched against every key in one product, QKᵀ.</p>
-    <div class="visual"><svg id="matSvg" viewBox="0 0 660 240" role="img" aria-label="Matrix form of Q K V"></svg></div>
-    <div class="paper"><b>Shapes in the paper (per head):</b> X: n × 512 · W<sup>Q</sup>, W<sup>K</sup>: 512 × 64 · W<sup>V</sup>: 512 × 64 · Q, K, V: n × 64 · QKᵀ: n × n. Deck 06 shows how 8 such heads run side by side.</div>
+<p class="lede">Stack the token vectors into X (n × d<sub>model</sub>). Then Q = XW<sup>Q</sup>, K = XW<sup>K</sup> and V = XW<sup>V</sup> are three matrix multiplications, and every query is matched against every key in one product, QKᵀ.</p>
+<div class="visual"><svg id="matSvg" viewBox="0 0 660 240" role="img" aria-label="Matrix form of Q K V"></svg></div>
+
+<div class="paper"><b>Shapes in the paper (per head):</b> X: n × 512 · W<sup>Q</sup>, W<sup>K</sup>: 512 × 64 · W<sup>V</sup>: 512 × 64 · Q, K, V: n × 64 · QKᵀ: n × n. Deck 06 shows how 8 such heads run side by side.</div>
   </div>
 </section>
 
@@ -137,7 +140,7 @@
     <span class="qtag b6">6 · Why it works</span>
     <h2>Why separate Q, K and V work</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card c"><h3>Asymmetric matching</h3><p>q<sub>i</sub>·k<sub>j</sub> ≠ q<sub>j</sub>·k<sub>i</sub> in general, so "it → animal" can be strong while "animal → it" is weak.</p></div>
       <div class="card b"><h3>Specialized roles</h3><p>Keys can expose the features worth matching on (animate, place). Queries can ask for exactly those features.</p></div>
       <div class="card a"><h3>Content decoupled from matching</h3><p>Values carry what is passed on, which can differ from what made the match.</p></div>
@@ -151,18 +154,18 @@
     <span class="qtag b7">7 · Misconceptions</span>
     <h2>Common misconceptions</h2>
     <hr>
-    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
-    <div class="quiz myth">
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
       <p class="qq">"Q, K and V are three different inputs."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">In <b>self-attention</b> all three are projections of the same input X. Only in encoder-decoder attention do they come from different places (Q from the decoder, K and V from the encoder).</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"Keys and values are the same thing."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">They come from the same tokens but use different projections. The <b>key</b> decides how much weight a token gets; the <b>value</b> is what actually gets passed on.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"Attention picks the single best-matching value."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">It outputs a <b>weighted average</b> of all values. Softmax gives every key some weight; in the toy, "it" still takes 15% from "street".</div>
@@ -188,8 +191,8 @@
     <span class="qtag b8">8 · Check yourself</span>
     <h2>Check yourself</h2>
     <hr>
-    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
-    <div class="quiz">
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
       <p class="qq">In the base model, what is the shape of one head's W<sup>Q</sup>?</p>
       <div class="opts">
       <button>A. 64 × 64</button>
@@ -199,7 +202,7 @@
       </div>
       <div class="why"><b>512 × 64</b>: d<sub>model</sub> × d<sub>k</sub>, with d<sub>k</sub> = 512 / 8 heads (§3.2.2).</div>
     </div>
-    <div class="quiz">
+<div class="quiz">
       <p class="qq">In encoder-decoder attention, which come from the encoder output?</p>
       <div class="opts">
       <button>A. Queries only</button>
@@ -209,11 +212,11 @@
       </div>
       <div class="why"><b>Keys and values.</b> Queries come from the decoder (§3.2.3).</div>
     </div>
-    <div class="quiz ">
-      <p class="qq">In the toy, q(it)·k(animal) is the highest score. Why does "it" still give 15% of its weight to "street"?</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">Softmax never outputs exact zeros for finite scores. Every key gets <b>some</b> weight, in proportion to exp(score / √d<sub>k</sub>).</div>
-    </div>
+<div class="quiz ">
+  <p class="qq">In the toy, q(it)·k(animal) is the highest score. Why does "it" still give 15% of its weight to "street"?</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">Softmax never outputs exact zeros for finite scores. Every key gets <b>some</b> weight, in proportion to exp(score / √d<sub>k</sub>).</div>
+</div>
   </div>
 </section>
 
@@ -222,13 +225,16 @@
     <span class="qtag b9">9 · Key takeaway</span>
     <h2>Key takeaway</h2>
     <hr>
-    <div class="take-line">Queries ask, keys answer, values deliver. softmax(q·k / √d<sub>k</sub>) decides how much of each value a token takes.</div>
-    <div class="explain"><b>Say it in 30 seconds</b><p>Each token's vector is projected three ways by learned matrices: a query (what it is looking for), a key (what it can be matched on) and a value (what it passes on). Compatibility is the dot product of a query with each key, scaled by 1/√d<sub>k</sub> and softmaxed into weights; the output is the weighted sum of values. Separate projections make matching asymmetric and let content differ from the features used for matching.</p></div>
-    <div class="recap">
-      <div><span><b>Problem:</b> one embedding can't play all three roles: asking, being matched, and supplying content.</span></div>
-      <div><span><b>Core idea:</b> learned projections give each token a query, a key and a value. softmax(q·k / √d<sub>k</sub>) weights the values to produce the output.</span></div>
-    </div>
-    <p class="start-hint">Next: <a href="../05-scaled-dot-product-attention/index.html">05 · Scaled dot-product attention →</a> · Previous: <a href="../03-self-attention/index.html">← 03</a> · <a href="../index.html">All concepts</a></p>
+<div class="take-line">Queries ask, keys answer, values deliver. softmax(q·k / √d<sub>k</sub>) decides how much of each value a token takes.</div>
+
+<div class="explain"><b>Say it in 30 seconds</b><p>Each token's vector is projected three ways by learned matrices: a query (what it is looking for), a key (what it can be matched on) and a value (what it passes on). Compatibility is the dot product of a query with each key, scaled by 1/√d<sub>k</sub> and softmaxed into weights; the output is the weighted sum of values. Separate projections make matching asymmetric and let content differ from the features used for matching.</p></div>
+
+<div class="recap">
+  <div><span><b>Problem:</b> one embedding can't play all three roles: asking, being matched, and supplying content.</span></div>
+  <div><span><b>Core idea:</b> learned projections give each token a query, a key and a value. softmax(q·k / √d<sub>k</sub>) weights the values to produce the output.</span></div>
+</div>
+
+<p class="start-hint">Next: <a href="../05-scaled-dot-product-attention/index.html">05 · Scaled dot-product attention →</a> · Previous: <a href="../03-self-attention/index.html">← 03</a> · <a href="../index.html">All concepts</a></p>
   </div>
 </section>
 
@@ -333,8 +339,6 @@
     svg('text', { x: 20, y: 205, class: 't', text: 'rows = tokens (animal, street, it, tired). One matrix product QKᵀ scores every query against every key at once.' }, s);
   })();
 })();
-</script>
-<script>
 (() => {
   const s = document.getElementById('limSvg'), T = ['animal', 'street', 'it', 'tired'];
   const X = [[1, 0, 0, 0.2], [0, 1, 0, 0], [0.1, 0.1, 1, 0], [0.3, 0, 0, 1]];

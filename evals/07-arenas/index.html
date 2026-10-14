@@ -6,7 +6,6 @@
 <title>Arenas and Ratings</title>
 <link rel="stylesheet" href="../../shared/deck.css">
 <link rel="stylesheet" href="../../shared/learn.css">
-
 </head>
 <body data-deck="Arenas and ratings" data-home="../index.html" data-home-label="Evals">
 
@@ -28,7 +27,7 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>How an arena works</h2>
     <hr>
-    <div class="grid3">
+<div class="grid3">
       <div class="card a"><h3>Real prompts</h3><p>Users bring their own questions, so the distribution reflects actual use, and new prompts keep arriving, so there's no fixed test set to overfit.</p></div>
       <div class="card b"><h3>Anonymous pairs</h3><p>Two models answer the same prompt; the user votes for the better one (or a tie) before model names are revealed.</p></div>
       <div class="card e"><h3>Ratings from votes</h3><p>Chatbot Arena collected "over 240K votes" in the period covered by its paper and turns them into ratings with a statistical model.</p></div>
@@ -41,7 +40,7 @@
     <span class="qtag b2">2 · Limitation</span>
     <h2>Turning votes into a ranking is not trivial</h2>
     <hr>
-    <div class="grid3">
+<div class="grid3">
       <div class="card d"><h3>Not everyone plays everyone</h3><p>Some pairs get thousands of votes, others few. Win rates against different opponents aren't directly comparable.</p></div>
       <div class="card b"><h3>Votes are noisy</h3><p>Users disagree and prompts vary in difficulty, so any rating has uncertainty that must be reported.</p></div>
       <div class="card c"><h3>Online Elo depends on order</h3><p>Chess-style Elo updates after each game, so the same votes processed in a different order give different ratings, and K controls how much recent votes dominate.</p></div>
@@ -54,8 +53,8 @@
     <span class="qtag b3">3 · Your turn</span>
     <h2>Read a Bradley-Terry rating</h2>
     <hr>
-    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
-    <div class="quiz">
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
       <p class="qq">On the Elo-style scale (400/ln 10 ≈ 174 points per log-odds unit), model A is rated 100 points above model B. Roughly how often should A win a head-to-head vote?</p>
       <div class="opts">
       <button>A. 50%</button>
@@ -73,13 +72,12 @@
     <span class="qtag b4">4 · Core idea</span>
     <h2>Bradley-Terry vs online Elo</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card a"><h3>Bradley-Terry (maximum likelihood)</h3><p>Fit all strengths ξ jointly to all votes: maximize Σ log σ(ξ<sub>winner</sub> − ξ<sub>loser</sub>). The result doesn't depend on vote order, uses every comparison, and comes with standard errors. Chatbot Arena estimates BT (Bradley-Terry) coefficients and reports intervals via a sandwich estimator and bootstrap.</p></div>
       <div class="card b"><h3>Online Elo</h3><p>After each vote, move the winner up and the loser down by K·(1 − expected score). Cheap and incremental, but sensitive to K and to the order of votes, and with no built-in uncertainty.</p></div>
     </div>
-    <div class="eq">P(i beats j) = σ(ξᵢ − ξⱼ) = 1 / (1 + 10<sup>−(Rᵢ − Rⱼ)/400</sup>)  with  R = 400·ξ / ln 10</div>
-
-    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Order-independent ratings with honest uncertainty." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">user prompt</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">real, fresh</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">two anonymous models</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">answer side by</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">side</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">vote</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">A, B or tie</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">Bradley-Terry MLE</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">over all votes</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">rating ± CI</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">Elo-like scale</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Order-independent ratings with honest uncertainty.</p></div><!--/x:glance-->
+<div class="eq">P(i beats j) = σ(ξᵢ − ξⱼ) = 1 / (1 + 10<sup>−(Rᵢ − Rⱼ)/400</sup>)  with  R = 400·ξ / ln 10</div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Order-independent ratings with honest uncertainty." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">user prompt</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">real, fresh</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">two anonymous models</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">answer side by</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">side</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">vote</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">A, B or tie</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">Bradley-Terry MLE</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">over all votes</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">rating ± CI</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">Elo-like scale</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Order-independent ratings with honest uncertainty.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -88,12 +86,12 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Same votes, different Elo <span class="ill">simulation</span></h2>
     <hr>
-    <p class="lede">6 models with known true strengths and 3,000 simulated votes. Shuffle the order of the same votes and re-run online Elo; Bradley-Terry (fitted in your browser) doesn't move.</p>
-    <div class="visual">
-      <div class="controls" style="margin-top:0"><button class="btn primary" id="aShuf">shuffle vote order</button><label class="ctl">Elo K <input type="range" id="aK" min="4" max="64" step="4" value="16"> <output id="aKo"></output></label></div>
-      <svg id="aSvg" viewBox="0 0 660 250" style="margin-top:10px" role="img" aria-label="Elo vs Bradley-Terry"></svg>
-      <div class="legend"><span><i style="background:var(--faint)"></i>true</span><span><i style="background:var(--a)"></i>Bradley-Terry</span><span><i style="background:var(--d)"></i>online Elo (this order)</span></div>
-    </div>
+<p class="lede">6 models with known true strengths and 3,000 simulated votes. Shuffle the order of the same votes and re-run online Elo; Bradley-Terry (fitted in your browser) doesn't move.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><button class="btn primary" id="aShuf">shuffle vote order</button><label class="ctl">Elo K <input type="range" id="aK" min="4" max="64" step="4" value="16"> <output id="aKo"></output></label></div>
+  <svg id="aSvg" viewBox="0 0 660 250" style="margin-top:10px" role="img" aria-label="Elo vs Bradley-Terry"></svg>
+  <div class="legend"><span><i style="background:var(--faint)"></i>true</span><span><i style="background:var(--a)"></i>Bradley-Terry</span><span><i style="background:var(--d)"></i>online Elo (this order)</span></div>
+</div>
   </div>
 </section>
 
@@ -102,7 +100,7 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Read the intervals, not just the ranks</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card a"><h3>Overlap means "statistically tied"</h3><p>If two models' intervals overlap heavily, their order may flip with more votes. Rank bands are more honest than strict ranks.</p></div>
       <div class="card e"><h3>Intervals shrink with votes</h3><p>Popular models get many votes and tight intervals; new models start uncertain. Arena's paper also studies sampling pairs to converge faster.</p></div>
       <div class="card b"><h3>Style and length matter</h3><p>Human voters, like LLM (large language model) judges, may prefer longer or better-formatted answers, so arenas measure user preference, not correctness alone.</p></div>
@@ -126,7 +124,7 @@
     <span class="qtag b6">6 · Why it works</span>
     <h2>Why arenas became a standard reference</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card a"><h3>Hard to overfit</h3><p>Prompts are fresh and diverse; there's no published test set to train on.</p></div>
       <div class="card e"><h3>Matches what users feel</h3><p>Ratings reflect preferences on real tasks, and the Arena paper reports crowdsourced votes agree well with expert raters.</p></div>
       <div class="card b"><h3>Principled statistics</h3><p>Bradley-Terry plus confidence intervals turns noisy, unbalanced votes into a ranking with honest uncertainty.</p></div>
@@ -140,18 +138,18 @@
     <span class="qtag b7">7 · Misconceptions</span>
     <h2>Common misconceptions</h2>
     <hr>
-    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
-    <div class="quiz myth">
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
       <p class="qq">"An arena rating is a chess Elo computed game by game."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Chatbot Arena fits Bradley-Terry coefficients by maximum likelihood over all votes, which is order-independent, and reports intervals. It is displayed on an Elo-like scale.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"A higher rank always means a better model."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Neighbouring models often have overlapping intervals. Read rank bands, not strict positions.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"Arena ratings measure correctness."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">They measure which answer users prefer, which mixes correctness, helpfulness, style and length.</div>
@@ -177,8 +175,8 @@
     <span class="qtag b8">8 · Check yourself</span>
     <h2>Check yourself</h2>
     <hr>
-    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
-    <div class="quiz">
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
       <p class="qq">Which property does Bradley-Terry maximum likelihood have that online Elo lacks?</p>
       <div class="opts">
       <button>A. It is faster to update</button>
@@ -188,16 +186,17 @@
       </div>
       <div class="why"><b>Order independence</b>: it fits all votes jointly.</div>
     </div>
-    <div class="quiz ">
-      <p class="qq">Convert a Bradley-Terry strength difference of 1.0 (log-odds) to the Elo scale and a win probability.</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">400/ln 10 ≈ 174 points; P(win) = σ(1.0) ≈ 0.73.</div>
-    </div>
-    <div class="quiz ">
-      <p class="qq">Why must arena leaderboards publish confidence intervals?</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">Votes are noisy and unevenly distributed across models, so ratings have uncertainty; close models may be statistically indistinguishable.</div>
-    </div>
+<div class="quiz ">
+  <p class="qq">Convert a Bradley-Terry strength difference of 1.0 (log-odds) to the Elo scale and a win probability.</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">400/ln 10 ≈ 174 points; P(win) = σ(1.0) ≈ 0.73.</div>
+</div>
+
+<div class="quiz ">
+  <p class="qq">Why must arena leaderboards publish confidence intervals?</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">Votes are noisy and unevenly distributed across models, so ratings have uncertainty; close models may be statistically indistinguishable.</div>
+</div>
   </div>
 </section>
 
@@ -206,11 +205,17 @@
     <span class="qtag b9">9 · Key takeaway</span>
     <h2>Key takeaway</h2>
     <hr>
-    <div class="take-line">Arenas turn anonymous head-to-head votes on real prompts into ratings with Bradley-Terry maximum likelihood, which is order-independent, and should always be read with their confidence intervals.</div>
-    <div class="explain"><b>Say it in 30 seconds</b><p>Chatbot Arena shows users two anonymous models answering their own prompt and asks which is better, collecting hundreds of thousands of votes on real, ever-changing prompts that can't be overfit. To rank models from unbalanced, noisy votes it fits the Bradley-Terry model, where the probability that one model beats another is the sigmoid of their strength difference, by maximum likelihood over all votes, and reports confidence intervals. Online Elo, which updates after each vote, depends on vote order and the step size. The ratings are shown on an Elo-like scale where 100 points is about a 64 percent win rate. Arenas measure user preference, including style, so read rank bands and use them alongside benchmarks.</p></div>
-    <div class="recap"><div><span><b>Problem:</b> benchmarks miss real use; votes are noisy and unbalanced.</span></div><div><span><b>Core idea:</b> Bradley-Terry MLE (maximum likelihood estimation) over all votes, with confidence intervals.</span></div><div><span><b>Watch:</b> Elo order dependence; overlapping intervals; preference ≠ correctness.</span></div></div>
-    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb" target="_blank" rel="noopener">04 · LLM judges and arena ratings</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
-    <p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../06-llm-as-judge/index.html">← 06</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Chiang et al. 2024, "Chatbot Arena: An Open Platform for Evaluating LLMs by Human Preference" (240K+ votes; Bradley-Terry maximum likelihood with sandwich and bootstrap intervals); Zheng et al. 2023 (MT-Bench and Arena agreement); Elo 1978.</p>
+<div class="take-line">Arenas turn anonymous head-to-head votes on real prompts into ratings with Bradley-Terry maximum likelihood, which is order-independent, and should always be read with their confidence intervals.</div>
+
+<div class="explain"><b>Say it in 30 seconds</b><p>Chatbot Arena shows users two anonymous models answering their own prompt and asks which is better, collecting hundreds of thousands of votes on real, ever-changing prompts that can't be overfit. To rank models from unbalanced, noisy votes it fits the Bradley-Terry model, where the probability that one model beats another is the sigmoid of their strength difference, by maximum likelihood over all votes, and reports confidence intervals. Online Elo, which updates after each vote, depends on vote order and the step size. The ratings are shown on an Elo-like scale where 100 points is about a 64 percent win rate. Arenas measure user preference, including style, so read rank bands and use them alongside benchmarks.</p></div>
+
+<div class="recap"><div><span><b>Problem:</b> benchmarks miss real use; votes are noisy and unbalanced.</span></div><div><span><b>Core idea:</b> Bradley-Terry MLE (maximum likelihood estimation) over all votes, with confidence intervals.</span></div><div><span><b>Watch:</b> Elo order dependence; overlapping intervals; preference ≠ correctness.</span></div></div>
+
+<div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb" target="_blank" rel="noopener">04 · LLM judges and arena ratings</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+
+<p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../06-llm-as-judge/index.html">← 06</a> · <a href="../index.html">All decks</a></p>
+
+<p class="cite">Sources: Chiang et al. 2024, "Chatbot Arena: An Open Platform for Evaluating LLMs by Human Preference" (240K+ votes; Bradley-Terry maximum likelihood with sandwich and bootstrap intervals); Zheng et al. 2023 (MT-Bench and Arena agreement); Elo 1978.</p>
   </div>
 </section>
 

@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="../../shared/deck.css">
 <link rel="stylesheet" href="../../shared/learn.css">
 <link rel="stylesheet" href="../tk.css">
-
 </head>
 <body data-deck="SentencePiece" data-home="../index.html" data-home-label="Tokenization">
 
@@ -29,11 +28,12 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>Tokenizing and detokenizing raw text is language-dependent</h2>
     <hr>
-    <div class="grid2">
-      <div class="visual" style="margin-top:0"><h3>English</h3><p class="caption" style="margin-top:4px">Raw: <code>Hello world.</code><br>Pre-tokenized: <code>[Hello] [world] [.]</code></p><p>The pre-tokenized form has lost the fact that there was <b>no space</b> between "world" and ".", so the detokenizer has to guess with language rules.</p></div>
-      <div class="visual" style="margin-top:0"><h3>Japanese</h3><p class="caption" style="margin-top:4px">Raw: <code>こんにちは世界。</code> (Hello world.)<br>Pre-tokenized: <code>[こんにちは] [世界] [。]</code></p><p>There are no spaces at all, so splitting into words needs a separate word segmenter, and detokenizing must <b>not</b> insert spaces.</p></div>
-    </div>
-    <div class="cite">Examples from the SentencePiece paper, §3.1.</div>
+<div class="grid2">
+  <div class="visual" style="margin-top:0"><h3>English</h3><p class="caption" style="margin-top:4px">Raw: <code>Hello world.</code><br>Pre-tokenized: <code>[Hello] [world] [.]</code></p><p>The pre-tokenized form has lost the fact that there was <b>no space</b> between "world" and ".", so the detokenizer has to guess with language rules.</p></div>
+  <div class="visual" style="margin-top:0"><h3>Japanese</h3><p class="caption" style="margin-top:4px">Raw: <code>こんにちは世界。</code> (Hello world.)<br>Pre-tokenized: <code>[こんにちは] [世界] [。]</code></p><p>There are no spaces at all, so splitting into words needs a separate word segmenter, and detokenizing must <b>not</b> insert spaces.</p></div>
+</div>
+
+<div class="cite">Examples from the SentencePiece paper, §3.1.</div>
   </div>
 </section>
 
@@ -42,7 +42,7 @@
     <span class="qtag b2">2 · Limitation</span>
     <h2>Hand-written pre- and post-processors don't scale across languages</h2>
     <hr>
-    <div class="grid3">
+<div class="grid3">
       <div class="card d"><h3>Hand-crafted rules</h3><p>Moses, the standard toolkit at the time, uses language-dependent rules "whose effectiveness for NMT (neural machine translation) has not been proven".</p></div>
       <div class="card b"><h3>European bias</h3><p>These tools were "mainly designed for European languages where words are segmented with whitespaces".</p></div>
       <div class="card c"><h3>Multilingual pain</h3><p>Every language needs its own pre/post-processor configuration, which makes multilingual models hard to build (§1).</p></div>
@@ -55,8 +55,8 @@
     <span class="qtag b3">3 · Your turn</span>
     <h2>Make it reversible in any language</h2>
     <hr>
-    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
-    <div class="quiz">
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
       <p class="qq">How can a tokenizer be exactly reversible on raw text in any language, with no language-specific rules?</p>
       <div class="opts">
       <button>A. Keep a per-language list of spacing rules</button>
@@ -74,14 +74,14 @@
     <span class="qtag b4">4 · Core idea</span>
     <h2>Raw text in, whitespace as a symbol, lossless out</h2>
     <hr>
-    <div class="eq">Decode( Encode( Normalize(text) ) ) = Normalize(text)</div>
-    <div class="grid3" style="margin-top:14px">
-      <div class="card a"><h3>Raw sentences</h3><p>"SentencePiece can train subword models directly from raw sentences", with no word segmenter needed.</p></div>
-      <div class="card b"><h3>▁ for whitespace</h3><p>Spaces are escaped as ▁ (U+2581), so <code>Hello▁world.</code> → <code>[Hello] [▁wor] [ld] [.]</code>.</p></div>
-      <div class="card e"><h3>Two algorithms</h3><p>Implements both BPE (Sennrich et al.) and the unigram LM (Kudo), selected as a training option.</p></div>
-    </div>
+<div class="eq">Decode( Encode( Normalize(text) ) ) = Normalize(text)</div>
 
-    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Language-independent: no hand-written rules for where words start." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">raw sentence</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">no pre-tokenizer</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">normalize</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">NFKC by default</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">spaces → ▁</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">whitespace is a</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">symbol</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">BPE or unigram</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">on the whole</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">stream</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">decode</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">join, ▁ → space:</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">lossless</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Language-independent: no hand-written rules for where words start.</p></div><!--/x:glance-->
+<div class="grid3" style="margin-top:14px">
+  <div class="card a"><h3>Raw sentences</h3><p>"SentencePiece can train subword models directly from raw sentences", with no word segmenter needed.</p></div>
+  <div class="card b"><h3>▁ for whitespace</h3><p>Spaces are escaped as ▁ (U+2581), so <code>Hello▁world.</code> → <code>[Hello] [▁wor] [ld] [.]</code>.</p></div>
+  <div class="card e"><h3>Two algorithms</h3><p>Implements both BPE (Sennrich et al.) and the unigram LM (Kudo), selected as a training option.</p></div>
+</div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Language-independent: no hand-written rules for where words start." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">raw sentence</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">no pre-tokenizer</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">normalize</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">NFKC by default</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">spaces → ▁</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">whitespace is a</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">symbol</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">BPE or unigram</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">on the whole</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">stream</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">decode</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">join, ▁ → space:</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">lossless</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Language-independent: no hand-written rules for where words start.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -90,16 +90,16 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Encode and decode, step by step</h2>
     <hr>
-    <p class="lede">Top: the paper's real example (Figure 1, a model trained with vocabulary size 1000). Bottom: try your own text. Normalization and the ▁ escape are computed exactly; the subword split below them is <span class="ill">illustrative</span>, since no trained model runs in this page.</p>
-    <div class="visual">
-      <h3>Paper example</h3>
-      <div class="tokrow"><div class="lab">input</div><div class="toks"><span class="tok c0">Hello world.</span></div><div class="cnt"></div></div>
-      <div class="tokrow"><div class="lab">spm_encode</div><div id="figToks"></div><div class="cnt">5</div></div>
-      <div class="tokrow"><div class="lab">spm_decode</div><div class="toks"><span class="tok c3">Hello world.</span></div><div class="cnt">✓</div></div>
-      <h3 style="margin-top:16px">Your text</h3>
-      <input class="tk-in" id="spIn" value="ＡＢＣ  costs  ½ price." style="width:100%">
-      <div id="spRows" style="margin-top:8px"></div>
-    </div>
+<p class="lede">Top: the paper's real example (Figure 1, a model trained with vocabulary size 1000). Bottom: try your own text. Normalization and the ▁ escape are computed exactly; the subword split below them is <span class="ill">illustrative</span>, since no trained model runs in this page.</p>
+<div class="visual">
+  <h3>Paper example</h3>
+  <div class="tokrow"><div class="lab">input</div><div class="toks"><span class="tok c0">Hello world.</span></div><div class="cnt"></div></div>
+  <div class="tokrow"><div class="lab">spm_encode</div><div id="figToks"></div><div class="cnt">5</div></div>
+  <div class="tokrow"><div class="lab">spm_decode</div><div class="toks"><span class="tok c3">Hello world.</span></div><div class="cnt">✓</div></div>
+  <h3 style="margin-top:16px">Your text</h3>
+  <input class="tk-in" id="spIn" value="ＡＢＣ  costs  ½ price." style="width:100%">
+  <div id="spRows" style="margin-top:8px"></div>
+</div>
   </div>
 </section>
 
@@ -108,12 +108,12 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Four components and id management</h2>
     <hr>
-    <div class="grid2">
-      <div class="visual" style="margin-top:0"><h3>Pipeline (§2)</h3><div class="steps" style="margin-top:8px"><button class="on">Normalizer</button><button class="on">Trainer</button><button class="on">Encoder</button><button class="on">Decoder</button></div>
-        <p class="caption">The Normalizer maps equivalent Unicode to a canonical form (NFKC (Unicode Normalization Form KC (compatibility composition)) by default). The Trainer learns the subword model from the normalized corpus. The Encoder normalizes and tokenizes, and the Decoder turns pieces back into normalized text.</p></div>
-      <div class="visual" style="margin-top:0"><h3>Vocabulary and ids (§3.3)</h3>
-        <p class="caption" style="margin-top:4px">You set the <b>final vocabulary size</b> (<code>--vocab_size</code>) rather than a number of merges, which works for both BPE and unigram. Ids are reserved for meta symbols: <code>&lt;unk&gt;</code>, <code>&lt;s&gt;</code> (BOS (beginning of sequence)), <code>&lt;/s&gt;</code> (EOS (end of sequence)), <code>&lt;pad&gt;</code>, plus custom ones such as language tags <code>&lt;2ja&gt;</code> and <code>&lt;2de&gt;</code>.</p></div>
-    </div>
+<div class="grid2">
+  <div class="visual" style="margin-top:0"><h3>Pipeline (§2)</h3><div class="steps" style="margin-top:8px"><button class="on">Normalizer</button><button class="on">Trainer</button><button class="on">Encoder</button><button class="on">Decoder</button></div>
+    <p class="caption">The Normalizer maps equivalent Unicode to a canonical form (NFKC (Unicode Normalization Form KC (compatibility composition)) by default). The Trainer learns the subword model from the normalized corpus. The Encoder normalizes and tokenizes, and the Decoder turns pieces back into normalized text.</p></div>
+  <div class="visual" style="margin-top:0"><h3>Vocabulary and ids (§3.3)</h3>
+    <p class="caption" style="margin-top:4px">You set the <b>final vocabulary size</b> (<code>--vocab_size</code>) rather than a number of merges, which works for both BPE and unigram. Ids are reserved for meta symbols: <code>&lt;unk&gt;</code>, <code>&lt;s&gt;</code> (BOS (beginning of sequence)), <code>&lt;/s&gt;</code> (EOS (end of sequence)), <code>&lt;pad&gt;</code>, plus custom ones such as language tags <code>&lt;2ja&gt;</code> and <code>&lt;2de&gt;</code>.</p></div>
+</div>
   </div>
 </section>
 
@@ -132,13 +132,13 @@
     <span class="qtag b6">6 · Why it works</span>
     <h2>Why it works, and where it is used</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card e"><h3>Lossless by design</h3><p>Whitespace lives inside the tokens, so detokenization is <code>''.join(tokens).replace('▁', ' ')</code>, with no language rules.</p></div>
       <div class="card a"><h3>Language-independent</h3><p>Chinese, Japanese and Korean need no external word segmenter: the model learns pieces from raw characters.</p></div>
       <div class="card b"><h3>Efficient</h3><p>BPE training uses an O(N log N) heap-based algorithm instead of a naive O(N²) one, and unigram training and segmentation are linear in input size (§3.2).</p></div>
       <div class="card c"><h3>Used by LLMs</h3><p>Llama 1 and 2: BPE via SentencePiece, 32K vocabulary, digits split individually, bytes for unknown UTF-8 (UTF = Unicode Transformation Format) characters. T5: SentencePiece with a 32,000-wordpiece vocabulary.</p></div>
     </div>
-    <div class="cite">Llama 2 paper §2.2 (Tokenizer); T5 paper §3.1.3.</div>
+<div class="cite">Llama 2 paper §2.2 (Tokenizer); T5 paper §3.1.3.</div>
   </div>
 </section>
 
@@ -147,18 +147,18 @@
     <span class="qtag b7">7 · Misconceptions</span>
     <h2>Common misconceptions</h2>
     <hr>
-    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
-    <div class="quiz myth">
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
       <p class="qq">"SentencePiece is a new segmentation algorithm."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">It is a <b>library</b> that implements two existing algorithms, BPE and the unigram LM, with raw-text training and lossless detokenization.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"▁ is just an underscore."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">It is <b>U+2581</b> (LOWER ONE EIGHTH BLOCK), chosen so it won't collide with real underscores in the text.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"SentencePiece reproduces the exact raw input."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">It is lossless with respect to the <b>normalized</b> text. NFKC normalization (the default) can change characters, e.g. fullwidth "ＡＢＣ" becomes "ABC" (§3.4).</div>
@@ -184,18 +184,18 @@
     <span class="qtag b8">8 · Check yourself</span>
     <h2>Check yourself</h2>
     <hr>
-    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
-    <div class="quiz">
-      <p class="qq">Which symbol does SentencePiece use for whitespace?</p>
-      <div class="opts">
-      <button>A. _ (U+005F)</button>
-      <button data-ok>B. ▁ (U+2581)</button>
-      <button>C. @@</button>
-      <button>D. ·</button>
-      </div>
-      <div class="why"><b>▁, U+2581.</b> subword-nmt instead uses @@ as an intra-word boundary marker.</div>
-    </div>
-    <div class="quiz">
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+  <p class="qq">Which symbol does SentencePiece use for whitespace?</p>
+  <div class="opts">
+  <button>A. _ (U+005F)</button>
+  <button data-ok>B. ▁ (U+2581)</button>
+  <button>C. @@</button>
+  <button>D. ·</button>
+  </div>
+  <div class="why"><b>▁, U+2581.</b> subword-nmt instead uses @@ as an intra-word boundary marker.</div>
+</div>
+<div class="quiz">
       <p class="qq">What does lossless tokenization guarantee?</p>
       <div class="opts">
       <button>A. Encode(text) = text</button>
@@ -205,11 +205,11 @@
       </div>
       <div class="why"><b>Decode(Encode(Normalize(text))) = Normalize(text)</b> (§3.1).</div>
     </div>
-    <div class="quiz ">
-      <p class="qq">Why does treating whitespace as a symbol matter for Japanese and Chinese?</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">These languages have no spaces between words, so a tokenizer that assumes space-split input needs an external segmenter, and detokenizing must not add spaces. SentencePiece needs neither.</div>
-    </div>
+<div class="quiz ">
+  <p class="qq">Why does treating whitespace as a symbol matter for Japanese and Chinese?</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">These languages have no spaces between words, so a tokenizer that assumes space-split input needs an external segmenter, and detokenizing must not add spaces. SentencePiece needs neither.</div>
+</div>
   </div>
 </section>
 
@@ -218,10 +218,13 @@
     <span class="qtag b9">9 · Key takeaway</span>
     <h2>Key takeaway</h2>
     <hr>
-    <div class="take-line">SentencePiece tokenizes raw text in any language: whitespace becomes ▁, BPE or unigram pieces are learned on top, and decoding is exactly lossless on normalized text.</div>
-    <div class="explain"><b>Say it in 30 seconds</b><p>Earlier tokenizers assumed space-separated words and relied on language-specific rules to tokenize and detokenize, which breaks for Japanese or Chinese and complicates multilingual models. SentencePiece trains directly on raw sentences: it normalizes with NFKC, escapes spaces as ▁ (U+2581), and learns BPE or unigram pieces. Because whitespace is inside the tokens, decoding is just joining them and restoring spaces, so Decode(Encode(Normalize(text))) equals Normalize(text). Llama 1 and 2 and T5 use it.</p></div>
-    <div class="recap"><div><span><b>Problem:</b> language-specific pre-/post-processing; text without spaces; detokenization that isn't reversible.</span></div><div><span><b>Core idea:</b> a raw-text tokenizer with ▁ for spaces, BPE or unigram inside, and lossless decoding.</span></div></div>
-    <p class="start-hint">Next: <a href="../06-many-tokenizations/index.html">06 · One text, many tokenizations →</a> · Previous: <a href="../04-wordpiece-unigram/index.html">← 04</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+<div class="take-line">SentencePiece tokenizes raw text in any language: whitespace becomes ▁, BPE or unigram pieces are learned on top, and decoding is exactly lossless on normalized text.</div>
+
+<div class="explain"><b>Say it in 30 seconds</b><p>Earlier tokenizers assumed space-separated words and relied on language-specific rules to tokenize and detokenize, which breaks for Japanese or Chinese and complicates multilingual models. SentencePiece trains directly on raw sentences: it normalizes with NFKC, escapes spaces as ▁ (U+2581), and learns BPE or unigram pieces. Because whitespace is inside the tokens, decoding is just joining them and restoring spaces, so Decode(Encode(Normalize(text))) equals Normalize(text). Llama 1 and 2 and T5 use it.</p></div>
+
+<div class="recap"><div><span><b>Problem:</b> language-specific pre-/post-processing; text without spaces; detokenization that isn't reversible.</span></div><div><span><b>Core idea:</b> a raw-text tokenizer with ▁ for spaces, BPE or unigram inside, and lossless decoding.</span></div></div>
+
+<p class="start-hint">Next: <a href="../06-many-tokenizations/index.html">06 · One text, many tokenizations →</a> · Previous: <a href="../04-wordpiece-unigram/index.html">← 04</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
   </div>
 </section>
 

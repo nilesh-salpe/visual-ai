@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="../../shared/deck.css">
 <link rel="stylesheet" href="../../shared/learn.css">
 <link rel="stylesheet" href="../tk.css">
-
 </head>
 <body data-deck="One text, many tokenizations" data-home="../index.html" data-home-label="Tokenization">
 
@@ -29,9 +28,10 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>Same text, same vocabulary, different ids</h2>
     <hr>
-    <p class="lede">From Kudo (2018), Table 1: five ways to encode "Hello World" with the same vocabulary. To the model these are five unrelated id sequences.</p>
-    <div class="visual"><div id="helloRows"></div></div>
-    <div class="cite">Kudo 2018, Table 1 (▁ marks a space). The ids are the paper's.</div>
+<p class="lede">From Kudo (2018), Table 1: five ways to encode "Hello World" with the same vocabulary. To the model these are five unrelated id sequences.</p>
+<div class="visual"><div id="helloRows"></div></div>
+
+<div class="cite">Kudo 2018, Table 1 (▁ marks a space). The ids are the paper's.</div>
   </div>
 </section>
 
@@ -40,7 +40,7 @@
     <span class="qtag b2">2 · Limitation</span>
     <h2>A deterministic tokenizer hides this from the model</h2>
     <hr>
-    <div class="grid3">
+<div class="grid3">
       <div class="card d"><h3>One view of each sentence</h3><p>BPE and Viterbi always pick the same split, so the model never learns that different splits mean the same thing.</p></div>
       <div class="card b"><h3>Brittle to noise</h3><p>Typos, unusual spacing and other domains create splits the model rarely saw. Kudo argues that multiple candidates make a model "robust to noise and segmentation errors".</p></div>
       <div class="card c"><h3>Compositionality left implicit</h3><p>Seeing "books" sometimes as "book" + "s" helps a model learn how words are built (§1).</p></div>
@@ -53,8 +53,8 @@
     <span class="qtag b3">3 · Your turn</span>
     <h2>Make the model robust to segmentation</h2>
     <hr>
-    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
-    <div class="quiz">
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
       <p class="qq">How could training make a model robust to different segmentations of the same text?</p>
       <div class="opts">
       <button>A. Use several tokenizers at inference and vote</button>
@@ -72,12 +72,11 @@
     <span class="qtag b4">4 · Core idea</span>
     <h2>Two ways to sample segmentations</h2>
     <hr>
-    <div class="grid2">
-      <div class="card e"><h3>Subword regularization (Kudo, 2018)</h3><p>Uses the unigram LM, which can score every segmentation. For each parameter update, sample one segmentation from P(x|X), smoothed by α over the l-best candidates (or all of them, with FFBS (forward-filtering backward-sampling)).</p></div>
-      <div class="card a"><h3>BPE-dropout (Provilkov et al., 2020)</h3><p>Keeps ordinary BPE but, while segmenting training data, randomly <b>drops</b> some merges, so the same word comes out in different splits. Standard BPE is used at inference.</p></div>
-    </div>
-
-    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Subword regularization (unigram sampling) and BPE-dropout (skip merges) are training-time only." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--faint)"/><text x="83.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">one word</text><text x="83.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">many valid splits</text><rect x="174.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--a)"/><text x="247.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">training</text><text x="247.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">sample a split each</text><text x="247.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">time</text><line x1="158.5" y1="60.0" x2="172.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="339.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--c)"/><text x="412.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">model</text><text x="412.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">sees varied</text><text x="412.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">segmentations</text><line x1="323.0" y1="60.0" x2="337.0" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="503.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--e)"/><text x="576.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">inference</text><text x="576.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">deterministic best</text><text x="576.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">split</text><line x1="487.5" y1="60.0" x2="501.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Subword regularization (unigram sampling) and BPE-dropout (skip merges) are training-time only.</p></div><!--/x:glance-->
+<div class="grid2">
+  <div class="card e"><h3>Subword regularization (Kudo, 2018)</h3><p>Uses the unigram LM, which can score every segmentation. For each parameter update, sample one segmentation from P(x|X), smoothed by α over the l-best candidates (or all of them, with FFBS (forward-filtering backward-sampling)).</p></div>
+  <div class="card a"><h3>BPE-dropout (Provilkov et al., 2020)</h3><p>Keeps ordinary BPE but, while segmenting training data, randomly <b>drops</b> some merges, so the same word comes out in different splits. Standard BPE is used at inference.</p></div>
+</div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Subword regularization (unigram sampling) and BPE-dropout (skip merges) are training-time only." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--faint)"/><text x="83.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">one word</text><text x="83.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">many valid splits</text><rect x="174.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--a)"/><text x="247.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">training</text><text x="247.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">sample a split each</text><text x="247.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">time</text><line x1="158.5" y1="60.0" x2="172.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="339.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--c)"/><text x="412.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">model</text><text x="412.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">sees varied</text><text x="412.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">segmentations</text><line x1="323.0" y1="60.0" x2="337.0" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="503.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--e)"/><text x="576.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">inference</text><text x="576.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">deterministic best</text><text x="576.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">split</text><line x1="487.5" y1="60.0" x2="501.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Subword regularization (unigram sampling) and BPE-dropout (skip merges) are training-time only.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -86,18 +85,19 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Subword regularization: sample from the unigram LM <span class="ill">toy probabilities</span></h2>
     <hr>
-    <p class="lede">P(x<sub>i</sub>|X) ≅ P(x<sub>i</sub>)<sup>α</sup> / Σ<sub>j</sub> P(x<sub>j</sub>)<sup>α</sup> over the l best segmentations. A small α spreads probability over many splits; a large α concentrates it on the Viterbi split.</p>
-    <div class="visual">
-      <div class="controls" style="margin-top:0">
-        <label class="ctl">α <input type="range" id="srA" min="0" max="1" step="0.05" value="0.2"> <output id="srAo"></output></label>
-        <label class="ctl">l (candidates) <input type="range" id="srL" min="1" max="12" step="1" value="8"> <output id="srLo"></output></label>
-        <button class="btn primary" id="srS">Sample 6 epochs</button>
-      </div>
-      <div class="grid2" style="margin-top:12px">
-        <div><h3>P(segmentation | "tokenizers")</h3><div id="srBars"></div></div>
-        <div><h3>What the model sees, epoch by epoch</h3><div id="srSamples"></div></div>
-      </div>
-    </div>
+<p class="lede">P(x<sub>i</sub>|X) ≅ P(x<sub>i</sub>)<sup>α</sup> / Σ<sub>j</sub> P(x<sub>j</sub>)<sup>α</sup> over the l best segmentations. A small α spreads probability over many splits; a large α concentrates it on the Viterbi split.</p>
+
+<div class="visual">
+  <div class="controls" style="margin-top:0">
+    <label class="ctl">α <input type="range" id="srA" min="0" max="1" step="0.05" value="0.2"> <output id="srAo"></output></label>
+    <label class="ctl">l (candidates) <input type="range" id="srL" min="1" max="12" step="1" value="8"> <output id="srLo"></output></label>
+    <button class="btn primary" id="srS">Sample 6 epochs</button>
+  </div>
+  <div class="grid2" style="margin-top:12px">
+    <div><h3>P(segmentation | "tokenizers")</h3><div id="srBars"></div></div>
+    <div><h3>What the model sees, epoch by epoch</h3><div id="srSamples"></div></div>
+  </div>
+</div>
   </div>
 </section>
 
@@ -106,14 +106,14 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>BPE-dropout: randomly skip merges <span class="ill">toy merges</span></h2>
     <hr>
-    <p class="lede">The merges are learned from a toy corpus (low ×5, lower ×2, newest ×6, widest ×3, lowest ×3). With dropout p, each merge application is skipped with probability p. p = 0 is ordinary BPE, and a larger p gives finer, more varied splits.</p>
-    <div class="visual">
-      <div class="controls" style="margin-top:0">
-        <label class="ctl">dropout p <input type="range" id="bdP" min="0" max="0.6" step="0.05" value="0.1"> <output id="bdPo"></output></label>
-        <button class="btn primary" id="bdS">Resample</button>
-      </div>
-      <div id="bdOut" style="margin-top:12px"></div>
-    </div>
+<p class="lede">The merges are learned from a toy corpus (low ×5, lower ×2, newest ×6, widest ×3, lowest ×3). With dropout p, each merge application is skipped with probability p. p = 0 is ordinary BPE, and a larger p gives finer, more varied splits.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0">
+    <label class="ctl">dropout p <input type="range" id="bdP" min="0" max="0.6" step="0.05" value="0.1"> <output id="bdPo"></output></label>
+    <button class="btn primary" id="bdS">Resample</button>
+  </div>
+  <div id="bdOut" style="margin-top:12px"></div>
+</div>
   </div>
 </section>
 
@@ -132,13 +132,13 @@
     <span class="qtag b6">6 · Why it works</span>
     <h2>Why it works, and the measured gains</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card e"><h3>Data augmentation</h3><p>Each sentence is seen under many segmentations, much like random crops and flips for images, which the paper uses as its own analogy.</p></div>
       <div class="card a"><h3>Reversible, so usable on both sides</h3><p>Segmentation can be undone exactly, so it can be applied to source <em>and</em> target. Table 6 shows both sides together beat either side alone.</p></div>
       <div class="card b"><h3>Realistic noise</h3><p>Sampling guided by the LM beats uniform sampling: α = 0 (uniform) hurt BLEU (Kudo §5.5).</p></div>
       <div class="card c"><h3>Results (machine translation)</h3><p>Subword regularization: about +1 to 2 BLEU on most pairs, and +2 or more out of domain (Kudo). BPE-dropout: up to <b>+3 BLEU</b> over BPE and up to <b>+0.9</b> over subword regularization (Provilkov et al.).</p></div>
     </div>
-    <div class="paper"><b>Scope note:</b> both papers evaluate machine translation. The LLM (large language model) tokenizers covered in this guide (GPT-2/tiktoken, Llama 2, Llama 3) are documented as deterministic BPE, and their papers don't describe stochastic segmentation during pretraining.</div>
+<div class="paper"><b>Scope note:</b> both papers evaluate machine translation. The LLM (large language model) tokenizers covered in this guide (GPT-2/tiktoken, Llama 2, Llama 3) are documented as deterministic BPE, and their papers don't describe stochastic segmentation during pretraining.</div>
   </div>
 </section>
 
@@ -147,18 +147,18 @@
     <span class="qtag b7">7 · Misconceptions</span>
     <h2>Common misconceptions</h2>
     <hr>
-    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
-    <div class="quiz myth">
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
       <p class="qq">"Sampling happens at inference too."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">It is a <b>training-time</b> regularizer. Kudo decodes from the best (or n-best) segmentation, and BPE-dropout uses standard BPE at inference.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"BPE can only ever produce one segmentation."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Standard BPE is deterministic, but <b>BPE-dropout</b> makes it stochastic by randomly skipping merges during training.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"Fully random segmentation is the best noise."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Kudo found α = 0 (uniform sampling, ignoring the LM) <b>hurt</b> performance. Noise that resembles real segmentation variation works better.</div>
@@ -184,18 +184,18 @@
     <span class="qtag b8">8 · Check yourself</span>
     <h2>Check yourself</h2>
     <hr>
-    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
-    <div class="quiz">
-      <p class="qq">Which method needs a unigram language model?</p>
-      <div class="opts">
-      <button>A. BPE-dropout</button>
-      <button data-ok>B. Subword regularization (Kudo)</button>
-      <button>C. Byte-level BPE</button>
-      <button>D. WordPiece</button>
-      </div>
-      <div class="why"><b>Subword regularization</b> samples from P(x|X), which the unigram LM provides. BPE-dropout works with ordinary BPE.</div>
-    </div>
-    <div class="quiz">
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+  <p class="qq">Which method needs a unigram language model?</p>
+  <div class="opts">
+  <button>A. BPE-dropout</button>
+  <button data-ok>B. Subword regularization (Kudo)</button>
+  <button>C. Byte-level BPE</button>
+  <button>D. WordPiece</button>
+  </div>
+  <div class="why"><b>Subword regularization</b> samples from P(x|X), which the unigram LM provides. BPE-dropout works with ordinary BPE.</div>
+</div>
+<div class="quiz">
       <p class="qq">What does a larger α do in Kudo's sampling?</p>
       <div class="opts">
       <button>A. Makes sampling more uniform</button>
@@ -205,11 +205,11 @@
       </div>
       <div class="why">A larger α moves toward the <b>Viterbi</b> segmentation; a smaller α moves toward uniform.</div>
     </div>
-    <div class="quiz ">
-      <p class="qq">Why does it matter that segmentation is reversible?</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">Because the original text can always be recovered, the noise can be applied to the <b>target</b> side as well as the input, which Kudo shows helps (Table 6).</div>
-    </div>
+<div class="quiz ">
+  <p class="qq">Why does it matter that segmentation is reversible?</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">Because the original text can always be recovered, the noise can be applied to the <b>target</b> side as well as the input, which Kudo shows helps (Table 6).</div>
+</div>
   </div>
 </section>
 
@@ -218,10 +218,13 @@
     <span class="qtag b9">9 · Key takeaway</span>
     <h2>Key takeaway</h2>
     <hr>
-    <div class="take-line">A sentence has many valid tokenizations. Sampling them during training, via subword regularization or BPE-dropout, acts as data augmentation and makes models more robust.</div>
-    <div class="explain"><b>Say it in 30 seconds</b><p>With a fixed vocabulary, the same text can be split many ways, and each split is a different id sequence to the model. Kudo's subword regularization samples a segmentation from a unigram LM, smoothed by α, every time a sentence is used in training. BPE-dropout does the same with ordinary BPE by randomly skipping merges. Both are training-time only and use deterministic segmentation at inference. They gave +1 to 3 BLEU in machine translation, with larger gains out of domain.</p></div>
-    <div class="recap"><div><span><b>Problem:</b> deterministic tokenization shows one split of each sentence, which makes models brittle to segmentation variation.</span></div><div><span><b>Core idea:</b> sample segmentations during training (unigram LM with α, or BPE with dropped merges).</span></div></div>
-    <p class="start-hint">Next: <a href="../07-vocabulary-size/index.html">07 · Vocabulary size trade-offs →</a> · Previous: <a href="../05-sentencepiece/index.html">← 05</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
+<div class="take-line">A sentence has many valid tokenizations. Sampling them during training, via subword regularization or BPE-dropout, acts as data augmentation and makes models more robust.</div>
+
+<div class="explain"><b>Say it in 30 seconds</b><p>With a fixed vocabulary, the same text can be split many ways, and each split is a different id sequence to the model. Kudo's subword regularization samples a segmentation from a unigram LM, smoothed by α, every time a sentence is used in training. BPE-dropout does the same with ordinary BPE by randomly skipping merges. Both are training-time only and use deterministic segmentation at inference. They gave +1 to 3 BLEU in machine translation, with larger gains out of domain.</p></div>
+
+<div class="recap"><div><span><b>Problem:</b> deterministic tokenization shows one split of each sentence, which makes models brittle to segmentation variation.</span></div><div><span><b>Core idea:</b> sample segmentations during training (unigram LM with α, or BPE with dropped merges).</span></div></div>
+
+<p class="start-hint">Next: <a href="../07-vocabulary-size/index.html">07 · Vocabulary size trade-offs →</a> · Previous: <a href="../05-sentencepiece/index.html">← 05</a> · <a href="../index.html">All decks</a> · <a href="../playground/index.html">Playground</a></p>
   </div>
 </section>
 

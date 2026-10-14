@@ -29,8 +29,8 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>A word relates to other words in several ways at once</h2>
     <hr>
-    <p class="lede">To understand "it" in <i>"The animal didn't cross the street because it was tired"</i>, a model needs several different relationships at the same time.</p>
-    <div class="grid2">
+<p class="lede">To understand "it" in <i>"The animal didn't cross the street because it was tired"</i>, a model needs several different relationships at the same time.</p>
+<div class="grid2">
       <div class="card a"><h3>Reference</h3><p>What does "it" refer to? → "animal"</p></div>
       <div class="card b"><h3>Predicate</h3><p>What is said about it? → "was tired"</p></div>
       <div class="card c"><h3>Local syntax</h3><p>Neighbouring words such as "because" and "was".</p></div>
@@ -44,12 +44,13 @@
     <span class="qtag b2">2 · Limitation</span>
     <h2>One head has to blend different relationships into one average <span class="ill">illustrative weights</span></h2>
     <hr>
-    <p class="lede">To understand "<b>it</b>", a model might want three things at once: what it <span style="color:var(--a);font-weight:600">refers to</span> ("animal"), what is <span style="color:var(--b);font-weight:600">said about it</span> ("tired") and its <span style="color:var(--c);font-weight:600">local syntax</span> ("was"). A single softmax spreads one budget of 100% across all of them.</p>
-    <div class="visual">
-      <div class="seg" id="pSeg"><button data-v="1" class="on">1 head (averaged)</button><button data-v="3">3 heads (separate)</button></div>
-      <svg id="pSvg" viewBox="0 0 660 240" style="margin-top:8px" role="img" aria-label="Single vs multiple heads"></svg>
-    </div>
-    <div class="takeaway">The paper puts it this way: "With a single attention head, averaging inhibits this" (§3.2.2). §2 also names the cost of attention's averaging: "reduced effective resolution".</div>
+<p class="lede">To understand "<b>it</b>", a model might want three things at once: what it <span style="color:var(--a);font-weight:600">refers to</span> ("animal"), what is <span style="color:var(--b);font-weight:600">said about it</span> ("tired") and its <span style="color:var(--c);font-weight:600">local syntax</span> ("was"). A single softmax spreads one budget of 100% across all of them.</p>
+<div class="visual">
+  <div class="seg" id="pSeg"><button data-v="1" class="on">1 head (averaged)</button><button data-v="3">3 heads (separate)</button></div>
+  <svg id="pSvg" viewBox="0 0 660 240" style="margin-top:8px" role="img" aria-label="Single vs multiple heads"></svg>
+</div>
+
+<div class="takeaway">The paper puts it this way: "With a single attention head, averaging inhibits this" (§3.2.2). §2 also names the cost of attention's averaging: "reduced effective resolution".</div>
   </div>
 </section>
 
@@ -58,8 +59,8 @@
     <span class="qtag b3">3 · Your turn</span>
     <h2>Several relationships, same budget</h2>
     <hr>
-    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
-    <div class="quiz">
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
       <p class="qq">How would you capture several relationships per token without multiplying the cost?</p>
       <div class="opts">
       <button>A. Run h full-width (512-dim) attention layers side by side</button>
@@ -77,15 +78,15 @@
     <span class="qtag b4">4 · Core idea</span>
     <h2>h = 8 heads in parallel, then concatenate and project</h2>
     <hr>
-    <p class="lede">Each head i has its own projections W<sub>i</sub><sup>Q</sup>, W<sub>i</sub><sup>K</sup>, W<sub>i</sub><sup>V</sup> (512 → 64) and runs scaled dot-product attention on its own. The eight 64-dim outputs are concatenated back to 512 and mixed by W<sup>O</sup>. Click a head to see the kind of pattern a head can learn.</p>
-    <div class="visual">
-      <svg id="mhSvg" viewBox="0 0 660 270" role="img" aria-label="Multi-head attention diagram"></svg>
-      <svg id="headSvg" viewBox="0 0 660 150" style="margin-top:4px" role="img" aria-label="Pattern of the selected head"></svg>
-      <p class="caption" id="headCap"></p>
-    </div>
-    <div class="cite">Head patterns are illustrative. The paper reports that individual heads "clearly learn to perform different tasks", with behaviour related to the syntactic and semantic structure of sentences (§4, Figures 3–5).</div>
-  
-    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Same parameter budget as one 512-dim head, split into 8 subspaces." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">x</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">[n, 512]</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">8 heads</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">each projects to</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">64 dims</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">attention per head</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">in parallel</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">concat</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">[n, 512]</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">W_O</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">mix heads</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Same parameter budget as one 512-dim head, split into 8 subspaces.</p></div><!--/x:glance-->
+<p class="lede">Each head i has its own projections W<sub>i</sub><sup>Q</sup>, W<sub>i</sub><sup>K</sup>, W<sub>i</sub><sup>V</sup> (512 → 64) and runs scaled dot-product attention on its own. The eight 64-dim outputs are concatenated back to 512 and mixed by W<sup>O</sup>. Click a head to see the kind of pattern a head can learn.</p>
+<div class="visual">
+  <svg id="mhSvg" viewBox="0 0 660 270" role="img" aria-label="Multi-head attention diagram"></svg>
+  <svg id="headSvg" viewBox="0 0 660 150" style="margin-top:4px" role="img" aria-label="Pattern of the selected head"></svg>
+  <p class="caption" id="headCap"></p>
+</div>
+
+<div class="cite">Head patterns are illustrative. The paper reports that individual heads "clearly learn to perform different tasks", with behaviour related to the syntactic and semantic structure of sentences (§4, Figures 3–5).</div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Same parameter budget as one 512-dim head, split into 8 subspaces." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">x</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">[n, 512]</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">8 heads</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">each projects to</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">64 dims</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">attention per head</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">in parallel</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">concat</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">[n, 512]</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">W_O</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">mix heads</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Same parameter budget as one 512-dim head, split into 8 subspaces.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -94,18 +95,19 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Shapes through one multi-head attention block (base model)</h2>
     <hr>
-    <div class="visual scroll-x">
-      <table class="tbl">
-        <tr><th>Step</th><th>Operation</th><th>Shape</th></tr>
-        <tr><td>1</td><td>Input X (or Q, K, V sources)</td><td>n × 512</td></tr>
-        <tr><td>2</td><td>Per head i: Q<sub>i</sub> = XW<sub>i</sub><sup>Q</sup>, K<sub>i</sub> = XW<sub>i</sub><sup>K</sup>, V<sub>i</sub> = XW<sub>i</sub><sup>V</sup></td><td>n × 64, for each of 8 heads</td></tr>
-        <tr><td>3</td><td>Scores Q<sub>i</sub>K<sub>i</sub>ᵀ / √64, softmax by row</td><td>n × n, for each of 8 heads</td></tr>
-        <tr><td>4</td><td>head<sub>i</sub> = weights × V<sub>i</sub></td><td>n × 64, for each of 8 heads</td></tr>
-        <tr><td>5</td><td>Concat(head<sub>1</sub>, …, head<sub>8</sub>)</td><td>n × 512</td></tr>
-        <tr><td>6</td><td>× W<sup>O</sup> (512 × 512)</td><td>n × 512</td></tr>
-      </table>
-    </div>
-    <div class="paper"><b>Parameter check:</b> Q, K, V projections = 3 × 8 × (512 × 64) = 3 × 512² ; W<sup>O</sup> = 512². Total 4 × 512², the same as a single head with full 512-dim projections. That is why the cost is "similar to that of single-head attention with full dimensionality" (§3.2.2).</div>
+<div class="visual scroll-x">
+  <table class="tbl">
+    <tr><th>Step</th><th>Operation</th><th>Shape</th></tr>
+    <tr><td>1</td><td>Input X (or Q, K, V sources)</td><td>n × 512</td></tr>
+    <tr><td>2</td><td>Per head i: Q<sub>i</sub> = XW<sub>i</sub><sup>Q</sup>, K<sub>i</sub> = XW<sub>i</sub><sup>K</sup>, V<sub>i</sub> = XW<sub>i</sub><sup>V</sup></td><td>n × 64, for each of 8 heads</td></tr>
+    <tr><td>3</td><td>Scores Q<sub>i</sub>K<sub>i</sub>ᵀ / √64, softmax by row</td><td>n × n, for each of 8 heads</td></tr>
+    <tr><td>4</td><td>head<sub>i</sub> = weights × V<sub>i</sub></td><td>n × 64, for each of 8 heads</td></tr>
+    <tr><td>5</td><td>Concat(head<sub>1</sub>, …, head<sub>8</sub>)</td><td>n × 512</td></tr>
+    <tr><td>6</td><td>× W<sup>O</sup> (512 × 512)</td><td>n × 512</td></tr>
+  </table>
+</div>
+
+<div class="paper"><b>Parameter check:</b> Q, K, V projections = 3 × 8 × (512 × 64) = 3 × 512² ; W<sup>O</sup> = 512². Total 4 × 512², the same as a single head with full 512-dim projections. That is why the cost is "similar to that of single-head attention with full dimensionality" (§3.2.2).</div>
   </div>
 </section>
 
@@ -136,17 +138,19 @@
     <span class="qtag b6">6 · Why it works</span>
     <h2>Same budget, split differently: the paper's head-count experiment</h2>
     <hr>
-    <p class="lede">Table 3, row (A) changes h while keeping h · d<sub>k</sub> = 512, so <b>computation stays constant</b>. Pick h to see the per-head width and the measured result on newstest2013 (the EN-DE development set).</p>
-    <div class="visual">
-      <div class="seg" id="hSeg"><button data-v="1">h = 1</button><button data-v="4">h = 4</button><button data-v="8" class="on">h = 8 (base)</button><button data-v="16">h = 16</button><button data-v="32">h = 32</button></div>
-      <svg id="splitSvg" viewBox="0 0 660 70" style="margin-top:12px" role="img" aria-label="512 dims split into heads"></svg>
-      <div class="grid2" style="margin-top:10px">
-        <div><h3>BLEU (dev), higher is better</h3><div id="bleuBars"></div></div>
-        <div><h3>Perplexity (dev), lower is better</h3><div id="pplBars"></div></div>
-      </div>
-    </div>
-    <div class="takeaway">Single-head attention is 0.9 BLEU worse than the best setting, and quality also drops with too many heads (h = 32, d<sub>k</sub> = 16). The paper's §6.2 says both.</div>
-    <div class="cite">Table 3 rows (A) and base. Perplexities are per word-piece and are not comparable with per-word perplexities.</div>
+<p class="lede">Table 3, row (A) changes h while keeping h · d<sub>k</sub> = 512, so <b>computation stays constant</b>. Pick h to see the per-head width and the measured result on newstest2013 (the EN-DE development set).</p>
+<div class="visual">
+  <div class="seg" id="hSeg"><button data-v="1">h = 1</button><button data-v="4">h = 4</button><button data-v="8" class="on">h = 8 (base)</button><button data-v="16">h = 16</button><button data-v="32">h = 32</button></div>
+  <svg id="splitSvg" viewBox="0 0 660 70" style="margin-top:12px" role="img" aria-label="512 dims split into heads"></svg>
+  <div class="grid2" style="margin-top:10px">
+    <div><h3>BLEU (dev), higher is better</h3><div id="bleuBars"></div></div>
+    <div><h3>Perplexity (dev), lower is better</h3><div id="pplBars"></div></div>
+  </div>
+</div>
+
+<div class="takeaway">Single-head attention is 0.9 BLEU worse than the best setting, and quality also drops with too many heads (h = 32, d<sub>k</sub> = 16). The paper's §6.2 says both.</div>
+
+<div class="cite">Table 3 rows (A) and base. Perplexities are per word-piece and are not comparable with per-word perplexities.</div>
   </div>
 </section>
 
@@ -155,18 +159,18 @@
     <span class="qtag b7">7 · Misconceptions</span>
     <h2>Common misconceptions</h2>
     <hr>
-    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
-    <div class="quiz myth">
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
       <p class="qq">"8 heads cost 8× as much as one head."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Each head works in 64 dims rather than 512, so total computation is <b>about the same</b> as one full-width head (§3.2.2).</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"Each head is assigned a specific job, such as coreference."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Nothing is assigned. Heads <b>learn</b> their behaviour from data. The paper observes that many end up doing structure-related tasks (Figures 4–5).</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"The heads' outputs are averaged together."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">They are <b>concatenated</b> and then mixed by a learned projection W<sup>O</sup>.</div>
@@ -192,8 +196,8 @@
     <span class="qtag b8">8 · Check yourself</span>
     <h2>Check yourself</h2>
     <hr>
-    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
-    <div class="quiz">
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
       <p class="qq">In the base model, what is each head's d<sub>k</sub>?</p>
       <div class="opts">
       <button>A. 8</button>
@@ -203,21 +207,22 @@
       </div>
       <div class="why"><b>64</b> = d<sub>model</sub> / h = 512 / 8.</div>
     </div>
-    <div class="quiz">
-      <p class="qq">Table 3 (A): how much worse was single-head attention than the best setting?</p>
-      <div class="opts">
-      <button>A. 0.1 BLEU</button>
-      <button data-ok>B. 0.9 BLEU</button>
-      <button>C. 3 BLEU</button>
-      <button>D. No difference</button>
-      </div>
-      <div class="why"><b>0.9 BLEU</b> (24.9 vs 25.8 on the dev set).</div>
-    </div>
-    <div class="quiz ">
-      <p class="qq">Why might 32 heads (d<sub>k</sub> = 16) do worse than 8?</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">Each head becomes too narrow to compute good compatibilities. Row (B) shows smaller d<sub>k</sub> hurts, and §6.2 notes "quality also drops off with too many heads".</div>
-    </div>
+<div class="quiz">
+  <p class="qq">Table 3 (A): how much worse was single-head attention than the best setting?</p>
+  <div class="opts">
+  <button>A. 0.1 BLEU</button>
+  <button data-ok>B. 0.9 BLEU</button>
+  <button>C. 3 BLEU</button>
+  <button>D. No difference</button>
+  </div>
+  <div class="why"><b>0.9 BLEU</b> (24.9 vs 25.8 on the dev set).</div>
+</div>
+
+<div class="quiz ">
+  <p class="qq">Why might 32 heads (d<sub>k</sub> = 16) do worse than 8?</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">Each head becomes too narrow to compute good compatibilities. Row (B) shows smaller d<sub>k</sub> hurts, and §6.2 notes "quality also drops off with too many heads".</div>
+</div>
   </div>
 </section>
 
@@ -226,13 +231,16 @@
     <span class="qtag b9">9 · Key takeaway</span>
     <h2>Key takeaway</h2>
     <hr>
-    <div class="take-line">Split 512 dimensions into 8 heads of 64, let each head attend in its own subspace, then concatenate and mix with W<sup>O</sup>: several relationships for the price of one.</div>
-    <div class="explain"><b>Say it in 30 seconds</b><p>One attention head gives a single weighted average per token, which blurs different relationships together. Multi-head attention projects Q, K and V h = 8 times into 64-dimensional subspaces, runs scaled dot-product attention in each in parallel, concatenates the results and applies W<sup>O</sup>. Because each head is smaller, the total cost is similar to one full-width head. In Table 3, one head was 0.9 BLEU worse than eight, and 32 heads also did worse.</p></div>
-    <div class="recap">
-      <div><span><b>Problem:</b> one softmax per token averages different relationships together and loses resolution.</span></div>
-      <div><span><b>Core idea:</b> 8 heads × 64 dims attend in parallel, in different subspaces, then Concat → W<sup>O</sup>. Same cost, and measurably better than 1 head (Table 3A).</span></div>
-    </div>
-    <p class="start-hint">Next: <a href="../07-positional-encoding/index.html">07 · Positional encoding →</a> · Previous: <a href="../05-scaled-dot-product-attention/index.html">← 05</a> · <a href="../index.html">All concepts</a></p>
+<div class="take-line">Split 512 dimensions into 8 heads of 64, let each head attend in its own subspace, then concatenate and mix with W<sup>O</sup>: several relationships for the price of one.</div>
+
+<div class="explain"><b>Say it in 30 seconds</b><p>One attention head gives a single weighted average per token, which blurs different relationships together. Multi-head attention projects Q, K and V h = 8 times into 64-dimensional subspaces, runs scaled dot-product attention in each in parallel, concatenates the results and applies W<sup>O</sup>. Because each head is smaller, the total cost is similar to one full-width head. In Table 3, one head was 0.9 BLEU worse than eight, and 32 heads also did worse.</p></div>
+
+<div class="recap">
+  <div><span><b>Problem:</b> one softmax per token averages different relationships together and loses resolution.</span></div>
+  <div><span><b>Core idea:</b> 8 heads × 64 dims attend in parallel, in different subspaces, then Concat → W<sup>O</sup>. Same cost, and measurably better than 1 head (Table 3A).</span></div>
+</div>
+
+<p class="start-hint">Next: <a href="../07-positional-encoding/index.html">07 · Positional encoding →</a> · Previous: <a href="../05-scaled-dot-product-attention/index.html">← 05</a> · <a href="../index.html">All concepts</a></p>
   </div>
 </section>
 

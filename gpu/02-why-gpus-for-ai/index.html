@@ -6,16 +6,14 @@
 <title>Why GPUs for AI</title>
 <link rel="stylesheet" href="../../shared/deck.css">
 <link rel="stylesheet" href="../../shared/learn.css">
-<style>
-  .bits { display: flex; gap: 2px; flex-wrap: wrap; margin: 6px 0 4px; }
+<style>.bits { display: flex; gap: 2px; flex-wrap: wrap; margin: 6px 0 4px; }
   .bits span { width: 18px; height: 26px; border-radius: 3px; display: grid; place-items: center; font: 600 10px 'JetBrains Mono', monospace; color: #fff; }
   .fmtrow { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
   .fmtrow:last-child { border-bottom: 0; }
   .fmtrow.on b { color: var(--a); }
   .fmtrow b { font: 600 14px 'JetBrains Mono', monospace; }
   .tl { display: flex; height: 34px; border-radius: 8px; overflow: hidden; background: var(--panel-2); margin-top: 6px; }
-  .tl div { height: 100%; transition: width .3s; }
-</style>
+  .tl div { height: 100%; transition: width .3s; }</style>
 </head>
 <body data-deck="Why GPUs for AI" data-home="../index.html" data-home-label="GPU">
 
@@ -29,7 +27,6 @@
   </div>
 </section>
 
-<!-- matmuls -->
 <section class="slide" id="s-mm" data-chapter="The workload">
   <div class="inner">
     <div class="label">01 · The workload</div>
@@ -51,7 +48,6 @@
   </div>
 </section>
 
-<!-- 6ND -->
 <section class="slide" id="s-6nd" data-chapter="The workload">
   <div class="inner">
     <div class="label">02 · The workload</div>
@@ -78,7 +74,6 @@
   </div>
 </section>
 
-<!-- intensity -->
 <section class="slide" id="s-ai" data-chapter="Roofline">
   <div class="inner">
     <div class="label">03 · Roofline</div>
@@ -102,7 +97,6 @@
   </div>
 </section>
 
-<!-- roofline -->
 <section class="slide" id="s-roof" data-chapter="Roofline">
   <div class="inner">
     <div class="label">04 · Roofline</div>
@@ -121,7 +115,6 @@
   </div>
 </section>
 
-<!-- prefill vs decode -->
 <section class="slide" id="s-pd" data-chapter="Inference">
   <div class="inner">
     <div class="label">05 · Inference</div>
@@ -147,7 +140,6 @@
   </div>
 </section>
 
-<!-- batching -->
 <section class="slide" id="s-batch" data-chapter="Inference">
   <div class="inner">
     <div class="label">06 · Inference</div>
@@ -172,7 +164,6 @@
   </div>
 </section>
 
-<!-- precision -->
 <section class="slide" id="s-prec" data-chapter="Precision">
   <div class="inner">
     <div class="label">07 · Precision</div>
@@ -195,7 +186,6 @@
   </div>
 </section>
 
-<!-- MFU -->
 <section class="slide" id="s-mfu" data-chapter="Precision">
   <div class="inner">
     <div class="label">08 · Utilization</div>

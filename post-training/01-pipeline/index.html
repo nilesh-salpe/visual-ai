@@ -6,7 +6,6 @@
 <title>The Post-training Pipeline</title>
 <link rel="stylesheet" href="../../shared/deck.css">
 <link rel="stylesheet" href="../../shared/learn.css">
-
 </head>
 <body data-deck="The post-training pipeline" data-home="../index.html" data-home-label="Post-training">
 
@@ -28,11 +27,11 @@
     <span class="qtag b1">1 · Problem</span>
     <h2>Same knowledge, different behaviour</h2>
     <hr>
-    <p class="lede">One prompt, three stages of the same model. The outputs are <b>illustrative</b> (written for this deck), but the pattern is the one InstructGPT documented: a base model continues text, an SFT model answers, and preference tuning makes the answer what people actually want.</p>
-    <div class="visual">
-      <div class="seg" id="sSeg"><button data-v="0" class="on">Base (pretrained)</button><button data-v="1">After SFT</button><button data-v="2">After preference tuning</button></div>
-      <div class="infobox" id="sOut" style="background:var(--panel-2);border-radius:10px;padding:14px 16px;margin-top:12px;font-size:15px;line-height:1.6"></div>
-    </div>
+<p class="lede">One prompt, three stages of the same model. The outputs are <b>illustrative</b> (written for this deck), but the pattern is the one InstructGPT documented: a base model continues text, an SFT model answers, and preference tuning makes the answer what people actually want.</p>
+<div class="visual">
+  <div class="seg" id="sSeg"><button data-v="0" class="on">Base (pretrained)</button><button data-v="1">After SFT</button><button data-v="2">After preference tuning</button></div>
+  <div class="infobox" id="sOut" style="background:var(--panel-2);border-radius:10px;padding:14px 16px;margin-top:12px;font-size:15px;line-height:1.6"></div>
+</div>
   </div>
 </section>
 
@@ -41,7 +40,7 @@
     <span class="qtag b2">2 · Limitation</span>
     <h2>Why pretraining alone isn't enough</h2>
     <hr>
-    <div class="grid3">
+<div class="grid3">
       <div class="card d"><h3>Wrong objective</h3><p>The pretraining loss rewards predicting what text comes next on the web, which includes unhelpful, wrong and toxic text. InstructGPT calls this objective "misaligned" with following instructions helpfully and safely.</p></div>
       <div class="card b"><h3>Demonstrations are expensive</h3><p>Writing an ideal answer for every kind of request takes expert time. InstructGPT's SFT set had about 13k prompts; Llama 2 stopped at 27,540 high-quality annotations.</p></div>
       <div class="card c"><h3>Imitation has a ceiling</h3><p>SFT can only copy its demonstrations. To prefer answers better than any single demonstrator would write, you need a signal that <b>compares</b> answers, which is much cheaper than writing them.</p></div>
@@ -54,8 +53,8 @@
     <span class="qtag b3">3 · Your turn</span>
     <h2>How much does alignment matter?</h2>
     <hr>
-    <p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
-    <div class="quiz">
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
       <p class="qq">InstructGPT compared a 1.3B model with SFT + RLHF against the original 175B GPT-3. Which did human labelers prefer on the API (application programming interface) prompt distribution?</p>
       <div class="opts">
       <button>A. 175B GPT-3, by a wide margin</button>
@@ -73,14 +72,13 @@
     <span class="qtag b4">4 · Core idea</span>
     <h2>The three InstructGPT steps</h2>
     <hr>
-    <div class="grid3">
+<div class="grid3">
       <div class="card a"><h3>1 · SFT</h3><p>Labelers write demonstrations of the desired output for prompts; fine-tune the pretrained model on them with ordinary next-token loss. (~13k training prompts.)</p></div>
       <div class="card b"><h3>2 · Reward model</h3><p>Sample several outputs per prompt, labelers rank them (K = 4 to 9), and train a model to output a scalar score that agrees with the rankings. (~33k prompts.)</p></div>
       <div class="card e"><h3>3 · RL (PPO)</h3><p>Optimize the SFT model to maximize the reward model's score with PPO (Proximal Policy Optimization), with a KL (Kullback-Leibler divergence) penalty that keeps it close to the SFT model. (~31k prompts.)</p></div>
     </div>
-    <div class="deep"><h4>Where the idea came from</h4><p>Christiano et al. (2017) showed RL from human <b>comparisons</b> could teach Atari and robotics behaviours with feedback on less than 1% of the agent's interactions, and about an hour of human time for some novel behaviours. Stiennon et al. (2020) applied it to summarization; InstructGPT applied it to general instruction following.</p></div>
-
-    <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Alternatives: DPO replaces the reward model + RL step; RLVR replaces the reward model with a checker." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">pretrained model</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">next-token on web</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">text</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">SFT</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">imitate</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">demonstrations</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">reward model</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">learn from</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">comparisons</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">RL (PPO)</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">reward − β·KL</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">assistant</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">repeat in rounds</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Alternatives: DPO replaces the reward model + RL step; RLVR replaces the reward model with a checker.</p></div><!--/x:glance-->
+<div class="deep"><h4>Where the idea came from</h4><p>Christiano et al. (2017) showed RL from human <b>comparisons</b> could teach Atari and robotics behaviours with feedback on less than 1% of the agent's interactions, and about an hour of human time for some novel behaviours. Stiennon et al. (2020) applied it to summarization; InstructGPT applied it to general instruction following.</p></div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Alternatives: DPO replaces the reward model + RL step; RLVR replaces the reward model with a checker." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">pretrained model</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">next-token on web</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">text</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">SFT</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">imitate</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">demonstrations</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">reward model</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">learn from</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">comparisons</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">RL (PPO)</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">reward − β·KL</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">assistant</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">repeat in rounds</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Alternatives: DPO replaces the reward model + RL step; RLVR replaces the reward model with a checker.</p></div><!--/x:glance-->
   </div>
 </section>
 
@@ -89,17 +87,17 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>Each stage: data, loss, models in memory</h2>
     <hr>
-    <p class="lede">Pick a stage to see what it consumes and what it costs. The later decks cover each one in depth.</p>
-    <div class="visual">
-      <div class="seg" id="pSeg"><button data-v="pre">Pretraining</button><button data-v="sft" class="on">SFT</button><button data-v="rm">Reward model</button><button data-v="ppo">RLHF (PPO)</button><button data-v="dpo">DPO</button><button data-v="rlvr">RLVR (GRPO)</button></div>
-      <div class="grid4" style="margin-top:14px">
-        <div class="stat"><div class="num" id="pD" style="font-size:16px"></div><div class="lbl">training data</div></div>
-        <div class="stat"><div class="num" id="pL" style="font-size:16px"></div><div class="lbl">loss / signal</div></div>
-        <div class="stat"><div class="num" id="pM" style="font-size:16px"></div><div class="lbl">models in memory</div></div>
-        <div class="stat"><div class="num" id="pK" style="font-size:16px"></div><div class="lbl">deck</div></div>
-      </div>
-      <div class="infobox" style="background:var(--panel-2);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:14px;color:var(--muted)" id="pInfo"></div>
-    </div>
+<p class="lede">Pick a stage to see what it consumes and what it costs. The later decks cover each one in depth.</p>
+<div class="visual">
+  <div class="seg" id="pSeg"><button data-v="pre">Pretraining</button><button data-v="sft" class="on">SFT</button><button data-v="rm">Reward model</button><button data-v="ppo">RLHF (PPO)</button><button data-v="dpo">DPO</button><button data-v="rlvr">RLVR (GRPO)</button></div>
+  <div class="grid4" style="margin-top:14px">
+    <div class="stat"><div class="num" id="pD" style="font-size:16px"></div><div class="lbl">training data</div></div>
+    <div class="stat"><div class="num" id="pL" style="font-size:16px"></div><div class="lbl">loss / signal</div></div>
+    <div class="stat"><div class="num" id="pM" style="font-size:16px"></div><div class="lbl">models in memory</div></div>
+    <div class="stat"><div class="num" id="pK" style="font-size:16px"></div><div class="lbl">deck</div></div>
+  </div>
+  <div class="infobox" style="background:var(--panel-2);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:14px;color:var(--muted)" id="pInfo"></div>
+</div>
   </div>
 </section>
 
@@ -108,15 +106,16 @@
     <span class="qtag b5">5 · How it works</span>
     <h2>How real recipes combine the pieces</h2>
     <hr>
-    <div class="visual scroll-x"><table class="tbl">
-      <tr><th>Model</th><th>Post-training recipe (as reported)</th></tr>
-      <tr><td>InstructGPT (2022)</td><td>SFT → reward model → PPO, with a pretraining-loss mix ("PPO-ptx") to reduce regressions</td></tr>
-      <tr><td>Llama 2-Chat (2023)</td><td>SFT on 27,540 annotations → two reward models (helpfulness, safety) on over 1M comparisons → five RLHF rounds: rejection-sampling fine-tuning only up to V4, then PPO on top</td></tr>
-      <tr><td>Llama 3 (2024)</td><td>Several rounds (six, following Llama 2) of reward modelling → SFT on rejection-sampled data → DPO</td></tr>
-      <tr><td>Tülu 3 (2024)</td><td>SFT → DPO → RL with verifiable rewards (the paper that named RLVR)</td></tr>
-      <tr><td>DeepSeek-R1 (2025)</td><td>R1-Zero: RL with rule-based rewards directly on the base model, no SFT. R1: a "multi-stage learning framework that integrates rejection sampling, reinforcement learning, and supervised finetuning", starting from cold-start long chain-of-thought data</td></tr>
-    </table></div>
-    <div class="deep"><h4>The common pattern</h4><p>Every recipe starts with SFT to teach the format, then uses <b>comparisons or checks on the model's own outputs</b> to improve beyond the demonstrations, and repeats in rounds so new preference data comes from the current model. The choice of optimizer (PPO, rejection sampling, DPO, GRPO (Group Relative Policy Optimization)) is mostly about cost, stability and what signal is available.</p></div>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Model</th><th>Post-training recipe (as reported)</th></tr>
+  <tr><td>InstructGPT (2022)</td><td>SFT → reward model → PPO, with a pretraining-loss mix ("PPO-ptx") to reduce regressions</td></tr>
+  <tr><td>Llama 2-Chat (2023)</td><td>SFT on 27,540 annotations → two reward models (helpfulness, safety) on over 1M comparisons → five RLHF rounds: rejection-sampling fine-tuning only up to V4, then PPO on top</td></tr>
+  <tr><td>Llama 3 (2024)</td><td>Several rounds (six, following Llama 2) of reward modelling → SFT on rejection-sampled data → DPO</td></tr>
+  <tr><td>Tülu 3 (2024)</td><td>SFT → DPO → RL with verifiable rewards (the paper that named RLVR)</td></tr>
+  <tr><td>DeepSeek-R1 (2025)</td><td>R1-Zero: RL with rule-based rewards directly on the base model, no SFT. R1: a "multi-stage learning framework that integrates rejection sampling, reinforcement learning, and supervised finetuning", starting from cold-start long chain-of-thought data</td></tr>
+</table></div>
+
+<div class="deep"><h4>The common pattern</h4><p>Every recipe starts with SFT to teach the format, then uses <b>comparisons or checks on the model's own outputs</b> to improve beyond the demonstrations, and repeats in rounds so new preference data comes from the current model. The choice of optimizer (PPO, rejection sampling, DPO, GRPO (Group Relative Policy Optimization)) is mostly about cost, stability and what signal is available.</p></div>
   </div>
 </section>
 
@@ -135,7 +134,7 @@
     <span class="qtag b6">6 · Why it works</span>
     <h2>Why preferences work so well</h2>
     <hr>
-    <div class="grid2">
+<div class="grid2">
       <div class="card a"><h3>Judging is easier than writing</h3><p>A labeler can reliably pick the better of two answers even when they couldn't write either. Comparisons are cheaper and more consistent than absolute scores.</p></div>
       <div class="card e"><h3>Feedback on the model's own outputs</h3><p>SFT learns from someone else's text. Preference and RL methods learn from what <b>this</b> model actually produces, including its own mistakes.</p></div>
       <div class="card b"><h3>Knowledge comes from pretraining</h3><p>Post-training is small compared with pretraining (thousands to millions of examples vs trillions of tokens). It mostly selects and shapes behaviour the base model can already produce.</p></div>
@@ -149,18 +148,18 @@
     <span class="qtag b7">7 · Misconceptions</span>
     <h2>Common misconceptions</h2>
     <hr>
-    <p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
-    <div class="quiz myth">
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
       <p class="qq">"Post-training is where the model learns its knowledge."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Knowledge comes overwhelmingly from pretraining on trillions of tokens. Post-training uses far less data and mainly changes <b>behaviour</b>: format, helpfulness, refusals, reasoning style.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"RLHF means humans give a reward to every answer during training."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">Humans label a fixed set of comparisons once per round. A <b>reward model</b> trained on them scores the millions of samples seen during RL.</div>
     </div>
-    <div class="quiz myth">
+<div class="quiz myth">
       <p class="qq">"There is one standard recipe."</p>
       <button class="reveal">Why is this wrong?</button>
       <div class="why">InstructGPT used PPO, Llama 3 used rejection sampling + DPO, DeepSeek-R1-Zero used RL with rule-based rewards and no SFT. The building blocks are shared; the mix varies.</div>
@@ -186,8 +185,8 @@
     <span class="qtag b8">8 · Check yourself</span>
     <h2>Check yourself</h2>
     <hr>
-    <p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
-    <div class="quiz">
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
       <p class="qq">In InstructGPT, what do labelers provide for the reward model?</p>
       <div class="opts">
       <button>A. Scores from 1 to 10</button>
@@ -197,16 +196,17 @@
       </div>
       <div class="why"><b>Rankings of K = 4–9 outputs</b>, converted into pairwise comparisons.</div>
     </div>
-    <div class="quiz ">
-      <p class="qq">Why is a KL penalty to the SFT model added during RL?</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">The reward model is an imperfect proxy. Without a leash, the policy drifts into outputs where the reward model is wrong (reward hacking). The KL term keeps it near the SFT model, where the reward model was trained.</div>
-    </div>
-    <div class="quiz ">
-      <p class="qq">Name the three InstructGPT steps and what each trains.</p>
-      <button class="reveal">Think first, then reveal</button>
-      <div class="why">SFT trains the policy on demonstrations; reward modelling trains a scalar scorer on rankings; PPO trains the policy to maximize that score minus a KL penalty.</div>
-    </div>
+<div class="quiz ">
+  <p class="qq">Why is a KL penalty to the SFT model added during RL?</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">The reward model is an imperfect proxy. Without a leash, the policy drifts into outputs where the reward model is wrong (reward hacking). The KL term keeps it near the SFT model, where the reward model was trained.</div>
+</div>
+
+<div class="quiz ">
+  <p class="qq">Name the three InstructGPT steps and what each trains.</p>
+  <button class="reveal">Think first, then reveal</button>
+  <div class="why">SFT trains the policy on demonstrations; reward modelling trains a scalar scorer on rankings; PPO trains the policy to maximize that score minus a KL penalty.</div>
+</div>
   </div>
 </section>
 
@@ -215,11 +215,17 @@
     <span class="qtag b9">9 · Key takeaway</span>
     <h2>Key takeaway</h2>
     <hr>
-    <div class="take-line">Post-training turns a next-token predictor into an assistant: imitate demonstrations (SFT), then optimize towards what people prefer or what can be verified, repeating in rounds.</div>
-    <div class="explain"><b>Say it in 30 seconds</b><p>A pretrained model knows a lot but just continues text. Post-training fixes behaviour in stages. Supervised fine-tuning imitates written demonstrations and teaches the chat format. Then preference optimization uses comparisons, which are much cheaper than demonstrations: either train a reward model and optimize against it with RL and a KL penalty, as InstructGPT did, or optimize the same objective directly with DPO. For maths and code, a verifier can replace the reward model. InstructGPT showed a 1.3 billion parameter model after this process was preferred to the 175 billion parameter base GPT-3.</p></div>
-    <div class="recap"><div><span><b>Problem:</b> next-token pretraining is knowledgeable but not helpful.</span></div><div><span><b>Core idea:</b> SFT on demonstrations, then optimize preferences (RM + PPO, or DPO) or verifiable rewards.</span></div><div><span><b>Practice:</b> labs iterate rounds: InstructGPT PPO, Llama 3 RS (rejection sampling) + DPO, R1 RL with rule-based rewards.</span></div></div>
-    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/01_sft_loss_masking.ipynb" target="_blank" rel="noopener">01 · Supervised fine-tuning: chat templates, loss masking and packing</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/post-training/01_sft_loss_masking.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
-    <p class="start-hint">Next: <a href="../02-supervised-fine-tuning/index.html">02 · Supervised fine-tuning →</a> · <a href="../index.html">All decks</a></p><p class="cite">Sources: Ouyang et al. 2022, "Training language models to follow instructions with human feedback" (InstructGPT §3, Fig. 2); Christiano et al. 2017; Touvron et al. 2023 (Llama 2 §3); Llama Team 2024 (Llama 3 §4); Lambert et al. 2024 (Tülu 3); DeepSeek-AI 2025 (DeepSeek-R1).</p>
+<div class="take-line">Post-training turns a next-token predictor into an assistant: imitate demonstrations (SFT), then optimize towards what people prefer or what can be verified, repeating in rounds.</div>
+
+<div class="explain"><b>Say it in 30 seconds</b><p>A pretrained model knows a lot but just continues text. Post-training fixes behaviour in stages. Supervised fine-tuning imitates written demonstrations and teaches the chat format. Then preference optimization uses comparisons, which are much cheaper than demonstrations: either train a reward model and optimize against it with RL and a KL penalty, as InstructGPT did, or optimize the same objective directly with DPO. For maths and code, a verifier can replace the reward model. InstructGPT showed a 1.3 billion parameter model after this process was preferred to the 175 billion parameter base GPT-3.</p></div>
+
+<div class="recap"><div><span><b>Problem:</b> next-token pretraining is knowledgeable but not helpful.</span></div><div><span><b>Core idea:</b> SFT on demonstrations, then optimize preferences (RM + PPO, or DPO) or verifiable rewards.</span></div><div><span><b>Practice:</b> labs iterate rounds: InstructGPT PPO, Llama 3 RS (rejection sampling) + DPO, R1 RL with rule-based rewards.</span></div></div>
+
+<div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/post-training/01_sft_loss_masking.ipynb" target="_blank" rel="noopener">01 · Supervised fine-tuning: chat templates, loss masking and packing</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/post-training/01_sft_loss_masking.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+
+<p class="start-hint">Next: <a href="../02-supervised-fine-tuning/index.html">02 · Supervised fine-tuning →</a> · <a href="../index.html">All decks</a></p>
+
+<p class="cite">Sources: Ouyang et al. 2022, "Training language models to follow instructions with human feedback" (InstructGPT §3, Fig. 2); Christiano et al. 2017; Touvron et al. 2023 (Llama 2 §3); Llama Team 2024 (Llama 3 §4); Lambert et al. 2024 (Tülu 3); DeepSeek-AI 2025 (DeepSeek-R1).</p>
   </div>
 </section>
 

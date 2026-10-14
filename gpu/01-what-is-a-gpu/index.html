@@ -6,8 +6,7 @@
 <title>What a GPU Is</title>
 <link rel="stylesheet" href="../../shared/deck.css">
 <link rel="stylesheet" href="../../shared/learn.css">
-<style>
-  #dieSvg g[data-info], #chipSvg [data-info] { cursor: pointer; }
+<style>#dieSvg g[data-info], #chipSvg [data-info] { cursor: pointer; }
   #dieSvg g[data-info]:hover rect, #chipSvg [data-info]:hover { filter: brightness(1.15); }
   .infobox { min-height: 72px; background: var(--panel-2); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--muted); }
   .infobox b { color: var(--ink); }
@@ -18,12 +17,10 @@
   .stack .layer b { font-size: 14px; }
   .stack .layer span { font-size: 14px; color: var(--muted); }
   .stack .arrow { text-align: center; color: var(--faint); font-size: 13px; }
-  @media (max-width: 640px) { .stack .layer { grid-template-columns: 1fr; gap: 4px; } }
-</style>
+  @media (max-width: 640px) { .stack .layer { grid-template-columns: 1fr; gap: 4px; } }</style>
 </head>
 <body data-deck="What a GPU is" data-home="../index.html" data-home-label="GPU">
 
-<!-- 1 · Title -->
 <section class="slide title-slide" id="s-title" data-chapter="Start">
   <div class="inner">
     <div class="kicker">GPU for GenAI · 01</div>
@@ -34,7 +31,6 @@
   </div>
 </section>
 
-<!-- 2 · Where the transistors go -->
 <section class="slide" id="s-die" data-chapter="Two philosophies">
   <div class="inner">
     <div class="label">01 · Two philosophies</div>
@@ -53,7 +49,6 @@
   </div>
 </section>
 
-<!-- 3 · Latency vs throughput race -->
 <section class="slide" id="s-race" data-chapter="Two philosophies">
   <div class="inner">
     <div class="label">02 · Two philosophies</div>
@@ -72,7 +67,6 @@
   </div>
 </section>
 
-<!-- 4 · Anatomy -->
 <section class="slide" id="s-chip" data-chapter="Anatomy">
   <div class="inner">
     <div class="label">03 · Anatomy</div>
@@ -88,7 +82,6 @@
   </div>
 </section>
 
-<!-- 5 · Threads, warps, blocks -->
 <section class="slide" id="s-warps" data-chapter="Programming model">
   <div class="inner">
     <div class="label">04 · Programming model</div>
@@ -113,7 +106,6 @@
   </div>
 </section>
 
-<!-- 6 · SIMT divergence -->
 <section class="slide" id="s-div" data-chapter="Programming model">
   <div class="inner">
     <div class="label">05 · Programming model</div>
@@ -136,7 +128,6 @@
   </div>
 </section>
 
-<!-- 7 · Latency hiding -->
 <section class="slide" id="s-hide" data-chapter="Programming model">
   <div class="inner">
     <div class="label">06 · Programming model</div>
@@ -157,7 +148,6 @@
   </div>
 </section>
 
-<!-- 8 · Tensor cores -->
 <section class="slide" id="s-tc" data-chapter="Tensor Cores">
   <div class="inner">
     <div class="label">07 · Tensor Cores</div>
@@ -180,7 +170,6 @@
   </div>
 </section>
 
-<!-- 9 · Wave quantization -->
 <section class="slide" id="s-wave" data-chapter="Tensor Cores">
   <div class="inner">
     <div class="label">08 · Tensor Cores</div>
@@ -216,7 +205,6 @@
   </div>
 </section>
 
-<!-- 10 · Software stack -->
 <section class="slide" id="s-stack" data-chapter="Software">
   <div class="inner">
     <div class="label">09 · Software</div>
@@ -248,7 +236,6 @@
   </div>
 </section>
 
-<!-- 11 · Questions -->
 <section class="slide" id="s-qa" data-chapter="Test yourself">
   <div class="inner">
     <div class="label">10 · Test yourself</div>
@@ -262,7 +249,6 @@
   </div>
 </section>
 
-<!-- 12 · Take it with you -->
 <section class="slide" id="s-end" data-chapter="Test yourself">
   <div class="inner">
     <div class="label">11 · Take it with you</div>
