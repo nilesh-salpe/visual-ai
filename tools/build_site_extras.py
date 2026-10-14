@@ -12,6 +12,8 @@ TOPICS = {  # folder: (title, [(stage, [slug, ...]), ...])
     'math': ('Math for LLMs', [('Linear algebra', ['01-vectors-dot-products', '02-matrices-linear-layers', '03-eigen-svd-low-rank']), ('Calculus', ['04-derivatives-chain-rule']),
                                ('Probability and information', ['05-probability-sampling', '06-maximum-likelihood', '07-information-theory']),
                                ('Numerics and optimization', ['08-softmax-logsumexp', '09-optimization-basics', '10-floating-point'])]),
+    'pretraining-data': ('Web Crawling and Pretraining Data', [('Sources', ['01-where-data-comes-from']), ('Crawling', ['02-how-a-crawler-works', '03-crawling-at-scale', '04-robots-and-consent']),
+                                                               ('Cleaning', ['05-text-extraction', '06-quality-filtering', '07-deduplication', '08-pii-and-safety']), ('Assembling', ['09-mixtures-and-repetition', '10-reference-pipelines'])]),
     'nn-fundamentals': ('Neural Network Fundamentals', [('Networks', ['01-perceptron-to-mlp', '02-activation-functions']), ('Learning', ['03-backpropagation', '04-loss-functions', '05-optimizers']),
                                                         ('Making depth work', ['06-initialization', '07-normalization-residuals', '08-regularization']), ('Toward LLMs', ['09-embeddings', '10-mlp-to-language-model'])]),
     'gpu': ('GPU for GenAI', [('The chip', ['01-what-is-a-gpu', '02-why-gpus-for-ai', '03-memory-hierarchy']), ('The machine', ['04-inside-gpu-server', '05-cluster-topology']),

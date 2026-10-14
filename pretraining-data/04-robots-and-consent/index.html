@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>robots.txt and Consent</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="robots.txt and consent" data-home="../index.html" data-home-label="Pretraining data">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Pretraining Data · 04</div>
+    <h1>robots.txt and consent</h1>
+    <p class="sub">How websites tell crawlers what they may fetch, the exact matching rules standardised in RFC (Request for Comments) 9309, what to do when the file is missing or failing, and the fast-growing restrictions on AI (artificial intelligence) crawlers.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Site owners need a simple way to say "don't crawl this", and crawlers need unambiguous rules. Increasingly, sites also want to opt out of AI training specifically.</div>
+      <div class="c"><b>Core idea</b>A site serves <b>/robots.txt</b> with <b>user-agent groups</b> of <b>allow/disallow</b> rules. A crawler picks the group matching its product token (else <code>*</code>), and the <b>longest matching rule wins</b> (allow on ties). 4xx → crawl allowed; 5xx → assume disallow. Cache for at most 24 hours.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Test a robots.txt</h2>
+    <hr>
+<p class="lede">Edit the file, the crawler name and the path. The tester follows RFC 9309: group selection, <code>*</code> and <code>$</code>, longest match, allow on ties. Notebook 02 implements the same logic.</p>
+<div class="visual">
+  <textarea id="rTxt" rows="9" style="width:100%;font:13px/1.45 'JetBrains Mono',monospace;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink)"></textarea>
+  <div class="controls"><label class="ctl">crawler <input id="rUA" type="text" value="SomeBot" style="width:120px"></label><label class="ctl">path <input id="rP" type="text" value="/private/public-page.html" style="width:220px"></label></div>
+  <p class="readout" id="rOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why rules need to be precise</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Ambiguity</h3><p>Before RFC 9309, crawlers disagreed on first-match vs longest-match and on wildcards.</p></div>
+      <div class="card b"><h3>Failure modes</h3><p>What should a crawler do when robots.txt returns 404, 403 or 500? Different answers mean very different behaviour.</p></div>
+      <div class="card c"><h3>New purposes</h3><p>A file written for search indexing now also governs collection for AI training.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which rule applies?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">Rules "Disallow: /docs" and "Allow: /docs/public" in the * group. Is /docs/public/a.html allowed?</p>
+      <div class="opts">
+      <button>A. No: Disallow comes first</button>
+      <button data-ok>B. Yes: the Allow match is longer</button>
+      <button>C. No: Disallow always wins</button>
+      <button>D. Only for search engines</button>
+      </div>
+      <div class="why"><b>B.</b> Both match; /docs/public (12 characters) is longer than /docs (5), so Allow wins. Line order is irrelevant.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>The rules in RFC 9309</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Groups</h3><p>One or more user-agent lines followed by rules. Match your product token case-insensitively; merge duplicate groups; fall back to *.</p></div>
+      <div class="card c"><h3>Matching</h3><p>Paths match from the first character; * matches any sequence, $ anchors the end. Most octets wins; allow beats an equivalent disallow.</p></div>
+      <div class="card d"><h3>Errors</h3><p>4xx: "unavailable", may crawl anything. 5xx or network failure: "unreachable", assume complete disallow.</p></div>
+      <div class="card e"><h3>Limits</h3><p>Follow ≥ 5 redirects; cache ≤ 24 hours; parse at least 500 KiB.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 138" role="img" aria-label="RFC 9309 (2022) standardised a 1994 convention." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">fetch /robots.txt</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">status code first</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">pick group</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">your token, else *</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">match rules</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">* and $ wildcards</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">longest match wins</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">allow on ties</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">cache ≤ 24 h</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">re-check later</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">RFC 9309 (2022) standardised a 1994 convention.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Consent is shifting fast</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>robots.txt restrictions</h3><p>Longpre et al. (2024): in one year (2023-04 to 2024-04), about 5%+ of all tokens in C4, RefinedWeb and Dolma, and about 25%+ of tokens from the most critical domains, became restricted by robots.txt.</p></div>
+      <div class="card b"><h3>Terms of service</h3><p>A full 45% of C4 is now restricted by terms-of-service crawling clauses.</p></div>
+      <div class="card c"><h3>Identifying crawlers</h3><p>Crawlers announce a product token (e.g. CCBot) and can be blocked individually; Common Crawl documents how to block or slow CCBot.</p></div>
+    </div>
+<div class="deep"><h4>Why this matters for data</h4><p>If honoured, these restrictions bias the open web corpus toward sites that do not opt out, affecting its diversity and freshness, as the authors warn.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: evaluating one URL</h2>
+    <hr>
+    <p class="lede">robots.txt: "User-agent: * / Disallow: /private/ / Allow: /private/public-page.html". Crawler: SomeBot. URL path: /private/public-page.html.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>No group names SomeBot, so the * group applies.</li><li>Both rules match: Disallow /private/ (9 characters) and Allow /private/public-page.html (25 characters).</li><li>The longest match wins: <b>allowed</b>. For /private/x only the Disallow matches: <b>disallowed</b>.</li><li>If the server answered robots.txt with 503 instead, the crawler must assume complete disallow; with 404, everything is allowed.</li></ol><div class="result">Specificity, not order, decides: the rule with the most matching characters wins.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why the protocol works (and its limits)</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Simple and universal</h3><p>A text file at a fixed path that any crawler can fetch and parse.</p></div>
+      <div class="card e"><h3>Deterministic</h3><p>Longest match and explicit tie-breaking give one answer per URL.</p></div>
+      <div class="card b"><h3>Fails safe on errors</h3><p>Server errors mean "assume disallow", protecting struggling sites.</p></div>
+      <div class="card d"><h3>Voluntary</h3><p>It is not access control: compliance depends on the crawler, and paths are public.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"The first matching rule applies."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">RFC 9309 uses the most specific (longest) match; order does not matter.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"A missing robots.txt means "do not crawl"."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">A 4xx response means the crawler may access everything; only server errors mean disallow.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"robots.txt protects private pages."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is advisory and lists the paths publicly; use authentication for real protection.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Longest match wins.</b> Allow wins ties.</li><li><b>A specific group replaces *.</b> Rules are not inherited from the * group.</li><li><b>Status codes.</b> 4xx → allowed, 5xx/unreachable → disallow all.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>First-match semantics.</b> Order of lines does not matter in RFC 9309.</li><li><b>Treating robots.txt as security.</b> It is advisory and publicly lists the paths.</li><li><b>Assuming Crawl-delay is standard.</b> It is a non-standard extension (CCBot obeys it, others may not).</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">robots.txt returns HTTP (Hypertext Transfer Protocol) 503. What should a crawler do?</p>
+      <div class="opts">
+      <button>A. Crawl everything</button>
+      <button data-ok>B. Assume complete disallow</button>
+      <button>C. Ignore it and use the * group</button>
+      <button>D. Retry once, then crawl</button>
+      </div>
+      <div class="why"><b>Assume complete disallow</b> (unreachable).</div>
+    </div>
+<div class="quiz">
+      <p class="qq">For how long may a crawler cache robots.txt?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">It SHOULD NOT use a cached copy for more than 24 hours, unless the file is unreachable.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Group "User-agent: ExampleBot" has no rule for /private/, while the * group disallows it. Can ExampleBot fetch /private/?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Yes: the matching ExampleBot group replaces the * group entirely.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">robots.txt groups rules by crawler; the longest matching rule wins (allow on ties), 4xx means allowed and 5xx means disallow, and AI-specific opt-outs are rising fast.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Sites publish crawl rules in robots.txt as groups of allow and disallow lines for named crawlers. RFC 9309 fixes the details: a crawler uses the group naming its product token, otherwise the star group; paths match from the start with star and dollar wildcards; the longest match wins, and allow wins a tie. If fetching robots.txt gives a 4xx error the crawler may access everything, but a server error means assume everything is disallowed. Caches last at most a day. The file is voluntary, and audits show restrictions aimed at AI crawlers grew sharply, about five percent of C4 tokens in one year.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> unambiguous, site-controlled crawl rules.</span></div><div><span><b>Core idea:</b> groups; longest match; allow on ties; status codes.</span></div><div><span><b>Trend:</b> ~5%+ of C4 tokens newly restricted in a year.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/02_robots_txt.ipynb" target="_blank" rel="noopener">02 · A robots.txt parser following RFC 9309</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/02_robots_txt.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../05-text-extraction/index.html">05 · Text extraction →</a> · Previous: <a href="../03-crawling-at-scale/index.html">← 03</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://www.rfc-editor.org/rfc/rfc9309.html" target="_blank" rel="noopener">RFC 9309: Robots Exclusion Protocol</a>
+        <div class="meta">Koster, Illyes, Zeller & Sassman · IETF (Internet Engineering Task Force) 2022</div>
+        <p>Standardizes robots.txt: user-agent groups, allow/disallow with * and $, longest match wins (allow on ties), 4xx means crawl allowed, 5xx means assume complete disallow.</p><div class="num">Remember: cache ≤ 24 h; parse ≥ 500 KiB</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.14933" target="_blank" rel="noopener">Consent in Crisis: The Rapid Decline of the AI Data Commons</a>
+        <div class="meta">Longpre et al. · NeurIPS Datasets and Benchmarks 2024</div>
+        <p>Audits robots.txt and terms of service of the sources behind C4, RefinedWeb and Dolma; restrictions on AI crawlers grew sharply in one year.</p><div class="num">Remember: ~5%+ of all C4 tokens and ~25%+ of critical sources newly restricted (2023–24)</div></div>
+      <div class="paper-item"><a href="https://commoncrawl.org/overview" target="_blank" rel="noopener">Common Crawl: Overview</a>
+        <div class="meta">Common Crawl Foundation · commoncrawl.org 2026</div>
+        <p>Free, open web crawl released as WARC (raw responses), WAT (metadata) and WET (extracted text) files; the starting point of most open pretraining corpora.</p><div class="num">Remember: over 300 billion pages; 3–5 billion new pages a month</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const parse = text => { const g = {}; let cur = [], inRules = false;
+    text.split('\n').forEach(raw => { const line = raw.split('#')[0].trim(); const i = line.indexOf(':'); if (i < 0) return;
+      const k = line.slice(0, i).trim().toLowerCase(), v = line.slice(i + 1).trim();
+      if (k === 'user-agent') { if (inRules) { cur = []; inRules = false; } const t = v.toLowerCase(); cur.push(t); g[t] = g[t] || []; }
+      else if ((k === 'allow' || k === 'disallow') && cur.length) { inRules = true; if (v) cur.forEach(t => g[t].push([k, v])); } });
+    return g; };
+  const match = (pat, path) => { const anch = pat.endsWith('$'), p = anch ? pat.slice(0, -1) : pat; const rx = new RegExp('^' + p.split('*').map(s => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*') + (anch ? '$' : '')); return rx.test(path) ? p.length : -1; };
+  const run = () => {
+    const g = parse(document.getElementById('rTxt').value), ua = document.getElementById('rUA').value.trim().toLowerCase(), path = document.getElementById('rP').value.trim() || '/';
+    const name = ua in g ? ua : ('*' in g ? '*' : null), rules = name ? g[name] : [];
+    let best = -1, kind = 'allow', rule = null;
+    rules.forEach(([k, p]) => { const n = match(p, path); if (n > best || (n === best && k === 'allow' && n >= 0)) { best = n; kind = k; rule = `${k}: ${p}`; } });
+    const ok = path === '/robots.txt' || best < 0 || kind === 'allow';
+    document.getElementById('rOut').innerHTML = `Group used: <b>${name === null ? 'none (no rules apply)' : name === '*' ? '* (no group for this crawler)' : name}</b>. ${best >= 0 ? `Longest matching rule: <code>${rule}</code> (${best} characters).` : 'No rule matches.'} → <b style="color:${ok ? 'var(--e)' : 'var(--d)'}">${ok ? 'ALLOWED' : 'DISALLOWED'}</b>`;
+  };
+  const TA = document.getElementById('rTxt'); if (!TA.value) TA.value = 'User-agent: *\nDisallow: /private/\nAllow: /private/public-page.html\n\nUser-agent: ExampleBot\nDisallow: /tmp\nDisallow: /*.pdf$\nAllow: /tmp/ok\n\nUser-agent: CCBot\nDisallow: /';
+  ['rTxt', 'rUA', 'rP'].forEach(id => document.getElementById(id).addEventListener('input', run)); run();
+})();
+</script>
+</body>
+</html>

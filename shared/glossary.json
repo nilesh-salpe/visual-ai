@@ -65,11 +65,17 @@
   "CPU": {
    "exp": "central processing unit"
   },
+  "CSS": {
+   "exp": "Cascading Style Sheets"
+  },
   "CUDA": {
    "exp": "Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors"
   },
   "DCGM": {
    "exp": "NVIDIA Data Center GPU Manager"
+  },
+  "DCLM": {
+   "exp": "DataComp for Language Models"
   },
   "DDP": {
    "exp": "distributed data parallel"
@@ -80,6 +86,9 @@
   "DNN": {
    "exp": "deep neural network"
   },
+  "DNS": {
+   "exp": "Domain Name System"
+  },
   "DP": {
    "exp": "data parallelism"
   },
@@ -89,6 +98,9 @@
   "DRAM": {
    "exp": "dynamic random-access memory"
   },
+  "DRO": {
+   "exp": "distributionally robust optimization"
+  },
   "ECC": {
    "exp": "error-correcting code"
   },
@@ -97,6 +109,9 @@
   },
   "ECN": {
    "exp": "explicit congestion notification"
+  },
+  "ELI5": {
+   "exp": "Explain Like I'm Five"
   },
   "ELU": {
    "exp": "exponential linear unit"
@@ -124,6 +139,9 @@
   },
   "FFN": {
    "exp": "feed-forward network"
+  },
+  "FIFO": {
+   "exp": "first in, first out"
   },
   "FIM": {
    "exp": "fill-in-the-middle"
@@ -221,12 +239,21 @@
   "HIP": {
    "exp": "AMD's Heterogeneous-computing Interface for Portability"
   },
+  "HTML": {
+   "exp": "HyperText Markup Language"
+  },
+  "HTTP": {
+   "exp": "Hypertext Transfer Protocol"
+  },
   "IB": {
    "exp": "InfiniBand"
   },
   "ID": {
    "exp": "identifier",
    "plural": "identifiers"
+  },
+  "IETF": {
+   "exp": "Internet Engineering Task Force"
   },
   "INT": {
    "exp": "integer"
@@ -239,6 +266,12 @@
   },
   "IO": {
    "exp": "input/output, memory reads and writes"
+  },
+  "IP": {
+   "exp": "Internet Protocol"
+  },
+  "IPv4": {
+   "exp": "Internet Protocol version 4"
   },
   "IT": {
    "exp": "information technology"
@@ -269,6 +302,9 @@
   },
   "LSE": {
    "exp": "log-sum-exp"
+  },
+  "LSH": {
+   "exp": "locality-sensitive hashing"
   },
   "LSTM": {
    "exp": "long short-term memory network"
@@ -387,6 +423,9 @@
   "PI": {
    "exp": "Position Interpolation"
   },
+  "PII": {
+   "exp": "personally identifiable information"
+  },
   "PP": {
    "exp": "pipeline parallelism"
   },
@@ -425,6 +464,10 @@
   },
   "ReLU": {
    "exp": "rectified linear unit"
+  },
+  "RFC": {
+   "exp": "Request for Comments",
+   "plural": "Requests for Comments"
   },
   "RL": {
    "exp": "reinforcement learning"
@@ -519,6 +562,9 @@
   "SRAM": {
    "exp": "static random-access memory, fast on-chip memory"
   },
+  "SRC": {
+   "exp": "Systems Research Center"
+  },
   "SSD": {
    "exp": "solid-state drive"
   },
@@ -594,11 +640,23 @@
   "W8A8": {
    "exp": "8-bit weights and 8-bit activations"
   },
+  "WARC": {
+   "exp": "Web ARChive format"
+  },
+  "WAT": {
+   "exp": "metadata extracted from Web ARChive records"
+  },
+  "WET": {
+   "exp": "plain text extracted from Web ARChive records"
+  },
   "WMT": {
    "exp": "Workshop on Machine Translation"
   },
   "WSJ": {
    "exp": "Wall Street Journal"
+  },
+  "WWW": {
+   "exp": "World Wide Web (conference)"
   },
   "XID": {
    "exp": "NVIDIA driver error code"
@@ -782,6 +840,31 @@
   "AISTATS",
   "ICCV",
   "PNAS",
-  "XL"
+  "XL",
+  "ARChive",
+  "CCNet",
+  "FineWeb",
+  "MinHash",
+  "RefinedWeb",
+  "CCBot",
+  "IRLbot",
+  "ExampleBot",
+  "SomeBot",
+  "NOT",
+  "SHOULD",
+  "MUST",
+  "MAY",
+  "SETime",
+  "SETimes",
+  "DataComp",
+  "DistilRoberta",
+  "ExplainLikeImFive",
+  "LREC",
+  "MassiveText",
+  "OpenHerme",
+  "OpenHermes",
+  "DoReMi",
+  "MassiveWeb",
+  "HyperText"
  ]
 }

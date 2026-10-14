@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Mixtures and Repetition</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Data mixtures and repetition" data-home="../index.html" data-home-label="Pretraining data">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Pretraining Data · 09</div>
+    <h1>Data mixtures and repetition</h1>
+    <p class="sub">How much of each source to train on: domain weights, temperature sampling for small domains and languages, learned mixtures (DoReMi), and how many times data can be repeated before it stops helping.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Cleaned web text dwarfs code, math, books and low-resource languages. Sampling by size starves the small domains; up-weighting them means repeating them many times.</div>
+      <div class="c"><b>Core idea</b>Choose <b>sampling weights</b> per domain. <b>Temperature sampling</b> (pᵢ^(1/T)) up-weights small domains; learned methods (<b>DoReMi</b>) pick weights with a small proxy model. Track <b>epochs</b> per domain: Muennighoff et al. found up to about <b>4 epochs</b> of repetition is nearly as good as fresh data, with rapidly diminishing returns after.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Mix six domains</h2>
+    <hr>
+<p class="lede">Domain sizes from notebook 06 and a 15T-token budget. Raise the temperature to up-weight small domains, and cap repetition at a chosen number of epochs.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">temperature T <input type="range" id="mT" min="1" max="10" step="0.5" value="3"> <output id="mTo"></output></label><label class="ctl">max epochs <input type="range" id="mC" min="1" max="50" step="1" value="4"> <output id="mCo"></output></label></div>
+  <div id="mBars" style="margin-top:12px"></div>
+  <p class="readout" id="mOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why the mix is hard</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Imbalance</h3><p>Web text is orders of magnitude larger than code, math or most languages.</p></div>
+      <div class="card b"><h3>Repetition</h3><p>Up-weighting a small domain means repeating it; too much leads to memorisation and wasted compute.</p></div>
+      <div class="card c"><h3>Expensive to tune</h3><p>Each candidate mix needs a training run to evaluate.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>How much repetition is fine?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">According to Muennighoff et al. (2023), how many epochs over the same data are nearly as good as fresh data?</p>
+      <div class="opts">
+      <button>A. 1</button>
+      <button data-ok>B. up to about 4</button>
+      <button>C. about 40</button>
+      <button>D. unlimited</button>
+      </div>
+      <div class="why"><b>B.</b> Up to about 4 epochs gives negligible change in loss versus unique data; returns then diminish rapidly, and around 40 epochs repetition is almost worthless.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Three ways to set weights</h2>
+    <hr>
+<div class="grid3">
+      <div class="card f"><h3>Natural</h3><p>wᵢ ∝ nᵢ: proportional to size. Simple, but small domains vanish.</p></div>
+      <div class="card a"><h3>Temperature</h3><p>wᵢ ∝ (nᵢ/Σn)^(1/T): T &gt; 1 flattens toward uniform; widely used for multilingual data.</p></div>
+      <div class="card e"><h3>Learned</h3><p>DoReMi: a small proxy model trained with group DRO (distributionally robust optimization) outputs domain weights for the big run.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 166" role="img" aria-label="Late in training, small high-quality sets are often up-weighted (&quot;annealing&quot;)." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">domain sizes</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">unique tokens nᵢ</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">weights</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">natural,</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">temperature or</text><text x="198.4" y="137.0" text-anchor="middle" class="tm" style="font-size:11px">learned</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">budget</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">total training</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">tokens</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">epochs</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">wᵢ·budget / nᵢ</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">cap ~4 epochs</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">re-distribute the</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">rest</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Late in training, small high-quality sets are often up-weighted ("annealing").</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Mixes and schedules in practice</h2>
+    <hr>
+<div class="grid3">
+      <div class="card a"><h3>Llama 3 mix</h3><p>About 50% general knowledge, 25% math and reasoning, 17% code, 8% multilingual tokens, chosen with small-model scaling experiments.</p></div>
+      <div class="card b"><h3>Annealing</h3><p>At the end of pretraining, Llama 3 trained on small amounts of high-quality code and math with the learning rate decaying, which boosted key benchmarks.</p></div>
+      <div class="card c"><h3>DoReMi</h3><p>280M proxy → 8B model (30× larger): +6.5 points few-shot accuracy, baseline reached with 2.6× fewer steps on The Pile.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: a 15T-token budget</h2>
+    <hr>
+    <p class="lede">Notebook 06: web 12T, code 800B, math 150B, books 60B, Wikipedia 20B, low-resource languages 5B unique tokens; budget 15T tokens.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Natural sampling (T = 1): web gets 92.1%; every domain is seen 1.2 times; low-resource languages get almost nothing.</li><li>Temperature T = 3: web 50%, code 20%, math 11.6%; but math is repeated 11.6×, Wikipedia 44×, low-resource languages 112×.</li><li>Capping at 4 epochs and giving the rest to web: web 72%, code 21%, math 4%; nothing exceeds 4 epochs.</li><li>Reported mixes: Llama 3 ≈ 50% general, 25% math and reasoning, 17% code, 8% multilingual; DoReMi's learned weights gave +6.5 points and 2.6× fewer steps on The Pile.</li></ol><div class="result">The mix is a trade-off between emphasis and repetition; caps keep small domains from being memorised.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why mixtures matter</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Capabilities follow data</h3><p>Code and math share drives coding and reasoning ability.</p></div>
+      <div class="card e"><h3>Repetition has a budget</h3><p>A few epochs are nearly free; many are wasted compute.</p></div>
+      <div class="card b"><h3>Small models predict big ones</h3><p>Mixtures found with proxies transfer to larger runs (DoReMi, Llama 3 experiments).</p></div>
+      <div class="card c"><h3>Timing matters</h3><p>Up-weighting high-quality data late in training (annealing) helps more than early.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"The mix just reflects what data exists."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is a deliberate choice; natural proportions would be over 90% web.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Repeating data is always bad."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Up to about 4 epochs costs almost nothing compared with unique data.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"One mix fits all model sizes."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Optimal weights depend on scale and goals; teams re-tune with scaling experiments.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Epochs = weight × budget ÷ unique tokens.</b> Compute it per domain.</li><li><b>~4 epochs is nearly free.</b> Beyond that, value decays quickly; ~40 epochs is about worthless.</li><li><b>Proxy models for mixtures.</b> DoReMi: 280M proxy chose weights for an 8B model.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Natural sampling.</b> Starves code, math and languages.</li><li><b>Unlimited up-weighting.</b> Hundreds of epochs on a small set means memorisation.</li><li><b>Tuning the mix on the final benchmarks only.</b> Risks overfitting the evaluation; use held-out validation domains.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">A 50B-token domain gets 2% of a 10T-token budget. Epochs?</p>
+      <div class="opts">
+      <button>A. 0.2</button>
+      <button>B. 2</button>
+      <button data-ok>C. 4</button>
+      <button>D. 40</button>
+      </div>
+      <div class="why">0.02 × 10T ÷ 50B = <b>4</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does a sampling temperature above 1 do?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Flattens the domain distribution, giving small domains more weight than their size.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does DoReMi use to choose domain weights?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">A small proxy model trained with group distributionally robust optimization; its weights are then used to train the large model.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">A data mix is a set of domain weights; temperature or learned weights up-weight small domains, and capping repetition near 4 epochs keeps that emphasis from turning into memorisation.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Pretraining data comes from domains of very different sizes, so sampling by size would make the mix almost all web text. Temperature sampling raises each domain's share to the power one over T, giving small domains more weight; learned methods such as DoReMi choose weights with a small proxy model. Up-weighting a small domain means repeating it: Muennighoff and colleagues found up to about four epochs is nearly as good as fresh data, with rapidly diminishing returns after. Llama 3's final mix was about half general text, a quarter math and reasoning, 17 percent code and 8 percent multilingual.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> huge imbalance between domains.</span></div><div><span><b>Core idea:</b> weights (temperature / learned) + epoch caps.</span></div><div><span><b>Numbers:</b> ~4 epochs ≈ free; Llama 3 50/25/17/8.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/06_data_mixture.ipynb" target="_blank" rel="noopener">06 · Data mixtures, sampling temperature and epochs</a> <span style="color:var(--faint)">· 25 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/06_data_mixture.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../10-reference-pipelines/index.html">10 · Reference pipelines →</a> · Previous: <a href="../08-pii-and-safety/index.html">← 08</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2305.16264" target="_blank" rel="noopener">Scaling Data-Constrained Language Models</a>
+        <div class="meta">Muennighoff et al. · NeurIPS 2023</div>
+        <p>When unique data runs out, repeating it is nearly as good as new data for a few epochs, then returns diminish rapidly; proposes a scaling law for repeated tokens.</p><div class="num">Remember: up to 4 epochs ≈ unique data</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2305.10429" target="_blank" rel="noopener">DoReMi: Optimizing Data Mixtures Speeds Up Language Model Pretraining</a>
+        <div class="meta">Xie et al. · NeurIPS 2023</div>
+        <p>Trains a small proxy model with group distributionally robust optimization to choose domain weights, then trains the large model on that mixture.</p><div class="num">Remember: 280M proxy → 8B model: +6.5 points, 2.6× fewer steps</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const DOM = { web: 12000, code: 800, math: 150, books: 60, wikipedia: 20, 'low-resource languages': 5 }, B = 15000;
+  Deck.bind(['mT', 'mC'], () => {
+    const T = Deck.val('mT'), cap = Deck.val('mC'); Deck.out('mTo', T.toFixed(1)); Deck.out('mCo', cap);
+    const tot = Object.values(DOM).reduce((a, b) => a + b), q = {}; Object.entries(DOM).forEach(([k, v]) => { q[k] = Math.pow(v / tot, 1 / T); });
+    const z = Object.values(q).reduce((a, b) => a + b); let w = {}; Object.keys(q).forEach(k => { w[k] = q[k] / z; });
+    const base = { ...w }, capped = new Set();
+    for (let it = 0; it < 10; it++) { const over = Object.keys(w).filter(k => !capped.has(k) && w[k] * B / DOM[k] > cap + 1e-9); if (!over.length) break;
+      over.forEach(k => { w[k] = cap * DOM[k] / B; capped.add(k); }); const free = 1 - [...capped].reduce((a, k) => a + w[k], 0), rest = Object.keys(w).filter(k => !capped.has(k)), rz = rest.reduce((a, k) => a + base[k], 0);
+      rest.forEach(k => { w[k] = free * base[k] / rz; }); }
+    Deck.hbars(document.getElementById('mBars'), Object.keys(DOM).map(k => { const ep = w[k] * B / DOM[k]; return { label: `${k} (${DOM[k] >= 1000 ? DOM[k] / 1000 + 'T' : DOM[k] + 'B'})`, value: w[k], color: capped.has(k) ? 'var(--b)' : 'var(--a)', text: `${(100 * w[k]).toFixed(1)}% · ${ep.toFixed(1)} ep` }; }), { max: 1 });
+    document.getElementById('mOut').innerHTML = `Orange = capped at ${cap} epochs, extra budget redistributed. ${cap > 4 ? 'Above ~4 epochs, repeated tokens are worth much less than new ones.' : 'Within the ~4-epoch range where repetition is nearly free.'}`;
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reference Pipelines</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Reference pipelines" data-home="../index.html" data-home-label="Pretraining data">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Pretraining Data · 10</div>
+    <h1>Reference pipelines</h1>
+    <p class="sub">Seven published pipelines side by side, from C4 to Llama 3: what each one does at every stage, and the lessons the field converged on.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Each paper describes its own pipeline with different names and orderings. To design or evaluate one, you need a common map of the choices.</div>
+      <div class="c"><b>Core idea</b>Nearly every pipeline follows the same skeleton: <b>extract → language ID (identifier) → heuristic filters → dedup → (model-based filter) → safety/PII (personally identifiable information) → mix</b>. They differ in extraction (WET (plain text extracted from Web ARChive records) vs WARC (Web ARChive format)), how aggressive dedup is, and whether a learned quality filter is used. The trend: learned filters and careful dedup, validated by small-model ablations.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Compare the pipelines</h2>
+    <hr>
+<p class="lede">Pick a dataset to see its stages. Cells marked — mean the stage was not described or not used.</p>
+<div class="visual">
+  <div class="seg" id="dSeg" style="display:flex;flex-wrap:wrap"><button data-v="c4">C4</button><button data-v="gopher">Gopher</button><button data-v="rw">RefinedWeb</button><button data-v="fw" class="on">FineWeb</button><button data-v="dclm">DCLM</button><button data-v="dolma">Dolma</button><button data-v="llama3">Llama 3</button></div>
+  <div class="scroll-x" style="margin-top:12px"><table class="tbl" id="dTbl"></table></div>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why comparing pipelines is hard</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Different names</h3><p>The same step is called "content filtering", "URL filtering" or "safety filtering".</p></div>
+      <div class="card b"><h3>Different orders</h3><p>Some dedup before filtering, others after; some dedup per snapshot, others globally.</p></div>
+      <div class="card c"><h3>Few ablations</h3><p>Until recently, most choices were not tested individually.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What changed most between C4 and DCLM?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">Comparing C4 (2020) and DCLM-Baseline (DCLM = DataComp for Language Models) (2024), which ingredient did DCLM find most important?</p>
+      <div class="opts">
+      <button>A. More languages</button>
+      <button data-ok>B. A learned (fastText) quality classifier</button>
+      <button>C. Using WET files</button>
+      <button>D. Removing all code</button>
+      </div>
+      <div class="why"><b>B.</b> DCLM: "model-based filtering is key to assembling a high-quality training set".</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>One skeleton, many choices</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Extraction</h3><p>WET (C4, CCNet) → WARC + trafilatura (RefinedWeb, FineWeb, DCLM) → custom parsers (Llama 3).</p></div>
+      <div class="card a"><h3>Filtering</h3><p>Rules (C4, Gopher) → + perplexity (CCNet) → + learned classifiers (DCLM, FineWeb-Edu, Llama 3).</p></div>
+      <div class="card b"><h3>Deduplication</h3><p>Spans (C4) → MinHash (Gopher, RefinedWeb, FineWeb) + URL and line levels (Llama 3).</p></div>
+      <div class="card e"><h3>Validation</h3><p>Small-model ablations per decision (FineWeb, DCLM) instead of intuition.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Choices are validated by training small models and comparing benchmarks." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">extract</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">WET or WARC +</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">extractor</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">filter</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">rules →</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">classifiers</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">dedup</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">exact + MinHash</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">scrub</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">PII + safety</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">ablate</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">train small models</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">to decide</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Choices are validated by training small models and comparing benchmarks.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Lessons the field converged on</h2>
+    <hr>
+<div class="grid3">
+      <div class="card a"><h3>Extract from WARC</h3><p>Modern extractors beat Common Crawl's WET text (FineWeb ablation).</p></div>
+      <div class="card b"><h3>Deduplicate carefully</h3><p>Strict near-dup removal helps; global cross-snapshot dedup can hurt (FineWeb).</p></div>
+      <div class="card e"><h3>Learn what "good" means</h3><p>A cheap classifier trained on carefully chosen positives gives the largest gains (DCLM, FineWeb-Edu).</p></div>
+      <div class="card c"><h3>Mix deliberately</h3><p>Domain weights and late annealing on high-quality data matter (Llama 3).</p></div>
+      <div class="card d"><h3>Scrub and respect consent</h3><p>PII masking, safety filters and robots.txt compliance are part of the pipeline.</p></div>
+      <div class="card f"><h3>Measure everything</h3><p>Report kept fractions and ablate each stage with small models.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: what changed from C4 to FineWeb-Edu</h2>
+    <hr>
+    <p class="lede">The same source (Common Crawl), four years of pipeline evolution.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>C4 (2019 crawl): WET text, line and page rules, three-sentence-span dedup, English ≥ 0.99: about <b>750 GB</b> of text.</li><li>RefinedWeb (2023): WARC + trafilatura, Gopher-style rules, strict MinHash and exact-substring dedup: <b>5T tokens</b>, beats curated corpora.</li><li>FineWeb (2024): 96 snapshots, per-snapshot MinHash, ablated C4 filters: <b>15T tokens</b>; FineWeb-Edu adds an LLM-labelled (LLM = large language model) classifier: <b>1.3T tokens</b>.</li><li>DCLM (2024): a fastText quality classifier as the key ingredient: a 7B model reaches <b>64% MMLU (Massive Multitask Language Understanding)</b> on 2.6T tokens.</li></ol><div class="result">Scale grew 20× while selection became more aggressive: the best datasets are both bigger and more selective.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why open pipelines matter</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Reproducible science</h3><p>Open datasets (RefinedWeb, FineWeb, DCLM, Dolma) let others test data choices directly.</p></div>
+      <div class="card e"><h3>Data beats tricks</h3><p>DCLM-Baseline matched Mistral-7B-v0.3 and Llama 3 8B on MMLU (63% and 66%) with 6.6× less compute than Llama 3 8B.</p></div>
+      <div class="card b"><h3>Transfer to new domains</h3><p>The same skeleton is reused for code, math and other languages with domain-specific rules.</p></div>
+      <div class="card c"><h3>Accountability</h3><p>Documented filters make biases and removals inspectable.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Frontier labs use secret magic data."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Published pipelines show the same stages; details and scale differ, and open datasets now rival closed ones on many benchmarks.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"The best pipeline keeps the most data."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">FineWeb-Edu kept under 10% of FineWeb and scored much higher on knowledge benchmarks.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Pipelines are finished once."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Each new crawl, language or domain needs re-tuned filters and fresh ablations.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Same skeleton everywhere.</b> Learn the stages, then compare choices.</li><li><b>Ablate with small models.</b> FineWeb and DCLM decide each filter by training ~1B models.</li><li><b>Report removal rates.</b> Each stage's kept fraction makes pipelines comparable.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Copying a pipeline without its ablations.</b> Thresholds tuned for English web may fail for code or other languages.</li><li><b>Benchmark contamination.</b> Classifiers or filters that favour test-like text inflate scores.</li><li><b>Ignoring consent trends.</b> Re-crawls may now be restricted by robots.txt (deck 04).</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Which dataset introduced per-snapshot (rather than global) MinHash dedup after ablations?</p>
+      <div class="opts">
+      <button>A. C4</button>
+      <button>B. Gopher</button>
+      <button data-ok>C. FineWeb</button>
+      <button>D. Dolma</button>
+      </div>
+      <div class="why"><b>FineWeb.</b></div>
+    </div>
+<div class="quiz">
+      <p class="qq">List the common stages of a pretraining data pipeline.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Extraction, language ID, heuristic filters, deduplication, model-based quality filtering, PII/safety filtering, mixing.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">How do FineWeb and DCLM decide whether a filter helps?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">They train small models on data with and without the filter and compare downstream benchmark scores.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Published pipelines share one skeleton (extract, filter, dedup, scrub, mix); the field converged on WARC extraction, careful MinHash dedup and learned quality classifiers, all validated by small-model ablations.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>C4, Gopher, RefinedWeb, FineWeb, DCLM, Dolma and Llama 3 all follow the same skeleton: extract text, identify the language, apply heuristic filters, deduplicate, often apply a learned quality filter, scrub personal and unsafe content, and mix. They differ in the details: newer pipelines extract from raw WARC files with tools such as trafilatura, deduplicate with MinHash at several levels while avoiding over-aggressive global deduplication, and select data with cheap classifiers trained on carefully chosen examples. Crucially, FineWeb and DCLM validated each choice by training small models, which is how data work became a measurable science.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> many pipelines, different vocabularies.</span></div><div><span><b>Core idea:</b> one skeleton; compare choices per stage.</span></div><div><span><b>Lessons:</b> WARC extraction, careful dedup, learned filters, ablations.</span></div></div>
+    <p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../09-mixtures-and-repetition/index.html">← 09</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1910.10683" target="_blank" rel="noopener">Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer (T5)</a>
+        <div class="meta">Raffel et al. · JMLR 2020</div>
+        <p>Systematic study of encoder-decoder pretraining with a span-corruption objective, framing every task as text-to-text.</p><div class="num">Remember: corrupts 15% of tokens</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2112.11446" target="_blank" rel="noopener">Scaling Language Models: Methods, Analysis & Insights from Training Gopher</a>
+        <div class="meta">Rae et al. · arXiv 2021</div>
+        <p>MassiveText pipeline: content filtering, text extraction, simple quality rules (word count, word length, symbols, stop words), repetition removal, MinHash deduplication and test-set filtering.</p><div class="num">Remember: near-duplicate if 13-gram Jaccard > 0.8</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2306.01116" target="_blank" rel="noopener">The RefinedWeb Dataset for Falcon LLM: Outperforming Curated Corpora with Web Data, and Web Data Only</a>
+        <div class="meta">Penedo et al. · NeurIPS 2023</div>
+        <p>Shows filtered, heavily deduplicated web data alone can beat curated corpora; trafilatura extraction, Gopher-style rules, strict MinHash plus exact-substring dedup.</p><div class="num">Remember: 5T tokens; ~90% of documents removed; 600B released</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2406.17557" target="_blank" rel="noopener">The FineWeb Datasets: Decanting the Web for the Finest Text Data at Scale</a>
+        <div class="meta">Penedo et al. · NeurIPS Datasets and Benchmarks 2024</div>
+        <p>15T tokens from 96 Common Crawl snapshots with fully ablated choices: WARC + trafilatura over WET, per-snapshot (not global) MinHash dedup, selected C4 filters; FineWeb-Edu uses an LLM-annotated educational-quality classifier.</p><div class="num">Remember: 15T tokens; FineWeb-Edu 1.3T</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2406.11794" target="_blank" rel="noopener">DataComp-LM: In search of the next generation of training sets for language models</a>
+        <div class="meta">Li et al. · NeurIPS Datasets and Benchmarks 2024</div>
+        <p>A 240T-token Common Crawl pool and controlled benchmark for data curation; model-based filtering with a fastText classifier (instruction data + ELI5 (Explain Like I'm Five) as positives) works best.</p><div class="num">Remember: 7B model, 64% MMLU with 2.6T tokens</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2402.00159" target="_blank" rel="noopener">Dolma: an Open Corpus of Three Trillion Tokens for Language Model Pretraining Research</a>
+        <div class="meta">Soldaini et al. · ACL 2024</div>
+        <p>Open 3T-token corpus and toolkit: Gopher rules plus C4's punctuation rule, toxicity classifiers, regex-based PII masking (emails, IP (Internet Protocol) addresses, phone numbers) and dedup.</p><div class="num">Remember: ~200 TB raw → 11 TB</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const P = {
+    c4: ['Common Crawl WET (April 2019)', 'langdetect, English ≥ 0.99', 'terminal punctuation, ≥ 5 words, ≥ 3 sentences, no "{" or lorem ipsum, cookie/JS lines removed', '—', 'three-sentence spans', 'bad-words list', '≈ 750 GB'],
+    gopher: ['custom extraction (MassiveWeb)', 'English only', 'word count, word length, symbols, bullets, ellipses, alphabetic, stop words; repetition removal', '—', 'exact + MinHash 13-gram Jaccard > 0.8; test-set filtering', 'Google SafeSearch filter', 'MassiveWeb = 48% of MassiveText'],
+    rw: ['WARC + trafilatura', 'fastText', 'URL score + 4.6M-domain blocklist; Gopher-style document and line rules; repetition removal', '— (deliberately rule-based)', 'MinHash (450 × 20) + exact substring; URL dedup', 'URL filtering', '5T tokens (600B released)'],
+    fw: ['WARC + trafilatura', 'fastText, English score ≥ 0.65', 'URL blocklist + Gopher quality and repetition rules + selected C4 rules + custom filters', 'FineWeb-Edu: classifier on Llama-3-70B scores (threshold 3)', 'MinHash (14 × 8) per snapshot', 'URL blocklist; email and IP anonymisation', '15T tokens (Edu: 1.3T)'],
+    dclm: ['re-extracted from HTML with resiliparse', 'fastText', 'RefinedWeb\'s heuristic filters', 'fastText classifier (OpenHermes 2.5 + ELI5 positives), keep top 10%', 'near-duplicate Bloom filter (MinHash performed comparably)', '—', '240T pool → 3.8T DCLM-Baseline'],
+    dolma: ['CCNet output (Common Crawl WET text)', 'fastText (CCNet)', 'all Gopher rules + C4 no-punctuation rule', '—', 'URL, document and paragraph (Bloom filter)', 'regex PII masking; fastText toxicity', '3T tokens (11 TB)'],
+    llama3: ['custom HTML parser (math and code aware)', 'fastText-based, 176 languages', 'duplicated n-grams, dirty words, token-distribution KL', 'fastText + DistilRoberta on Llama 2 labels; code and reasoning classifiers', 'URL + global MinHash + line (> 6 per 30M docs)', 'PII-heavy, unsafe and adult domains removed', '≈ 15T tokens; mix 50/25/17/8'] };
+  const H = ['extraction', 'language ID', 'heuristic filters', 'model-based filter', 'deduplication', 'safety / PII', 'size'];
+  Deck.seg('dSeg', v => { document.getElementById('dTbl').innerHTML = '<tr><th>stage</th><th>choice</th></tr>' + H.map((h, i) => `<tr><td><b>${h}</b></td><td>${P[v][i]}</td></tr>`).join(''); });
+})();
+</script>
+</body>
+</html>

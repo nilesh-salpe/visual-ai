@@ -105,3 +105,16 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/evals/
 | [08 · Failures, checkpoints and goodput](distributed/08_checkpoint_failures.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/distributed/08_checkpoint_failures.ipynb) |
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/distributed/
+
+## Phase 6 · Web crawling & pretraining data
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · A polite crawler on a simulated web](pretraining-data/01_polite_crawler.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/01_polite_crawler.ipynb) |
+| [02 · A robots.txt parser following RFC 9309](pretraining-data/02_robots_txt.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/02_robots_txt.ipynb) |
+| [03 · From HTML to clean text](pretraining-data/03_text_extraction.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/03_text_extraction.ipynb) |
+| [04 · Heuristic quality filters (C4 and Gopher rules)](pretraining-data/04_quality_filters.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/04_quality_filters.ipynb) |
+| [05 · Near-duplicate detection with MinHash and LSH](pretraining-data/05_minhash_lsh.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/05_minhash_lsh.ipynb) |
+| [06 · Data mixtures, sampling temperature and epochs](pretraining-data/06_data_mixture.ipynb) | 25 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/06_data_mixture.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/pretraining-data/

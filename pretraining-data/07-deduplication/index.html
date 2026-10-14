@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deduplication</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Deduplication" data-home="../index.html" data-home-label="Pretraining data">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Pretraining Data · 07</div>
+    <h1>Deduplication</h1>
+    <p class="sub">Why the web is full of copies, and how pipelines remove exact duplicates, near-duplicates (MinHash with locality-sensitive hashing) and repeated lines and substrings.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>The same text appears thousands of times: mirrored pages, templates, licences, quotes, spam. Training on it wastes compute, encourages memorisation and leaks test data.</div>
+      <div class="c"><b>Core idea</b>Remove <b>exact</b> duplicates with hashes (URL, document, line). Find <b>near-duplicates</b> by comparing documents' sets of word n-grams: <b>MinHash</b> compresses each set into a signature whose agreement estimates Jaccard similarity, and <b>LSH (locality-sensitive hashing) banding</b> finds similar pairs without comparing all pairs.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Tune the LSH S-curve</h2>
+    <hr>
+<p class="lede">Probability that a pair with Jaccard similarity s becomes a candidate, for b bands of r rows. Presets reproduce RefinedWeb and FineWeb.</p>
+<div class="visual">
+  <div class="seg" id="lSeg"><button data-v="20,450">RefinedWeb (450 × 20)</button><button data-v="8,14" class="on">FineWeb (14 × 8)</button><button data-v="5,20">20 × 5</button></div>
+  <div class="controls"><label class="ctl">rows per band r <input type="range" id="lR" min="1" max="30" step="1" value="8"> <output id="lRo"></output></label><label class="ctl">bands b <input type="range" id="lB" min="1" max="500" step="1" value="14"> <output id="lBo"></output></label></div>
+  <svg id="lSvg" viewBox="0 0 660 230" style="margin-top:10px" role="img" aria-label="LSH S-curve"></svg>
+  <p class="readout" id="lOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why simple hashing isn't enough</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Near-duplicates</h3><p>A changed date, ad or footer gives a different hash for essentially the same page.</p></div>
+      <div class="card b"><h3>All-pairs is impossible</h3><p>Billions of documents mean ~10¹⁸ pairs.</p></div>
+      <div class="card c"><h3>Repeated pieces</h3><p>Boilerplate lines and licences repeat inside otherwise unique documents.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What does MinHash estimate?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">For two documents' shingle sets, the fraction of positions where their MinHash signatures agree estimates…</p>
+      <div class="opts">
+      <button>A. their length ratio</button>
+      <button data-ok>B. their Jaccard similarity |A ∩ B| / |A ∪ B|</button>
+      <button>C. their edit distance</button>
+      <button>D. their cosine similarity</button>
+      </div>
+      <div class="why"><b>B.</b> Broder (1997): the probability that two sets have the same minimum under a random hash equals their Jaccard similarity.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Exact, near, and sub-document</h2>
+    <hr>
+<div class="grid3">
+      <div class="card c"><h3>Exact</h3><p>Hash URLs, documents or lines; keep one per hash. Cheap and lossless.</p></div>
+      <div class="card a"><h3>Near-duplicate</h3><p>Shingle → MinHash → LSH bands → candidate pairs → cluster → keep one (Broder; Lee et al.).</p></div>
+      <div class="card e"><h3>Sub-document</h3><p>Remove repeated lines (Llama 3, CCNet) or long repeated substrings (suffix arrays, Lee et al.).</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 138" role="img" aria-label="P(candidate) = 1 − (1 − sʳ)ᵇ: an S-curve around s ≈ (1/b)^(1/r)." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">shingles</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">word 5-grams</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">MinHash</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">k minimum hashes</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">LSH bands</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">b bands × r rows</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">candidate pairs</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">share a band</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">cluster + keep one</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">remove the rest</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">P(candidate) = 1 − (1 − sʳ)ᵇ: an S-curve around s ≈ (1/b)^(1/r).</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Settings used in practice</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Pipeline</th><th>Near-duplicate method</th><th>Other dedup</th></tr>
+  <tr><td>Gopher / MassiveText</td><td>MinHash, 13-gram Jaccard &gt; 0.8</td><td>exact documents; test-set filtering</td></tr>
+  <tr><td>RefinedWeb</td><td>MinHash 5-grams, 450 bands × 20</td><td>exact substring; URL dedup across dumps</td></tr>
+  <tr><td>FineWeb</td><td>MinHash 5-grams, 14 bands × 8, per snapshot</td><td>(C4-style repeated-line rules among its filters)</td></tr>
+  <tr><td>Llama 3</td><td>global MinHash</td><td>URL-level (keep latest); lines seen &gt; 6 times per 30M-doc bucket</td></tr>
+  <tr><td>Google crawl (2007)</td><td>64-bit simhash, ≤ 3 bits differ</td><td>—</td></tr>
+</table></div>
+<div class="deep"><h4>FineWeb&#x27;s surprise</h4><p>Deduplicating all snapshots against each other removed up to 90% of the oldest snapshots, and the data that survived was worse than what was removed (more ads and keyword lists). Deduplicating each snapshot independently gave 20T tokens that matched RefinedWeb.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: choosing b and r</h2>
+    <hr>
+    <p class="lede">Two pipelines' MinHash settings, evaluated with P(s) = 1 − (1 − sʳ)ᵇ for Jaccard similarity s.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>RefinedWeb: 9,000 hashes as 450 bands × 20 rows. P(0.75) = <b>76%</b>, P(0.8) = <b>99.5%</b>; threshold ≈ (1/450)^(1/20) = 0.74.</li><li>FineWeb: 112 hashes as 14 bands × 8 rows, "targeting documents that are at least 75% similar": P(0.75) = <b>77%</b>, P(0.8) = 92%, P(0.5) = 5.3%.</li><li>Gopher: near-duplicates are documents whose 13-gram Jaccard similarity exceeds 0.8.</li><li>Lee et al. (2022) found one 61-word sentence repeated over 60,000 times in C4; deduplicated models emitted memorised text 10× less often.</li></ol><div class="result">More bands lower the threshold; more rows per band sharpen it. Pipelines tune both to their notion of "duplicate".</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why deduplication helps</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Less memorisation</h3><p>Lee et al.: deduplicated models emit memorised text 10× less often.</p></div>
+      <div class="card e"><h3>Better use of compute</h3><p>Same or better accuracy in fewer training steps.</p></div>
+      <div class="card b"><h3>Cleaner evaluation</h3><p>Train-test overlap affected over 4% of some validation sets before dedup.</p></div>
+      <div class="card c"><h3>Scales</h3><p>MinHash + LSH is linear in the number of documents.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Deduplication only removes identical files."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Most removed data are near-duplicates and repeated passages, found with MinHash, simhash or suffix arrays.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"More aggressive dedup is always better."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">FineWeb found global cross-snapshot dedup hurt; settings must be validated by ablation.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Duplicates are harmless extra epochs."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Heavily repeated text drives memorisation and verbatim regurgitation.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Threshold ≈ (1/b)^(1/r).</b> Steepness grows with r.</li><li><b>Jaccard on word n-grams.</b> 5-grams (RefinedWeb, FineWeb) or 13-grams (Gopher).</li><li><b>Line-level dedup.</b> Llama 3 removed lines appearing more than 6 times per 30M-document bucket.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Global dedup across all snapshots.</b> FineWeb found it kept worse data; per-snapshot dedup worked better.</li><li><b>Comparing all pairs.</b> n² is impossible at billions of documents; use LSH.</li><li><b>Forgetting test sets.</b> Remove documents overlapping benchmarks (Gopher's test-set filtering).</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">b = 20 bands, r = 5 rows. Approximate similarity threshold of the S-curve?</p>
+      <div class="opts">
+      <button>A. 0.20</button>
+      <button data-ok>B. 0.55</button>
+      <button>C. 0.80</button>
+      <button>D. 0.95</button>
+      </div>
+      <div class="why">(1/20)^(1/5) ≈ <b>0.55</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why band MinHash signatures instead of comparing them directly?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Comparing all pairs is quadratic; banding puts likely-similar documents in the same bucket so only those pairs are compared.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Name three levels of deduplication in Llama 3's pipeline.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">URL-level, document-level (MinHash) and line-level.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Deduplicate at every level: hashes for exact copies, MinHash + LSH banding (P = 1 − (1 − sʳ)ᵇ) for near-duplicates, and line or substring removal for repeated pieces.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>The web is full of copies, from mirrored pages to licences and spam, and training on them wastes compute and causes memorisation. Exact duplicates are removed by hashing URLs, documents or lines. Near-duplicates are found by representing each document as a set of word n-grams and estimating Jaccard similarity with MinHash, which keeps the minimum of many random hashes. Locality-sensitive hashing splits signatures into bands so only documents sharing a band are compared; the probability of becoming a candidate follows an S-curve set by the number of bands and rows. Deduplicated models memorise far less.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> massive exact and near duplication.</span></div><div><span><b>Core idea:</b> hashes; MinHash + LSH; line/substring dedup.</span></div><div><span><b>Tune:</b> threshold ≈ (1/b)^(1/r); ablate settings.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/05_minhash_lsh.ipynb" target="_blank" rel="noopener">05 · Near-duplicate detection with MinHash and LSH</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/05_minhash_lsh.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../08-pii-and-safety/index.html">08 · PII and safety filtering →</a> · Previous: <a href="../06-quality-filtering/index.html">← 06</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://www.cs.princeton.edu/courses/archive/spring13/cos598C/broder97resemblance.pdf" target="_blank" rel="noopener">On the resemblance and containment of documents</a>
+        <div class="meta">Broder · Compression and Complexity of Sequences 1997</div>
+        <p>Defines resemblance (Jaccard similarity of shingle sets) and estimates it by random min-wise sampling: the origin of MinHash.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2107.06499" target="_blank" rel="noopener">Deduplicating Training Data Makes Language Models Better</a>
+        <div class="meta">Lee et al. · ACL 2022</div>
+        <p>Exact-substring (suffix array) and MinHash near-duplicate removal; deduplicated models memorize less, train in fewer steps and have less train-test overlap.</p><div class="num">Remember: one 61-word sentence repeated 60,000+ times in C4; 10× less memorized output</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2406.17557" target="_blank" rel="noopener">The FineWeb Datasets: Decanting the Web for the Finest Text Data at Scale</a>
+        <div class="meta">Penedo et al. · NeurIPS Datasets and Benchmarks 2024</div>
+        <p>15T tokens from 96 Common Crawl snapshots with fully ablated choices: WARC (Web ARChive format) + trafilatura over WET (plain text extracted from Web ARChive records), per-snapshot (not global) MinHash dedup, selected C4 filters; FineWeb-Edu uses an LLM-annotated (LLM = large language model) educational-quality classifier.</p><div class="num">Remember: 15T tokens; FineWeb-Edu 1.3T</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2306.01116" target="_blank" rel="noopener">The RefinedWeb Dataset for Falcon LLM: Outperforming Curated Corpora with Web Data, and Web Data Only</a>
+        <div class="meta">Penedo et al. · NeurIPS 2023</div>
+        <p>Shows filtered, heavily deduplicated web data alone can beat curated corpora; trafilatura extraction, Gopher-style rules, strict MinHash plus exact-substring dedup.</p><div class="num">Remember: 5T tokens; ~90% of documents removed; 600B released</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2112.11446" target="_blank" rel="noopener">Scaling Language Models: Methods, Analysis & Insights from Training Gopher</a>
+        <div class="meta">Rae et al. · arXiv 2021</div>
+        <p>MassiveText pipeline: content filtering, text extraction, simple quality rules (word count, word length, symbols, stop words), repetition removal, MinHash deduplication and test-set filtering.</p><div class="num">Remember: near-duplicate if 13-gram Jaccard > 0.8</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const draw = () => {
+    const r = Deck.val('lR'), b = Deck.val('lB'); Deck.out('lRo', r); Deck.out('lBo', b);
+    const P = s => 1 - Math.pow(1 - Math.pow(s, r), b), s = clear(document.getElementById('lSvg')), X = v => 60 + v * 570, Y = v => 200 - v * 180;
+    [0, 0.5, 1].forEach(v => { svg('line', { x1: 60, x2: 630, y1: Y(v), y2: Y(v), class: 'ln' }, s); svg('text', { x: 52, y: Y(v) + 4, 'text-anchor': 'end', class: 'tm', text: (100 * v) + '%' }, s); });
+    [0, 0.25, 0.5, 0.75, 1].forEach(v => svg('text', { x: X(v), y: 220, 'text-anchor': 'middle', class: 'tm', text: 's = ' + v }, s));
+    let pts = ''; for (let v = 0; v <= 1.0001; v += 0.005) pts += `${X(v)},${Y(P(v))} `;
+    svg('polyline', { points: pts, fill: 'none', style: 'stroke:var(--a);stroke-width:3' }, s);
+    const t = Math.pow(1 / b, 1 / r); svg('line', { x1: X(t), x2: X(t), y1: 20, y2: 200, style: 'stroke:var(--b);stroke-dasharray:5 4' }, s);
+    svg('text', { x: X(t) + 6, y: 32, class: 'tm', style: 'fill:var(--b)', text: `threshold ≈ ${t.toFixed(2)}` }, s);
+    document.getElementById('lOut').innerHTML = `${b * r} hashes per document. P(candidate) at s = 0.5: <b>${(100 * P(0.5)).toFixed(1)}%</b>, s = 0.75: <b>${(100 * P(0.75)).toFixed(1)}%</b>, s = 0.8: <b>${(100 * P(0.8)).toFixed(1)}%</b>.`;
+  };
+  Deck.bind(['lR', 'lB'], draw);
+  Deck.seg('lSeg', v => { const [r, b] = v.split(',').map(Number); document.getElementById('lR').value = r; document.getElementById('lB').value = b; draw(); });
+})();
+</script>
+</body>
+</html>

@@ -172,6 +172,23 @@ Eleven 9-beat decks plus 8 hands-on [Colab notebooks](build-it/).
 | 10 | [Putting it together: 4D layouts](distributed/10-putting-it-together/) |
 | 11 | [Reliability and stability](distributed/11-reliability-stability/) |
 
+## Web crawling and pretraining data
+
+Ten 9-beat decks plus 6 hands-on [Colab notebooks](build-it/).
+
+| # | Deck |
+|---|------|
+| 01 | [Where pretraining data comes from](pretraining-data/01-where-data-comes-from/) |
+| 02 | [How a web crawler works](pretraining-data/02-how-a-crawler-works/) |
+| 03 | [Crawling at scale](pretraining-data/03-crawling-at-scale/) |
+| 04 | [robots.txt and consent](pretraining-data/04-robots-and-consent/) |
+| 05 | [Text extraction](pretraining-data/05-text-extraction/) |
+| 06 | [Quality filtering](pretraining-data/06-quality-filtering/) |
+| 07 | [Deduplication](pretraining-data/07-deduplication/) |
+| 08 | [PII and safety filtering](pretraining-data/08-pii-and-safety/) |
+| 09 | [Data mixtures and repetition](pretraining-data/09-mixtures-and-repetition/) |
+| 10 | [Reference pipelines](pretraining-data/10-reference-pipelines/) |
+
 ## Editing and regenerating
 
 Deck content lives in [`content/`](content/) as Markdown (`deck.md`) plus each deck's interactive code (`widget.js`); see [`content/README.md`](content/README.md) for the format. To rebuild the site:

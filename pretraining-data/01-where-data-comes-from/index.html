@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Where Pretraining Data Comes From</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Where pretraining data comes from" data-home="../index.html" data-home-label="Pretraining data">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Pretraining Data · 01</div>
+    <h1>Where pretraining data comes from</h1>
+    <p class="sub">The sources behind trillion-token training sets, why the open web dominates, and how much of a raw crawl survives the cleaning pipeline.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A frontier model trains on about 15 trillion tokens. No curated collection is that large, so most of it must come from the web, which is mostly noise.</div>
+      <div class="c"><b>Core idea</b>Start from a <b>web crawl</b> (usually Common Crawl), then run a <b>pipeline</b>: extract text, identify language, filter for quality, deduplicate, remove unsafe and personal data, and <b>mix</b> with curated sources (code, books, papers, math). Typically only about 10% of crawled documents survive.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>From a crawl to a training set</h2>
+    <hr>
+<p class="lede">Documents remaining after each stage of RefinedWeb's pipeline, as a share of the original Common Crawl documents. Toggle to see a reported final data mix instead.</p>
+<div class="visual">
+  <div class="seg" id="fSeg"><button data-v="funnel" class="on">pipeline funnel (RefinedWeb)</button><button data-v="mix">final mix (Llama 3)</button></div>
+  <div id="fBars" style="margin-top:12px"></div>
+  <p class="readout" id="fOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not just use curated text?</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Too small</h3><p>Wikipedia, books and papers together are far short of 15T tokens.</p></div>
+      <div class="card b"><h3>Too narrow</h3><p>Models need conversational, technical, multilingual and code text in many styles.</p></div>
+      <div class="card c"><h3>Too static</h3><p>Curated sets update slowly; a monthly crawl brings 3–5 billion new pages.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What removes the most?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">In RefinedWeb's English pipeline, which single stage removed the largest share of Common Crawl documents?</p>
+      <div class="opts">
+      <button>A. URL blocklist</button>
+      <button data-ok>B. Language identification</button>
+      <button>C. Deduplication</button>
+      <button>D. Text extraction</button>
+      </div>
+      <div class="why"><b>B.</b> About half of all documents were not English. Filtering then removed about half of the rest, and deduplication about half again.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Crawl, clean, mix</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Crawl</h3><p>Common Crawl: a free, open crawl of over 300 billion pages, released as WARC (Web ARChive format), WAT (metadata extracted from Web ARChive records) and WET (plain text extracted from Web ARChive records) files.</p></div>
+      <div class="card a"><h3>Clean</h3><p>Extract main text, keep target languages, apply quality rules and classifiers.</p></div>
+      <div class="card b"><h3>Deduplicate</h3><p>Remove exact and near-duplicate documents and repeated lines.</p></div>
+      <div class="card e"><h3>Mix</h3><p>Combine cleaned web text with code, math, books and multilingual data in chosen proportions.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Decks 02–10 walk through each stage." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="91.7" height="64" rx="10" style="fill:var(--faint)"/><text x="55.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">crawl</text><text x="55.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">raw HTML</text><text x="55.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">(WARC)</text><rect x="119.7" y="28" width="91.7" height="64" rx="10" style="fill:var(--c)"/><text x="165.5" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">extract + language ID</text><text x="165.5" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">text per</text><text x="165.5" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">language</text><line x1="103.7" y1="60.0" x2="117.7" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="229.3" y="28" width="91.7" height="64" rx="10" style="fill:var(--a)"/><text x="275.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">quality filter</text><text x="275.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">rules +</text><text x="275.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">classifiers</text><line x1="213.3" y1="60.0" x2="227.3" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="339.0" y="28" width="91.7" height="64" rx="10" style="fill:var(--b)"/><text x="384.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">deduplicate</text><text x="384.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">exact +</text><text x="384.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">near-duplicate</text><line x1="323.0" y1="60.0" x2="337.0" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="448.7" y="28" width="91.7" height="64" rx="10" style="fill:var(--d)"/><text x="494.5" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">safety + PII</text><text x="494.5" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">remove / mask</text><line x1="432.7" y1="60.0" x2="446.7" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="558.3" y="28" width="91.7" height="64" rx="10" style="fill:var(--e)"/><text x="604.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">mix</text><text x="604.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">web + code +</text><text x="604.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">math + books</text><line x1="542.3" y1="60.0" x2="556.3" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Decks 02–10 walk through each stage.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Common Crawl's three file types</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>File</th><th>Contents</th><th>Used for</th></tr>
+  <tr><td>WARC (Web ARChive)</td><td>raw HTTP (Hypertext Transfer Protocol) responses: full HTML (HyperText Markup Language) and headers</td><td>custom text extraction (RefinedWeb, FineWeb, Llama 3)</td></tr>
+  <tr><td>WAT</td><td>metadata: links, headers</td><td>link graphs, URL analysis</td></tr>
+  <tr><td>WET</td><td>plain text extracted by Common Crawl</td><td>quick start (C4, CCNet); keeps boilerplate</td></tr>
+</table></div>
+<div class="deep"><h4>Corpus sizes for scale</h4><p>Dolma: about 200 TB of raw text curated down to an 11 TB, 3T-token corpus. Llama 3: about 15T multilingual tokens, versus 1.8T for Llama 2.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: how much of a crawl survives?</h2>
+    <hr>
+    <p class="lede">RefinedWeb (Penedo et al., 2023) reports what fraction of Common Crawl documents remain after each stage of its pipeline.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>URL filtering, text extraction and language identification (English only): <b>48%</b> of documents remain, most lost to language ID (identifier).</li><li>Repetition removal and document/line quality filters: <b>23%</b> remain.</li><li>Fuzzy (MinHash) and exact deduplication: about <b>10%</b> remain: "nearly 90%" of documents are removed in total.</li><li>Even so, RefinedWeb extracted about 5 trillion tokens; FineWeb's 96 snapshots gave 15 trillion.</li></ol><div class="result">Web data is abundant but mostly unusable as-is: the pipeline, not the crawl, is where data quality is made.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why the web works despite the noise</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Scale</h3><p>Even a 10% survival rate leaves trillions of tokens.</p></div>
+      <div class="card e"><h3>Diversity</h3><p>The web covers nearly every topic, register and language.</p></div>
+      <div class="card b"><h3>Filtering is cheap</h3><p>Rules and small classifiers process terabytes on CPUs (Dolma: ~122 CPU-hours per TB for C4-style filtering).</p></div>
+      <div class="card c"><h3>Evidence</h3><p>RefinedWeb showed properly filtered and deduplicated web data alone can match or beat curated mixtures.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"LLMs (large language models) are trained on "the whole internet"."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They are trained on a heavily filtered, deduplicated slice: typically about a tenth of crawled documents, plus curated sources.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Common Crawl is clean text."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is raw crawl output; its WET text keeps navigation, ads and boilerplate.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"More data is always better."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Removing low-quality and duplicate data improves models at the same compute (RefinedWeb, FineWeb, DCLM (DataComp for Language Models)).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Common Crawl formats.</b> WARC = raw responses, WAT = metadata, WET = extracted text.</li><li><b>Expect ~90% loss.</b> Language, quality and duplicates each remove large shares.</li><li><b>Mix matters.</b> Llama 3: ~50% general, 25% math/reasoning, 17% code, 8% multilingual.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Assuming "more web" = better.</b> Quality and deduplication beat raw volume.</li><li><b>Treating WET text as clean.</b> It keeps menus and boilerplate.</li><li><b>Forgetting licensing and consent.</b> robots.txt and terms of service increasingly restrict AI (artificial intelligence) crawlers (deck 04).</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Which Common Crawl file type holds the raw HTML?</p>
+      <div class="opts">
+      <button>A. WET</button>
+      <button>B. WAT</button>
+      <button data-ok>C. WARC</button>
+      <button>D. robots.txt</button>
+      </div>
+      <div class="why"><b>WARC</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Name the main stages of a pretraining data pipeline.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Crawl → text extraction → language ID → quality filtering → deduplication → safety/PII (personally identifiable information) filtering → mixing.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Roughly what fraction of crawled documents survive RefinedWeb's pipeline?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">About 10%: "nearly 90%" are removed.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Pretraining data is mostly filtered web crawl: extract, identify language, filter, deduplicate, scrub and mix, and only about a tenth of crawled documents survive.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Trillion-token training sets can only come from the web, usually Common Crawl, which publishes raw responses as WARC files plus metadata and extracted text. A pipeline turns that into training data: extract the main text from HTML, keep the target languages, apply quality rules and classifiers, remove exact and near duplicates, mask or remove personal and unsafe content, and finally mix the cleaned web text with code, math, books and multilingual data. In RefinedWeb only about ten percent of documents survived, yet that still gave five trillion tokens. Llama 3 trained on about fifteen trillion.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> need ~15T tokens; the web is the only source that large.</span></div><div><span><b>Core idea:</b> crawl → clean → dedup → scrub → mix.</span></div><div><span><b>Numbers:</b> ~10% of documents survive; WARC/WAT/WET.</span></div></div>
+    <p class="start-hint">Next: <a href="../02-how-a-crawler-works/index.html">02 · How a web crawler works →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://commoncrawl.org/overview" target="_blank" rel="noopener">Common Crawl: Overview</a>
+        <div class="meta">Common Crawl Foundation · commoncrawl.org 2026</div>
+        <p>Free, open web crawl released as WARC (raw responses), WAT (metadata) and WET (extracted text) files; the starting point of most open pretraining corpora.</p><div class="num">Remember: over 300 billion pages; 3–5 billion new pages a month</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2306.01116" target="_blank" rel="noopener">The RefinedWeb Dataset for Falcon LLM: Outperforming Curated Corpora with Web Data, and Web Data Only</a>
+        <div class="meta">Penedo et al. · NeurIPS 2023</div>
+        <p>Shows filtered, heavily deduplicated web data alone can beat curated corpora; trafilatura extraction, Gopher-style rules, strict MinHash plus exact-substring dedup.</p><div class="num">Remember: 5T tokens; ~90% of documents removed; 600B released</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2402.00159" target="_blank" rel="noopener">Dolma: an Open Corpus of Three Trillion Tokens for Language Model Pretraining Research</a>
+        <div class="meta">Soldaini et al. · ACL 2024</div>
+        <p>Open 3T-token corpus and toolkit: Gopher rules plus C4's punctuation rule, toxicity classifiers, regex-based PII masking (emails, IP (Internet Protocol) addresses, phone numbers) and dedup.</p><div class="num">Remember: ~200 TB raw → 11 TB</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const FUN = [['Common Crawl', 100], ['after extraction + language ID', 48], ['after quality filtering', 23], ['after deduplication', 10]];
+  const MIX = [['general knowledge', 50], ['math and reasoning', 25], ['code', 17], ['multilingual', 8]];
+  Deck.seg('fSeg', v => {
+    const rows = v === 'funnel' ? FUN : MIX;
+    Deck.hbars(document.getElementById('fBars'), rows.map(([l, x], i) => ({ label: l, value: x, color: ['var(--faint)', 'var(--c)', 'var(--a)', 'var(--e)'][i], text: (v === 'funnel' && i === 3 ? '≈ ' : '') + x + '%' })), { max: 100 });
+    document.getElementById('fOut').innerHTML = v === 'funnel' ? 'Share of original documents remaining (RefinedWeb). Each of language ID, filtering and dedup roughly halves the data.' : 'Llama 3\'s final pretraining mix by tokens ("roughly", per the paper).';
+  });
+})();
+</script>
+</body>
+</html>

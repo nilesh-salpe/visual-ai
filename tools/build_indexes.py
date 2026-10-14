@@ -15,6 +15,7 @@ PHASES = [  # (heading, notebook folder, index json)
     ('Phase 3 · Post-training', 'post-training', 'index_post_training.json'),
     ('Phase 4 · Evaluating LLMs', 'evals', 'index_evals.json'),
     ('Phase 5 · Distributed training & reliability', 'distributed', 'index_distributed.json'),
+    ('Phase 6 · Web crawling & pretraining data', 'pretraining-data', 'index_data.json'),
 ]
 
 
@@ -344,3 +345,25 @@ if __name__ == '__main__':
         'index_nn.json', 'Build a micrograd-style autograd engine, an MLP that solves XOR, activation and depth experiments, AdamW with warmup + cosine, initialization tests, dropout and weight decay, and a tiny character-level language model in NumPy.',
         NN_CARDS, 'Rumelhart, Hinton & Williams 1986; Cybenko 1989; Hornik et al. 1989; Nair & Hinton 2010; Hendrycks & Gimpel 2016 (GELU); Ramachandran et al. 2018 (Swish); Shazeer 2020; Baydin et al. 2018; Szegedy et al. 2016; Bengio et al. 2003; Kingma & Ba 2015; Loshchilov & Hutter 2017, 2019; Sutskever et al. 2013; Touvron et al. 2023 (LLaMA); Glorot & Bengio 2010; He et al. 2015, 2016; Radford et al. 2019 (GPT-2); Ioffe & Szegedy 2015; Ba et al. 2016; Zhang & Sennrich 2019; Srivastava et al. 2014; Zhang et al. 2017; Belkin et al. 2019; Nakkiran et al. 2020; Mikolov et al. 2013.'))
     print('wrote nn-fundamentals/index.html')
+
+
+DATA_CARDS = [
+    ('01-where-data-comes-from', 'Where pretraining data comes from', 'Common Crawl, WARC/WET, and the ~90% a pipeline removes.'),
+    ('02-how-a-crawler-works', 'How a web crawler works', 'Frontier, per-host politeness, robots checks, normalisation.'),
+    ('03-crawling-at-scale', 'Crawling at scale', 'IRLbot\'s 6.3B pages, budgets, traps, simhash, freshness.'),
+    ('04-robots-and-consent', 'robots.txt and consent', 'RFC 9309 rules and the rise of AI opt-outs.'),
+    ('05-text-extraction', 'Text extraction', 'Boilerplate removal, link density, trafilatura, language ID.'),
+    ('06-quality-filtering', 'Quality filtering', 'C4 and Gopher rules, CCNet perplexity, DCLM and FineWeb-Edu classifiers.'),
+    ('07-deduplication', 'Deduplication', 'Exact hashes, MinHash + LSH, line and substring dedup.'),
+    ('08-pii-and-safety', 'PII and safety filtering', 'Domain blocklists, regex masking, toxicity classifiers.'),
+    ('09-mixtures-and-repetition', 'Data mixtures and repetition', 'Temperature sampling, DoReMi, the ~4-epoch rule.'),
+    ('10-reference-pipelines', 'Reference pipelines', 'C4 → Gopher → RefinedWeb → FineWeb → DCLM → Dolma → Llama 3.'),
+]
+
+if __name__ == '__main__':
+    open(os.path.join(REPO, 'pretraining-data', 'index.html'), 'w').write(topic_hub(
+        'pretraining-data', 'Web crawling and pretraining data', 'Web Crawling and Pretraining Data',
+        'Where the trillions of training tokens come from and how they are made usable: how crawlers work and stay polite, robots.txt and consent, text extraction, quality filtering, deduplication, PII and safety filtering, data mixtures, and the published pipelines from C4 to Llama 3. Every deck follows the 9-beat template and numbers are checked against the source papers and standards.',
+        'index_data.json', 'Build a polite crawler on a simulated web, an RFC 9309 robots.txt parser, an HTML text extractor, C4 and Gopher quality filters, MinHash with LSH banding, and a data-mixture planner in Python.',
+        DATA_CARDS, 'RFC 9309 (2022); Common Crawl; Brin & Page 1998; Najork & Heydon 2001 (Mercator); Lee et al. 2008 (IRLbot); Manku et al. 2007; Broder 1997; Raffel et al. 2020 (C4); Rae et al. 2021 (Gopher); Wenzek et al. 2020 (CCNet); Penedo et al. 2023 (RefinedWeb), 2024 (FineWeb); Li et al. 2024 (DCLM); Lee et al. 2022; Soldaini et al. 2024 (Dolma); Longpre et al. 2024; Barbaresi 2021 (trafilatura); Joulin et al. 2017 (fastText); Muennighoff et al. 2023; Xie et al. 2023 (DoReMi); Llama Team 2024 (Llama 3).'))
+    print('wrote pretraining-data/index.html')

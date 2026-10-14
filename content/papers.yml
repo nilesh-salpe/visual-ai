@@ -1206,3 +1206,170 @@ word2vec_neg:
   year: 2013
   url: https://arxiv.org/abs/1310.4546
   summary: 'Skip-gram with negative sampling and subsampling of frequent words: faster training and better word vectors, plus vectors for phrases.'
+rfc9309:
+  title: 'RFC 9309: Robots Exclusion Protocol'
+  authors: Koster, Illyes, Zeller & Sassman
+  venue: IETF
+  year: 2022
+  url: https://www.rfc-editor.org/rfc/rfc9309.html
+  summary: 'Standardizes robots.txt: user-agent groups, allow/disallow with * and $, longest match wins (allow on ties), 4xx means crawl allowed, 5xx means assume
+    complete disallow.'
+  number: cache ≤ 24 h; parse ≥ 500 KiB
+commoncrawl:
+  title: 'Common Crawl: Overview'
+  authors: Common Crawl Foundation
+  venue: commoncrawl.org
+  year: 2026
+  url: https://commoncrawl.org/overview
+  summary: Free, open web crawl released as WARC (raw responses), WAT (metadata) and WET (extracted text) files; the starting point of most open pretraining corpora.
+  number: over 300 billion pages; 3–5 billion new pages a month
+brin_page:
+  title: The Anatomy of a Large-Scale Hypertextual Web Search Engine
+  authors: Brin & Page
+  venue: WWW
+  year: 1998
+  url: http://infolab.stanford.edu/~backrub/google.html
+  summary: 'The original Google: a URL server feeding distributed crawlers, a store server and an indexer; DNS caching was a major crawler bottleneck.'
+  number: 4 crawlers × ~300 connections, 100+ pages/s
+najork01:
+  title: High-Performance Web Crawling (Mercator)
+  authors: Najork & Heydon
+  venue: Compaq SRC Research Report 173
+  year: 2001
+  url: https://www.cs.cornell.edu/courses/cs685/2002fa/mercator.pdf
+  summary: 'Mercator''s URL frontier: front-end priority queues, back-end per-host FIFO queues and a heap of next-contact times for politeness; content-seen and URL-seen
+    tests with fingerprints.'
+  number: wait 10× the last download time before re-contacting a host
+irlbot:
+  title: 'IRLbot: Scaling to 6 Billion Pages and Beyond'
+  authors: Lee, Leonard, Wang & Loguinov
+  venue: WWW
+  year: 2008
+  url: http://irl.cs.tamu.edu/people/hsin-tsang/papers/www2008.pdf
+  summary: 'Single-server crawler design for billions of pages: disk-based URL uniqueness checks, budget-based crawling to resist spam farms, and per-host/per-server
+    rate limits.'
+  number: 6.3B pages in 41 days, 1,789 pages/s
+manku07:
+  title: Detecting Near-Duplicates for Web Crawling
+  authors: Manku, Jain & Das Sarma
+  venue: WWW
+  year: 2007
+  url: https://research.google.com/pubs/archive/33026.pdf
+  summary: Uses 64-bit simhash fingerprints, where near-duplicates differ in few bits, and fast Hamming-distance search to deduplicate a web-scale crawl.
+  number: 8B pages, 64-bit fingerprints, k = 3 bits
+broder97:
+  title: On the resemblance and containment of documents
+  authors: Broder
+  venue: Compression and Complexity of Sequences
+  year: 1997
+  url: https://www.cs.princeton.edu/courses/archive/spring13/cos598C/broder97resemblance.pdf
+  summary: 'Defines resemblance (Jaccard similarity of shingle sets) and estimates it by random min-wise sampling: the origin of MinHash.'
+gopher:
+  title: 'Scaling Language Models: Methods, Analysis & Insights from Training Gopher'
+  authors: Rae et al.
+  venue: arXiv
+  year: 2021
+  url: https://arxiv.org/abs/2112.11446
+  summary: 'MassiveText pipeline: content filtering, text extraction, simple quality rules (word count, word length, symbols, stop words), repetition removal, MinHash
+    deduplication and test-set filtering.'
+  number: near-duplicate if 13-gram Jaccard > 0.8
+refinedweb:
+  title: 'The RefinedWeb Dataset for Falcon LLM: Outperforming Curated Corpora with Web Data, and Web Data Only'
+  authors: Penedo et al.
+  venue: NeurIPS
+  year: 2023
+  url: https://arxiv.org/abs/2306.01116
+  summary: Shows filtered, heavily deduplicated web data alone can beat curated corpora; trafilatura extraction, Gopher-style rules, strict MinHash plus exact-substring
+    dedup.
+  number: 5T tokens; ~90% of documents removed; 600B released
+fineweb:
+  title: 'The FineWeb Datasets: Decanting the Web for the Finest Text Data at Scale'
+  authors: Penedo et al.
+  venue: NeurIPS Datasets and Benchmarks
+  year: 2024
+  url: https://arxiv.org/abs/2406.17557
+  summary: '15T tokens from 96 Common Crawl snapshots with fully ablated choices: WARC + trafilatura over WET, per-snapshot (not global) MinHash dedup, selected C4
+    filters; FineWeb-Edu uses an LLM-annotated educational-quality classifier.'
+  number: 15T tokens; FineWeb-Edu 1.3T
+dclm:
+  title: 'DataComp-LM: In search of the next generation of training sets for language models'
+  authors: Li et al.
+  venue: NeurIPS Datasets and Benchmarks
+  year: 2024
+  url: https://arxiv.org/abs/2406.11794
+  summary: A 240T-token Common Crawl pool and controlled benchmark for data curation; model-based filtering with a fastText classifier (instruction data + ELI5 as
+    positives) works best.
+  number: 7B model, 64% MMLU with 2.6T tokens
+lee_dedup:
+  title: Deduplicating Training Data Makes Language Models Better
+  authors: Lee et al.
+  venue: ACL
+  year: 2022
+  url: https://arxiv.org/abs/2107.06499
+  summary: Exact-substring (suffix array) and MinHash near-duplicate removal; deduplicated models memorize less, train in fewer steps and have less train-test overlap.
+  number: one 61-word sentence repeated 60,000+ times in C4; 10× less memorized output
+muennighoff:
+  title: Scaling Data-Constrained Language Models
+  authors: Muennighoff et al.
+  venue: NeurIPS
+  year: 2023
+  url: https://arxiv.org/abs/2305.16264
+  summary: When unique data runs out, repeating it is nearly as good as new data for a few epochs, then returns diminish rapidly; proposes a scaling law for repeated
+    tokens.
+  number: up to 4 epochs ≈ unique data
+doremi:
+  title: 'DoReMi: Optimizing Data Mixtures Speeds Up Language Model Pretraining'
+  authors: Xie et al.
+  venue: NeurIPS
+  year: 2023
+  url: https://arxiv.org/abs/2305.10429
+  summary: Trains a small proxy model with group distributionally robust optimization to choose domain weights, then trains the large model on that mixture.
+  number: '280M proxy → 8B model: +6.5 points, 2.6× fewer steps'
+ccnet:
+  title: 'CCNet: Extracting High Quality Monolingual Datasets from Web Crawl Data'
+  authors: Wenzek et al.
+  venue: LREC
+  year: 2020
+  url: https://arxiv.org/abs/1911.00359
+  summary: 'Common Crawl pipeline: paragraph-level deduplication, fastText language identification, and quality scoring by the perplexity of a language model trained
+    on Wikipedia.'
+dolma:
+  title: 'Dolma: an Open Corpus of Three Trillion Tokens for Language Model Pretraining Research'
+  authors: Soldaini et al.
+  venue: ACL
+  year: 2024
+  url: https://arxiv.org/abs/2402.00159
+  summary: 'Open 3T-token corpus and toolkit: Gopher rules plus C4''s punctuation rule, toxicity classifiers, regex-based PII masking (emails, IP addresses, phone
+    numbers) and dedup.'
+  number: ~200 TB raw → 11 TB
+consent:
+  title: 'Consent in Crisis: The Rapid Decline of the AI Data Commons'
+  authors: Longpre et al.
+  venue: NeurIPS Datasets and Benchmarks
+  year: 2024
+  url: https://arxiv.org/abs/2407.14933
+  summary: Audits robots.txt and terms of service of the sources behind C4, RefinedWeb and Dolma; restrictions on AI crawlers grew sharply in one year.
+  number: ~5%+ of all C4 tokens and ~25%+ of critical sources newly restricted (2023–24)
+trafilatura:
+  title: 'Trafilatura: A Web Scraping Library and Command-Line Tool for Text Discovery and Extraction'
+  authors: Barbaresi
+  venue: ACL (demo)
+  year: 2021
+  url: https://aclanthology.org/2021.acl-demo.15/
+  summary: Open-source main-text extraction from HTML (boilerplate removal, metadata), used by RefinedWeb and FineWeb.
+fasttext:
+  title: Bag of Tricks for Efficient Text Classification (fastText)
+  authors: Joulin et al.
+  venue: EACL
+  year: 2017
+  url: https://arxiv.org/abs/1607.01759
+  summary: Linear bag-of-n-grams classifiers that train and predict very fast; the basis of the language-ID and quality classifiers used in most pretraining pipelines.
+fasttext_lid:
+  title: fastText language identification models
+  authors: Facebook AI Research
+  venue: fasttext.cc
+  year: 2017
+  url: https://fasttext.cc/docs/en/language-identification.html
+  summary: Pretrained fastText language-ID models (lid.176.bin, 126 MB; lid.176.ftz, 917 kB) trained on Wikipedia, Tatoeba and SETimes; widely used to split web crawls
+    by language.
+  number: 176 languages

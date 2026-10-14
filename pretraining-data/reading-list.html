@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web Crawling and Pretraining Data Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Web Crawling and Pretraining Data</a>
+  <div class="label" style="margin-top:28px">Reading list · 21 papers and docs</div>
+  <h1>Web Crawling and Pretraining Data: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://commoncrawl.org/overview" target="_blank" rel="noopener">Common Crawl: Overview</a>
+      <div class="meta">Common Crawl Foundation · commoncrawl.org 2026 · cited in <a href="01-where-data-comes-from/index.html" style="font-weight:500;color:var(--a)">Where pretraining data comes from</a>, <a href="03-crawling-at-scale/index.html" style="font-weight:500;color:var(--a)">Crawling at scale</a>, <a href="04-robots-and-consent/index.html" style="font-weight:500;color:var(--a)">robots.txt and consent</a></div>
+      <p>Free, open web crawl released as WARC (raw responses), WAT (metadata) and WET (extracted text) files; the starting point of most open pretraining corpora.</p><div class="num">Remember: over 300 billion pages; 3–5 billion new pages a month</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2306.01116" target="_blank" rel="noopener">The RefinedWeb Dataset for Falcon LLM: Outperforming Curated Corpora with Web Data, and Web Data Only</a>
+      <div class="meta">Penedo et al. · NeurIPS 2023 · cited in <a href="01-where-data-comes-from/index.html" style="font-weight:500;color:var(--a)">Where pretraining data comes from</a>, <a href="07-deduplication/index.html" style="font-weight:500;color:var(--a)">Deduplication</a>, <a href="08-pii-and-safety/index.html" style="font-weight:500;color:var(--a)">PII and safety filtering</a>, <a href="10-reference-pipelines/index.html" style="font-weight:500;color:var(--a)">Reference pipelines</a></div>
+      <p>Shows filtered, heavily deduplicated web data alone can beat curated corpora; trafilatura extraction, Gopher-style rules, strict MinHash plus exact-substring dedup.</p><div class="num">Remember: 5T tokens; ~90% of documents removed; 600B released</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+      <div class="meta">Llama Team, AI @ Meta · arXiv 2024 · cited in <a href="01-where-data-comes-from/index.html" style="font-weight:500;color:var(--a)">Where pretraining data comes from</a>, <a href="05-text-extraction/index.html" style="font-weight:500;color:var(--a)">Text extraction</a>, <a href="08-pii-and-safety/index.html" style="font-weight:500;color:var(--a)">PII and safety filtering</a>, <a href="09-mixtures-and-repetition/index.html" style="font-weight:500;color:var(--a)">Data mixtures and repetition</a>, <a href="10-reference-pipelines/index.html" style="font-weight:500;color:var(--a)">Reference pipelines</a></div>
+      <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2402.00159" target="_blank" rel="noopener">Dolma: an Open Corpus of Three Trillion Tokens for Language Model Pretraining Research</a>
+      <div class="meta">Soldaini et al. · ACL 2024 · cited in <a href="01-where-data-comes-from/index.html" style="font-weight:500;color:var(--a)">Where pretraining data comes from</a>, <a href="08-pii-and-safety/index.html" style="font-weight:500;color:var(--a)">PII and safety filtering</a>, <a href="10-reference-pipelines/index.html" style="font-weight:500;color:var(--a)">Reference pipelines</a></div>
+      <p>Open 3T-token corpus and toolkit: Gopher rules plus C4's punctuation rule, toxicity classifiers, regex-based PII masking (emails, IP (Internet Protocol) addresses, phone numbers) and dedup.</p><div class="num">Remember: ~200 TB raw → 11 TB</div></div>
+    <div class="paper-item"><a href="https://www.cs.cornell.edu/courses/cs685/2002fa/mercator.pdf" target="_blank" rel="noopener">High-Performance Web Crawling (Mercator)</a>
+      <div class="meta">Najork & Heydon · Compaq SRC (Systems Research Center) Research Report 173 2001 · cited in <a href="02-how-a-crawler-works/index.html" style="font-weight:500;color:var(--a)">How a web crawler works</a></div>
+      <p>Mercator's URL frontier: front-end priority queues, back-end per-host FIFO queues and a heap of next-contact times for politeness; content-seen and URL-seen tests with fingerprints.</p><div class="num">Remember: wait 10× the last download time before re-contacting a host</div></div>
+    <div class="paper-item"><a href="http://infolab.stanford.edu/~backrub/google.html" target="_blank" rel="noopener">The Anatomy of a Large-Scale Hypertextual Web Search Engine</a>
+      <div class="meta">Brin & Page · WWW (World Wide Web (conference)) 1998 · cited in <a href="02-how-a-crawler-works/index.html" style="font-weight:500;color:var(--a)">How a web crawler works</a></div>
+      <p>The original Google: a URL server feeding distributed crawlers, a store server and an indexer; DNS caching was a major crawler bottleneck.</p><div class="num">Remember: 4 crawlers × ~300 connections, 100+ pages/s</div></div>
+    <div class="paper-item"><a href="https://www.rfc-editor.org/rfc/rfc9309.html" target="_blank" rel="noopener">RFC 9309: Robots Exclusion Protocol</a>
+      <div class="meta">Koster, Illyes, Zeller & Sassman · IETF (Internet Engineering Task Force) 2022 · cited in <a href="02-how-a-crawler-works/index.html" style="font-weight:500;color:var(--a)">How a web crawler works</a>, <a href="04-robots-and-consent/index.html" style="font-weight:500;color:var(--a)">robots.txt and consent</a></div>
+      <p>Standardizes robots.txt: user-agent groups, allow/disallow with * and $, longest match wins (allow on ties), 4xx means crawl allowed, 5xx means assume complete disallow.</p><div class="num">Remember: cache ≤ 24 h; parse ≥ 500 KiB</div></div>
+    <div class="paper-item"><a href="http://irl.cs.tamu.edu/people/hsin-tsang/papers/www2008.pdf" target="_blank" rel="noopener">IRLbot: Scaling to 6 Billion Pages and Beyond</a>
+      <div class="meta">Lee, Leonard, Wang & Loguinov · WWW (World Wide Web (conference)) 2008 · cited in <a href="03-crawling-at-scale/index.html" style="font-weight:500;color:var(--a)">Crawling at scale</a></div>
+      <p>Single-server crawler design for billions of pages: disk-based URL uniqueness checks, budget-based crawling to resist spam farms, and per-host/per-server rate limits.</p><div class="num">Remember: 6.3B pages in 41 days, 1,789 pages/s</div></div>
+    <div class="paper-item"><a href="https://research.google.com/pubs/archive/33026.pdf" target="_blank" rel="noopener">Detecting Near-Duplicates for Web Crawling</a>
+      <div class="meta">Manku, Jain & Das Sarma · WWW 2007 · cited in <a href="03-crawling-at-scale/index.html" style="font-weight:500;color:var(--a)">Crawling at scale</a></div>
+      <p>Uses 64-bit simhash fingerprints, where near-duplicates differ in few bits, and fast Hamming-distance search to deduplicate a web-scale crawl.</p><div class="num">Remember: 8B pages, 64-bit fingerprints, k = 3 bits</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.14933" target="_blank" rel="noopener">Consent in Crisis: The Rapid Decline of the AI Data Commons</a>
+      <div class="meta">Longpre et al. · NeurIPS Datasets and Benchmarks 2024 · cited in <a href="04-robots-and-consent/index.html" style="font-weight:500;color:var(--a)">robots.txt and consent</a></div>
+      <p>Audits robots.txt and terms of service of the sources behind C4, RefinedWeb and Dolma; restrictions on AI crawlers grew sharply in one year.</p><div class="num">Remember: ~5%+ of all C4 tokens and ~25%+ of critical sources newly restricted (2023–24)</div></div>
+    <div class="paper-item"><a href="https://aclanthology.org/2021.acl-demo.15/" target="_blank" rel="noopener">Trafilatura: A Web Scraping Library and Command-Line Tool for Text Discovery and Extraction</a>
+      <div class="meta">Barbaresi · ACL (demo) 2021 · cited in <a href="05-text-extraction/index.html" style="font-weight:500;color:var(--a)">Text extraction</a></div>
+      <p>Open-source main-text extraction from HTML (boilerplate removal, metadata), used by RefinedWeb and FineWeb.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2406.17557" target="_blank" rel="noopener">The FineWeb Datasets: Decanting the Web for the Finest Text Data at Scale</a>
+      <div class="meta">Penedo et al. · NeurIPS Datasets and Benchmarks 2024 · cited in <a href="05-text-extraction/index.html" style="font-weight:500;color:var(--a)">Text extraction</a>, <a href="06-quality-filtering/index.html" style="font-weight:500;color:var(--a)">Quality filtering</a>, <a href="07-deduplication/index.html" style="font-weight:500;color:var(--a)">Deduplication</a>, <a href="10-reference-pipelines/index.html" style="font-weight:500;color:var(--a)">Reference pipelines</a></div>
+      <p>15T tokens from 96 Common Crawl snapshots with fully ablated choices: WARC + trafilatura over WET, per-snapshot (not global) MinHash dedup, selected C4 filters; FineWeb-Edu uses an LLM-annotated (LLM = large language model) educational-quality classifier.</p><div class="num">Remember: 15T tokens; FineWeb-Edu 1.3T</div></div>
+    <div class="paper-item"><a href="https://fasttext.cc/docs/en/language-identification.html" target="_blank" rel="noopener">fastText language identification models</a>
+      <div class="meta">Facebook AI (artificial intelligence) Research · fasttext.cc 2017 · cited in <a href="05-text-extraction/index.html" style="font-weight:500;color:var(--a)">Text extraction</a></div>
+      <p>Pretrained fastText language-ID models (lid.176.bin, 126 MB; lid.176.ftz, 917 kB) trained on Wikipedia, Tatoeba and SETimes; widely used to split web crawls by language.</p><div class="num">Remember: 176 languages</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1910.10683" target="_blank" rel="noopener">Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer (T5)</a>
+      <div class="meta">Raffel et al. · JMLR 2020 · cited in <a href="06-quality-filtering/index.html" style="font-weight:500;color:var(--a)">Quality filtering</a>, <a href="10-reference-pipelines/index.html" style="font-weight:500;color:var(--a)">Reference pipelines</a></div>
+      <p>Systematic study of encoder-decoder pretraining with a span-corruption objective, framing every task as text-to-text.</p><div class="num">Remember: corrupts 15% of tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2112.11446" target="_blank" rel="noopener">Scaling Language Models: Methods, Analysis & Insights from Training Gopher</a>
+      <div class="meta">Rae et al. · arXiv 2021 · cited in <a href="06-quality-filtering/index.html" style="font-weight:500;color:var(--a)">Quality filtering</a>, <a href="07-deduplication/index.html" style="font-weight:500;color:var(--a)">Deduplication</a>, <a href="10-reference-pipelines/index.html" style="font-weight:500;color:var(--a)">Reference pipelines</a></div>
+      <p>MassiveText pipeline: content filtering, text extraction, simple quality rules (word count, word length, symbols, stop words), repetition removal, MinHash deduplication and test-set filtering.</p><div class="num">Remember: near-duplicate if 13-gram Jaccard > 0.8</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1911.00359" target="_blank" rel="noopener">CCNet: Extracting High Quality Monolingual Datasets from Web Crawl Data</a>
+      <div class="meta">Wenzek et al. · LREC 2020 · cited in <a href="06-quality-filtering/index.html" style="font-weight:500;color:var(--a)">Quality filtering</a></div>
+      <p>Common Crawl pipeline: paragraph-level deduplication, fastText language identification, and quality scoring by the perplexity of a language model trained on Wikipedia.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2406.11794" target="_blank" rel="noopener">DataComp-LM: In search of the next generation of training sets for language models</a>
+      <div class="meta">Li et al. · NeurIPS Datasets and Benchmarks 2024 · cited in <a href="06-quality-filtering/index.html" style="font-weight:500;color:var(--a)">Quality filtering</a>, <a href="10-reference-pipelines/index.html" style="font-weight:500;color:var(--a)">Reference pipelines</a></div>
+      <p>A 240T-token Common Crawl pool and controlled benchmark for data curation; model-based filtering with a fastText classifier (instruction data + ELI5 as positives) works best.</p><div class="num">Remember: 7B model, 64% MMLU with 2.6T tokens</div></div>
+    <div class="paper-item"><a href="https://www.cs.princeton.edu/courses/archive/spring13/cos598C/broder97resemblance.pdf" target="_blank" rel="noopener">On the resemblance and containment of documents</a>
+      <div class="meta">Broder · Compression and Complexity of Sequences 1997 · cited in <a href="07-deduplication/index.html" style="font-weight:500;color:var(--a)">Deduplication</a></div>
+      <p>Defines resemblance (Jaccard similarity of shingle sets) and estimates it by random min-wise sampling: the origin of MinHash.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2107.06499" target="_blank" rel="noopener">Deduplicating Training Data Makes Language Models Better</a>
+      <div class="meta">Lee et al. · ACL 2022 · cited in <a href="07-deduplication/index.html" style="font-weight:500;color:var(--a)">Deduplication</a>, <a href="08-pii-and-safety/index.html" style="font-weight:500;color:var(--a)">PII and safety filtering</a></div>
+      <p>Exact-substring (suffix array) and MinHash near-duplicate removal; deduplicated models memorize less, train in fewer steps and have less train-test overlap.</p><div class="num">Remember: one 61-word sentence repeated 60,000+ times in C4; 10× less memorized output</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.16264" target="_blank" rel="noopener">Scaling Data-Constrained Language Models</a>
+      <div class="meta">Muennighoff et al. · NeurIPS 2023 · cited in <a href="09-mixtures-and-repetition/index.html" style="font-weight:500;color:var(--a)">Data mixtures and repetition</a></div>
+      <p>When unique data runs out, repeating it is nearly as good as new data for a few epochs, then returns diminish rapidly; proposes a scaling law for repeated tokens.</p><div class="num">Remember: up to 4 epochs ≈ unique data</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.10429" target="_blank" rel="noopener">DoReMi: Optimizing Data Mixtures Speeds Up Language Model Pretraining</a>
+      <div class="meta">Xie et al. · NeurIPS 2023 · cited in <a href="09-mixtures-and-repetition/index.html" style="font-weight:500;color:var(--a)">Data mixtures and repetition</a></div>
+      <p>Trains a small proxy model with group distributionally robust optimization to choose domain weights, then trains the large model on that mixture.</p><div class="num">Remember: 280M proxy → 8B model: +6.5 points, 2.6× fewer steps</div></div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crawling at Scale</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Crawling at scale" data-home="../index.html" data-home-label="Pretraining data">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Pretraining Data · 03</div>
+    <h1>Crawling at scale</h1>
+    <p class="sub">What changes when a crawl reaches billions of pages: throughput budgets, URL uniqueness on disk, spam farms and crawler traps, near-duplicate detection, and keeping pages fresh.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>At billions of pages, the URL-seen set no longer fits in memory, infinite link spaces and spam sites can swallow the crawl, and pages change after you fetch them.</div>
+      <div class="c"><b>Core idea</b>Budget the crawl: <b>pages/s × time</b> sets the size. Store the seen-set on disk with batched checks; give each site a <b>crawl budget</b> so spam farms and traps cannot dominate; fingerprint content to drop <b>near-duplicates</b>; and <b>revisit</b> pages by how often they change.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>How big a crawl can you afford?</h2>
+    <hr>
+<p class="lede">Pick a target size and a throughput. The readout gives the crawl duration and how many hosts must be active at once to stay polite.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0">
+    <label class="ctl">pages <input type="range" id="zN" min="8" max="11.5" step="0.1" value="9.5"> <output id="zNo"></output></label>
+    <label class="ctl">pages/s per machine <input type="range" id="zR" min="100" max="3000" step="50" value="1800"> <output id="zRo"></output></label>
+    <label class="ctl">machines <input type="range" id="zM" min="1" max="200" step="1" value="10"> <output id="zMo"></output></label>
+  </div>
+  <div class="grid3" style="margin-top:12px">
+    <div class="stat"><div class="num" id="zD"></div><div class="lbl">days</div></div>
+    <div class="stat"><div class="num" id="zH"></div><div class="lbl">hosts active at once (0.5 s downloads, k = 10)</div></div>
+    <div class="stat"><div class="num" id="zB"></div><div class="lbl">bandwidth (at IRLbot's ≈ 22 KB/page)</div></div>
+  </div>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>What breaks past a billion pages</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Memory</h3><p>A seen-set of tens of billions of URLs does not fit in RAM (random-access memory); random disk lookups are too slow.</p></div>
+      <div class="card b"><h3>Adversarial web</h3><p>Spam farms, auto-generated pages and infinite calendars create unlimited URLs.</p></div>
+      <div class="card c"><h3>Change</h3><p>Pages are edited and deleted; a crawl is a snapshot that decays.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What stops spam from taking over?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">A spam farm links to millions of auto-generated pages. What keeps it from consuming the crawl?</p>
+      <div class="opts">
+      <button>A. A faster network</button>
+      <button data-ok>B. A per-site crawl budget tied to the site's reputation</button>
+      <button>C. Following every link breadth-first</button>
+      <button>D. A bigger seen-set</button>
+      </div>
+      <div class="why"><b>B.</b> IRLbot assigned budgets per domain based on incoming links from other sites, so low-reputation spam gets few pages however many links it has.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Four scaling techniques</h2>
+    <hr>
+<div class="grid2">
+      <div class="card c"><h3>Disk-backed URL checks</h3><p>Batch new URLs and check them against a sorted on-disk set sequentially (IRLbot), instead of random lookups.</p></div>
+      <div class="card d"><h3>Budgets</h3><p>Pages per site in proportion to reputation; caps on URL depth and parameters to escape traps.</p></div>
+      <div class="card a"><h3>Content fingerprints</h3><p>Simhash or MinHash detects near-identical pages under different URLs.</p></div>
+      <div class="card e"><h3>Revisit scheduling</h3><p>Re-crawl frequently-changing pages more often; Common Crawl publishes new snapshots regularly.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="IRLbot: one server, 6.3 billion pages in 41 days." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">budget</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">pages/s × days</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">URL-seen at scale</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">disk-backed,</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">batched</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">per-site budget</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">resist spam and</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">traps</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">content fingerprints</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">simhash / MinHash</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">revisit policy</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">freshness</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">IRLbot: one server, 6.3 billion pages in 41 days.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Real crawler numbers</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>System</th><th>Scale</th><th>Notes</th></tr>
+  <tr><td>Google prototype (1998)</td><td>24M pages; 100+ pages/s</td><td>4 crawlers × ~300 connections, DNS (Domain Name System) cache</td></tr>
+  <tr><td>Mercator (≈ 2001)</td><td>production crawls</td><td>per-host back-end queues; wait 10× download time</td></tr>
+  <tr><td>Google near-dup (2007)</td><td>8B pages</td><td>64-bit simhash, near-duplicate if ≤ 3 bits differ</td></tr>
+  <tr><td>IRLbot (2008)</td><td>6.3B pages in 41 days</td><td>single server; 1,789 pages/s; spam-resistant budgets</td></tr>
+  <tr><td>Common Crawl (today)</td><td>300B+ pages total</td><td>3–5B new pages a month; CCBot obeys robots.txt and Crawl-delay</td></tr>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: sizing a monthly crawl</h2>
+    <hr>
+    <p class="lede">Common Crawl adds about 3–5 billion new pages a month. IRLbot sustained 1,789 pages/s on a single server.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>3 billion pages in 30 days = 3 × 10⁹ ÷ (30 × 86,400 s) ≈ <b>1,157 pages/s</b> on average.</li><li>That is within a single IRLbot-class server (1,789 pages/s), or a modest cluster with headroom.</li><li>With 0.5 s downloads and a 10× politeness delay (0.18 pages/s per host), 1,157 pages/s needs at least <b>6,366 hosts</b> active at once.</li><li>IRLbot: 6.3 billion valid HTML (HyperText Markup Language) pages (7.6 billion connection requests) in 41 days at an average 319 Mb/s.</li></ol><div class="result">Bandwidth is rarely the limit; scheduling across millions of hosts, URL bookkeeping and spam resistance are.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why these techniques work</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Sequential beats random</h3><p>Batched, sorted disk access turns billions of random lookups into fast scans.</p></div>
+      <div class="card e"><h3>Reputation resists spam</h3><p>Spammers can create pages cheaply but not links from many independent reputable sites.</p></div>
+      <div class="card b"><h3>Fingerprints are tiny</h3><p>64 bits per page make near-duplicate checks over billions of pages feasible.</p></div>
+      <div class="card c"><h3>Not all pages change</h3><p>Spending revisits where change is likely keeps the snapshot fresh at the same cost.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Crawling the web is mainly a bandwidth problem."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">IRLbot crawled 6.3 billion pages from one server; the hard parts were URL uniqueness, spam and politeness.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"A crawl captures "the web"."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It captures a budgeted, biased sample at one time; much of the web is behind logins or generated on demand.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Duplicate URLs are the only duplicates."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The same content appears under many URLs and sites; content fingerprints are needed too.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>pages/s = pages ÷ seconds.</b> 1B pages a month ≈ 386 pages/s.</li><li><b>Per-site budgets.</b> Limit pages per domain by its reputation (IRLbot's budgets).</li><li><b>Simhash for near-duplicates.</b> Google: 64-bit fingerprints, ≤ 3 differing bits, 8B pages.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Infinite URL spaces.</b> Calendars, session IDs (identifiers) and faceted search generate endless URLs.</li><li><b>Spam farms.</b> Highly-branching link spam can absorb most of a breadth-first crawl.</li><li><b>Stale pages.</b> Without revisits, the crawl ages; with naive revisits, it wastes budget on static pages.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">1 billion pages in 10 days needs roughly how many pages/s?</p>
+      <div class="opts">
+      <button>A. 116</button>
+      <button data-ok>B. 1,157</button>
+      <button>C. 11,574</button>
+      <button>D. 100,000</button>
+      </div>
+      <div class="why">10⁹ ÷ 864,000 s ≈ <b>1,157</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What is a crawler trap?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">A site structure that generates unlimited URLs (calendars, session IDs, faceted filters), which can absorb the crawl without new content.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why use simhash or MinHash during crawling?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">To detect pages whose content is almost the same as one already stored, even under a different URL.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">At billions of pages the bottlenecks are bookkeeping and adversaries: disk-backed URL checks, per-site budgets, content fingerprints and revisit policies make crawls scale.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Scaling a crawler is less about bandwidth than bookkeeping. One server running IRLbot crawled 6.3 billion pages in 41 days at about 1,800 pages per second. To get there the seen-set lives on disk and is checked in sorted batches, each site gets a crawl budget tied to its reputation so spam farms and infinite calendars cannot take over, and content fingerprints such as Google's 64-bit simhash catch near-identical pages under different URLs. Since pages change, revisits are scheduled by how often they update. Common Crawl applies this at web scale, adding three to five billion pages a month.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> memory, spam, traps and change at billions of pages.</span></div><div><span><b>Core idea:</b> disk URL checks, budgets, fingerprints, revisits.</span></div><div><span><b>Numbers:</b> IRLbot 6.3B pages / 41 days; simhash k = 3.</span></div></div>
+    <p class="start-hint">Next: <a href="../04-robots-and-consent/index.html">04 · robots.txt and consent →</a> · Previous: <a href="../02-how-a-crawler-works/index.html">← 02</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="http://irl.cs.tamu.edu/people/hsin-tsang/papers/www2008.pdf" target="_blank" rel="noopener">IRLbot: Scaling to 6 Billion Pages and Beyond</a>
+        <div class="meta">Lee, Leonard, Wang & Loguinov · WWW (World Wide Web (conference)) 2008</div>
+        <p>Single-server crawler design for billions of pages: disk-based URL uniqueness checks, budget-based crawling to resist spam farms, and per-host/per-server rate limits.</p><div class="num">Remember: 6.3B pages in 41 days, 1,789 pages/s</div></div>
+      <div class="paper-item"><a href="https://research.google.com/pubs/archive/33026.pdf" target="_blank" rel="noopener">Detecting Near-Duplicates for Web Crawling</a>
+        <div class="meta">Manku, Jain & Das Sarma · WWW 2007</div>
+        <p>Uses 64-bit simhash fingerprints, where near-duplicates differ in few bits, and fast Hamming-distance search to deduplicate a web-scale crawl.</p><div class="num">Remember: 8B pages, 64-bit fingerprints, k = 3 bits</div></div>
+      <div class="paper-item"><a href="https://commoncrawl.org/overview" target="_blank" rel="noopener">Common Crawl: Overview</a>
+        <div class="meta">Common Crawl Foundation · commoncrawl.org 2026</div>
+        <p>Free, open web crawl released as WARC (raw responses), WAT (metadata) and WET (extracted text) files; the starting point of most open pretraining corpora.</p><div class="num">Remember: over 300 billion pages; 3–5 billion new pages a month</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  Deck.bind(['zN', 'zR', 'zM'], () => {
+    const N = Math.pow(10, Deck.val('zN')), r = Deck.val('zR'), m = Deck.val('zM'), rate = r * m;
+    Deck.out('zNo', N >= 1e9 ? (N / 1e9).toFixed(1) + 'B' : (N / 1e6).toFixed(0) + 'M'); Deck.out('zRo', r.toLocaleString()); Deck.out('zMo', m);
+    const days = N / rate / 86400, hosts = rate / (1 / (0.5 * 11)), bw = rate * 22e3 * 8;
+    Deck.out('zD', days < 1 ? (days * 24).toFixed(1) + ' h' : days.toFixed(days < 10 ? 1 : 0)); Deck.out('zH', Math.round(hosts).toLocaleString()); Deck.out('zB', bw >= 1e9 ? (bw / 1e9).toFixed(1) + ' Gb/s' : (bw / 1e6).toFixed(0) + ' Mb/s');
+  });
+})();
+</script>
+</body>
+</html>

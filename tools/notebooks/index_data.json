@@ -1,0 +1,50 @@
+[
+ {
+  "slug": "01_polite_crawler",
+  "title": "01 \u00b7 A polite crawler on a simulated web",
+  "path": "build-it/pretraining-data/01_polite_crawler.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/01_polite_crawler.ipynb",
+  "deck": "pretraining-data/02-how-a-crawler-works/",
+  "minutes": 40
+ },
+ {
+  "slug": "02_robots_txt",
+  "title": "02 \u00b7 A robots.txt parser following RFC 9309",
+  "path": "build-it/pretraining-data/02_robots_txt.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/02_robots_txt.ipynb",
+  "deck": "pretraining-data/04-robots-and-consent/",
+  "minutes": 35
+ },
+ {
+  "slug": "03_text_extraction",
+  "title": "03 \u00b7 From HTML to clean text",
+  "path": "build-it/pretraining-data/03_text_extraction.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/03_text_extraction.ipynb",
+  "deck": "pretraining-data/05-text-extraction/",
+  "minutes": 30
+ },
+ {
+  "slug": "04_quality_filters",
+  "title": "04 \u00b7 Heuristic quality filters (C4 and Gopher rules)",
+  "path": "build-it/pretraining-data/04_quality_filters.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/04_quality_filters.ipynb",
+  "deck": "pretraining-data/06-quality-filtering/",
+  "minutes": 35
+ },
+ {
+  "slug": "05_minhash_lsh",
+  "title": "05 \u00b7 Near-duplicate detection with MinHash and LSH",
+  "path": "build-it/pretraining-data/05_minhash_lsh.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/05_minhash_lsh.ipynb",
+  "deck": "pretraining-data/07-deduplication/",
+  "minutes": 40
+ },
+ {
+  "slug": "06_data_mixture",
+  "title": "06 \u00b7 Data mixtures, sampling temperature and epochs",
+  "path": "build-it/pretraining-data/06_data_mixture.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/06_data_mixture.ipynb",
+  "deck": "pretraining-data/09-mixtures-and-repetition/",
+  "minutes": 25
+ }
+]

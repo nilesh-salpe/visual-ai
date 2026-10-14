@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web Crawling and Pretraining Data</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body { overflow-y: auto; }</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="label" style="margin-top:28px">Visual guide · 10 decks + 6 Colab notebooks</div>
+  <h1>Web crawling and pretraining data</h1>
+  <p class="lede">Where the trillions of training tokens come from and how they are made usable: how crawlers work and stay polite, robots.txt and consent, text extraction, quality filtering, deduplication, PII (personally identifiable information) and safety filtering, data mixtures, and the published pipelines from C4 to Llama 3. Every deck follows the 9-beat template and numbers are checked against the source papers and standards.</p>
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: 6 Colab notebooks</h3><p class="caption" style="margin:0">Build a polite crawler on a simulated web, an RFC (Request for Comments) 9309 robots.txt parser, an HTML (HyperText Markup Language) text extractor, C4 and Gopher quality filters, MinHash with LSH (locality-sensitive hashing) banding, and a data-mixture planner in Python.</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>
+<!--x:map--><style>
+.bigmap { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding: 4px 2px 10px; }
+.bigmap .stage { flex: 1 1 0; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
+.bigmap .stage h4 { margin: 0 0 2px; font: 700 11.5px 'JetBrains Mono', monospace; letter-spacing: .05em; text-transform: uppercase; color: var(--a); }
+.bigmap .stage a { display: block; padding: 9px 11px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 14px; line-height: 1.3; }
+.bigmap .stage a:hover { border-color: var(--a); background: var(--a-soft); }
+.bigmap .stage a span { display: block; font: 600 11px 'JetBrains Mono', monospace; color: var(--faint); }
+.bigmap .arrow { align-self: center; color: var(--faint); font-size: 20px; }
+.hub-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+@media (max-width: 700px) { .bigmap { flex-direction: column; } .bigmap .arrow { transform: rotate(90deg); } }
+</style>
+  <div class="visual" style="margin-top:22px">
+    <h3 style="margin:0 0 10px">The big picture</h3>
+    <div class="bigmap"><div class="stage"><h4>Sources</h4><a href="01-where-data-comes-from/index.html"><span>01</span>Where pretraining data comes from</a></div><div class="arrow">→</div><div class="stage"><h4>Crawling</h4><a href="02-how-a-crawler-works/index.html"><span>02</span>How a web crawler works</a><a href="03-crawling-at-scale/index.html"><span>03</span>Crawling at scale</a><a href="04-robots-and-consent/index.html"><span>04</span>robots.txt and consent</a></div><div class="arrow">→</div><div class="stage"><h4>Cleaning</h4><a href="05-text-extraction/index.html"><span>05</span>Text extraction</a><a href="06-quality-filtering/index.html"><span>06</span>Quality filtering</a><a href="07-deduplication/index.html"><span>07</span>Deduplication</a><a href="08-pii-and-safety/index.html"><span>08</span>PII and safety filtering</a></div><div class="arrow">→</div><div class="stage"><h4>Assembling</h4><a href="09-mixtures-and-repetition/index.html"><span>09</span>Data mixtures and repetition</a><a href="10-reference-pipelines/index.html"><span>10</span>Reference pipelines</a></div></div>
+    <div class="hub-links"><a class="btn" href="reading-list.html">📚 Reading list</a><a class="btn" href="../glossary/index.html">🔤 Glossary</a></div>
+  </div>
+<!--/x:map-->
+  <div class="hub-grid"><a class="hub-card" href="01-where-data-comes-from/index.html"><div class="n">01</div><h3>Where pretraining data comes from</h3><p>Common Crawl, WARC (Web ARChive format)/WET (plain text extracted from Web ARChive records), and the ~90% a pipeline removes.</p></a><a class="hub-card" href="02-how-a-crawler-works/index.html"><div class="n">02</div><h3>How a web crawler works</h3><p>Frontier, per-host politeness, robots checks, normalisation.</p></a><a class="hub-card" href="03-crawling-at-scale/index.html"><div class="n">03</div><h3>Crawling at scale</h3><p>IRLbot's 6.3B pages, budgets, traps, simhash, freshness.</p></a><a class="hub-card" href="04-robots-and-consent/index.html"><div class="n">04</div><h3>robots.txt and consent</h3><p>RFC 9309 rules and the rise of AI (artificial intelligence) opt-outs.</p></a><a class="hub-card" href="05-text-extraction/index.html"><div class="n">05</div><h3>Text extraction</h3><p>Boilerplate removal, link density, trafilatura, language ID (identifier).</p></a><a class="hub-card" href="06-quality-filtering/index.html"><div class="n">06</div><h3>Quality filtering</h3><p>C4 and Gopher rules, CCNet perplexity, DCLM (DataComp for Language Models) and FineWeb-Edu classifiers.</p></a><a class="hub-card" href="07-deduplication/index.html"><div class="n">07</div><h3>Deduplication</h3><p>Exact hashes, MinHash + LSH, line and substring dedup.</p></a><a class="hub-card" href="08-pii-and-safety/index.html"><div class="n">08</div><h3>PII and safety filtering</h3><p>Domain blocklists, regex masking, toxicity classifiers.</p></a><a class="hub-card" href="09-mixtures-and-repetition/index.html"><div class="n">09</div><h3>Data mixtures and repetition</h3><p>Temperature sampling, DoReMi, the ~4-epoch rule.</p></a><a class="hub-card" href="10-reference-pipelines/index.html"><div class="n">10</div><h3>Reference pipelines</h3><p>C4 → Gopher → RefinedWeb → FineWeb → DCLM → Dolma → Llama 3.</p></a></div>
+  <p class="cite" style="margin-top:26px">Sources: RFC 9309 (2022); Common Crawl; Brin & Page 1998; Najork & Heydon 2001 (Mercator); Lee et al. 2008 (IRLbot); Manku et al. 2007; Broder 1997; Raffel et al. 2020 (C4); Rae et al. 2021 (Gopher); Wenzek et al. 2020 (CCNet); Penedo et al. 2023 (RefinedWeb), 2024 (FineWeb); Li et al. 2024 (DCLM); Lee et al. 2022; Soldaini et al. 2024 (Dolma); Longpre et al. 2024; Barbaresi 2021 (trafilatura); Joulin et al. 2017 (fastText); Muennighoff et al. 2023; Xie et al. 2023 (DoReMi); Llama Team 2024 (Llama 3).</p>
+</div>
+</body>
+</html>
