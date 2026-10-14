@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Probability and Sampling</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Probability and sampling" data-home="../index.html" data-home-label="Math">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Math for LLMs · 05</div>
+    <h1>Probability and sampling</h1>
+    <p class="sub">A language model is a conditional probability distribution over the next token. How logits become probabilities, and how temperature, top-k and top-p shape what gets generated.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>The model outputs one score (logit) per vocabulary entry. Generating text requires turning those scores into a distribution and choosing a token, and the choice changes the text dramatically.</div>
+      <div class="c"><b>Core idea</b>A language model factorises text with the <b>chain rule of probability</b>: p(x₁…xₙ) = Π p(xₜ | x₍&lt;t₎). Softmax turns logits into p(next | context). <b>Temperature</b> sharpens or flattens it; <b>top-k</b> and <b>top-p (nucleus)</b> sampling cut the unreliable tail.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>From logits to a choice</h2>
+    <hr>
+<p class="lede">Five candidate next tokens with fixed logits. Move temperature, top-k and top-p: the bars show the final sampling distribution, and the readout its entropy.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0">
+    <label class="ctl">temperature <input type="range" id="pT" min="0.1" max="3" step="0.1" value="1"> <output id="pTo"></output></label>
+    <label class="ctl">top-k <input type="range" id="pK" min="1" max="5" step="1" value="5"> <output id="pKo"></output></label>
+    <label class="ctl">top-p <input type="range" id="pP" min="0.1" max="1" step="0.05" value="1"> <output id="pPo"></output></label>
+  </div>
+  <div id="pBars" style="margin-top:12px"></div>
+  <p class="readout" id="pOut"></p>
+</div>
+<p class="caption">Context: "The cat sat on the …". Logits are illustrative.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not always pick the most likely token?</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Degeneration</h3><p>Holtzman et al. found that maximising likelihood when decoding produces bland and strangely repetitive text.</p></div>
+      <div class="card b"><h3>Human text is not maximal</h3><p>People routinely choose tokens the model ranks below the top one.</p></div>
+      <div class="card c"><h3>The tail is unreliable</h3><p>Pure sampling occasionally picks one of thousands of very unlikely tokens and derails the text.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What does T → 0 do?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">As the sampling temperature approaches 0, what happens?</p>
+      <div class="opts">
+      <button>A. Sampling becomes uniform</button>
+      <button data-ok>B. It becomes greedy decoding (always the top token)</button>
+      <button>C. The model forgets the context</button>
+      <button>D. Nothing changes</button>
+      </div>
+      <div class="why"><b>B.</b> Dividing logits by a tiny T makes the largest logit dominate the softmax completely. Large T flattens toward uniform.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>A distribution over the next token</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Chain rule of probability</h3><p>p(x₁…xₙ) = Π p(xₜ | x₁…xₜ₋₁): a language model only needs next-token conditionals.</p></div>
+      <div class="card c"><h3>Softmax</h3><p>p(i) = exp(zᵢ) / Σⱼ exp(zⱼ): positive, sums to 1, preserves the ranking of logits.</p></div>
+      <div class="card b"><h3>Temperature</h3><p>Use zᵢ / T. T &lt; 1 sharpens, T &gt; 1 flattens.</p></div>
+      <div class="card e"><h3>Truncation</h3><p>Top-k keeps the k best tokens; top-p keeps the smallest set whose probability reaches p. Then renormalise.</p></div>
+    </div>
+<div class="eq">p(xₜ = i | x₍&lt;t₎) = exp(zᵢ / T) / Σⱼ exp(zⱼ / T)</div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 188" role="img" aria-label="The same model produces very different text depending on the decoding rule." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">context</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">x₁ … xₜ₋₁</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">logits</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">one score per</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">token</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">÷ temperature</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">sharpen / flatten</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">softmax + truncate</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">top-k / top-p</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">sample</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">next token</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M593.2 136 V160 H66.8 V138" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="330.0" y="177" text-anchor="middle" class="tm" style="font-size:11px">append and repeat</text></svg><p class="caption" style="margin:4px 0 0">The same model produces very different text depending on the decoding rule.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Probability rules you use constantly</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Rule</th><th>Formula</th><th>Where it shows up</th></tr>
+  <tr><td>Conditional probability</td><td>p(a | b) = p(a, b) / p(b)</td><td>next-token prediction</td></tr>
+  <tr><td>Chain rule</td><td>p(a, b) = p(a) p(b | a)</td><td>scoring a whole sequence</td></tr>
+  <tr><td>Bayes</td><td>p(a | b) = p(b | a) p(a) / p(b)</td><td>reward models, classifiers</td></tr>
+  <tr><td>Expectation</td><td>E[f] = Σ p(x) f(x)</td><td>losses, RL (reinforcement learning) objectives</td></tr>
+  <tr><td>Logs turn products into sums</td><td>log Π p = Σ log p</td><td>log-likelihood, numerical stability</td></tr>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: temperature and top-p on four logits</h2>
+    <hr>
+    <p class="lede">Logits (2.0, 1.0, 0.5, −1.0) for tokens A, B, C, D.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>T = 1: softmax = (0.609, 0.224, 0.136, 0.030).</li><li>T = 0.5 (logits doubled): (0.842, 0.114, 0.042, 0.002): almost always A.</li><li>T = 2 (logits halved): (0.434, 0.263, 0.205, 0.097): much flatter.</li><li>Top-p with p = 0.9 at T = 1: cumulative A, B, C = 0.970 ≥ 0.9, so D is dropped and A, B, C are renormalised.</li></ol><div class="result">Temperature changes the shape of the whole distribution; top-k and top-p remove the tail, then renormalise.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why this framing works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Any text, one rule</h3><p>Because of the chain rule, predicting the next token well is enough to model whole documents.</p></div>
+      <div class="card e"><h3>Trainable</h3><p>Softmax probabilities are differentiable, so maximum likelihood can train them (next deck).</p></div>
+      <div class="card b"><h3>Controllable</h3><p>Decoding knobs trade diversity against reliability without retraining.</p></div>
+      <div class="card c"><h3>Composable</h3><p>Log-probabilities let you score, compare and rerank candidate outputs.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Temperature 0 and top-k = 1 are different."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Both pick the single most likely token (greedy decoding), up to tie-breaking.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Higher temperature makes the model smarter or more creative."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It only flattens the distribution: more diverse, but more likely to choose poor tokens.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Top-p keeps a fixed number of tokens."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The number varies with the model's confidence: one token when the top probability exceeds p, many when the distribution is flat.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Temperature divides logits.</b> T → 0 is greedy; T = 1 is the model's distribution.</li><li><b>Top-p adapts the cut.</b> Few tokens when the model is confident, many when it is not.</li><li><b>Log-probabilities add.</b> Sequence log-prob = Σ log p(xₜ | x₍&lt;t₎).</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Greedy decoding for open-ended text.</b> Maximising likelihood gives bland, repetitive output (Holtzman et al.).</li><li><b>Multiplying many probabilities.</b> Underflows; sum logs instead.</li><li><b>Thinking T changes the model.</b> It only changes decoding; training is unaffected.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Probabilities 0.5, 0.3, 0.15, 0.05. Which tokens does top-p = 0.8 keep?</p>
+      <div class="opts">
+      <button>A. only the first</button>
+      <button data-ok>B. the first two</button>
+      <button>C. the first three</button>
+      <button>D. all four</button>
+      </div>
+      <div class="why">0.5 + 0.3 = 0.8 reaches p: <b>the first two</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">How do you compute the probability of a whole sentence under a language model?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Multiply the next-token probabilities, or better, sum their logs: log p = Σₜ log p(xₜ | x₍&lt;t₎).</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What problem does nucleus sampling solve?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">It avoids both degenerate greedy text and derailment by sampling from an unreliable tail, by keeping only the high-probability nucleus.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">An LLM (large language model) is a next-token distribution p(xₜ | x₍&lt;t₎) from a softmax over logits; temperature reshapes it and top-k/top-p cut the tail before sampling.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Thanks to the chain rule of probability, a model of whole texts only needs next-token conditionals. The network outputs a logit per vocabulary entry and a softmax turns them into probabilities. Decoding then chooses a token: dividing logits by a temperature below one sharpens the distribution and above one flattens it; top-k keeps the k most likely tokens and top-p keeps the smallest set reaching probability p, then renormalises. Greedy decoding tends to produce bland, repetitive text, which is why sampling with truncation is common.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> turn logits into a choice of token.</span></div><div><span><b>Core idea:</b> softmax(z / T), then truncate and sample.</span></div><div><span><b>Rules:</b> chain rule; logs turn products into sums.</span></div></div>
+    <p class="start-hint">Next: <a href="../06-maximum-likelihood/index.html">06 · Maximum likelihood and cross-entropy →</a> · Previous: <a href="../04-derivatives-chain-rule/index.html">← 04</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://www.jmlr.org/papers/v3/bengio03a.html" target="_blank" rel="noopener">A Neural Probabilistic Language Model</a>
+        <div class="meta">Bengio et al. · JMLR 2003</div>
+        <p>The first neural language model: learned word embeddings plus a network that outputs a softmax over the next word, trained by maximum likelihood.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1904.09751" target="_blank" rel="noopener">The Curious Case of Neural Text Degeneration</a>
+        <div class="meta">Holtzman et al. · ICLR 2020</div>
+        <p>Maximizing likelihood when decoding gives bland, repetitive text; nucleus (top-p) sampling samples from the smallest set of tokens holding probability p.</p></div>
+      <div class="paper-item"><a href="https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf" target="_blank" rel="noopener">Language Models are Unsupervised Multitask Learners (GPT-2)</a>
+        <div class="meta">Radford et al. · OpenAI 2019</div>
+        <p>Decoder-only language model that moved layer normalization to the input of each sub-block (pre-norm) and added a final norm.</p><div class="num">Remember: context 1,024 tokens, vocabulary 50,257</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const TOK = ['mat', 'floor', 'sofa', 'roof', 'moon'], Z = [3.0, 2.2, 1.6, 0.4, -1.5];
+  Deck.bind(['pT', 'pK', 'pP'], () => {
+    const t = Deck.val('pT'), k = Deck.val('pK'), pp = Deck.val('pP'); Deck.out('pTo', t.toFixed(1)); Deck.out('pKo', k); Deck.out('pPo', pp.toFixed(2));
+    const mx = Math.max(...Z), e = Z.map(z => Math.exp((z - mx) / t)), S = e.reduce((a, b) => a + b), p = e.map(v => v / S);
+    let keep = p.map((_, i) => i < k), cum = 0; p.forEach((v, i) => { if (cum >= pp - 1e-9) keep[i] = false; cum += v; });
+    const kept = p.map((v, i) => keep[i] ? v : 0), KS = kept.reduce((a, b) => a + b), q = kept.map(v => v / KS);
+    const H = -q.reduce((a, v) => a + (v > 0 ? v * Math.log2(v) : 0), 0);
+    Deck.hbars(document.getElementById('pBars'), TOK.map((n, i) => ({ label: `"${n}" (logit ${Z[i]})`, value: q[i], color: keep[i] ? 'var(--a)' : 'var(--faint)', text: keep[i] ? (100 * q[i]).toFixed(1) + '%' : 'cut' })), { max: 1 });
+    document.getElementById('pOut').innerHTML = `${keep.filter(Boolean).length} token(s) kept. Entropy of the sampling distribution: <b>${H.toFixed(2)} bits</b> (0 = deterministic, ${Math.log2(5).toFixed(2)} = uniform over 5).`;
+  });
+})();
+</script>
+</body>
+</html>

@@ -8,6 +8,7 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 GH = 'https://github.com/nilesh-salpe/visual-ai/blob/main/'
 BADGE = 'https://colab.research.google.com/assets/colab-badge.svg'
 PHASES = [  # (heading, notebook folder, index json)
+    ('Foundations · Math for LLMs', 'math', 'index_math.json'),
     ('Phase 1 · LLM inference and serving', 'inference', 'index_inference.json'),
     ('Phase 2 · The modern LLM architecture', 'architecture', 'index_architecture.json'),
     ('Phase 3 · Post-training', 'post-training', 'index_post_training.json'),
@@ -267,3 +268,56 @@ def dist_hub():
 if __name__ == '__main__':
     open(os.path.join(REPO, 'distributed', 'index.html'), 'w').write(dist_hub())
     print('wrote distributed/index.html')
+
+
+def topic_hub(folder, title, label, lede, nb_index, nb_blurb, cards, sources):
+    """Generic hub page for a topic: header, Build-it banner, deck cards, sources."""
+    grid = ''.join(f'<a class="hub-card" href="{s}/index.html"><div class="n">{s[:2]}</div><h3>{t}</h3><p>{p}</p></a>' for s, t, p in cards)
+    n_nb = len(load(nb_index))
+    return f'''<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{label}</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body {{ overflow-y: auto; }}</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="label" style="margin-top:28px">Visual guide · {len(cards)} decks + {n_nb} Colab notebooks</div>
+  <h1>{title}</h1>
+  <p class="lede">{lede}</p>
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: {n_nb} Colab notebooks</h3><p class="caption" style="margin:0">{nb_blurb}</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>
+  <div class="hub-grid">{grid}</div>
+  <p class="cite" style="margin-top:26px">Sources: {sources}</p>
+</div>
+</body>
+</html>
+'''
+
+
+MATH_CARDS = [
+    ('01-vectors-dot-products', 'Vectors and dot products', 'Similarity, cosine, and the √d in attention.'),
+    ('02-matrices-linear-layers', 'Matrices and linear layers', 'What a matrix does; shapes, parameters (≈12d² per layer) and 2mkn FLOPs.'),
+    ('03-eigen-svd-low-rank', 'Eigenvalues, SVD and low rank', 'Best rank-r approximation and why LoRA works.'),
+    ('04-derivatives-chain-rule', 'Derivatives and the chain rule', 'Computational graphs, reverse-mode autodiff, gradient checks.'),
+    ('05-probability-sampling', 'Probability and sampling', 'Next-token distributions, temperature, top-k and top-p.'),
+    ('06-maximum-likelihood', 'Maximum likelihood and cross-entropy', 'The LLM loss, its p − onehot gradient, and perplexity.'),
+    ('07-information-theory', 'Information theory for LLMs', 'Entropy, cross-entropy, KL and where KL appears.'),
+    ('08-softmax-logsumexp', 'Softmax and log-sum-exp', 'The max-trick, log-softmax and the online softmax.'),
+    ('09-optimization-basics', 'Optimization basics', 'Learning-rate limits, conditioning, momentum and Adam.'),
+    ('10-floating-point', 'Floating-point numbers', 'Exponent vs mantissa; FP32, BF16, FP16 and FP8.'),
+]
+
+if __name__ == '__main__':
+    open(os.path.join(REPO, 'math', 'index.html'), 'w').write(topic_hub(
+        'math', 'Math for LLMs and neural networks', 'Math for LLMs',
+        'The mathematics every LLM concept rests on, each idea tied to where it appears in a real model: vectors and matrices, the SVD and low rank, derivatives and backpropagation, probability and sampling, maximum likelihood, information theory, softmax numerics, optimization and floating point. Every deck follows the 9-beat template and has an interactive widget.',
+        'index_math.json', 'Implement cosine search, truncated SVD and LoRA counts, hand-written gradients with a gradient checker, entropy/KL/perplexity, a stable and online softmax, and gradient descent, momentum and Adam in NumPy.',
+        MATH_CARDS, 'Mikolov et al. 2013 (word2vec); Vaswani et al. 2017; Brown et al. 2020 (GPT-3); Kaplan et al. 2020; Hu et al. 2021 (LoRA); Aghajanyan et al. 2021; Rumelhart, Hinton & Williams 1986; Baydin et al. 2018; Bengio et al. 2003; Holtzman et al. 2020; Shannon 1948; Kullback & Leibler 1951; Hinton et al. 2015; Milakov & Gimelshein 2018; Dao et al. 2022; Kingma & Ba 2015; Dauphin et al. 2014; Goh 2017; Goldberg 1991; Kalamkar et al. 2019; Micikevicius et al. 2018.'))
+    print('wrote math/index.html')

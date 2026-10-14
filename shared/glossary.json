@@ -152,6 +152,9 @@
   "GAE": {
    "exp": "generalized advantage estimation"
   },
+  "GD": {
+   "exp": "gradient descent"
+  },
   "GELU": {
    "exp": "Gaussian Error Linear Unit"
   },
@@ -251,6 +254,9 @@
   "LRU": {
    "exp": "least recently used"
   },
+  "LSE": {
+   "exp": "log-sum-exp"
+  },
   "LSTM": {
    "exp": "long short-term memory network"
   },
@@ -289,6 +295,9 @@
   },
   "MQA": {
    "exp": "multi-query attention"
+  },
+  "MRPC": {
+   "exp": "Microsoft Research Paraphrase Corpus"
   },
   "MT": {
    "exp": "machine translation"
@@ -338,6 +347,9 @@
   "OS": {
    "exp": "operating system"
   },
+  "PCA": {
+   "exp": "principal component analysis"
+  },
   "PCI": {
    "exp": "Peripheral Component Interconnect"
   },
@@ -379,6 +391,9 @@
   },
   "QoS": {
    "exp": "quality of service"
+  },
+  "RAG": {
+   "exp": "retrieval-augmented generation"
   },
   "RAM": {
    "exp": "random-access memory"
@@ -487,6 +502,9 @@
   },
   "STEM": {
    "exp": "science, technology, engineering and mathematics"
+  },
+  "SVD": {
+   "exp": "singular value decomposition"
   },
   "SWA": {
    "exp": "sliding-window attention"
@@ -731,6 +749,9 @@
   "PipeDream",
   "DeepSpeed",
   "DualPipe",
-  "GShard"
+  "GShard",
+  "AdamW",
+  "ACM",
+  "BFLOAT16"
  ]
 }

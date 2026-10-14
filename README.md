@@ -4,6 +4,23 @@ Interactive slide decks that explain AI systems concepts visually.
 
 **Live site:** https://nilesh-salpe.github.io/visual-ai/
 
+## Math for LLMs and neural networks
+
+Ten 9-beat decks plus 6 hands-on [Colab notebooks](build-it/).
+
+| # | Deck |
+|---|------|
+| 01 | [Vectors and dot products](math/01-vectors-dot-products/) |
+| 02 | [Matrices and linear layers](math/02-matrices-linear-layers/) |
+| 03 | [Eigenvalues, SVD and low rank](math/03-eigen-svd-low-rank/) |
+| 04 | [Derivatives and the chain rule](math/04-derivatives-chain-rule/) |
+| 05 | [Probability and sampling](math/05-probability-sampling/) |
+| 06 | [Maximum likelihood and cross-entropy](math/06-maximum-likelihood/) |
+| 07 | [Information theory for LLMs](math/07-information-theory/) |
+| 08 | [Softmax and log-sum-exp](math/08-softmax-logsumexp/) |
+| 09 | [Optimization basics](math/09-optimization-basics/) |
+| 10 | [Floating-point numbers](math/10-floating-point/) |
+
 ## GPU for GenAI
 
 | # | Deck |

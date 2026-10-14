@@ -1,0 +1,50 @@
+[
+ {
+  "slug": "01_vectors_similarity",
+  "title": "01 \u00b7 Vectors, dot products and similarity",
+  "path": "build-it/math/01_vectors_similarity.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/01_vectors_similarity.ipynb",
+  "deck": "math/01-vectors-dot-products/",
+  "minutes": 25
+ },
+ {
+  "slug": "02_svd_low_rank",
+  "title": "02 \u00b7 SVD and low-rank approximation",
+  "path": "build-it/math/02_svd_low_rank.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/02_svd_low_rank.ipynb",
+  "deck": "math/03-eigen-svd-low-rank/",
+  "minutes": 30
+ },
+ {
+  "slug": "03_chain_rule_gradcheck",
+  "title": "03 \u00b7 Chain rule by hand and gradient checking",
+  "path": "build-it/math/03_chain_rule_gradcheck.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/03_chain_rule_gradcheck.ipynb",
+  "deck": "math/04-derivatives-chain-rule/",
+  "minutes": 30
+ },
+ {
+  "slug": "04_cross_entropy_kl",
+  "title": "04 \u00b7 Entropy, cross-entropy, KL and perplexity",
+  "path": "build-it/math/04_cross_entropy_kl.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/04_cross_entropy_kl.ipynb",
+  "deck": "math/07-information-theory/",
+  "minutes": 25
+ },
+ {
+  "slug": "05_stable_softmax",
+  "title": "05 \u00b7 Stable softmax, log-sum-exp and online softmax",
+  "path": "build-it/math/05_stable_softmax.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/05_stable_softmax.ipynb",
+  "deck": "math/08-softmax-logsumexp/",
+  "minutes": 30
+ },
+ {
+  "slug": "06_gradient_descent",
+  "title": "06 \u00b7 Gradient descent, momentum and Adam",
+  "path": "build-it/math/06_gradient_descent.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/06_gradient_descent.ipynb",
+  "deck": "math/09-optimization-basics/",
+  "minutes": 30
+ }
+]

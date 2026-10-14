@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optimization Basics</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Optimization basics" data-home="../index.html" data-home-label="Math">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Math for LLMs · 09</div>
+    <h1>Optimization basics</h1>
+    <p class="sub">How gradient descent moves through a loss landscape, why curvature and the learning rate decide whether it converges, and what momentum and Adam fix.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>We can compute gradients of the loss. Now we need to use them to find good weights, in a landscape with billions of dimensions, steep and flat directions, and saddle points.</div>
+      <div class="c"><b>Core idea</b><b>Gradient descent</b> steps against the gradient: w ← w − η∇L. On a quadratic it is stable only if η < 2/λ_max, and the flattest direction sets the speed, so ill-conditioning (κ = λ_max/λ_min) slows it. <b>Momentum</b> accumulates velocity; <b>Adam</b> rescales each coordinate by its recent gradient size.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Walking down an elongated valley</h2>
+    <hr>
+<p class="lede">Gradient descent on f(x, y) = ½(x² + κy²). Change the learning rate, momentum and condition number κ, and watch the path from the start point (circle).</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0">
+    <label class="ctl">learning rate η <input type="range" id="oL" min="0.001" max="0.03" step="0.001" value="0.015"> <output id="oLo"></output></label>
+    <label class="ctl">momentum β <input type="range" id="oM" min="0" max="0.95" step="0.05" value="0"> <output id="oMo"></output></label>
+    <label class="ctl">κ <input type="range" id="oK" min="1" max="100" step="1" value="100"> <output id="oKo"></output></label>
+  </div>
+  <svg id="oSvg" viewBox="0 0 660 260" style="margin-top:10px" role="img" aria-label="Optimization path"></svg>
+  <p class="readout" id="oOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why plain gradient descent struggles</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Ill-conditioning</h3><p>The steep direction caps the learning rate at 2/λ_max; along the flat direction progress is then tiny.</p></div>
+      <div class="card b"><h3>Saddle points</h3><p>High-dimensional losses have far more saddles than bad local minima, surrounded by slow plateaus.</p></div>
+      <div class="card c"><h3>Noisy gradients</h3><p>Mini-batches give noisy estimates (SGD (stochastic gradient descent), stochastic gradient descent), so steps jitter.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What happens above the limit?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">For f = ½·100·y², gradient descent uses η = 0.025. What happens to y?</p>
+      <div class="opts">
+      <button>A. It converges slowly</button>
+      <button>B. It converges in one step</button>
+      <button data-ok>C. It oscillates with growing amplitude and diverges</button>
+      <button>D. It stays fixed</button>
+      </div>
+      <div class="why"><b>C.</b> Each step multiplies y by (1 − ηλ) = 1 − 2.5 = −1.5: sign flips and the size grows 1.5× per step. Stability needs |1 − ηλ| &lt; 1, i.e. η &lt; 0.02.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Three update rules</h2>
+    <hr>
+<div class="grid3">
+      <div class="card a"><h3>Gradient descent</h3><p>w ← w − η∇L. Each eigen-direction shrinks by |1 − ηλᵢ| per step.</p></div>
+      <div class="card b"><h3>Momentum</h3><p>v ← βv + ∇L, w ← w − ηv. Oscillations cancel across steps; consistent directions accelerate.</p></div>
+      <div class="card e"><h3>Adam</h3><p>Running averages of g and g², bias-corrected; step ∝ m̂/(√v̂ + ε). Each coordinate gets its own effective rate.</p></div>
+    </div>
+<div class="eq">stable iff η < 2 / λ_max   ·   speed set by κ = λ_max / λ_min</div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 188" role="img" aria-label="Learning rate × curvature decides stability; the condition number decides speed." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--c)"/><text x="83.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">gradient</text><text x="83.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">direction of steepest</text><text x="83.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">ascent</text><rect x="174.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--a)"/><text x="247.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">step</text><text x="247.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">w ← w − η g</text><line x1="158.5" y1="60.0" x2="172.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="339.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--b)"/><text x="412.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">momentum</text><text x="412.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">v ← βv + g</text><line x1="323.0" y1="60.0" x2="337.0" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="503.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--e)"/><text x="576.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">Adam</text><text x="576.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">÷ √(running g²)</text><line x1="487.5" y1="60.0" x2="501.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M576.8 136 V160 H83.2 V138" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="330.0" y="177" text-anchor="middle" class="tm" style="font-size:11px">every step</text></svg><p class="caption" style="margin:4px 0 0">Learning rate × curvature decides stability; the condition number decides speed.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>How LLM training uses these ideas</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Practice</th><th>Reason</th></tr>
+  <tr><td>AdamW optimizer</td><td>per-coordinate scaling copes with very different gradient sizes across layers; decoupled weight decay</td></tr>
+  <tr><td>Learning-rate warmup</td><td>early curvature and Adam's variance estimates are unreliable; start small to avoid divergence</td></tr>
+  <tr><td>Decay schedule (cosine or step)</td><td>large steps to make progress, small steps to settle into a low region</td></tr>
+  <tr><td>Gradient clipping</td><td>caps rare huge gradients that would overshoot (loss spikes)</td></tr>
+  <tr><td>Large batches</td><td>reduce gradient noise, allowing larger stable learning rates up to a point</td></tr>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: an ill-conditioned bowl</h2>
+    <hr>
+    <p class="lede">f(x, y) = ½(x² + 100·y²): curvatures 1 and 100, condition number κ = 100. Start at (1, 1). (Notebook 06.)</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Stability: η must be below 2/λ_max = 2/100 = <b>0.02</b>; at η = 0.021 the y-coordinate grows every step.</li><li>At the best fixed rate η = 2/(1 + κ), plain gradient descent needs <b>346 steps</b> to cut the loss by 10⁶.</li><li>Momentum with tuned β needs <b>58 steps</b>; at κ = 1,000 it is 3,454 vs 204.</li><li>Adam with η = 0.05 converges at κ = 100 and at κ = 10,000 with the same settings, because it normalises each coordinate.</li></ol><div class="result">The steep direction limits the learning rate; the flat direction then limits progress. Momentum and adaptive methods attack exactly that gap.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works despite non-convexity</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Locally quadratic</h3><p>Near any point the loss looks like a quadratic, so curvature analysis predicts stability and speed.</p></div>
+      <div class="card e"><h3>Saddles are escapable</h3><p>Noise and momentum push off saddle points along negative-curvature directions.</p></div>
+      <div class="card b"><h3>Many good minima</h3><p>Large networks have many equally good solutions; the job is reaching one efficiently.</p></div>
+      <div class="card c"><h3>Adaptivity helps</h3><p>Adam's per-parameter scaling partly corrects ill-conditioning without computing the Hessian.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Deep learning gets stuck in bad local minima."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">In high dimensions most critical points are saddles; Dauphin et al. argue plateaus around saddles are the real obstacle.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"A larger learning rate always trains faster."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Past 2/λ_max the steepest direction diverges; LLM (large language model) runs use warmup and schedules for this reason.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Adam needs no tuning."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Its defaults are robust, but the learning rate, β₂ and warmup still matter at scale.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>η < 2/λ_max.</b> Above it, GD (gradient descent) diverges along the steepest direction.</li><li><b>Momentum ≈ √κ speed-up.</b> On quadratics (Goh, Distill).</li><li><b>Adam defaults: β₁ 0.9, β₂ 0.999, ε 10⁻⁸.</b> LLMs often use β₂ ≈ 0.95.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Too high a learning rate.</b> Loss spikes or NaNs (not a numbers); warm up the rate early in training.</li><li><b>Fearing local minima.</b> In high dimensions saddle points and plateaus are the bigger problem (Dauphin et al.).</li><li><b>L2 penalty inside Adam.</b> Not the same as weight decay; use decoupled AdamW.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Curvatures 2 and 50. Largest stable learning rate for plain GD?</p>
+      <div class="opts">
+      <button>A. 1</button>
+      <button>B. 0.5</button>
+      <button data-ok>C. 0.04</button>
+      <button>D. 0.02</button>
+      </div>
+      <div class="why">2/λ_max = 2/50 = <b>0.04</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does the condition number κ control?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">How slowly the flattest direction converges once the learning rate is limited by the steepest: GD needs ~κ steps per e-fold; momentum ~√κ.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What two running statistics does Adam keep, and why bias-correct them?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The mean of gradients (m) and of squared gradients (v); both start at 0 so early estimates are biased toward 0, corrected by dividing by 1 − βᵗ.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Gradient descent is stable only for η < 2/λ_max and is slowed by the condition number; momentum and Adam reduce that dependence, with warmup and schedules keeping big runs stable.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Gradient descent steps against the gradient, scaled by a learning rate. Near any point the loss looks like a quadratic bowl, and along each direction the error is multiplied by one minus the learning rate times the curvature, so the step must stay below two over the largest curvature or training diverges. With that cap, the flattest direction moves slowly, so the ratio of largest to smallest curvature, the condition number, sets the speed. Momentum averages steps to cancel oscillations and roughly takes the square root of that ratio; Adam scales each coordinate by its own gradient size.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> use gradients to descend a badly conditioned, saddle-filled landscape.</span></div><div><span><b>Core idea:</b> η < 2/λ_max; κ sets speed; momentum, Adam.</span></div><div><span><b>Practice:</b> AdamW, warmup, decay, clipping.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/06_gradient_descent.ipynb" target="_blank" rel="noopener">06 · Gradient descent, momentum and Adam</a> <span style="color:var(--faint)">· 30 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/math/06_gradient_descent.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../10-floating-point/index.html">10 · Floating-point numbers →</a> · Previous: <a href="../08-softmax-logsumexp/index.html">← 08</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1412.6980" target="_blank" rel="noopener">Adam: A Method for Stochastic Optimization</a>
+        <div class="meta">Kingma & Ba · ICLR 2015</div>
+        <p>Per-parameter step sizes from bias-corrected running averages of the gradient and its square; invariant to diagonal rescaling of the gradients.</p><div class="num">Remember: defaults β₁ 0.9, β₂ 0.999, ε 10⁻⁸</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1612.08083" target="_blank" rel="noopener">Language Modeling with Gated Convolutional Networks</a>
+        <div class="meta">Dauphin et al. · ICML 2017</div>
+        <p>Introduces the gated linear unit (GLU): one projection gates another through a sigmoid.</p></div>
+      <div class="paper-item"><a href="https://distill.pub/2017/momentum/" target="_blank" rel="noopener">Why Momentum Really Works</a>
+        <div class="meta">Goh · Distill 2017</div>
+        <p>Interactive analysis of momentum on quadratics: it damps oscillation across steep directions and gives a square-root speed-up in the condition number.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  Deck.bind(['oL', 'oM', 'oK'], () => {
+    const lr = Deck.val('oL'), b = Deck.val('oM'), k = Deck.val('oK'); Deck.out('oLo', lr.toFixed(3)); Deck.out('oMo', b.toFixed(2)); Deck.out('oKo', k);
+    const s = clear(document.getElementById('oSvg')), X = x => 330 + x * 270, Y = y => 130 - y * 110;
+    for (let c = 1; c <= 6; c++) { const r = c * 0.18; let pts = ''; for (let t = 0; t <= 6.3; t += 0.05) pts += `${X(r * Math.cos(t))},${Y(r * Math.sin(t) / Math.sqrt(k))} `; svg('polyline', { points: pts, fill: 'none', class: 'ln' }, s); }
+    let x = -1, y = 1, vx = 0, vy = 0, pts = `${X(x)},${Y(y)} `, n = 0, f0 = 0.5 * (x * x + k * y * y), steps = null;
+    for (n = 1; n <= 400; n++) { vx = b * vx + x; vy = b * vy + k * y; x -= lr * vx; y -= lr * vy; if (Math.abs(y) > 50 || Math.abs(x) > 50) break; if (n <= 150) pts += `${X(Math.max(-1.2, Math.min(1.2, x)))},${Y(Math.max(-1.15, Math.min(1.15, y)))} `; if (steps === null && 0.5 * (x * x + k * y * y) < 1e-4 * f0) steps = n; }
+    svg('polyline', { points: pts, fill: 'none', style: 'stroke:var(--b);stroke-width:2' }, s);
+    svg('circle', { cx: X(-1), cy: Y(1), r: 6, style: 'fill:var(--a)' }, s); svg('circle', { cx: X(0), cy: Y(0), r: 4, style: 'fill:var(--e)' }, s);
+    const lim = 2 * (1 + b) / k, div = Math.abs(y) > 50 || Math.abs(x) > 50;
+    document.getElementById('oOut').innerHTML = div ? `<b>Diverged</b>: η = ${lr.toFixed(3)} exceeds the stability limit ≈ ${lim.toFixed(3)} for κ = ${k}${b ? ' with this momentum' : ' (2/κ)'}.` : steps ? `Loss reduced 10⁴× in <b>${steps} steps</b> (first 150 drawn). Stability limit ≈ ${lim.toFixed(3)}.` : `Not converged in 400 steps: progress along the flat x direction is slow. Try momentum.`;
+  });
+})();
+</script>
+</body>
+</html>

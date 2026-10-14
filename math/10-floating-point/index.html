@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floating-Point Numbers</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Floating-point numbers" data-home="../index.html" data-home-label="Math">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Math for LLMs · 10</div>
+    <h1>Floating-point numbers</h1>
+    <p class="sub">How computers store real numbers as sign, exponent and mantissa, what precision and range each LLM (large language model) format gives, and the rounding effects that bite in training.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Models do trillions of arithmetic operations in formats with 32, 16 or even 8 bits. Every number is rounded, small updates can vanish, and large values can overflow.</div>
+      <div class="c"><b>Core idea</b>A float is <b>(−1)ˢ × 1.mantissa × 2^(exponent − bias)</b>. <b>Exponent bits</b> set the range; <b>mantissa bits</b> set the precision (relative spacing 2⁻ᵐ). FP32 (32-bit floating point) has 8 + 23, BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats) has 8 + 7 (same range, less precision), FP16 (16-bit floating point) has 5 + 10 (more precision, much less range).</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>What does a number look like in bits?</h2>
+    <hr>
+<p class="lede">Type a value and pick a format. The bits split into sign, exponent and mantissa; the readout shows the value actually stored and the rounding error.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">value <input id="fV" type="text" value="0.1" style="width:120px"></label><div class="seg" id="fSeg"><button data-v="fp32">FP32</button><button data-v="bf16" class="on">BF16</button><button data-v="fp16">FP16</button></div></div>
+  <svg id="fSvg" viewBox="0 0 660 120" style="margin-top:10px" role="img" aria-label="Floating-point bit layout"></svg>
+  <p class="readout" id="fOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not exact or fixed-point numbers?</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Exact rationals</h3><p>Unbounded size and far too slow for trillions of operations.</p></div>
+      <div class="card b"><h3>Fixed point</h3><p>Integers with a fixed scale cannot cover both 10⁻⁸ gradients and 10⁴ activations.</p></div>
+      <div class="card c"><h3>Bits cost bandwidth</h3><p>Every byte is memory, bandwidth and silicon; fewer bits per number means faster training and inference.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which format keeps the tiny gradient?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">A gradient of 10⁻⁶. Which 16-bit format represents it as a normal number?</p>
+      <div class="opts">
+      <button>A. FP16</button>
+      <button data-ok>B. BF16</button>
+      <button>C. both</button>
+      <button>D. neither</button>
+      </div>
+      <div class="why"><b>B.</b> BF16's 8-bit exponent reaches ≈ 10⁻³⁸. FP16's smallest normal is ≈ 6.1 × 10⁻⁵; 10⁻⁶ survives only as a low-precision subnormal (FP16 subnormals go down to ≈ 6 × 10⁻⁸).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Sign, exponent, mantissa</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Sign</h3><p>1 bit: positive or negative.</p></div>
+      <div class="card a"><h3>Exponent</h3><p>Stored with a bias; picks the power of two, so it sets the range. FP32/BF16: 8 bits. FP16: 5 bits.</p></div>
+      <div class="card c"><h3>Mantissa</h3><p>Fraction bits after an implicit leading 1; sets relative precision. FP32: 23, FP16: 10, BF16: 7.</p></div>
+    </div>
+<div class="eq">value = (−1)ˢ × (1 + mantissa / 2ᵐ) × 2^(exponent − bias)</div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 138" role="img" aria-label="Spacing between neighbours grows with magnitude: relative error stays ≈ 2⁻ᵐ." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--d)"/><text x="83.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">sign</text><text x="83.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">1 bit</text><rect x="174.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--a)"/><text x="247.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">exponent</text><text x="247.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">range (powers of 2)</text><line x1="158.5" y1="60.0" x2="172.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="339.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--c)"/><text x="412.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">mantissa</text><text x="412.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">precision (digits)</text><line x1="323.0" y1="60.0" x2="337.0" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="503.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--e)"/><text x="576.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">rounded value</text><text x="576.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">nearest representable</text><line x1="487.5" y1="60.0" x2="501.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Spacing between neighbours grows with magnitude: relative error stays ≈ 2⁻ᵐ.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>The formats used for LLMs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Format</th><th>Exponent + mantissa bits</th><th>Max</th><th>Smallest normal</th><th>Spacing at 1</th><th>Typical use</th></tr>
+  <tr><td>FP32</td><td>8 + 23</td><td>3.4 × 10³⁸</td><td>1.2 × 10⁻³⁸</td><td>1.2 × 10⁻⁷</td><td>master weights, optimizer state, reductions</td></tr>
+  <tr><td>BF16</td><td>8 + 7</td><td>3.4 × 10³⁸</td><td>1.2 × 10⁻³⁸</td><td>7.8 × 10⁻³</td><td>training matmuls and activations</td></tr>
+  <tr><td>FP16</td><td>5 + 10</td><td>65,504</td><td>6.1 × 10⁻⁵</td><td>9.8 × 10⁻⁴</td><td>inference; training with loss scaling</td></tr>
+  <tr><td>FP8 (8-bit floating point) E4M3</td><td>4 + 3</td><td>448</td><td>1.6 × 10⁻²</td><td>0.125</td><td>FP8 matmuls (weights, activations)</td></tr>
+  <tr><td>FP8 E5M2</td><td>5 + 2</td><td>57,344</td><td>6.1 × 10⁻⁵</td><td>0.25</td><td>gradients in some FP8 recipes</td></tr>
+</table></div>
+<p class="caption">Values from the IEEE 754 definitions (FP32, FP16), the BF16 definition (FP32 with a 7-bit mantissa) and the FP8 formats of Micikevicius et al. 2022.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: storing 0.1 and adding 10⁻⁴ to 1</h2>
+    <hr>
+    <p class="lede">Round to nearest in each format.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>0.1 in FP32 = 0.100000001490…; in BF16 = <b>0.10009765625</b>; in FP16 = <b>0.0999755859375</b>.</li><li>Spacing just above 1: FP32 2⁻²³ ≈ 1.2 × 10⁻⁷, FP16 2⁻¹⁰ ≈ 9.8 × 10⁻⁴, BF16 2⁻⁷ ≈ 7.8 × 10⁻³.</li><li>1 + 10⁻⁴: FP32 gives 1.0001000; FP16 and BF16 both round back to <b>1.0</b>: the update vanishes.</li><li>Range: FP16 overflows above 65,504; BF16 and FP32 reach ≈ 3.4 × 10³⁸.</li></ol><div class="result">This is why training keeps FP32 master weights and accumulators while doing matmuls in 16 or 8 bits (Distributed deck 09).</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why low precision still works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Neural nets are noise-tolerant</h3><p>Gradients are already noisy estimates; rounding error of 2⁻⁸ relative is small by comparison.</p></div>
+      <div class="card e"><h3>Range is what breaks training</h3><p>BF16 keeps FP32's range, so Kalamkar et al. trained many model types without hyper-parameter changes.</p></div>
+      <div class="card b"><h3>Keep precision where it accumulates</h3><p>Sums and weight updates stay in FP32, where small contributions would otherwise vanish.</p></div>
+      <div class="card c"><h3>Speed</h3><p>Halving the bits roughly doubles Tensor Core throughput and halves memory traffic.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"BF16 is more precise than FP16."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">BF16 has fewer mantissa bits (7 vs 10), so it is less precise; it has far more range.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Floating-point addition is associative."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Rounding after each operation makes the order matter, which is why GPU (graphics processing unit) reductions can differ between runs.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"0.1 is stored exactly."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">0.1 has no finite binary expansion; every format stores the nearest representable value.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Relative precision ≈ 2⁻ᵐ.</b> m = mantissa bits.</li><li><b>BF16 = FP32 with the low 16 bits dropped.</b> Same exponent, trivial conversion.</li><li><b>Sum small numbers first / in FP32.</b> Reduces rounding error.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Comparing floats with ==.</b> Use a tolerance.</li><li><b>Assuming addition is associative.</b> (a + b) + c ≠ a + (b + c), so parallel reductions differ run to run.</li><li><b>Catastrophic cancellation.</b> Subtracting nearly equal numbers loses most significant digits.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">How many mantissa bits does BF16 have?</p>
+      <div class="opts">
+      <button>A. 23</button>
+      <button>B. 10</button>
+      <button data-ok>C. 7</button>
+      <button>D. 3</button>
+      </div>
+      <div class="why"><b>7</b> (plus the implicit leading 1).</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why does adding a small update to a large weight in BF16 often do nothing?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The update is smaller than half the spacing between representable numbers near the weight, so the sum rounds back to the weight.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Which bits decide range and which decide precision?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Exponent bits decide range; mantissa bits decide relative precision.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">A float is sign × 1.mantissa × 2^exponent: exponent bits give range, mantissa bits give precision; LLMs compute in BF16/FP8 but keep sums and master weights in FP32.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Computers store real numbers as a sign, an exponent that picks a power of two, and a mantissa that gives the significant digits. Exponent bits set the range and mantissa bits set the relative precision, about two to the minus number of mantissa bits. FP32 has eight exponent and twenty-three mantissa bits; BF16 keeps the eight exponent bits but only seven mantissa bits, so it has FP32's range with far less precision; FP16 has more precision but overflows at 65,504. Rounding means small updates can vanish and sums depend on order, so training keeps accumulators and master weights in FP32.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> every number is rounded; range and precision are limited.</span></div><div><span><b>Core idea:</b> exponent = range, mantissa = precision.</span></div><div><span><b>Practice:</b> BF16/FP8 compute, FP32 accumulation.</span></div></div>
+    <p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../09-optimization-basics/index.html">← 09</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html" target="_blank" rel="noopener">What Every Computer Scientist Should Know About Floating-Point Arithmetic</a>
+        <div class="meta">Goldberg · ACM Computing Surveys 1991</div>
+        <p>The classic guide to IEEE floating point: rounding, ulps, relative error, cancellation and why (a + b) + c ≠ a + (b + c).</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1905.12322" target="_blank" rel="noopener">A Study of BFLOAT16 for Deep Learning Training</a>
+        <div class="meta">Kalamkar et al. · arXiv 2019</div>
+        <p>BF16 keeps FP32's 8-bit exponent (same range) with a 7-bit mantissa, and trains image, speech, language and recommendation models without hyper-parameter changes.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1710.03740" target="_blank" rel="noopener">Mixed Precision Training</a>
+        <div class="meta">Micikevicius et al. · ICLR 2018</div>
+        <p>Half-precision weights, activations and gradients with an FP32 master copy of the weights and loss scaling to avoid gradient underflow.</p><div class="num">Remember: nearly 2× less memory</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  let cur = 'bf16';
+  const F = { fp32: [8, 23, 127], bf16: [8, 7, 127], fp16: [5, 10, 15] };
+  const encode = (v, [E, M, B]) => {
+    if (!isFinite(v) || isNaN(v)) return null;
+    const s = v < 0 || Object.is(v, -0) ? 1 : 0; let a = Math.abs(v);
+    if (a === 0) return { s, e: 0, m: 0, val: 0 };
+    let e = Math.floor(Math.log2(a)); if (Math.pow(2, e) > a) e--; if (Math.pow(2, e + 1) <= a) e++;
+    let be = e + B, m;
+    if (be <= 0) { m = Math.round(a / Math.pow(2, 1 - B) * Math.pow(2, M)); be = 0; if (m >= Math.pow(2, M)) { be = 1; m -= Math.pow(2, M); } }
+    else { m = Math.round((a / Math.pow(2, e) - 1) * Math.pow(2, M)); if (m >= Math.pow(2, M)) { m = 0; be++; } }
+    if (be >= Math.pow(2, E) - 1) return { s, e: Math.pow(2, E) - 1, m: 0, val: s ? -Infinity : Infinity };
+    const val = (s ? -1 : 1) * (be === 0 ? m / Math.pow(2, M) * Math.pow(2, 1 - B) : (1 + m / Math.pow(2, M)) * Math.pow(2, be - B));
+    return { s, e: be, m, val };
+  };
+  const draw = () => {
+    const v = parseFloat(document.getElementById('fV').value), [E, M, B] = F[cur], r = encode(v, F[cur]), s = clear(document.getElementById('fSvg'));
+    if (!r) { document.getElementById('fOut').innerHTML = 'Enter a number.'; return; }
+    const bits = [r.s].concat([...Array(E)].map((_, i) => (r.e >> (E - 1 - i)) & 1)).concat([...Array(M)].map((_, i) => Math.floor(r.m / Math.pow(2, M - 1 - i)) & 1));
+    const n = bits.length, w = Math.min(28, 600 / n);
+    bits.forEach((b, i) => { const col = i === 0 ? 'var(--d)' : i <= E ? 'var(--a)' : 'var(--c)';
+      svg('rect', { x: 30 + i * w, y: 20, width: w - 2, height: 34, rx: 3, style: `fill:${col};opacity:${b ? 1 : .35}` }, s);
+      if (w > 12) svg('text', { x: 30 + i * w + (w - 2) / 2, y: 42, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:12px', text: b }, s); });
+    svg('text', { x: 30, y: 78, class: 'tm', text: 'sign' }, s); svg('text', { x: 30 + w, y: 78, class: 'tm', style: 'fill:var(--a)', text: `exponent (${E} bits, bias ${B})` }, s); svg('text', { x: 30 + (E + 1) * w, y: 98, class: 'tm', style: 'fill:var(--c)', text: `mantissa (${M} bits)` }, s);
+    const err = r.val - v, rel = v ? Math.abs(err / v) : 0;
+    document.getElementById('fOut').innerHTML = !isFinite(r.val) ? `<b>Overflow</b>: ${v} is above the ${cur.toUpperCase()} maximum, stored as ∞.` : r.val === 0 && v !== 0 ? `<b>Underflow</b>: ${v} rounds to 0 in ${cur.toUpperCase()}.` : `Stored value: <b>${r.val.toPrecision(12).replace(/0+$/, '').replace(/\.$/, '')}</b> · error ${err.toExponential(2)} (relative ${rel.toExponential(2)}; format precision ≈ 2<sup>−${M + 1}</sup> = ${Math.pow(2, -(M + 1)).toExponential(1)})${r.e === 0 ? ' · subnormal' : ''}.`;
+  };
+  document.getElementById('fV').addEventListener('input', draw); Deck.seg('fSeg', v => { cur = v; draw(); });
+})();
+</script>
+</body>
+</html>

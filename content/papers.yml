@@ -989,3 +989,101 @@ vit22b:
   url: https://arxiv.org/abs/2302.05442
   summary: Finds training divergence caused by very large attention logits and fixes it with LayerNorm on queries and keys (QK normalization).
   number: ''
+word2vec:
+  title: Efficient Estimation of Word Representations in Vector Space (word2vec)
+  authors: Mikolov et al.
+  venue: ICLR workshop
+  year: 2013
+  url: https://arxiv.org/abs/1301.3781
+  summary: Learns word vectors whose dot products and differences capture meaning (king − man + woman ≈ queen) with cheap log-linear models.
+  number: under a day to learn vectors from 1.6B words
+aghajanyan:
+  title: Intrinsic Dimensionality Explains the Effectiveness of Language Model Fine-Tuning
+  authors: Aghajanyan et al.
+  venue: ACL
+  year: 2021
+  url: https://arxiv.org/abs/2012.13255
+  summary: 'Fine-tuning works in a tiny subspace: a low-dimensional random reparameterization is nearly as effective as the full parameter space, and larger models
+    have lower intrinsic dimension.'
+  number: 200 parameters reach 90% of full fine-tuning (RoBERTa, MRPC)
+rumelhart:
+  title: Learning representations by back-propagating errors
+  authors: Rumelhart, Hinton & Williams
+  venue: Nature
+  year: 1986
+  url: https://doi.org/10.1038/323533a0
+  summary: 'Backpropagation: apply the chain rule backward through a network to get every weight''s gradient, so hidden units learn useful internal features.'
+baydin:
+  title: 'Automatic differentiation in machine learning: a survey'
+  authors: Baydin et al.
+  venue: JMLR
+  year: 2018
+  url: https://arxiv.org/abs/1502.05767
+  summary: Forward and reverse-mode automatic differentiation explained; backpropagation is reverse mode, which gets all gradients of a scalar loss in about one extra
+    pass.
+holtzman:
+  title: The Curious Case of Neural Text Degeneration
+  authors: Holtzman et al.
+  venue: ICLR
+  year: 2020
+  url: https://arxiv.org/abs/1904.09751
+  summary: Maximizing likelihood when decoding gives bland, repetitive text; nucleus (top-p) sampling samples from the smallest set of tokens holding probability
+    p.
+bengio03:
+  title: A Neural Probabilistic Language Model
+  authors: Bengio et al.
+  venue: JMLR
+  year: 2003
+  url: https://www.jmlr.org/papers/v3/bengio03a.html
+  summary: 'The first neural language model: learned word embeddings plus a network that outputs a softmax over the next word, trained by maximum likelihood.'
+shannon:
+  title: A Mathematical Theory of Communication
+  authors: Shannon
+  venue: Bell System Technical Journal
+  year: 1948
+  url: https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf
+  summary: Defines entropy as average information and shows it is the limit of lossless compression; the root of cross-entropy loss and bits-per-token.
+kl51:
+  title: On Information and Sufficiency
+  authors: Kullback & Leibler
+  venue: Annals of Mathematical Statistics
+  year: 1951
+  url: https://doi.org/10.1214/aoms/1177729694
+  summary: 'Introduces the divergence now called KL: the expected extra information needed when using one distribution in place of another.'
+distill:
+  title: Distilling the Knowledge in a Neural Network
+  authors: Hinton, Vinyals & Dean
+  venue: NeurIPS workshop
+  year: 2015
+  url: https://arxiv.org/abs/1503.02531
+  summary: Train a small model on a large model's softened output distribution (softmax with temperature T), minimizing cross-entropy to those soft targets.
+adam:
+  title: 'Adam: A Method for Stochastic Optimization'
+  authors: Kingma & Ba
+  venue: ICLR
+  year: 2015
+  url: https://arxiv.org/abs/1412.6980
+  summary: Per-parameter step sizes from bias-corrected running averages of the gradient and its square; invariant to diagonal rescaling of the gradients.
+  number: defaults β₁ 0.9, β₂ 0.999, ε 10⁻⁸
+goh:
+  title: Why Momentum Really Works
+  authors: Goh
+  venue: Distill
+  year: 2017
+  url: https://distill.pub/2017/momentum/
+  summary: 'Interactive analysis of momentum on quadratics: it damps oscillation across steep directions and gives a square-root speed-up in the condition number.'
+goldberg:
+  title: What Every Computer Scientist Should Know About Floating-Point Arithmetic
+  authors: Goldberg
+  venue: ACM Computing Surveys
+  year: 1991
+  url: https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
+  summary: 'The classic guide to IEEE floating point: rounding, ulps, relative error, cancellation and why (a + b) + c ≠ a + (b + c).'
+bf16:
+  title: A Study of BFLOAT16 for Deep Learning Training
+  authors: Kalamkar et al.
+  venue: arXiv
+  year: 2019
+  url: https://arxiv.org/abs/1905.12322
+  summary: BF16 keeps FP32's 8-bit exponent (same range) with a 7-bit mantissa, and trains image, speech, language and recommendation models without hyper-parameter
+    changes.

@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Information Theory for LLMs</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Information theory for LLMs" data-home="../index.html" data-home-label="Math">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Math for LLMs · 07</div>
+    <h1>Information theory for LLMs</h1>
+    <p class="sub">Entropy, cross-entropy and KL (Kullback-Leibler divergence) divergence: the quantities behind the training loss, distillation, RLHF (reinforcement learning from human feedback)'s KL penalty and bits-per-byte comparisons.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>LLM (large language model) work constantly asks "how different are these two distributions?": model vs data, student vs teacher, fine-tuned policy vs reference. We need a principled measure.</div>
+      <div class="c"><b>Core idea</b><b>Entropy</b> H(p) is average surprise. <b>Cross-entropy</b> H(p, q) is the surprise when you code p's outcomes with model q. Their gap is the <b>KL divergence</b> KL(p‖q) = H(p, q) − H(p) ≥ 0: zero only when q = p, and not symmetric.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>How far apart are two distributions?</h2>
+    <hr>
+<p class="lede">Two distributions over three outcomes. Adjust the model q; the readout shows entropy, cross-entropy and KL in both directions.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0">
+    <label class="ctl">q(A) <input type="range" id="kA" min="0.02" max="0.96" step="0.01" value="0.5"> <output id="kAo"></output></label>
+    <label class="ctl">q(B) share of rest <input type="range" id="kB" min="0.02" max="0.98" step="0.01" value="0.6"> <output id="kBo"></output></label>
+  </div>
+  <div id="kBars" style="margin-top:12px"></div>
+  <p class="readout" id="kOut"></p>
+</div>
+<p class="caption">Data distribution p = (0.7, 0.2, 0.1) is fixed.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not simpler distances?</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Difference of probabilities</h3><p>Treats 0.01 vs 0.001 like 0.51 vs 0.501, though the first is a 10× difference in surprise.</p></div>
+      <div class="card b"><h3>Only the top outcome</h3><p>Ignores how the rest of the probability is spread, which matters for sampling and distillation.</p></div>
+      <div class="card c"><h3>Needs to match training</h3><p>We want the measure that maximum likelihood already minimises, so the numbers line up with the loss.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which is larger?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">For any distributions p and q, how does cross-entropy H(p, q) compare with entropy H(p)?</p>
+      <div class="opts">
+      <button>A. Always smaller</button>
+      <button data-ok>B. Always ≥ H(p)</button>
+      <button>C. Always equal</button>
+      <button>D. It depends on the vocabulary size</button>
+      </div>
+      <div class="why"><b>B.</b> H(p, q) = H(p) + KL(p‖q) and KL ≥ 0 (Gibbs' inequality), with equality only when q = p.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Entropy, cross-entropy, KL</h2>
+    <hr>
+<div class="grid3">
+      <div class="card f"><h3>Entropy H(p)</h3><p>−Σ p log p. Average surprise of the data itself: the floor no model can beat.</p></div>
+      <div class="card a"><h3>Cross-entropy H(p, q)</h3><p>−Σ p log q. Average surprise when predicting p's outcomes with q: the LM (language model) training loss.</p></div>
+      <div class="card d"><h3>KL(p‖q)</h3><p>Σ p log(p/q) = H(p, q) − H(p). The excess caused by q ≠ p.</p></div>
+    </div>
+<div class="eq">H(p, q) = H(p) + KL(p ‖ q),   KL ≥ 0</div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 138" role="img" aria-label="Training lowers KL(p‖q); H(p) is fixed by the data." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="201.3" height="64" rx="10" style="fill:var(--faint)"/><text x="110.7" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">H(p)</text><text x="110.7" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">irreducible surprise</text><rect x="229.3" y="28" width="201.3" height="64" rx="10" style="fill:var(--d)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">+ KL(p‖q)</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">penalty for using q</text><line x1="213.3" y1="60.0" x2="227.3" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="448.7" y="28" width="201.3" height="64" rx="10" style="fill:var(--a)"/><text x="549.3" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">= H(p, q)</text><text x="549.3" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">the training loss</text><line x1="432.7" y1="60.0" x2="446.7" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Training lowers KL(p‖q); H(p) is fixed by the data.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Where KL appears in LLM work</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Use</th><th>Which KL</th><th>Effect</th></tr>
+  <tr><td>Pretraining / SFT (supervised fine-tuning)</td><td>KL(data ‖ model), via cross-entropy</td><td>model covers everything the data does</td></tr>
+  <tr><td>Distillation</td><td>cross-entropy to the teacher's soft targets (temperature T)</td><td>student copies the teacher's full distribution</td></tr>
+  <tr><td>RLHF (reinforcement learning from human feedback)</td><td>KL(policy ‖ reference) penalty</td><td>stops the policy drifting too far from the SFT model</td></tr>
+  <tr><td>DPO (direct preference optimization)</td><td>implicit KL constraint in its derivation</td><td>same role without explicit RL</td></tr>
+</table></div>
+<div class="deep"><h4>Forward vs reverse KL</h4><p>Minimising KL(p‖q) (maximum likelihood) forces q to put mass wherever p has mass: mass-covering. Minimising KL(q‖p) lets q ignore parts of p but punishes mass where p has none: mode-seeking. Notebook 04 fits one bump to a two-peaked p both ways.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: three outcomes</h2>
+    <hr>
+    <p class="lede">Data distribution p = (0.7, 0.2, 0.1); model q = (0.5, 0.3, 0.2).</p>
+    <div class="example"><h4>Worked example</h4><ol><li>H(p) = −Σ p log p ≈ <b>0.802 nats</b> (1.157 bits).</li><li>H(p, q) = −Σ p log q ≈ <b>0.887 nats</b>.</li><li>KL(p‖q) = H(p, q) − H(p) ≈ <b>0.085 nats</b>.</li><li>KL(q‖p) ≈ 0.092 nats: different, because KL is not symmetric.</li></ol><div class="result">The model pays 0.085 extra nats per outcome for being wrong; that excess is all that training can remove.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why these are the right quantities</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Compression</h3><p>Shannon: entropy is the minimum average code length; cross-entropy is the length when coding with q. A better LM is a better compressor.</p></div>
+      <div class="card e"><h3>Consistency</h3><p>The training loss, the evaluation metric (perplexity) and regularisers (KL penalties) share one currency.</p></div>
+      <div class="card b"><h3>Directional on purpose</h3><p>The asymmetry of KL lets you choose coverage or mode-seeking behaviour.</p></div>
+      <div class="card c"><h3>Units</h3><p>Nats with ln, bits with log₂; bits per byte removes tokenizer effects.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"KL divergence is a distance."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is not symmetric and does not satisfy the triangle inequality, so it is a divergence, not a metric.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Cross-entropy loss can go below the entropy of the data."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Not on the true distribution: H(p, q) ≥ H(p). A training loss below it signals overfitting or leaked test data.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Entropy measures how good a model is."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Entropy of the model's own output measures its uncertainty; quality is cross-entropy against real data.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>H(p, q) = H(p) + KL(p‖q).</b> Minimising cross-entropy minimises KL.</li><li><b>Forward KL is mass-covering.</b> KL(p‖q) spreads q over all of p; reverse KL(q‖p) is mode-seeking.</li><li><b>Bits per byte = loss_nats × tokens / (bytes × ln 2).</b> Tokenizer-independent.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Treating KL as a distance.</b> It is asymmetric and violates the triangle inequality.</li><li><b>q = 0 where p > 0.</b> KL becomes infinite; models must never assign exactly zero.</li><li><b>Mixing nats and bits.</b> 1 nat = 1/ln 2 ≈ 1.443 bits.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Entropy of a uniform distribution over 8 outcomes?</p>
+      <div class="opts">
+      <button>A. 1 bit</button>
+      <button data-ok>B. 3 bits</button>
+      <button>C. 8 bits</button>
+      <button>D. 0.125 bits</button>
+      </div>
+      <div class="why">log₂ 8 = <b>3 bits</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why does minimising cross-entropy also minimise KL(p‖q)?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">H(p, q) = H(p) + KL(p‖q) and H(p) does not depend on the model.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does the KL penalty in RLHF prevent?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The policy drifting far from the reference model, for example to exploit reward-model errors or lose fluency.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Entropy is average surprise, cross-entropy is surprise under a model, and KL = H(p, q) − H(p) ≥ 0 is the asymmetric gap that training, distillation and RLHF penalties control.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Entropy measures the average surprise of a distribution; for data it is the floor no model can beat. Cross-entropy measures the surprise when you predict that data with a model, and it is exactly the language-model training loss. The difference is the KL divergence, which is never negative and is zero only when the model matches the data. So minimising the loss minimises KL from data to model, which is mass-covering. KL is not symmetric: the reverse direction is mode-seeking. The same quantities appear as distillation targets and as the KL penalty that keeps an RLHF policy near its reference.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> measure the gap between distributions.</span></div><div><span><b>Core idea:</b> H(p, q) = H(p) + KL(p‖q), KL ≥ 0, asymmetric.</span></div><div><span><b>Uses:</b> loss, distillation, RLHF KL penalty.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/04_cross_entropy_kl.ipynb" target="_blank" rel="noopener">04 · Entropy, cross-entropy, KL and perplexity</a> <span style="color:var(--faint)">· 25 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/math/04_cross_entropy_kl.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../08-softmax-logsumexp/index.html">08 · Softmax and log-sum-exp →</a> · Previous: <a href="../06-maximum-likelihood/index.html">← 06</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf" target="_blank" rel="noopener">A Mathematical Theory of Communication</a>
+        <div class="meta">Shannon · Bell System Technical Journal 1948</div>
+        <p>Defines entropy as average information and shows it is the limit of lossless compression; the root of cross-entropy loss and bits-per-token.</p></div>
+      <div class="paper-item"><a href="https://doi.org/10.1214/aoms/1177729694" target="_blank" rel="noopener">On Information and Sufficiency</a>
+        <div class="meta">Kullback & Leibler · Annals of Mathematical Statistics 1951</div>
+        <p>Introduces the divergence now called KL: the expected extra information needed when using one distribution in place of another.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1503.02531" target="_blank" rel="noopener">Distilling the Knowledge in a Neural Network</a>
+        <div class="meta">Hinton, Vinyals & Dean · NeurIPS workshop 2015</div>
+        <p>Train a small model on a large model's softened output distribution (softmax with temperature T), minimizing cross-entropy to those soft targets.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const P = [0.7, 0.2, 0.1];
+  Deck.bind(['kA', 'kB'], () => {
+    const a = Deck.val('kA'), sb = Deck.val('kB'), Q = [a, (1 - a) * sb, (1 - a) * (1 - sb)];
+    Deck.out('kAo', a.toFixed(2)); Deck.out('kBo', sb.toFixed(2));
+    const H = -P.reduce((s, p) => s + p * Math.log(p), 0), CE = -P.reduce((s, p, i) => s + p * Math.log(Q[i]), 0), KLpq = CE - H, KLqp = Q.reduce((s, q, i) => s + q * Math.log(q / P[i]), 0);
+    Deck.hbars(document.getElementById('kBars'), ['A', 'B', 'C'].flatMap((n, i) => [{ label: `p(${n})`, value: P[i], color: 'var(--faint)', text: P[i].toFixed(2) }, { label: `q(${n})`, value: Q[i], color: 'var(--a)', text: Q[i].toFixed(2) }]), { max: 1 });
+    document.getElementById('kOut').innerHTML = `H(p) = ${H.toFixed(3)} · H(p, q) = <b>${CE.toFixed(3)}</b> · KL(p‖q) = <b>${KLpq.toFixed(3)}</b> · KL(q‖p) = ${KLqp.toFixed(3)} nats. ${KLpq < 0.002 ? 'q ≈ p: both KLs vanish.' : 'Note the two KLs differ.'}`;
+  });
+})();
+</script>
+</body>
+</html>

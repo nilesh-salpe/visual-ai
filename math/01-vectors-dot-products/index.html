@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vectors and Dot Products</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Vectors and dot products" data-home="../index.html" data-home-label="Math">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Math for LLMs · 01</div>
+    <h1>Vectors and dot products</h1>
+    <p class="sub">The single operation behind embeddings, similarity search and attention: multiply matching coordinates and add them up.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A language model represents every token as a list of thousands of numbers. To use them it must constantly answer one question: how related are these two lists?</div>
+      <div class="c"><b>Core idea</b>The <b>dot product</b> a·b = Σ aᵢbᵢ = |a||b|cos θ measures alignment scaled by length. <b>Cosine similarity</b> removes the lengths. Attention scores are dot products of queries and keys, divided by √d to keep their spread near 1.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>How related are two vectors?</h2>
+    <hr>
+<p class="lede">Drag the angles of two 2-D vectors and change their lengths. The dot product, cosine and projection update live.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0">
+    <label class="ctl">angle of a <input type="range" id="vA" min="0" max="360" step="1" value="40"> <output id="vAo"></output></label>
+    <label class="ctl">angle of b <input type="range" id="vB" min="0" max="360" step="1" value="80"> <output id="vBo"></output></label>
+    <label class="ctl">length of b <input type="range" id="vL" min="0.2" max="2" step="0.1" value="1"> <output id="vLo"></output></label>
+  </div>
+  <svg id="vSvg" viewBox="0 0 660 260" style="margin-top:10px" role="img" aria-label="Two vectors and their dot product"></svg>
+  <p class="readout" id="vOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not compare vectors some other way?</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Coordinate by coordinate</h3><p>Checking whether entries match one by one says nothing about overall alignment in thousands of dimensions.</p></div>
+      <div class="card b"><h3>Euclidean distance</h3><p>Useful, but for unit vectors |a − b|² = 2 − 2 a·b, so it is the dot product in disguise.</p></div>
+      <div class="card c"><h3>It must be fast</h3><p>A model computes billions of comparisons per step; the dot product is one multiply-add per coordinate and maps perfectly onto matrix hardware.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which pair is most similar?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">By cosine similarity, which pair is most aligned?</p>
+      <div class="opts">
+      <button data-ok>A. (1, 0) and (100, 1)</button>
+      <button>B. (1, 1) and (1, −1)</button>
+      <button>C. (2, 2) and (−1, −1)</button>
+      <button>D. (0, 1) and (1, 0)</button>
+      </div>
+      <div class="why"><b>A.</b> cos ≈ 0.99995: almost the same direction despite very different lengths. B and D are orthogonal (cosine 0); C points in opposite directions (cosine −1).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Dot product, length and angle</h2>
+    <hr>
+<div class="grid3">
+      <div class="card a"><h3>Dot product</h3><p>a·b = Σ aᵢbᵢ. Large when the vectors point the same way and are long.</p></div>
+      <div class="card c"><h3>Length (norm)</h3><p>|a| = √(a·a). Dividing by it gives a unit vector that keeps only direction.</p></div>
+      <div class="card e"><h3>Cosine similarity</h3><p>cos θ = a·b / (|a||b|), between −1 and 1. Used for embedding search and retrieval.</p></div>
+    </div>
+<div class="eq">a · b = Σᵢ aᵢ bᵢ = |a| |b| cos θ</div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Dot products appear in every layer: q·k for attention, h·eᵢ for the output logits." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--faint)"/><text x="83.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">token → vector</text><text x="83.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">embedding lookup</text><rect x="174.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--a)"/><text x="247.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">compare two vectors</text><text x="247.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">a · b = Σ aᵢbᵢ</text><line x1="158.5" y1="60.0" x2="172.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="339.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--c)"/><text x="412.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">normalise</text><text x="412.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">cos θ = a·b / (|a||b|)</text><line x1="323.0" y1="60.0" x2="337.0" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="503.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--e)"/><text x="576.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">use it</text><text x="576.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">search, attention,</text><text x="576.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">logits</text><line x1="487.5" y1="60.0" x2="501.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Dot products appear in every layer: q·k for attention, h·eᵢ for the output logits.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Where dot products appear in an LLM</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Place</th><th>Dot product of</th><th>Meaning</th></tr>
+  <tr><td>Attention scores</td><td>query · key, ÷ √d</td><td>how much token i should look at token j</td></tr>
+  <tr><td>Attention output</td><td>weights · values</td><td>weighted average of value vectors</td></tr>
+  <tr><td>Every linear layer</td><td>input · each weight column</td><td>one output feature per column</td></tr>
+  <tr><td>Output logits</td><td>final hidden state · each token embedding</td><td>score for every possible next token</td></tr>
+  <tr><td>Retrieval (RAG (retrieval-augmented generation))</td><td>query embedding · document embeddings</td><td>which documents to fetch</td></tr>
+</table></div>
+<div class="deep"><h4>Analogies in embedding space</h4><p>word2vec showed that differences between word vectors carry meaning: the vector king − man + woman lands closest to queen. Notebook 01 reproduces this with toy embeddings.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: similarity and the √d scale</h2>
+    <hr>
+    <p class="lede">Two 2-D vectors a = (3, 4) and b = (4, 3); then random 128-dimensional query and key vectors with mean-0, variance-1 entries.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>a · b = 3·4 + 4·3 = <b>24</b>; |a| = |b| = 5.</li><li>cos θ = 24 / 25 = <b>0.96</b>, so θ ≈ 16.3°: nearly the same direction.</li><li>For random q, k in d = 128: q·k has mean 0 and variance d, so its standard deviation is √128 ≈ <b>11.3</b>.</li><li>Dividing by √d brings that back to about 1, so the softmax over scores is neither flat nor one-hot at initialisation.</li></ol><div class="result">The dot product mixes direction and length; cosine isolates direction; attention divides by √d to control scale.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why the dot product is the right tool</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>It is a projection</h3><p>a·b/|b| is the length of a's shadow on b: how much of a lies along b's direction.</p></div>
+      <div class="card e"><h3>It is linear</h3><p>Dot products compose into matrix multiplications, which GPUs (graphics processing units) run at hundreds of TFLOP (trillion floating-point operations)/s (tera floating-point operations per second).</p></div>
+      <div class="card b"><h3>High dimensions help</h3><p>Random directions are nearly orthogonal, so thousands of features can share one vector with little interference.</p></div>
+      <div class="card c"><h3>Scale is controllable</h3><p>Dividing by √d or normalising vectors keeps magnitudes in a sensible range.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"A dot product of 0 means the vectors are opposite."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It means orthogonal: neither aligned nor opposed. Opposite vectors have cosine −1.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Bigger dot product always means more similar."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Only for vectors of fixed length; otherwise length dominates. Use cosine to compare directions.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"The √d in attention is a learned parameter."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is a fixed constant from the variance argument: d independent unit-variance products sum to variance d.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>a·b = |a||b|cos θ.</b> Positive = aligned, 0 = orthogonal, negative = opposed.</li><li><b>Normalise once, then matmul.</b> All cosines at once, as in vector search.</li><li><b>Random high-dimensional vectors are nearly orthogonal.</b> Cosine spread ≈ 1/√d.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Comparing raw dot products across vectors of different lengths.</b> Long vectors win regardless of direction.</li><li><b>Forgetting the √d.</b> Unscaled attention scores have spread √d and saturate the softmax.</li><li><b>Treating cosine 0 as "opposite".</b> 0 means unrelated (orthogonal); −1 is opposite.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">cos θ for a = (1, 2, 2) and b = (2, 1, −2)?</p>
+      <div class="opts">
+      <button>A. 1</button>
+      <button data-ok>B. 0</button>
+      <button>C. −1</button>
+      <button>D. 0.5</button>
+      </div>
+      <div class="why">1·2 + 2·1 + 2·(−2) = 0, so <b>0</b>: orthogonal.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why does attention divide q·k by √d?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">For unit-variance entries, q·k has variance d. Dividing by √d keeps the scores' spread near 1 so the softmax does not saturate.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">How do you find the 5 nearest embeddings to a query efficiently?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Normalise all rows once, compute one matrix-vector product for all cosines, take the top 5 (or use an approximate nearest-neighbour index).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">The dot product Σ aᵢbᵢ = |a||b|cos θ measures alignment; cosine removes length, and attention divides by √d to keep scores well scaled.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Language models represent tokens as long vectors, and the dot product is how they compare them: multiply matching coordinates and add. It equals the two lengths times the cosine of the angle, so it is large when vectors point the same way. Cosine similarity divides out the lengths and is used for embedding search. Attention scores are dot products of queries and keys; because random vectors in d dimensions give dot products with spread √d, scores are divided by √d before the softmax.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> compare thousand-dimensional vectors, billions of times.</span></div><div><span><b>Core idea:</b> a·b = |a||b|cos θ; cosine = direction only.</span></div><div><span><b>In LLMs (large language models):</b> attention, linear layers, logits, retrieval.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/01_vectors_similarity.ipynb" target="_blank" rel="noopener">01 · Vectors, dot products and similarity</a> <span style="color:var(--faint)">· 25 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/math/01_vectors_similarity.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../02-matrices-linear-layers/index.html">02 · Matrices and linear layers →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1301.3781" target="_blank" rel="noopener">Efficient Estimation of Word Representations in Vector Space (word2vec)</a>
+        <div class="meta">Mikolov et al. · ICLR workshop 2013</div>
+        <p>Learns word vectors whose dot products and differences capture meaning (king − man + woman ≈ queen) with cheap log-linear models.</p><div class="num">Remember: under a day to learn vectors from 1.6B words</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need</a>
+        <div class="meta">Vaswani et al. · NeurIPS 2017</div>
+        <p>The Transformer: attention-only encoder-decoder with post-norm residual blocks, sinusoidal positions and a ReLU (rectified linear unit) FFN (feed-forward network). The baseline every later change is measured against.</p><div class="num">Remember: 28.4 BLEU (Bilingual Evaluation Understudy, an n-gram overlap score for translation) on WMT (Workshop on Machine Translation) 2014 English-German</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  Deck.bind(['vA', 'vB', 'vL'], () => {
+    const A = Deck.val('vA') * Math.PI / 180, B = Deck.val('vB') * Math.PI / 180, lb = Deck.val('vL');
+    Deck.out('vAo', Deck.val('vA') + '°'); Deck.out('vBo', Deck.val('vB') + '°'); Deck.out('vLo', lb.toFixed(1));
+    const a = [Math.cos(A), Math.sin(A)], b = [lb * Math.cos(B), lb * Math.sin(B)], dot = a[0] * b[0] + a[1] * b[1], cos = dot / lb;
+    const s = clear(document.getElementById('vSvg')), cx = 200, cy = 130, R = 90, P = v => [cx + v[0] * R, cy - v[1] * R];
+    svg('circle', { cx, cy, r: R, style: 'fill:none;stroke:var(--line);stroke-dasharray:3 4' }, s);
+    svg('line', { x1: cx - 120, x2: cx + 120, y1: cy, y2: cy, class: 'ln' }, s); svg('line', { x1: cx, x2: cx, y1: cy - 120, y2: cy + 120, class: 'ln' }, s);
+    const pr = [dot * a[0], dot * a[1]];
+    svg('line', { x1: P(b)[0], y1: P(b)[1], x2: P(pr)[0], y2: P(pr)[1], style: 'stroke:var(--faint);stroke-dasharray:4 3' }, s);
+    svg('line', { x1: cx, y1: cy, x2: P(pr)[0], y2: P(pr)[1], style: 'stroke:var(--e);stroke-width:7;opacity:.5' }, s);
+    [[a, 'var(--a)', 'a'], [b, 'var(--b)', 'b']].forEach(([v, c, n]) => { const [x, y] = P(v); svg('line', { x1: cx, y1: cy, x2: x, y2: y, style: `stroke:${c};stroke-width:3.5` }, s); svg('circle', { cx: x, cy: y, r: 5, style: `fill:${c}` }, s); svg('text', { x: x + 8, y: y - 6, class: 't', style: `fill:${c};font-weight:700`, text: n }, s); });
+    const bx = 420; [['a · b', dot.toFixed(3)], ['|a| · |b|', lb.toFixed(2)], ['cos θ', cos.toFixed(3)], ['angle θ', (Math.acos(Math.max(-1, Math.min(1, cos))) * 180 / Math.PI).toFixed(0) + '°']].forEach(([k, v], i) => {
+      svg('text', { x: bx, y: 70 + i * 40, class: 'tm', text: k }, s); svg('text', { x: bx + 150, y: 70 + i * 40, class: 't', style: 'font-weight:700', text: v }, s); });
+    document.getElementById('vOut').innerHTML = cos > 0.7 ? 'Strongly aligned: positive dot product, small angle.' : cos > 0.05 ? 'Partly aligned.' : cos > -0.05 ? '<b>Orthogonal</b>: dot product ≈ 0, unrelated directions.' : 'Pointing apart: negative dot product.';
+  });
+})();
+</script>
+</body>
+</html>

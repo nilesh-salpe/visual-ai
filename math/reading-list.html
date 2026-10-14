@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Math for LLMs Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Math for LLMs</a>
+  <div class="label" style="margin-top:28px">Reading list · 22 papers and docs</div>
+  <h1>Math for LLMs: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://arxiv.org/abs/1301.3781" target="_blank" rel="noopener">Efficient Estimation of Word Representations in Vector Space (word2vec)</a>
+      <div class="meta">Mikolov et al. · ICLR workshop 2013 · cited in <a href="01-vectors-dot-products/index.html" style="font-weight:500;color:var(--a)">Vectors and dot products</a></div>
+      <p>Learns word vectors whose dot products and differences capture meaning (king − man + woman ≈ queen) with cheap log-linear models.</p><div class="num">Remember: under a day to learn vectors from 1.6B words</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need</a>
+      <div class="meta">Vaswani et al. · NeurIPS 2017 · cited in <a href="01-vectors-dot-products/index.html" style="font-weight:500;color:var(--a)">Vectors and dot products</a>, <a href="02-matrices-linear-layers/index.html" style="font-weight:500;color:var(--a)">Matrices and linear layers</a></div>
+      <p>The Transformer: attention-only encoder-decoder with post-norm residual blocks, sinusoidal positions and a ReLU (rectified linear unit) FFN (feed-forward network). The baseline every later change is measured against.</p><div class="num">Remember: 28.4 BLEU (Bilingual Evaluation Understudy, an n-gram overlap score for translation) on WMT (Workshop on Machine Translation) 2014 English-German</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2005.14165" target="_blank" rel="noopener">Language Models are Few-Shot Learners (GPT-3)</a>
+      <div class="meta">Brown et al. · NeurIPS 2020 · cited in <a href="02-matrices-linear-layers/index.html" style="font-weight:500;color:var(--a)">Matrices and linear layers</a></div>
+      <p>Besides in-context learning, a systematic contamination study: 13-gram overlap flags and clean vs dirty scores.</p><div class="num">Remember: 13-gram overlap; a filtering bug left some overlap in</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2001.08361" target="_blank" rel="noopener">Scaling Laws for Neural Language Models</a>
+      <div class="meta">Kaplan et al. · arXiv 2020 · cited in <a href="02-matrices-linear-layers/index.html" style="font-weight:500;color:var(--a)">Matrices and linear layers</a></div>
+      <p>Loss falls as a power law in parameters, data and compute; also gives the ≈ 6·N·D training-compute rule of thumb.</p><div class="num">Remember: trends spanning more than seven orders of magnitude</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2106.09685" target="_blank" rel="noopener">LoRA: Low-Rank Adaptation of Large Language Models</a>
+      <div class="meta">Hu et al. · ICLR 2022 · cited in <a href="03-eigen-svd-low-rank/index.html" style="font-weight:500;color:var(--a)">Eigenvalues, SVD and low rank</a></div>
+      <p>Freezes the pretrained weights and trains a low-rank update BA (B initialized to zero) that can be merged after training.</p><div class="num">Remember: 10,000× fewer trainable parameters, 3× less GPU (graphics processing unit) memory (GPT-3 175B)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2012.13255" target="_blank" rel="noopener">Intrinsic Dimensionality Explains the Effectiveness of Language Model Fine-Tuning</a>
+      <div class="meta">Aghajanyan et al. · ACL 2021 · cited in <a href="03-eigen-svd-low-rank/index.html" style="font-weight:500;color:var(--a)">Eigenvalues, SVD and low rank</a></div>
+      <p>Fine-tuning works in a tiny subspace: a low-dimensional random reparameterization is nearly as effective as the full parameter space, and larger models have lower intrinsic dimension.</p><div class="num">Remember: 200 parameters reach 90% of full fine-tuning (RoBERTa, MRPC (Microsoft Research Paraphrase Corpus))</div></div>
+    <div class="paper-item"><a href="https://doi.org/10.1038/323533a0" target="_blank" rel="noopener">Learning representations by back-propagating errors</a>
+      <div class="meta">Rumelhart, Hinton & Williams · Nature 1986 · cited in <a href="04-derivatives-chain-rule/index.html" style="font-weight:500;color:var(--a)">Derivatives and the chain rule</a></div>
+      <p>Backpropagation: apply the chain rule backward through a network to get every weight's gradient, so hidden units learn useful internal features.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1502.05767" target="_blank" rel="noopener">Automatic differentiation in machine learning: a survey</a>
+      <div class="meta">Baydin et al. · JMLR 2018 · cited in <a href="04-derivatives-chain-rule/index.html" style="font-weight:500;color:var(--a)">Derivatives and the chain rule</a></div>
+      <p>Forward and reverse-mode automatic differentiation explained; backpropagation is reverse mode, which gets all gradients of a scalar loss in about one extra pass.</p></div>
+    <div class="paper-item"><a href="https://www.jmlr.org/papers/v3/bengio03a.html" target="_blank" rel="noopener">A Neural Probabilistic Language Model</a>
+      <div class="meta">Bengio et al. · JMLR 2003 · cited in <a href="05-probability-sampling/index.html" style="font-weight:500;color:var(--a)">Probability and sampling</a>, <a href="06-maximum-likelihood/index.html" style="font-weight:500;color:var(--a)">Maximum likelihood and cross-entropy</a></div>
+      <p>The first neural language model: learned word embeddings plus a network that outputs a softmax over the next word, trained by maximum likelihood.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1904.09751" target="_blank" rel="noopener">The Curious Case of Neural Text Degeneration</a>
+      <div class="meta">Holtzman et al. · ICLR 2020 · cited in <a href="05-probability-sampling/index.html" style="font-weight:500;color:var(--a)">Probability and sampling</a></div>
+      <p>Maximizing likelihood when decoding gives bland, repetitive text; nucleus (top-p) sampling samples from the smallest set of tokens holding probability p.</p></div>
+    <div class="paper-item"><a href="https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf" target="_blank" rel="noopener">Language Models are Unsupervised Multitask Learners (GPT-2)</a>
+      <div class="meta">Radford et al. · OpenAI 2019 · cited in <a href="05-probability-sampling/index.html" style="font-weight:500;color:var(--a)">Probability and sampling</a>, <a href="06-maximum-likelihood/index.html" style="font-weight:500;color:var(--a)">Maximum likelihood and cross-entropy</a></div>
+      <p>Decoder-only language model that moved layer normalization to the input of each sub-block (pre-norm) and added a final norm.</p><div class="num">Remember: context 1,024 tokens, vocabulary 50,257</div></div>
+    <div class="paper-item"><a href="https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf" target="_blank" rel="noopener">A Mathematical Theory of Communication</a>
+      <div class="meta">Shannon · Bell System Technical Journal 1948 · cited in <a href="06-maximum-likelihood/index.html" style="font-weight:500;color:var(--a)">Maximum likelihood and cross-entropy</a>, <a href="07-information-theory/index.html" style="font-weight:500;color:var(--a)">Information theory for LLMs</a></div>
+      <p>Defines entropy as average information and shows it is the limit of lossless compression; the root of cross-entropy loss and bits-per-token.</p></div>
+    <div class="paper-item"><a href="https://doi.org/10.1214/aoms/1177729694" target="_blank" rel="noopener">On Information and Sufficiency</a>
+      <div class="meta">Kullback & Leibler · Annals of Mathematical Statistics 1951 · cited in <a href="07-information-theory/index.html" style="font-weight:500;color:var(--a)">Information theory for LLMs</a></div>
+      <p>Introduces the divergence now called KL: the expected extra information needed when using one distribution in place of another.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1503.02531" target="_blank" rel="noopener">Distilling the Knowledge in a Neural Network</a>
+      <div class="meta">Hinton, Vinyals & Dean · NeurIPS workshop 2015 · cited in <a href="07-information-theory/index.html" style="font-weight:500;color:var(--a)">Information theory for LLMs</a></div>
+      <p>Train a small model on a large model's softened output distribution (softmax with temperature T), minimizing cross-entropy to those soft targets.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1805.02867" target="_blank" rel="noopener">Online normalizer calculation for softmax</a>
+      <div class="meta">Milakov & Gimelshein · arXiv 2018 · cited in <a href="08-softmax-logsumexp/index.html" style="font-weight:500;color:var(--a)">Softmax and log-sum-exp</a></div>
+      <p>Computes the softmax normalizer in a single pass with a running max and a rescaled running sum, the trick FlashAttention builds on.</p><div class="num">Remember: up to 1.3× faster softmax</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener">FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness (IO = input/output, memory reads and writes)</a>
+      <div class="meta">Dao et al. · NeurIPS 2022 · cited in <a href="08-softmax-logsumexp/index.html" style="font-weight:500;color:var(--a)">Softmax and log-sum-exp</a></div>
+      <p>Tiles attention so scores never leave on-chip SRAM (static random-access memory, fast on-chip memory), using an online softmax and recomputation in the backward pass. Exact, with memory linear in sequence length.</p><div class="num">Remember: GPT-2 medium: 40.3 → 4.4 GB of memory traffic, 41.7 → 7.3 ms</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1412.6980" target="_blank" rel="noopener">Adam: A Method for Stochastic Optimization</a>
+      <div class="meta">Kingma & Ba · ICLR 2015 · cited in <a href="09-optimization-basics/index.html" style="font-weight:500;color:var(--a)">Optimization basics</a></div>
+      <p>Per-parameter step sizes from bias-corrected running averages of the gradient and its square; invariant to diagonal rescaling of the gradients.</p><div class="num">Remember: defaults β₁ 0.9, β₂ 0.999, ε 10⁻⁸</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1612.08083" target="_blank" rel="noopener">Language Modeling with Gated Convolutional Networks</a>
+      <div class="meta">Dauphin et al. · ICML 2017 · cited in <a href="09-optimization-basics/index.html" style="font-weight:500;color:var(--a)">Optimization basics</a></div>
+      <p>Introduces the gated linear unit (GLU): one projection gates another through a sigmoid.</p></div>
+    <div class="paper-item"><a href="https://distill.pub/2017/momentum/" target="_blank" rel="noopener">Why Momentum Really Works</a>
+      <div class="meta">Goh · Distill 2017 · cited in <a href="09-optimization-basics/index.html" style="font-weight:500;color:var(--a)">Optimization basics</a></div>
+      <p>Interactive analysis of momentum on quadratics: it damps oscillation across steep directions and gives a square-root speed-up in the condition number.</p></div>
+    <div class="paper-item"><a href="https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html" target="_blank" rel="noopener">What Every Computer Scientist Should Know About Floating-Point Arithmetic</a>
+      <div class="meta">Goldberg · ACM Computing Surveys 1991 · cited in <a href="10-floating-point/index.html" style="font-weight:500;color:var(--a)">Floating-point numbers</a></div>
+      <p>The classic guide to IEEE floating point: rounding, ulps, relative error, cancellation and why (a + b) + c ≠ a + (b + c).</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1905.12322" target="_blank" rel="noopener">A Study of BFLOAT16 for Deep Learning Training</a>
+      <div class="meta">Kalamkar et al. · arXiv 2019 · cited in <a href="10-floating-point/index.html" style="font-weight:500;color:var(--a)">Floating-point numbers</a></div>
+      <p>BF16 keeps FP32's 8-bit exponent (same range) with a 7-bit mantissa, and trains image, speech, language and recommendation models without hyper-parameter changes.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1710.03740" target="_blank" rel="noopener">Mixed Precision Training</a>
+      <div class="meta">Micikevicius et al. · ICLR 2018 · cited in <a href="10-floating-point/index.html" style="font-weight:500;color:var(--a)">Floating-point numbers</a></div>
+      <p>Half-precision weights, activations and gradients with an FP32 master copy of the weights and loss scaling to avoid gradient underflow.</p><div class="num">Remember: nearly 2× less memory</div></div>
+  </div>
+</div>
+
+</body>
+</html>

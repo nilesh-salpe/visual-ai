@@ -2,6 +2,19 @@
 
 Run in Google Colab (NumPy, CPU only). Each notebook: Setup → tasks with `TODO`s → built-in tests (⏳/✅/❌) → collapsed reference solutions → experiments.
 
+## Foundations · Math for LLMs
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · Vectors, dot products and similarity](math/01_vectors_similarity.ipynb) | 25 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/01_vectors_similarity.ipynb) |
+| [02 · SVD and low-rank approximation](math/02_svd_low_rank.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/02_svd_low_rank.ipynb) |
+| [03 · Chain rule by hand and gradient checking](math/03_chain_rule_gradcheck.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/03_chain_rule_gradcheck.ipynb) |
+| [04 · Entropy, cross-entropy, KL and perplexity](math/04_cross_entropy_kl.ipynb) | 25 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/04_cross_entropy_kl.ipynb) |
+| [05 · Stable softmax, log-sum-exp and online softmax](math/05_stable_softmax.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/05_stable_softmax.ipynb) |
+| [06 · Gradient descent, momentum and Adam](math/06_gradient_descent.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/math/06_gradient_descent.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/math/
+
 ## Phase 1 · LLM inference and serving
 
 | Notebook | Time | Colab |
