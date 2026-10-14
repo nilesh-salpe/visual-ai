@@ -1,0 +1,58 @@
+[
+ {
+  "slug": "01_micrograd",
+  "title": "01 \u00b7 Build an autograd engine (micrograd-style)",
+  "path": "build-it/nn-fundamentals/01_micrograd.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/01_micrograd.ipynb",
+  "deck": "nn-fundamentals/03-backpropagation/",
+  "minutes": 40
+ },
+ {
+  "slug": "02_mlp_numpy",
+  "title": "02 \u00b7 An MLP from scratch: solving XOR",
+  "path": "build-it/nn-fundamentals/02_mlp_numpy.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/02_mlp_numpy.ipynb",
+  "deck": "nn-fundamentals/01-perceptron-to-mlp/",
+  "minutes": 35
+ },
+ {
+  "slug": "03_activations_depth",
+  "title": "03 \u00b7 Activations and vanishing gradients",
+  "path": "build-it/nn-fundamentals/03_activations_depth.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/03_activations_depth.ipynb",
+  "deck": "nn-fundamentals/02-activation-functions/",
+  "minutes": 25
+ },
+ {
+  "slug": "04_optimizers_schedules",
+  "title": "04 \u00b7 SGD, Adam, AdamW and learning-rate schedules",
+  "path": "build-it/nn-fundamentals/04_optimizers_schedules.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/04_optimizers_schedules.ipynb",
+  "deck": "nn-fundamentals/05-optimizers/",
+  "minutes": 35
+ },
+ {
+  "slug": "05_initialization",
+  "title": "05 \u00b7 Initialization: keeping signals alive",
+  "path": "build-it/nn-fundamentals/05_initialization.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/05_initialization.ipynb",
+  "deck": "nn-fundamentals/06-initialization/",
+  "minutes": 25
+ },
+ {
+  "slug": "06_overfitting_dropout",
+  "title": "06 \u00b7 Overfitting, dropout and weight decay",
+  "path": "build-it/nn-fundamentals/06_overfitting_dropout.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/06_overfitting_dropout.ipynb",
+  "deck": "nn-fundamentals/08-regularization/",
+  "minutes": 30
+ },
+ {
+  "slug": "07_tiny_char_lm",
+  "title": "07 \u00b7 A tiny character-level language model",
+  "path": "build-it/nn-fundamentals/07_tiny_char_lm.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/07_tiny_char_lm.ipynb",
+  "deck": "nn-fundamentals/10-mlp-to-language-model/",
+  "minutes": 40
+ }
+]

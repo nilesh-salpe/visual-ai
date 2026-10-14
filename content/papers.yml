@@ -1087,3 +1087,122 @@ bf16:
   url: https://arxiv.org/abs/1905.12322
   summary: BF16 keeps FP32's 8-bit exponent (same range) with a 7-bit mantissa, and trains image, speech, language and recommendation models without hyper-parameter
     changes.
+hornik:
+  title: Multilayer feedforward networks are universal approximators
+  authors: Hornik, Stinchcombe & White
+  venue: Neural Networks
+  year: 1989
+  url: https://doi.org/10.1016/0893-6080(89)90020-8
+  summary: One hidden layer with enough units and a squashing nonlinearity can approximate any continuous function on a compact set to any accuracy.
+cybenko:
+  title: Approximation by superpositions of a sigmoidal function
+  authors: Cybenko
+  venue: Mathematics of Control, Signals and Systems
+  year: 1989
+  url: https://doi.org/10.1007/BF02551274
+  summary: Proves universal approximation for single-hidden-layer networks with sigmoid units.
+relu:
+  title: Rectified Linear Units Improve Restricted Boltzmann Machines
+  authors: Nair & Hinton
+  venue: ICML
+  year: 2010
+  url: https://www.cs.toronto.edu/~hinton/absps/reluICML.pdf
+  summary: Introduces rectified linear units, max(0, x), as hidden units; they do not saturate for positive inputs and became the default activation.
+gelu:
+  title: Gaussian Error Linear Units (GELUs)
+  authors: Hendrycks & Gimpel
+  venue: arXiv
+  year: 2016
+  url: https://arxiv.org/abs/1606.08415
+  summary: 'GELU(x) = x·Φ(x): weights inputs by their value instead of gating by sign; outperformed ReLU and ELU on vision, language and speech tasks. Used in BERT
+    and GPT-2.'
+swish:
+  title: Searching for Activation Functions (Swish)
+  authors: Ramachandran, Zoph & Le
+  venue: ICLR workshop
+  year: 2018
+  url: https://arxiv.org/abs/1710.05941
+  summary: Automated search finds x·sigmoid(βx) (Swish; SiLU at β = 1), which beats ReLU on deeper models. SiLU is the gate inside SwiGLU.
+  number: +0.9% ImageNet top-1 on Mobile NASNet-A
+batchnorm:
+  title: 'Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift'
+  authors: Ioffe & Szegedy
+  venue: ICML
+  year: 2015
+  url: https://arxiv.org/abs/1502.03167
+  summary: Normalizes each feature over the mini-batch, allowing much higher learning rates and less careful initialization.
+  number: same accuracy with 14× fewer training steps
+belkin:
+  title: Reconciling modern machine learning practice and the bias-variance trade-off
+  authors: Belkin et al.
+  venue: PNAS
+  year: 2019
+  url: https://arxiv.org/abs/1812.11118
+  summary: 'The "double descent" curve: test error rises as models approach the interpolation threshold, then falls again as they grow past it.'
+nakkiran:
+  title: 'Deep Double Descent: Where Bigger Models and More Data Hurt'
+  authors: Nakkiran et al.
+  venue: ICLR
+  year: 2020
+  url: https://arxiv.org/abs/1912.02292
+  summary: Double descent appears in deep networks as a function of model size and of training epochs; near the threshold, more data can even hurt.
+zhang17:
+  title: Understanding deep learning requires rethinking generalization
+  authors: Zhang et al.
+  venue: ICLR
+  year: 2017
+  url: https://arxiv.org/abs/1611.03530
+  summary: Standard networks easily fit completely random labels, so classical capacity measures cannot explain why they generalize on real data.
+sgdr:
+  title: 'SGDR: Stochastic Gradient Descent with Warm Restarts'
+  authors: Loshchilov & Hutter
+  venue: ICLR
+  year: 2017
+  url: https://arxiv.org/abs/1608.03983
+  summary: Introduces the cosine learning-rate schedule (with optional restarts), now the standard decay shape for LLM pretraining.
+adamw:
+  title: Decoupled Weight Decay Regularization (AdamW)
+  authors: Loshchilov & Hutter
+  venue: ICLR
+  year: 2019
+  url: https://arxiv.org/abs/1711.05101
+  summary: L2 regularization and weight decay differ for adaptive optimizers; applying decay directly to the weights (AdamW) decouples it from the learning rate and
+    improves generalization.
+he_init:
+  title: 'Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification'
+  authors: He et al.
+  venue: ICCV
+  year: 2015
+  url: https://arxiv.org/abs/1502.01852
+  summary: Derives the initialization Var(w) = 2/fan_in for ReLU networks (He/Kaiming init), enabling very deep rectified models to train from scratch; also introduces
+    PReLU (parametric ReLU).
+  number: 4.94% top-5 error on ImageNet
+glorot:
+  title: Understanding the difficulty of training deep feedforward neural networks
+  authors: Glorot & Bengio
+  venue: AISTATS
+  year: 2010
+  url: https://proceedings.mlr.press/v9/glorot10a.html
+  summary: Studies how activations and gradients shrink or grow across layers and proposes normalized (Xavier) initialization, Var(w) = 2/(fan_in + fan_out).
+dropout:
+  title: 'Dropout: A Simple Way to Prevent Neural Networks from Overfitting'
+  authors: Srivastava et al.
+  venue: JMLR
+  year: 2014
+  url: https://www.jmlr.org/papers/v15/srivastava14a.html
+  summary: Randomly drops units during training, sampling an exponential number of thinned networks; at test time one unthinned network approximates their average.
+sutskever13:
+  title: On the importance of initialization and momentum in deep learning
+  authors: Sutskever et al.
+  venue: ICML
+  year: 2013
+  url: https://proceedings.mlr.press/v28/sutskever13.html
+  summary: With a good initialization and a slowly increasing momentum schedule, plain SGD with (Nesterov) momentum trains deep and recurrent networks once thought
+    to need second-order methods.
+word2vec_neg:
+  title: Distributed Representations of Words and Phrases and their Compositionality
+  authors: Mikolov et al.
+  venue: NeurIPS
+  year: 2013
+  url: https://arxiv.org/abs/1310.4546
+  summary: 'Skip-gram with negative sampling and subsampling of frequent words: faster training and better word vectors, plus vectors for phrases.'

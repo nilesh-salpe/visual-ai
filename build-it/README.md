@@ -15,6 +15,20 @@ Run in Google Colab (NumPy, CPU only). Each notebook: Setup → tasks with `TODO
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/math/
 
+## Foundations · Neural network fundamentals
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · Build an autograd engine (micrograd-style)](nn-fundamentals/01_micrograd.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/01_micrograd.ipynb) |
+| [02 · An MLP from scratch: solving XOR](nn-fundamentals/02_mlp_numpy.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/02_mlp_numpy.ipynb) |
+| [03 · Activations and vanishing gradients](nn-fundamentals/03_activations_depth.ipynb) | 25 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/03_activations_depth.ipynb) |
+| [04 · SGD, Adam, AdamW and learning-rate schedules](nn-fundamentals/04_optimizers_schedules.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/04_optimizers_schedules.ipynb) |
+| [05 · Initialization: keeping signals alive](nn-fundamentals/05_initialization.ipynb) | 25 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/05_initialization.ipynb) |
+| [06 · Overfitting, dropout and weight decay](nn-fundamentals/06_overfitting_dropout.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/06_overfitting_dropout.ipynb) |
+| [07 · A tiny character-level language model](nn-fundamentals/07_tiny_char_lm.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/07_tiny_char_lm.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/nn-fundamentals/
+
 ## Phase 1 · LLM inference and serving
 
 | Notebook | Time | Colab |

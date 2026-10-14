@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neural Network Fundamentals</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body { overflow-y: auto; }</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="label" style="margin-top:28px">Visual guide · 10 decks + 7 Colab notebooks</div>
+  <h1>Neural network fundamentals for LLMs</h1>
+  <p class="lede">The deep-learning machinery every LLM (large language model) is built from: neurons and MLPs (multilayer perceptrons), activations, backpropagation, losses, optimizers and schedules, initialization, normalization and residuals, regularization, embeddings, and a first language model. Every deck follows the 9-beat template and has an interactive widget.</p>
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: 7 Colab notebooks</h3><p class="caption" style="margin:0">Build a micrograd-style autograd engine, an MLP that solves XOR (exclusive or), activation and depth experiments, AdamW with warmup + cosine, initialization tests, dropout and weight decay, and a tiny character-level language model in NumPy.</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>
+<!--x:map--><style>
+.bigmap { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding: 4px 2px 10px; }
+.bigmap .stage { flex: 1 1 0; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
+.bigmap .stage h4 { margin: 0 0 2px; font: 700 11.5px 'JetBrains Mono', monospace; letter-spacing: .05em; text-transform: uppercase; color: var(--a); }
+.bigmap .stage a { display: block; padding: 9px 11px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 14px; line-height: 1.3; }
+.bigmap .stage a:hover { border-color: var(--a); background: var(--a-soft); }
+.bigmap .stage a span { display: block; font: 600 11px 'JetBrains Mono', monospace; color: var(--faint); }
+.bigmap .arrow { align-self: center; color: var(--faint); font-size: 20px; }
+.hub-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+@media (max-width: 700px) { .bigmap { flex-direction: column; } .bigmap .arrow { transform: rotate(90deg); } }
+</style>
+  <div class="visual" style="margin-top:22px">
+    <h3 style="margin:0 0 10px">The big picture</h3>
+    <div class="bigmap"><div class="stage"><h4>Networks</h4><a href="01-perceptron-to-mlp/index.html"><span>01</span>From perceptron to MLP</a><a href="02-activation-functions/index.html"><span>02</span>Activation functions</a></div><div class="arrow">→</div><div class="stage"><h4>Learning</h4><a href="03-backpropagation/index.html"><span>03</span>Backpropagation</a><a href="04-loss-functions/index.html"><span>04</span>Loss functions</a><a href="05-optimizers/index.html"><span>05</span>Optimizers</a></div><div class="arrow">→</div><div class="stage"><h4>Making depth work</h4><a href="06-initialization/index.html"><span>06</span>Initialization</a><a href="07-normalization-residuals/index.html"><span>07</span>Normalization and residual connections</a><a href="08-regularization/index.html"><span>08</span>Regularization and generalization</a></div><div class="arrow">→</div><div class="stage"><h4>Toward LLMs</h4><a href="09-embeddings/index.html"><span>09</span>Embeddings</a><a href="10-mlp-to-language-model/index.html"><span>10</span>From MLP to language model</a></div></div>
+    <div class="hub-links"><a class="btn" href="reading-list.html">📚 Reading list</a><a class="btn" href="../glossary/index.html">🔤 Glossary</a></div>
+  </div>
+<!--/x:map-->
+  <div class="hub-grid"><a class="hub-card" href="01-perceptron-to-mlp/index.html"><div class="n">01</div><h3>From perceptron to MLP</h3><p>Why one neuron fails at XOR and a hidden layer fixes it.</p></a><a class="hub-card" href="02-activation-functions/index.html"><div class="n">02</div><h3>Activation functions</h3><p>Sigmoid, ReLU (rectified linear unit), GELU (Gaussian Error Linear Unit), SiLU (Sigmoid Linear Unit) and vanishing gradients.</p></a><a class="hub-card" href="03-backpropagation/index.html"><div class="n">03</div><h3>Backpropagation</h3><p>Record the graph, walk it backwards, accumulate.</p></a><a class="hub-card" href="04-loss-functions/index.html"><div class="n">04</div><h3>Loss functions</h3><p>MSE (mean squared error) vs cross-entropy, p − y, label smoothing.</p></a><a class="hub-card" href="05-optimizers/index.html"><div class="n">05</div><h3>Optimizers</h3><p>Momentum, Adam, AdamW and warmup + cosine schedules.</p></a><a class="hub-card" href="06-initialization/index.html"><div class="n">06</div><h3>Initialization</h3><p>Variance budgets: Xavier and He.</p></a><a class="hub-card" href="07-normalization-residuals/index.html"><div class="n">07</div><h3>Normalization and residual connections</h3><p>LayerNorm, RMSNorm (root-mean-square normalization), x + f(Norm(x)).</p></a><a class="hub-card" href="08-regularization/index.html"><div class="n">08</div><h3>Regularization and generalization</h3><p>Weight decay, dropout, random labels, double descent.</p></a><a class="hub-card" href="09-embeddings/index.html"><div class="n">09</div><h3>Embeddings</h3><p>Learned lookup tables and their geometry.</p></a><a class="hub-card" href="10-mlp-to-language-model/index.html"><div class="n">10</div><h3>From MLP to language model</h3><p>Bigram → neural LM (language model) → transformer.</p></a></div>
+  <p class="cite" style="margin-top:26px">Sources: Rumelhart, Hinton & Williams 1986; Cybenko 1989; Hornik et al. 1989; Nair & Hinton 2010; Hendrycks & Gimpel 2016 (GELU); Ramachandran et al. 2018 (Swish); Shazeer 2020; Baydin et al. 2018; Szegedy et al. 2016; Bengio et al. 2003; Kingma & Ba 2015; Loshchilov & Hutter 2017, 2019; Sutskever et al. 2013; Touvron et al. 2023 (LLaMA); Glorot & Bengio 2010; He et al. 2015, 2016; Radford et al. 2019 (GPT-2); Ioffe & Szegedy 2015; Ba et al. 2016; Zhang & Sennrich 2019; Srivastava et al. 2014; Zhang et al. 2017; Belkin et al. 2019; Nakkiran et al. 2020; Mikolov et al. 2013.</p>
+</div>
+</body>
+</html>

@@ -9,6 +9,7 @@ GH = 'https://github.com/nilesh-salpe/visual-ai/blob/main/'
 BADGE = 'https://colab.research.google.com/assets/colab-badge.svg'
 PHASES = [  # (heading, notebook folder, index json)
     ('Foundations · Math for LLMs', 'math', 'index_math.json'),
+    ('Foundations · Neural network fundamentals', 'nn-fundamentals', 'index_nn.json'),
     ('Phase 1 · LLM inference and serving', 'inference', 'index_inference.json'),
     ('Phase 2 · The modern LLM architecture', 'architecture', 'index_architecture.json'),
     ('Phase 3 · Post-training', 'post-training', 'index_post_training.json'),
@@ -321,3 +322,25 @@ if __name__ == '__main__':
         'index_math.json', 'Implement cosine search, truncated SVD and LoRA counts, hand-written gradients with a gradient checker, entropy/KL/perplexity, a stable and online softmax, and gradient descent, momentum and Adam in NumPy.',
         MATH_CARDS, 'Mikolov et al. 2013 (word2vec); Vaswani et al. 2017; Brown et al. 2020 (GPT-3); Kaplan et al. 2020; Hu et al. 2021 (LoRA); Aghajanyan et al. 2021; Rumelhart, Hinton & Williams 1986; Baydin et al. 2018; Bengio et al. 2003; Holtzman et al. 2020; Shannon 1948; Kullback & Leibler 1951; Hinton et al. 2015; Milakov & Gimelshein 2018; Dao et al. 2022; Kingma & Ba 2015; Dauphin et al. 2014; Goh 2017; Goldberg 1991; Kalamkar et al. 2019; Micikevicius et al. 2018.'))
     print('wrote math/index.html')
+
+
+NN_CARDS = [
+    ('01-perceptron-to-mlp', 'From perceptron to MLP', 'Why one neuron fails at XOR and a hidden layer fixes it.'),
+    ('02-activation-functions', 'Activation functions', 'Sigmoid, ReLU, GELU, SiLU and vanishing gradients.'),
+    ('03-backpropagation', 'Backpropagation', 'Record the graph, walk it backwards, accumulate.'),
+    ('04-loss-functions', 'Loss functions', 'MSE vs cross-entropy, p − y, label smoothing.'),
+    ('05-optimizers', 'Optimizers', 'Momentum, Adam, AdamW and warmup + cosine schedules.'),
+    ('06-initialization', 'Initialization', 'Variance budgets: Xavier and He.'),
+    ('07-normalization-residuals', 'Normalization and residual connections', 'LayerNorm, RMSNorm, x + f(Norm(x)).'),
+    ('08-regularization', 'Regularization and generalization', 'Weight decay, dropout, random labels, double descent.'),
+    ('09-embeddings', 'Embeddings', 'Learned lookup tables and their geometry.'),
+    ('10-mlp-to-language-model', 'From MLP to language model', 'Bigram → neural LM → transformer.'),
+]
+
+if __name__ == '__main__':
+    open(os.path.join(REPO, 'nn-fundamentals', 'index.html'), 'w').write(topic_hub(
+        'nn-fundamentals', 'Neural network fundamentals for LLMs', 'Neural Network Fundamentals',
+        'The deep-learning machinery every LLM is built from: neurons and MLPs, activations, backpropagation, losses, optimizers and schedules, initialization, normalization and residuals, regularization, embeddings, and a first language model. Every deck follows the 9-beat template and has an interactive widget.',
+        'index_nn.json', 'Build a micrograd-style autograd engine, an MLP that solves XOR, activation and depth experiments, AdamW with warmup + cosine, initialization tests, dropout and weight decay, and a tiny character-level language model in NumPy.',
+        NN_CARDS, 'Rumelhart, Hinton & Williams 1986; Cybenko 1989; Hornik et al. 1989; Nair & Hinton 2010; Hendrycks & Gimpel 2016 (GELU); Ramachandran et al. 2018 (Swish); Shazeer 2020; Baydin et al. 2018; Szegedy et al. 2016; Bengio et al. 2003; Kingma & Ba 2015; Loshchilov & Hutter 2017, 2019; Sutskever et al. 2013; Touvron et al. 2023 (LLaMA); Glorot & Bengio 2010; He et al. 2015, 2016; Radford et al. 2019 (GPT-2); Ioffe & Szegedy 2015; Ba et al. 2016; Zhang & Sennrich 2019; Srivastava et al. 2014; Zhang et al. 2017; Belkin et al. 2019; Nakkiran et al. 2020; Mikolov et al. 2013.'))
+    print('wrote nn-fundamentals/index.html')

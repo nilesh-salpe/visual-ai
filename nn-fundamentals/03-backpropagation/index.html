@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backpropagation</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Backpropagation" data-home="../index.html" data-home-label="NN fundamentals">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Neural Networks · 03</div>
+    <h1>Backpropagation</h1>
+    <p class="sub">How frameworks like PyTorch compute every gradient automatically: record the operations, then apply each one's local derivative in reverse order. Built from scratch in notebook 01.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A network is millions of operations. Writing the derivative of the loss with respect to every weight by hand is impossible, and numerical estimates would cost one forward pass per weight.</div>
+      <div class="c"><b>Core idea</b>During the forward pass, <b>record a graph</b> of operations and their inputs. Then walk it in <b>reverse topological order</b>, each node passing grad × local derivative to its parents and <b>accumulating</b> (+=) where values are reused. That is reverse-mode automatic differentiation.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Walk the tape forward, then back</h2>
+    <hr>
+<p class="lede">The expression L = (tanh(w·x + b) − y)² recorded as a list of operations. Step forward to fill in values, then backward to fill in gradients, one node at a time.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><button class="btn primary" id="bNext">next step</button><button class="btn" id="bReset">reset</button></div>
+  <div class="scroll-x" style="margin-top:10px"><table class="tbl" id="bTbl"></table></div>
+  <p class="readout" id="bOut"></p>
+</div>
+<p class="caption">w = 0.5, x = 2, b = −0.3, y = 1.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not differentiate some other way?</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>By hand</h3><p>Every architecture change would need new derivative code; error-prone at any real size.</p></div>
+      <div class="card b"><h3>Numerically</h3><p>Finite differences need one forward pass per parameter: billions per step.</p></div>
+      <div class="card c"><h3>Symbolically</h3><p>Expanding the full formula duplicates shared sub-expressions and explodes in size.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What must happen first?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">Before calling a node's backward rule, what must be true?</p>
+      <div class="opts">
+      <button>A. Its value must be zero</button>
+      <button data-ok>B. Its gradient must be complete: all nodes that use it have already pushed their contribution</button>
+      <button>C. Its parents must have gradients</button>
+      <button>D. Nothing</button>
+      </div>
+      <div class="why"><b>B.</b> That is why backward runs in reverse topological order: every consumer of a value is processed before the value itself.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Record, order, reverse</h2>
+    <hr>
+<div class="grid3">
+      <div class="card a"><h3>Record</h3><p>Each operation returns a new node that stores its inputs and a small backward function.</p></div>
+      <div class="card c"><h3>Order</h3><p>A depth-first search gives a topological order: each node appears after its inputs.</p></div>
+      <div class="card b"><h3>Reverse and accumulate</h3><p>Set dL/dL = 1, then for each node in reverse order: parent.grad += node.grad × ∂node/∂parent.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Each op only needs its own backward rule; the graph does the rest." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">forward</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">compute, record</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">parents and op</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">topological order</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">every node after</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">its inputs</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">seed</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">dL/dL = 1</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">reverse walk</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">grad += upstream ×</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">local</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">.grad on every weight</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">then optimizer</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">step</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Each op only needs its own backward rule; the graph does the rest.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Backward rules you need for an LLM</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Op</th><th>Forward</th><th>Backward (given upstream g)</th></tr>
+  <tr><td>add</td><td>c = a + b</td><td>da += g, db += g</td></tr>
+  <tr><td>multiply</td><td>c = a·b</td><td>da += g·b, db += g·a</td></tr>
+  <tr><td>matmul</td><td>Y = XW</td><td>dX += g·Wᵀ, dW += Xᵀ·g</td></tr>
+  <tr><td>ReLU (rectified linear unit)</td><td>y = max(0, x)</td><td>dx += g·1[x > 0]</td></tr>
+  <tr><td>softmax + cross-entropy</td><td>L = −log softmax(z)ₜ</td><td>dz += p − onehot(t)</td></tr>
+  <tr><td>sum / mean</td><td>s = Σ x</td><td>dx += g (÷ n for mean)</td></tr>
+</table></div>
+<div class="deep"><h4>PyTorch in one sentence</h4><p>Every tensor operation records a node (<code>grad_fn</code>); <code>loss.backward()</code> runs exactly this reverse topological walk over tensors, and <code>optimizer.zero_grad()</code> resets the accumulated <code>.grad</code> fields.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: one neuron and a squared loss</h2>
+    <hr>
+    <p class="lede">o = tanh(w₁x₁ + w₂x₂ + b) with x₁ = 2, x₂ = 0, w₁ = −3, w₂ = 1, b = 6.8814; loss = (o − 1)².</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Forward: w₁x₁ + w₂x₂ + b = −6 + 0 + 6.8814 = 0.8814; o = tanh(0.8814) = <b>0.7071</b>; loss = 0.0858.</li><li>Backward: dloss/do = 2(o − 1) = -0.5858; tanh′ = 1 − o² = 0.5000, so dloss/dn = -0.2929.</li><li>The sum passes that gradient unchanged to each term; the product w₁x₁ gives dloss/dw₁ = x₁ · that = <b>-0.5857</b>, and dloss/dw₂ = x₂ · that = <b>0</b>.</li><li>Notebook 01 builds exactly this graph with a Value class and checks dloss/dw₁ against a finite difference.</li></ol><div class="result">Each node used one local rule; the chain rule happened automatically by walking the graph backwards.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why reverse mode is the right choice</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>One pass for all weights</h3><p>One scalar loss, billions of parameters: reverse mode costs about one extra pass; forward mode would cost one pass per parameter.</p></div>
+      <div class="card e"><h3>Local and composable</h3><p>New layers only need a forward and a local backward rule.</p></div>
+      <div class="card b"><h3>Exact</h3><p>Uses analytic local derivatives, so results match finite differences to rounding error.</p></div>
+      <div class="card d"><h3>Costs memory</h3><p>Forward values must be kept for the backward pass, the source of activation memory (Distributed deck 08).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Backpropagation is how the network learns."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Backprop only computes gradients; the optimizer (SGD (stochastic gradient descent), Adam) uses them to change the weights.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Autograd approximates derivatives."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It applies exact local derivatives; only floating-point rounding differs.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Gradients overwrite each other when a value is reused."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They add: a value used in two places receives the sum of both contributions.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Zero the gradients each step.</b> Because backward accumulates (+=).</li><li><b>A gradient has its tensor's shape.</b> dW for a (d × k) weight is (d × k).</li><li><b>Backward ≈ 2× forward FLOPs (floating-point operations).</b> Two matmuls per linear layer (dX and dW).</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Forgetting to zero grads.</b> Gradients from previous steps silently add up.</li><li><b>Detaching by accident.</b> Converting to NumPy or using .item() cuts the graph.</li><li><b>Overwriting instead of accumulating.</b> A value used twice must receive both contributions.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">c = a·b with a = 3, b = −2 and dL/dc = 5. What is dL/da?</p>
+      <div class="opts">
+      <button data-ok>A. −10</button>
+      <button>B. 15</button>
+      <button>C. −2</button>
+      <button>D. 5</button>
+      </div>
+      <div class="why">g·b = 5 × (−2) = <b>−10</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why does backward use reverse topological order?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">So every node's gradient is complete, with contributions from all its consumers, before it is propagated to its own inputs.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why do you call zero_grad() every step in PyTorch?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">backward() accumulates into .grad; without zeroing, gradients from earlier steps would add up.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Backpropagation records the forward computation as a graph, then walks it in reverse topological order applying local derivative rules and accumulating gradients.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Automatic differentiation makes training practical. During the forward pass every operation records its inputs and a small backward rule. Calling backward on the loss sets its gradient to one, sorts the graph so each node comes after its inputs, and walks it in reverse: each node multiplies its gradient by its local derivative and adds the result into each input's gradient. Adding matters because values can be reused. This is reverse-mode differentiation: one backward pass gives the gradient for every weight at about twice the forward cost, which is why frameworks like PyTorch can train any architecture you can write.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> gradients of one loss w.r.t. billions of weights.</span></div><div><span><b>Core idea:</b> record graph; reverse topological walk; accumulate.</span></div><div><span><b>Practice:</b> zero grads each step; keep activations.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/01_micrograd.ipynb" target="_blank" rel="noopener">01 · Build an autograd engine (micrograd-style)</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/01_micrograd.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../04-loss-functions/index.html">04 · Loss functions →</a> · Previous: <a href="../02-activation-functions/index.html">← 02</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://doi.org/10.1038/323533a0" target="_blank" rel="noopener">Learning representations by back-propagating errors</a>
+        <div class="meta">Rumelhart, Hinton & Williams · Nature 1986</div>
+        <p>Backpropagation: apply the chain rule backward through a network to get every weight's gradient, so hidden units learn useful internal features.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1502.05767" target="_blank" rel="noopener">Automatic differentiation in machine learning: a survey</a>
+        <div class="meta">Baydin et al. · JMLR 2018</div>
+        <p>Forward and reverse-mode automatic differentiation explained; backpropagation is reverse mode, which gets all gradients of a scalar loss in about one extra pass.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const w = 0.5, x = 2, b = -0.3, y = 1;
+  const R = [['w', 'input', () => w], ['x', 'input', () => x], ['b', 'input', () => b], ['m = w·x', 'mul(w, x)', v => v.w * v.x], ['n = m + b', 'add(m, b)', v => v.m + v.b], ['o = tanh(n)', 'tanh(n)', v => Math.tanh(v.n)], ['e = o − y', 'sub(o, y)', v => v.o - y], ['L = e²', 'pow(e, 2)', v => v.e * v.e]];
+  const K = ['w', 'x', 'b', 'm', 'n', 'o', 'e', 'L'];
+  let st = 0;
+  const vals = {}, grads = {};
+  const compute = () => { K.forEach((k, i) => { vals[k] = R[i][2](vals); }); const g = { L: 1 }; g.e = 2 * vals.e; g.o = g.e; g.n = g.o * (1 - vals.o ** 2); g.m = g.n; g.b = g.n; g.w = g.m * x; g.x = g.m * w; Object.assign(grads, g); };
+  compute();
+  const draw = () => {
+    const fw = Math.min(st, 8), bw = Math.max(0, st - 8);
+    const rows = R.map((r, i) => { const k = K[i], showV = i < fw, showG = 7 - i < bw, cur = (st <= 8 && i === fw - 1) || (st > 8 && 7 - i === bw - 1);
+      return `<tr style="${cur ? 'background:var(--b-soft)' : ''}"><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${showV ? vals[k].toFixed(4) : ''}</td><td style="color:var(--b);font-weight:700">${showG ? grads[k].toFixed(4) : ''}</td></tr>`; }).join('');
+    document.getElementById('bTbl').innerHTML = '<tr><th>node</th><th>op</th><th>value (forward)</th><th>dL/dnode (backward)</th></tr>' + rows;
+    const msg = st === 0 ? 'Press "next step" to run the forward pass.' : st < 8 ? 'Forward: each node computed from its inputs and recorded.' : st === 8 ? 'Forward done. Backward starts by setting dL/dL = 1 at the last node.' : st < 16 ? 'Backward: each node\'s gradient = upstream gradient × its local derivative, pushed to its inputs.' : `Done. dL/dw = <b>${grads.w.toFixed(4)}</b>: one backward walk gave every gradient.`;
+    document.getElementById('bOut').innerHTML = msg;
+  };
+  document.getElementById('bNext').addEventListener('click', () => { if (st < 16) st++; draw(); });
+  document.getElementById('bReset').addEventListener('click', () => { st = 0; draw(); });
+  draw();
+})();
+</script>
+</body>
+</html>

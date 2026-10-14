@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optimizers</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Optimizers" data-home="../index.html" data-home-label="NN fundamentals">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Neural Networks · 05</div>
+    <h1>Optimizers</h1>
+    <p class="sub">From SGD (stochastic gradient descent) to AdamW: how gradients become weight updates, why weight decay must be decoupled from Adam, and the warmup-plus-cosine schedule used to train LLMs (large language models).</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Raw gradients are noisy, differently scaled across parameters, and unreliable early in training. Plain gradient steps are slow or unstable on such problems.</div>
+      <div class="c"><b>Core idea</b><b>SGD with momentum</b> smooths noisy gradients. <b>Adam</b> also divides by a running RMS (root mean square) of each parameter's gradient. <b>AdamW</b> applies weight decay directly to the weights instead of through the gradient. A <b>learning-rate schedule</b> warms up, then decays.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Shape a learning-rate schedule</h2>
+    <hr>
+<p class="lede">Choose warmup length, decay shape and the final fraction of the peak. The curve is the learning rate over a 100,000-step run.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">warmup steps <input type="range" id="sW" min="0" max="20000" step="500" value="2000"> <output id="sWo"></output></label><label class="ctl">final fraction <input type="range" id="sF" min="0" max="1" step="0.05" value="0.1"> <output id="sFo"></output></label></div>
+  <div class="seg" id="sSeg" style="margin-top:8px"><button data-v="cos" class="on">cosine</button><button data-v="lin">linear</button><button data-v="const">constant</button></div>
+  <svg id="sSvg" viewBox="0 0 660 230" style="margin-top:10px" role="img" aria-label="Learning-rate schedule"></svg>
+  <p class="readout" id="sOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why plain SGD is not enough for LLMs</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Very different scales</h3><p>Embedding rows, attention weights and norms receive gradients of very different sizes; one learning rate fits none.</p></div>
+      <div class="card b"><h3>Noise</h3><p>Mini-batch gradients are noisy; following each one exactly wastes steps.</p></div>
+      <div class="card c"><h3>Fragile start</h3><p>Early in training the curvature is high and statistics are unreliable; large steps diverge.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What does weight decay do in AdamW?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">In AdamW, how is weight decay applied?</p>
+      <div class="opts">
+      <button>A. Added to the gradient before computing m and v</button>
+      <button data-ok>B. Subtracted from the weights directly, η·λ·w each step</button>
+      <button>C. Applied only at the end of training</button>
+      <button>D. Applied to the learning rate</button>
+      </div>
+      <div class="why"><b>B.</b> Decoupled: w ← w − η(m̂/(√v̂ + ε) + λw). Putting λw into the gradient instead would be divided by √v̂ and regularise heavily-updated weights less.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Three ingredients</h2>
+    <hr>
+<div class="grid3">
+      <div class="card a"><h3>Momentum</h3><p>m ← β₁m + (1 − β₁)g. Averages noise, accelerates along consistent directions (Sutskever et al., 2013).</p></div>
+      <div class="card b"><h3>Adaptive scaling</h3><p>v ← β₂v + (1 − β₂)g². Step ∝ m̂/√v̂: each parameter gets its own effective learning rate (Adam).</p></div>
+      <div class="card e"><h3>Decoupled decay</h3><p>w ← w − ηλw separately from the gradient step (AdamW, Loshchilov &amp; Hutter).</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 188" role="img" aria-label="AdamW + warmup + cosine decay is the default recipe for LLM pretraining." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">gradient g</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">from backprop</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">momentum m</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">running mean of g</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">scale v</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">running mean of g²</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">update</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">−η(m̂/√v̂ + λw)</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">schedule</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">η(t): warmup →</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">decay</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M461.6 136 V160 H66.8 V138" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="264.2" y="177" text-anchor="middle" class="tm" style="font-size:11px">every step</text></svg><p class="caption" style="margin:4px 0 0">AdamW + warmup + cosine decay is the default recipe for LLM pretraining.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>AdamW, one step</h2>
+    <hr>
+<div class="grid4">
+      <div class="card c"><h3>1 · moments</h3><p>m = β₁m + (1 − β₁)g, v = β₂v + (1 − β₂)g².</p></div>
+      <div class="card a"><h3>2 · bias-correct</h3><p>m̂ = m/(1 − β₁ᵗ), v̂ = v/(1 − β₂ᵗ): both start at 0.</p></div>
+      <div class="card b"><h3>3 · adaptive step</h3><p>w −= η · m̂/(√v̂ + ε).</p></div>
+      <div class="card e"><h3>4 · decay</h3><p>w −= η · λ · w (skip for norms and biases).</p></div>
+    </div>
+<div class="deep"><h4>Memory cost</h4><p>Adam keeps m and v for every parameter, usually in FP32 (32-bit floating point): 8 bytes per parameter on top of the weights and gradients, which is most of the "16 bytes per parameter" in Distributed deck 03.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: the Llama recipe</h2>
+    <hr>
+    <p class="lede">LLaMA (Touvron et al., 2023): AdamW with β₁ = 0.9, β₂ = 0.95, weight decay 0.1, gradient clipping 1.0, 2,000 warmup steps, cosine decay to 10% of the peak.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Warmup: η grows linearly from ~0 to the peak over 2,000 steps, while Adam's v estimates settle.</li><li>With peak 3 × 10⁻⁴ and 200,000 total steps: η = 1.5 × 10⁻⁴ at step 1,000, 3 × 10⁻⁴ at 2,000, ≈ 1.7 × 10⁻⁴ at 100,000 and 3 × 10⁻⁵ at the end (notebook 04).</li><li>Decoupled decay shrinks every weight by η·λ per step, independently of its gradient history.</li><li>Notebook 04: with λ = 0.1, putting the penalty inside Adam's gradient (L2) gives a final weight norm of 1.38, while AdamW gives 9.81: the two regularise very differently.</li></ol><div class="result">Adam's per-parameter scaling, decoupled weight decay and a warmup + decay schedule together make large runs stable.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why this recipe works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Scale invariance</h3><p>Adam is invariant to rescaling each gradient coordinate, so badly scaled parameters still learn.</p></div>
+      <div class="card e"><h3>Regularisation that behaves</h3><p>Decoupled decay makes the decay strength independent of the learning rate and gradient history.</p></div>
+      <div class="card b"><h3>Warmup protects the start</h3><p>Small early steps let Adam's statistics and the network settle before large updates.</p></div>
+      <div class="card c"><h3>Decay finishes the job</h3><p>Shrinking η lets the weights settle into a low-loss region; cosine was popularised by SGDR (stochastic gradient descent with warm restarts).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Adam needs no learning-rate tuning."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Its defaults are robust for small problems; LLMs still tune peak η, β₂, warmup and decay.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Weight decay and L2 regularisation are the same."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Only for plain SGD. For Adam they differ, which is why AdamW exists.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Schedules are a minor detail."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Warmup prevents divergence and the decay phase produces a large share of the final loss improvement.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>β₂ = 0.95 for LLMs.</b> Faster-adapting variance than the 0.999 default.</li><li><b>Warm up, then decay.</b> Linear warmup, cosine (or linear) decay.</li><li><b>Optimizer state = 2 extra values per parameter.</b> m and v, in FP32: 8 bytes.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>L2 penalty with Adam.</b> Not weight decay; use AdamW.</li><li><b>No warmup at a high learning rate.</b> Early instability or divergence.</li><li><b>Decaying weight decay on norms and biases.</b> Usually excluded from decay.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">How many FP32 optimizer values does Adam store per parameter?</p>
+      <div class="opts">
+      <button>A. 0</button>
+      <button>B. 1</button>
+      <button data-ok>C. 2</button>
+      <button>D. 4</button>
+      </div>
+      <div class="why"><b>2</b>: m and v (plus the step count, shared).</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why does Adam bias-correct m and v?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">They start at 0, so early averages are biased toward 0; dividing by 1 − βᵗ removes that bias.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why warm up the learning rate?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Early gradients and Adam's variance estimates are unreliable and curvature is high; large early steps can diverge.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">LLMs train with AdamW: momentum plus per-parameter RMS scaling, weight decay applied directly to weights, and a learning rate that warms up and then decays.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Optimizers turn gradients into updates. Momentum keeps a running average of gradients to smooth noise. Adam also keeps a running average of squared gradients and divides by its square root, so each parameter gets its own effective step size, with bias corrections because both averages start at zero. AdamW applies weight decay directly to the weights rather than adding it to the gradient, where Adam's scaling would weaken it. The learning rate follows a schedule: linear warmup while statistics settle, then cosine or linear decay. Llama used beta-two of 0.95, weight decay 0.1 and 2,000 warmup steps.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> noisy, badly scaled gradients; fragile start.</span></div><div><span><b>Core idea:</b> momentum + RMS scaling + decoupled decay.</span></div><div><span><b>Schedule:</b> warmup, then cosine to ~10%.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/04_optimizers_schedules.ipynb" target="_blank" rel="noopener">04 · SGD, Adam, AdamW and learning-rate schedules</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/04_optimizers_schedules.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../06-initialization/index.html">06 · Initialization →</a> · Previous: <a href="../04-loss-functions/index.html">← 04</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1412.6980" target="_blank" rel="noopener">Adam: A Method for Stochastic Optimization</a>
+        <div class="meta">Kingma & Ba · ICLR 2015</div>
+        <p>Per-parameter step sizes from bias-corrected running averages of the gradient and its square; invariant to diagonal rescaling of the gradients.</p><div class="num">Remember: defaults β₁ 0.9, β₂ 0.999, ε 10⁻⁸</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1711.05101" target="_blank" rel="noopener">Decoupled Weight Decay Regularization (AdamW)</a>
+        <div class="meta">Loshchilov & Hutter · ICLR 2019</div>
+        <p>L2 regularization and weight decay differ for adaptive optimizers; applying decay directly to the weights (AdamW) decouples it from the learning rate and improves generalization.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1608.03983" target="_blank" rel="noopener">SGDR: Stochastic Gradient Descent with Warm Restarts</a>
+        <div class="meta">Loshchilov & Hutter · ICLR 2017</div>
+        <p>Introduces the cosine learning-rate schedule (with optional restarts), now the standard decay shape for LLM pretraining.</p></div>
+      <div class="paper-item"><a href="https://proceedings.mlr.press/v28/sutskever13.html" target="_blank" rel="noopener">On the importance of initialization and momentum in deep learning</a>
+        <div class="meta">Sutskever et al. · ICML 2013</div>
+        <p>With a good initialization and a slowly increasing momentum schedule, plain SGD with (Nesterov) momentum trains deep and recurrent networks once thought to need second-order methods.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2302.13971" target="_blank" rel="noopener">LLaMA: Open and Efficient Foundation Language Models</a>
+        <div class="meta">Touvron et al. · arXiv 2023</div>
+        <p>The recipe most open models followed: pre-normalization with RMSNorm (root-mean-square normalization), SwiGLU (Swish-gated linear unit) with a ⅔·4d hidden size, and rotary embeddings.</p><div class="num">Remember: trained on 1.0–1.4T tokens</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  let shape = 'cos';
+  const draw = () => {
+    const W = Deck.val('sW'), fr = Deck.val('sF'), T = 100000; Deck.out('sWo', W.toLocaleString()); Deck.out('sFo', fr.toFixed(2));
+    const lr = t => { if (t < W) return (t + 1) / W; const p = Math.min(1, (t - W) / Math.max(1, T - W)); return shape === 'const' ? 1 : shape === 'lin' ? fr + (1 - fr) * (1 - p) : fr + (1 - fr) * 0.5 * (1 + Math.cos(Math.PI * p)); };
+    const s = clear(document.getElementById('sSvg')), X = t => 60 + t / T * 570, Y = v => 200 - v * 175;
+    [0, 0.5, 1].forEach(v => { svg('line', { x1: 60, x2: 630, y1: Y(v), y2: Y(v), class: 'ln' }, s); svg('text', { x: 52, y: Y(v) + 4, 'text-anchor': 'end', class: 'tm', text: v === 1 ? 'peak' : v }, s); });
+    let pts = ''; for (let t = 0; t <= T; t += 250) pts += `${X(t)},${Y(lr(t))} `;
+    svg('polyline', { points: pts, fill: 'none', style: 'stroke:var(--a);stroke-width:3' }, s);
+    if (W) svg('rect', { x: 60, y: 20, width: X(W) - 60, height: 180, style: 'fill:var(--b);opacity:.1' }, s);
+    [0, 25000, 50000, 75000, 100000].forEach(t => svg('text', { x: X(t), y: 218, 'text-anchor': 'middle', class: 'tm', text: (t / 1000) + 'k' }, s));
+    let area = 0; for (let t = 0; t < T; t += 100) area += lr(t) * 100;
+    document.getElementById('sOut').innerHTML = `Mid-run (50k) η = <b>${lr(50000).toFixed(3)}</b> × peak; final η = ${lr(T - 1).toFixed(3)} × peak. Average η over the run: ${(area / T).toFixed(2)} × peak.`;
+  };
+  Deck.bind(['sW', 'sF'], draw); Deck.seg('sSeg', v => { shape = v; draw(); });
+})();
+</script>
+</body>
+</html>

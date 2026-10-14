@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Initialization</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Initialization" data-home="../index.html" data-home-label="NN fundamentals">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Neural Networks · 06</div>
+    <h1>Initialization</h1>
+    <p class="sub">Why the random scale of the starting weights decides whether a deep network trains at all, and how Xavier and He initialisation keep signals at a constant size.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Each layer multiplies activations by a random matrix. If that multiplies their size by even 1.1 or 0.9, after 50 layers the signal has exploded or vanished.</div>
+      <div class="c"><b>Core idea</b>Choose Var(w) so each layer <b>preserves variance</b>: fan_in × Var(w) × (activation's factor) = 1. <b>Xavier</b>: Var = 2/(fan_in + fan_out), for tanh-like activations. <b>He</b>: Var = 2/fan_in, for ReLU (rectified linear unit), which zeroes half its inputs.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Signal size through depth</h2>
+    <hr>
+<p class="lede">Activation std after each of 50 layers (log scale) for a random batch, computed live in your browser. Change the weight scale and activation.</p>
+<div class="visual">
+  <div class="seg" id="iSeg"><button data-v="naive">std 1</button><button data-v="xavier">Xavier</button><button data-v="he" class="on">He</button></div>
+  <div class="seg" id="iAct" style="margin-top:8px"><button data-v="relu" class="on">ReLU</button><button data-v="tanh">tanh</button></div>
+  <svg id="iSvg" viewBox="0 0 660 230" style="margin-top:10px" role="img" aria-label="Activation scale vs depth"></svg>
+  <p class="readout" id="iOut"></p>
+</div>
+<p class="caption">Width 64, batch 64, a fresh random matrix per layer.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why scale matters so much</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Geometric growth</h3><p>Variance is multiplied by the same factor every layer: 1.1⁵⁰ ≈ 117, 0.9⁵⁰ ≈ 0.005.</p></div>
+      <div class="card b"><h3>Gradients follow</h3><p>The backward pass multiplies by the transposed weights, so the same factor applies to gradients.</p></div>
+      <div class="card c"><h3>Symmetry</h3><p>Starting with equal weights makes all units identical forever; randomness is required.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which variance for ReLU?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">Fan-in 1,024 with ReLU. Which weight variance preserves activation variance?</p>
+      <div class="opts">
+      <button>A. 1/1,024</button>
+      <button data-ok>B. 2/1,024</button>
+      <button>C. 1</button>
+      <button>D. 1/2,048</button>
+      </div>
+      <div class="why"><b>B.</b> He: 2/fan_in. ReLU zeroes half its inputs, halving the second moment, so the weights must make up a factor of 2.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>A variance budget per layer</h2>
+    <hr>
+<div class="grid3">
+      <div class="card a"><h3>The rule</h3><p>Var(out) ≈ fan_in · Var(w) · Var(in) · c, where c = 1 for linear/tanh near 0 and ½ for ReLU.</p></div>
+      <div class="card c"><h3>Xavier / Glorot</h3><p>Var(w) = 2/(fan_in + fan_out): balances forward and backward for tanh-like units.</p></div>
+      <div class="card e"><h3>He / Kaiming</h3><p>Var(w) = 2/fan_in: exactly preserves variance for ReLU, letting very deep ReLU nets train from scratch.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 188" role="img" aria-label="Per-layer factor 1 → stable at any depth; 0.9 or 1.1 → vanishes or explodes geometrically." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--faint)"/><text x="83.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">h</text><text x="83.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">variance s²</text><rect x="174.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--a)"/><text x="247.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">× W</text><text x="247.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">variance ×</text><text x="247.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">fan_in·Var(w)</text><line x1="158.5" y1="60.0" x2="172.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="339.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--b)"/><text x="412.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">φ</text><text x="412.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">× activation factor (½</text><text x="412.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">for ReLU)</text><line x1="323.0" y1="60.0" x2="337.0" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="503.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--e)"/><text x="576.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">next layer</text><text x="576.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">want s² again</text><line x1="487.5" y1="60.0" x2="501.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M576.8 136 V160 H83.2 V138" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="330.0" y="177" text-anchor="middle" class="tm" style="font-size:11px">every layer</text></svg><p class="caption" style="margin:4px 0 0">Per-layer factor 1 → stable at any depth; 0.9 or 1.1 → vanishes or explodes geometrically.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>How transformers are initialised</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Weights</th><th>Typical scheme</th></tr>
+  <tr><td>Linear layers</td><td>normal with std ≈ 0.02 (GPT-2) or ∝ 1/√d</td></tr>
+  <tr><td>Residual output projections</td><td>scaled by 1/√N, N = number of residual layers (GPT-2)</td></tr>
+  <tr><td>Embeddings</td><td>small normal</td></tr>
+  <tr><td>Norm gains / biases</td><td>1 / 0</td></tr>
+</table></div>
+<p class="caption">GPT-2: "We scale the weights of residual layers at initialization by a factor of 1/√N where N is the number of residual layers." Normalisation (next deck) makes transformers much less sensitive than plain deep MLPs (multilayer perceptrons).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: 50 ReLU layers of width 256</h2>
+    <hr>
+    <p class="lede">Notebook 05: push standard-normal inputs through 50 layers h ← ReLU(hW), W 256 × 256, and measure the activation std.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Weights with std 1: each layer multiplies the variance by 256 × ½ = 128. After 50 layers the std is <b>6 × 10⁵²</b>.</li><li>Xavier (Var = 2/512 = 1/256): factor 256 × (1/256) × ½ = ½ per layer. After 50 layers: <b>3.7 × 10⁻⁸</b>.</li><li>He (Var = 2/256): factor 256 × (2/256) × ½ = 1. After 50 layers: <b>1.24</b>, the same order as at the start.</li><li>tanh with std-1 weights keeps std ≈ 1 only because every unit is saturated at ±1, where gradients are ≈ 0.</li></ol><div class="result">Initialisation is a variance budget: match fan_in·Var(w) to the activation and depth stops being a problem at the start of training.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why variance preservation works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Signals stay in range</h3><p>Activations neither saturate nor vanish, so every layer starts in a useful regime.</p></div>
+      <div class="card e"><h3>Gradients stay in range</h3><p>The same analysis applies backward, so early layers receive meaningful updates.</p></div>
+      <div class="card b"><h3>Cheap</h3><p>It only sets the scale of the random draw; no extra computation.</p></div>
+      <div class="card c"><h3>Complements normalisation</h3><p>Norm layers fix scale during training; good init makes the first steps sane.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Initialisation only matters for the first few steps."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">A bad start can leave units dead or saturated permanently, or make training diverge immediately.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Any small random numbers are fine."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">"Small" must be relative to fan-in and activation; too small vanishes just as surely as too large explodes.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"With normalisation layers init is irrelevant."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It matters less, but residual-branch scaling still affects stability of deep transformers.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>He: std = √(2/fan_in).</b> ReLU family.</li><li><b>Xavier: std = √(2/(fan_in + fan_out)).</b> tanh / linear.</li><li><b>Scale residual branches by ~1/√(2L).</b> GPT-2-style init for deep stacks.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>All-zero (or identical) weights.</b> Every unit gets the same gradient: symmetry is never broken.</li><li><b>Ignoring the activation.</b> Xavier is half the right variance for ReLU.</li><li><b>Only checking the forward pass.</b> Saturation can keep activations bounded while gradients die.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">He initialisation std for fan-in 512?</p>
+      <div class="opts">
+      <button>A. 1/512</button>
+      <button data-ok>B. √(2/512) ≈ 0.0625</button>
+      <button>C. √(1/512) ≈ 0.044</button>
+      <button>D. 0.02</button>
+      </div>
+      <div class="why">√(2/512) = <b>0.0625</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What happens if all weights start equal?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">All hidden units compute the same thing and get the same gradient, so they stay identical: the layer acts like one unit.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why does ReLU need twice the weight variance of a linear layer?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">It zeroes half the inputs, halving the second moment of its output.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Initialise so each layer preserves variance (He 2/fan_in for ReLU, Xavier for tanh); otherwise signals and gradients explode or vanish geometrically with depth.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Each layer multiplies activations by a random matrix, so their variance is multiplied by fan-in times the weight variance times a factor from the activation. Repeated fifty times, any factor other than one explodes or vanishes geometrically, and gradients behave the same way. Xavier initialisation sets the variance to two over fan-in plus fan-out for tanh-like units; He initialisation uses two over fan-in for ReLU, which zeroes half its inputs. Weights must also be random to break symmetry. Transformers add tricks such as scaling residual output projections by one over the square root of the depth.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> per-layer scale compounds over depth.</span></div><div><span><b>Core idea:</b> fan_in·Var(w)·c = 1: Xavier, He.</span></div><div><span><b>Transformers:</b> std ≈ 0.02, residual scaling 1/√N.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/05_initialization.ipynb" target="_blank" rel="noopener">05 · Initialization: keeping signals alive</a> <span style="color:var(--faint)">· 25 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/nn-fundamentals/05_initialization.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../07-normalization-residuals/index.html">07 · Normalization and residual connections →</a> · Previous: <a href="../05-optimizers/index.html">← 05</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://proceedings.mlr.press/v9/glorot10a.html" target="_blank" rel="noopener">Understanding the difficulty of training deep feedforward neural networks</a>
+        <div class="meta">Glorot & Bengio · AISTATS 2010</div>
+        <p>Studies how activations and gradients shrink or grow across layers and proposes normalized (Xavier) initialization, Var(w) = 2/(fan_in + fan_out).</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1502.01852" target="_blank" rel="noopener">Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification</a>
+        <div class="meta">He et al. · ICCV 2015</div>
+        <p>Derives the initialization Var(w) = 2/fan_in for ReLU networks (He/Kaiming init), enabling very deep rectified models to train from scratch; also introduces PReLU (parametric ReLU).</p><div class="num">Remember: 4.94% top-5 error on ImageNet</div></div>
+      <div class="paper-item"><a href="https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf" target="_blank" rel="noopener">Language Models are Unsupervised Multitask Learners (GPT-2)</a>
+        <div class="meta">Radford et al. · OpenAI 2019</div>
+        <p>Decoder-only language model that moved layer normalization to the input of each sub-block (pre-norm) and added a final norm.</p><div class="num">Remember: context 1,024 tokens, vocabulary 50,257</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  let kind = 'he', act = 'relu';
+  const rnd = (() => { let s = 1; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; })();
+  const gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const draw = () => {
+    const n = 64, B = 64, L = 50, sd = kind === 'naive' ? 1 : kind === 'xavier' ? Math.sqrt(2 / (2 * n)) : Math.sqrt(2 / n);
+    let h = [...Array(B)].map(() => [...Array(n)].map(gauss)); const out = [];
+    for (let l = 0; l < L; l++) {
+      const W = [...Array(n)].map(() => [...Array(n)].map(() => gauss() * sd));
+      h = h.map(r => { const o = new Array(n).fill(0); for (let i = 0; i < n; i++) { const ri = r[i]; if (ri === 0) continue; const Wi = W[i]; for (let j = 0; j < n; j++) o[j] += ri * Wi[j]; } return o.map(z => act === 'relu' ? Math.max(0, z) : Math.tanh(z)); });
+      let s2 = 0, m = 0; h.forEach(r => r.forEach(v => { m += v; s2 += v * v; })); m /= n * B; out.push(Math.sqrt(Math.max(1e-300, s2 / (n * B) - m * m)));
+    }
+    const s = clear(document.getElementById('iSvg')), X = l => 60 + l / (L - 1) * 570, lg = v => Math.log10(Math.max(1e-30, Math.min(1e30, v))), Y = v => 115 - lg(v) / 30 * 95;
+    [-30, -15, 0, 15, 30].forEach(e => { svg('line', { x1: 60, x2: 630, y1: Y(Math.pow(10, e)), y2: Y(Math.pow(10, e)), class: 'ln', style: e ? 'opacity:.4' : '' }, s); svg('text', { x: 52, y: Y(Math.pow(10, e)) + 4, 'text-anchor': 'end', class: 'tm', text: '1e' + e }, s); });
+    svg('polyline', { points: out.map((v, l) => `${X(l)},${Y(v)}`).join(' '), fill: 'none', style: 'stroke:var(--a);stroke-width:3' }, s);
+    [1, 10, 20, 30, 40, 50].forEach(l => svg('text', { x: X(l - 1), y: 228, 'text-anchor': 'middle', class: 'tm', text: 'layer ' + l }, s));
+    const last = out[L - 1];
+    document.getElementById('iOut').innerHTML = `Std after layer 1: ${out[0].toPrecision(3)}, after layer 50: <b>${last.toExponential(2)}</b>. ${act === 'tanh' && kind === 'naive' ? 'tanh units are saturated at ±1: the signal is bounded, but gradients through them are ≈ 0.' : Math.abs(lg(last / out[0])) < 1 ? 'Stable: the variance budget is balanced.' : last < out[0] ? 'Vanishing.' : 'Exploding.'}`;
+  };
+  Deck.seg('iSeg', v => { kind = v; draw(); }); Deck.seg('iAct', v => { act = v; draw(); });
+})();
+</script>
+</body>
+</html>

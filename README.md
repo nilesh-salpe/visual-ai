@@ -21,6 +21,23 @@ Ten 9-beat decks plus 6 hands-on [Colab notebooks](build-it/).
 | 09 | [Optimization basics](math/09-optimization-basics/) |
 | 10 | [Floating-point numbers](math/10-floating-point/) |
 
+## Neural network fundamentals for LLMs
+
+Ten 9-beat decks plus 7 hands-on [Colab notebooks](build-it/).
+
+| # | Deck |
+|---|------|
+| 01 | [From perceptron to MLP](nn-fundamentals/01-perceptron-to-mlp/) |
+| 02 | [Activation functions](nn-fundamentals/02-activation-functions/) |
+| 03 | [Backpropagation](nn-fundamentals/03-backpropagation/) |
+| 04 | [Loss functions](nn-fundamentals/04-loss-functions/) |
+| 05 | [Optimizers](nn-fundamentals/05-optimizers/) |
+| 06 | [Initialization](nn-fundamentals/06-initialization/) |
+| 07 | [Normalization and residual connections](nn-fundamentals/07-normalization-residuals/) |
+| 08 | [Regularization and generalization](nn-fundamentals/08-regularization/) |
+| 09 | [Embeddings](nn-fundamentals/09-embeddings/) |
+| 10 | [From MLP to language model](nn-fundamentals/10-mlp-to-language-model/) |
+
 ## GPU for GenAI
 
 | # | Deck |

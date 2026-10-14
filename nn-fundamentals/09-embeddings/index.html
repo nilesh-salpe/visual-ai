@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embeddings</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Embeddings" data-home="../index.html" data-home-label="NN fundamentals">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Neural Networks · 09</div>
+    <h1>Embeddings</h1>
+    <p class="sub">How discrete tokens become vectors a network can compute with: a learned lookup table, why it beats one-hot vectors, and what geometry the vectors acquire.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Text arrives as integer token IDs (identifiers). Integers have no useful arithmetic (token 500 is not "close to" 501), and one-hot vectors are huge and say every pair of words is equally different.</div>
+      <div class="c"><b>Core idea</b>An <b>embedding table</b> E (V × d) maps token i to row Eᵢ. That is exactly one-hot(i) × E, done as a lookup. The rows are <b>learned</b> by backpropagation, so tokens used in similar contexts end up with similar vectors.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Words as points in space</h2>
+    <hr>
+<p class="lede">A toy 2-D embedding learned so that words in similar contexts are close. Click any two words to see their cosine similarity; the arrow shows king − man + woman.</p>
+<div class="visual">
+  <svg id="eSvg" viewBox="0 0 660 270" role="img" aria-label="2-D word embeddings"></svg>
+  <p class="readout" id="eOut">Click a word, then another.</p>
+</div>
+<p class="caption">Illustrative coordinates. Real embeddings have hundreds to thousands of dimensions.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not integers or one-hot vectors?</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Integers</h3><p>Token IDs have an arbitrary order; arithmetic on them is meaningless.</p></div>
+      <div class="card b"><h3>One-hot</h3><p>A V-dimensional vector per token (V ≈ 50K–250K): huge and every pair is equally far apart.</p></div>
+      <div class="card c"><h3>Hand-made features</h3><p>Nobody can write down useful features for every token in 100 languages.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What does an embedding lookup equal?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">For token i with one-hot vector eᵢ, what is E[i] (row i of the table)?</p>
+      <div class="opts">
+      <button>A. eᵢ + E</button>
+      <button data-ok>B. eᵢ × E (one-hot times the matrix)</button>
+      <button>C. E × E</button>
+      <button>D. the integer i</button>
+      </div>
+      <div class="why"><b>B.</b> Multiplying a one-hot row vector by E picks out row i. Frameworks implement it as indexing because it is far cheaper.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>A learned lookup table</h2>
+    <hr>
+<div class="grid3">
+      <div class="card a"><h3>Table</h3><p>E has one row of d numbers per token: V × d parameters.</p></div>
+      <div class="card c"><h3>Lookup</h3><p>Input token i → E[i]. Equivalent to one-hot × E, the first linear layer of the model.</p></div>
+      <div class="card e"><h3>Learned geometry</h3><p>Backprop moves rows so tokens that predict similar contexts get similar vectors (Bengio et al., 2003; word2vec).</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="The same idea embeds positions, images patches, users or products." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">token id</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">integer in 0 … V−1</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">lookup E[id]</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">= one-hot × E</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">d-dim vector</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">dense, learned</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">network</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">attention, MLPs</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">output</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">logits = h · Eᵀ</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">(often tied)</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">The same idea embeds positions, images patches, users or products.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Embedding sizes in practice</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Model</th><th>Vocabulary</th><th>d</th><th>Embedding parameters</th></tr>
+  <tr><td>GPT-2 small</td><td>50,257</td><td>768</td><td>38.6M</td></tr>
+  <tr><td>GPT-2 XL</td><td>50,257</td><td>1,600</td><td>80.4M</td></tr>
+  <tr><td>Llama 2 7B</td><td>32,000</td><td>4,096</td><td>131M (input) + 131M (output)</td></tr>
+  <tr><td>Llama 3 8B</td><td>128,256</td><td>4,096</td><td>525M (input) + 525M (output)</td></tr>
+</table></div>
+<p class="caption">Computed as vocabulary × d. See the <a href="../../tokenization/07-vocabulary-size/index.html">Tokenization deck on vocabulary size</a> for the trade-off.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: GPT-2 small's embedding table</h2>
+    <hr>
+    <p class="lede">GPT-2 has a vocabulary of 50,257 tokens; the small model uses d = 768.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Table size: 50,257 × 768 = <b>38.6M</b> parameters, about a third of the 124M-parameter small model.</li><li>A one-hot input would be a 50,257-dimensional vector with a single 1; multiplying it by E selects one row, so frameworks just index.</li><li>Gradient: only the rows of tokens present in the batch receive gradient (sparse update).</li><li>GPT-2 ties the output layer to the same matrix: logits = h · Eᵀ, saving another 38.6M parameters.</li></ol><div class="result">Embeddings are a big, sparse-updated lookup table whose geometry is learned from context.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why learned embeddings work</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Distributional signal</h3><p>Words that appear in similar contexts receive similar gradients, so their vectors converge.</p></div>
+      <div class="card e"><h3>Generalisation</h3><p>A model that learned about "cat" transfers some of it to "kitten" because their vectors are close.</p></div>
+      <div class="card b"><h3>Directions carry meaning</h3><p>word2vec found offsets like man → woman are roughly consistent across pairs.</p></div>
+      <div class="card c"><h3>Reusable</h3><p>Contextual embeddings from the middle of an LLM (large language model) power retrieval and classification.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Each embedding dimension means something specific."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Meaning is spread across directions; individual coordinates are rarely interpretable.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Embeddings are fixed after pretraining."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They keep updating in fine-tuning, and contextual representations change every layer.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"The embedding layer is a small part of the model."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">For small models with big vocabularies it can be a third or more of the parameters.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Lookup = one-hot × E.</b> Same math, no multiply.</li><li><b>Tied embeddings.</b> Reuse E for the output projection.</li><li><b>Cosine similarity for neighbours.</b> Lengths vary with frequency.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Treating token IDs as numbers.</b> Feeding the integer itself implies a meaningless order.</li><li><b>Rare tokens.</b> Few updates, so their vectors stay close to initialisation.</li><li><b>Over-reading analogies.</b> king − man + woman ≈ queen is a tendency, not a law.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Parameters in a 32,000 × 4,096 embedding table?</p>
+      <div class="opts">
+      <button data-ok>A. 131M</button>
+      <button>B. 13M</button>
+      <button>C. 1.3B</button>
+      <button>D. 32K</button>
+      </div>
+      <div class="why">32,000 × 4,096 ≈ <b>131M</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Which rows of E get gradient in a training step?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Only those of tokens that appear in the batch.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does weight tying mean?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Using the same matrix E for the input lookup and (transposed) for the output logits.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Embeddings are a learned V × d lookup table, equivalent to one-hot × E, whose rows acquire meaningful geometry because similar contexts give similar gradients.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Neural networks need vectors, but text arrives as token IDs. An embedding table has one learned row of d numbers per token, and looking up row i is mathematically the same as multiplying a one-hot vector by the table, just much cheaper. Training moves the rows so that tokens used in similar contexts get similar vectors, which lets knowledge transfer between related words; word2vec famously found consistent directions such as man to woman. Tables are large: GPT-2 small's is 50,257 by 768, about 39 million parameters, and many models tie it to the output layer.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> token IDs have no geometry.</span></div><div><span><b>Core idea:</b> learned table E; lookup = one-hot × E.</span></div><div><span><b>Facts:</b> V × d parameters; sparse gradients; weight tying.</span></div></div>
+    <p class="start-hint">Next: <a href="../10-mlp-to-language-model/index.html">10 · From MLP to language model →</a> · Previous: <a href="../08-regularization/index.html">← 08</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://www.jmlr.org/papers/v3/bengio03a.html" target="_blank" rel="noopener">A Neural Probabilistic Language Model</a>
+        <div class="meta">Bengio et al. · JMLR 2003</div>
+        <p>The first neural language model: learned word embeddings plus a network that outputs a softmax over the next word, trained by maximum likelihood.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1301.3781" target="_blank" rel="noopener">Efficient Estimation of Word Representations in Vector Space (word2vec)</a>
+        <div class="meta">Mikolov et al. · ICLR workshop 2013</div>
+        <p>Learns word vectors whose dot products and differences capture meaning (king − man + woman ≈ queen) with cheap log-linear models.</p><div class="num">Remember: under a day to learn vectors from 1.6B words</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1310.4546" target="_blank" rel="noopener">Distributed Representations of Words and Phrases and their Compositionality</a>
+        <div class="meta">Mikolov et al. · NeurIPS 2013</div>
+        <p>Skip-gram with negative sampling and subsampling of frequent words: faster training and better word vectors, plus vectors for phrases.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const W = { king: [0.75, 0.8], queen: [0.85, 0.35], man: [0.25, 0.75], woman: [0.35, 0.3], prince: [0.62, 0.9], princess: [0.72, 0.45], cat: [-0.7, -0.4], kitten: [-0.62, -0.62], dog: [-0.45, -0.35], puppy: [-0.38, -0.58], paris: [-0.4, 0.92], london: [-0.1, 0.8] };
+  let pick = [];
+  const draw = () => {
+    const s = clear(document.getElementById('eSvg')), X = x => 330 + x * 280, Y = y => 140 - y * 120;
+    svg('line', { x1: 30, x2: 630, y1: Y(0), y2: Y(0), class: 'ln', style: 'opacity:.4' }, s); svg('line', { x1: X(0), x2: X(0), y1: 10, y2: 265, class: 'ln', style: 'opacity:.4' }, s);
+    const t = [W.king[0] - W.man[0] + W.woman[0], W.king[1] - W.man[1] + W.woman[1]];
+    svg('line', { x1: X(W.king[0]), y1: Y(W.king[1]), x2: X(t[0]), y2: Y(t[1]), style: 'stroke:var(--e);stroke-width:2.5;stroke-dasharray:5 4' }, s);
+    svg('circle', { cx: X(t[0]), cy: Y(t[1]), r: 9, style: 'fill:none;stroke:var(--e);stroke-width:2.5' }, s);
+    svg('text', { x: X(t[0]) - 4, y: Y(t[1]) + 30, 'text-anchor': 'end', class: 'tm', style: 'fill:var(--e)', text: 'king − man + woman' }, s);
+    Object.entries(W).forEach(([w, [x, y]]) => {
+      const on = pick.includes(w), c = svg('circle', { cx: X(x), cy: Y(y), r: 8, style: `fill:${on ? 'var(--b)' : 'var(--a)'};cursor:pointer` }, s);
+      const tx = svg('text', { x: X(x) + 11, y: Y(y) + 4, class: 't', style: 'cursor:pointer;font-weight:600', text: w }, s);
+      [c, tx].forEach(el => el.addEventListener('click', () => { pick = pick.length >= 2 ? [w] : pick.concat(w); draw(); }));
+    });
+    if (pick.length === 2) { const [a, b] = pick.map(k => W[k]), cos = (a[0] * b[0] + a[1] * b[1]) / Math.hypot(...a) / Math.hypot(...b);
+      svg('line', { x1: X(a[0]), y1: Y(a[1]), x2: X(b[0]), y2: Y(b[1]), style: 'stroke:var(--b);stroke-width:2' }, s);
+      document.getElementById('eOut').innerHTML = `cos(${pick[0]}, ${pick[1]}) = <b>${cos.toFixed(3)}</b>. ${cos > 0.9 ? 'Very similar contexts.' : cos > 0.5 ? 'Related.' : cos > 0 ? 'Weakly related.' : 'Different regions of the space.'}`; }
+    else document.getElementById('eOut').innerHTML = pick.length ? `Picked "${pick[0]}". Click a second word.` : 'Click a word, then another. The dashed line from king lands next to queen.';
+  };
+  draw();
+})();
+</script>
+</body>
+</html>

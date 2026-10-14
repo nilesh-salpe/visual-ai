@@ -40,6 +40,12 @@
   "CAI": {
    "exp": "Constitutional AI, Anthropic's method"
   },
+  "CDF": {
+   "exp": "cumulative distribution function"
+  },
+  "CE": {
+   "exp": "cross-entropy"
+  },
   "CI": {
    "exp": "confidence interval",
    "plural": "confidence intervals"
@@ -91,6 +97,9 @@
   },
   "ECN": {
    "exp": "explicit congestion notification"
+  },
+  "ELU": {
+   "exp": "exponential linear unit"
   },
   "EM": {
    "exp": "expectation-maximization"
@@ -215,6 +224,10 @@
   "IB": {
    "exp": "InfiniBand"
   },
+  "ID": {
+   "exp": "identifier",
+   "plural": "identifiers"
+  },
   "INT": {
    "exp": "integer"
   },
@@ -299,6 +312,9 @@
   "MRPC": {
    "exp": "Microsoft Research Paraphrase Corpus"
   },
+  "MSE": {
+   "exp": "mean squared error"
+  },
   "MT": {
    "exp": "machine translation"
   },
@@ -379,6 +395,9 @@
   },
   "PPO": {
    "exp": "Proximal Policy Optimization"
+  },
+  "PReLU": {
+   "exp": "parametric ReLU"
   },
   "PUE": {
    "exp": "power usage effectiveness"
@@ -463,6 +482,9 @@
   },
   "SGD": {
    "exp": "stochastic gradient descent"
+  },
+  "SGDR": {
+   "exp": "stochastic gradient descent with warm restarts"
   },
   "SGMV": {
    "exp": "segmented gather matrix-vector multiplication"
@@ -580,6 +602,9 @@
   },
   "XID": {
    "exp": "NVIDIA driver error code"
+  },
+  "XOR": {
+   "exp": "exclusive or"
   },
   "YaRN": {
    "exp": "Yet another rotary-position-embedding extension method"
@@ -752,6 +777,11 @@
   "GShard",
   "AdamW",
   "ACM",
-  "BFLOAT16"
+  "BFLOAT16",
+  "NASNet",
+  "AISTATS",
+  "ICCV",
+  "PNAS",
+  "XL"
  ]
 }
