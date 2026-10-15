@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic Retrieval (RAG)</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Agentic retrieval (RAG)" data-home="../index.html" data-home-label="Context">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual Agents · Context · 02</div>
+    <h1>Agentic retrieval (RAG)</h1>
+    <p class="sub">From retrieve-once-then-generate to agents that decide when and what to retrieve, check what they found, refine queries, and cite sources.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Classic RAG (retrieval-augmented generation) retrieves once from the user's question. Multi-hop questions, vague queries and bad retrieval results then lead straight to wrong, confident answers.</div>
+      <div class="c"><b>Core idea</b>Make retrieval a <b>tool the agent calls repeatedly</b>: plan queries, retrieve, <b>grade</b> relevance, <b>rewrite</b> or broaden the query, fall back to other sources, and answer with <b>citations</b>. Self-RAG trains the model to decide when to retrieve and critique; CRAG (Corrective Retrieval Augmented Generation) adds an evaluator and corrective web search.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Previous: <a href="../01-memory/index.html">Memory and context management</a> · Next: <a href="../03-mcp/index.html">Model Context Protocol (MCP) →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>One retrieval is often not enough</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Multi-hop questions</h3><p>The second query depends on the first answer.</p></div>
+      <div class="card b"><h3>Bad retrieval</h3><p>Irrelevant chunks are used anyway (CRAG's motivation).</p></div>
+      <div class="card c"><h3>Unneeded retrieval</h3><p>Retrieving a fixed number of passages regardless of need hurts versatility (Self-RAG's motivation).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Retrieval as a tool with feedback</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Classic RAG</h3><p>Lewis et al. (2020): a retriever over an index supplies passages to a generator.</p></div>
+      <div class="card a"><h3>Agentic loop</h3><p>The agent decides whether to search, what query to send, and whether results suffice.</p></div>
+      <div class="card c"><h3>Self-critique</h3><p>Self-RAG: reflection tokens to retrieve on demand and judge passages and its own output.</p></div>
+      <div class="card e"><h3>Correction</h3><p>CRAG: a lightweight evaluator scores retrieval; poor results trigger refinement or web search.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>Components</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A question arrives.&quot;, &quot;The agent plans one or more queries (rewriting the question, splitting multi-hop questions).&quot;, &quot;It searches indexes: semantic vector search and keyword search, often merged and reranked.&quot;, &quot;A grader (a model or prompt) checks relevance; weak results lead to rewritten queries or more searches.&quot;, &quot;If the index lacks the answer, it falls back to other sources such as web search.&quot;, &quot;It answers, citing the passages used.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah10" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="132.0" y1="148.7" x2="176.0" y2="149.2" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="3"><line x1="304.3" y1="118.0" x2="395.8" y2="64.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="3"><line x1="322.0" y1="140.8" x2="376.0" y2="133.8" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="4"><line x1="473.2" y1="62.0" x2="571.5" y2="156.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="4"><line x1="512.0" y1="151.4" x2="556.0" y2="168.7" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="4"><line x1="558.0" y1="183.0" x2="324.0" y2="157.9" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah10)"/></g><g data-step="5"><line x1="306.7" y1="182.0" x2="393.6" y2="231.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah10)"/></g><g data-step="6"><line x1="250.0" y1="182.0" x2="250.0" y2="236.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="1"><rect x="20" y="120" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="75.0" y="153.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Question</text></g><g data-step="2"><rect x="180" y="120" width="140" height="60" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="250.0" y="148.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Agent</text><text x="250.0" y="164.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">plan queries</text></g><g data-step="3"><rect x="380" y="10" width="130" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="445.0" y="33.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Vector search</text><text x="445.0" y="49.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">semantic</text></g><g data-step="3"><rect x="380" y="100" width="130" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="445.0" y="123.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Keyword search</text><text x="445.0" y="139.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">BM25</text></g><g data-step="5"><rect x="380" y="235" width="130" height="50" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="445.0" y="258.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Web / APIs</text><text x="445.0" y="274.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">fresh data</text></g><g data-step="4"><rect x="560" y="160" width="90" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="605.0" y="186.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Grader</text><text x="605.0" y="202.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">relevant?</text></g><g data-step="6"><rect x="180" y="240" width="140" height="50" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="250.0" y="270.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Answer + citations</text></g><g data-step="4"><text x="441.0" y="165.4" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">rewrite / more</text></g><g data-step="5"><text x="350.2" y="201.5" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">fallback</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>The retrieval loop in detail</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Turn the question into search queries; split multi-hop questions into steps.&quot;, &quot;Retrieve top-k from hybrid (vector + keyword) search and rerank.&quot;, &quot;Grade each passage for relevance; drop the irrelevant ones.&quot;, &quot;Decide whether the kept evidence answers the question.&quot;, &quot;If not, refine: a new query, a different index, or web search; stop after a budget.&quot;, &quot;Generate the answer from kept passages and check each claim is supported by a cited passage.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah11" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="182.0" y1="45.0" x2="246.0" y2="45.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="3"><line x1="412.0" y1="45.0" x2="476.0" y2="45.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="4"><line x1="560.0" y1="72.0" x2="560.0" y2="126.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="5"><line x1="478.0" y1="155.0" x2="414.0" y2="155.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="5"><line x1="330.0" y1="128.0" x2="330.0" y2="74.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="6"><line x1="560.0" y1="182.0" x2="560.0" y2="226.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="1"><rect x="20" y="20" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="100.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Plan query</text><text x="100.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">rewrite / decompose</text></g><g data-step="2"><rect x="250" y="20" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="330.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Retrieve k</text><text x="330.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">hybrid + rerank</text></g><g data-step="3"><rect x="480" y="20" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="560.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Grade</text><text x="560.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">per passage</text></g><g data-step="4"><rect x="480" y="130" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="560.0" y="160.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Enough evidence?</text></g><g data-step="5"><rect x="250" y="130" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="330.0" y="153.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Refine</text><text x="330.0" y="169.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">new query / source</text></g><g data-step="6"><rect x="480" y="230" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="560.0" y="253.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Generate + cite</text><text x="560.0" y="269.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">check support</text></g><g data-step="5"><text x="446.0" y="150.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">no</text></g><g data-step="6"><text x="560.0" y="199.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">yes</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl"><tr><th>Choice</th><th>Benefit</th><th>Cost</th></tr><tr><td>Classic one-shot RAG</td><td>one retrieval, low latency</td><td>fails on multi-hop and bad retrieval</td></tr><tr><td>Agentic retrieval loop</td><td>handles multi-hop, recovers from misses</td><td>several model and search calls per question</td></tr><tr><td>Pre-built index</td><td>fast, controlled corpus</td><td>staleness; ingestion pipeline to maintain</td></tr><tr><td>Just-in-time fetching</td><td>always fresh, no index</td><td>slower; depends on live sources</td></tr><tr><td>Small chunks</td><td>precise matches</td><td>lose surrounding context; more chunks to read</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Retrieval miss</td><td>answers from memory or says unknown</td><td>hybrid search, query rewriting, recall evals</td></tr><tr><td>Distracting passages</td><td>answer swayed by irrelevant text</td><td>grading and filtering; fewer, better passages</td></tr><tr><td>Citation hallucination</td><td>cites passages that do not support the claim</td><td>verify claim-passage support</td></tr><tr><td>Indirect prompt injection</td><td>retrieved page instructs the agent</td><td>treat retrieved text as data; restrict actions (Greshake et al.)</td></tr><tr><td>Search loops</td><td>keeps re-searching similar queries</td><td>budget; detect near-duplicate queries</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Freshness</h3><p>Re-index on change; show document dates.</p></div>
+      <div class="card c"><h3>Access control</h3><p>Retrieval must respect each user's document permissions.</p></div>
+      <div class="card b"><h3>Evaluate two things</h3><p>Retrieval recall and answer faithfulness, separately.</p></div>
+      <div class="card e"><h3>Latency budgets</h3><p>Each loop adds round trips; cap iterations for interactive use.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2005.11401" target="_blank" rel="noopener">Retrieval-Augmented Generation for Knowledge-Intensive NLP (natural language processing) Tasks</a>
+        <div class="meta">Lewis et al. · NeurIPS 2020</div>
+        <p>Combines a seq2seq generator with a dense retriever over Wikipedia (non-parametric memory), trained end to end.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2310.11511" target="_blank" rel="noopener">Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection</a>
+        <div class="meta">Asai et al. · ICLR 2024</div>
+        <p>Trains the model to decide when to retrieve and to critique retrieved passages and its own output with reflection tokens.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2401.15884" target="_blank" rel="noopener">Corrective Retrieval Augmented Generation</a>
+        <div class="meta">Yan et al. · arXiv 2024</div>
+        <p>A lightweight evaluator grades retrieved documents and triggers corrective actions (refinement or web search) when retrieval is poor.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2302.12173" target="_blank" rel="noopener">Not what you've signed up for: Compromising Real-World LLM-Integrated (LLM = large language model) Applications with Indirect Prompt Injection</a>
+        <div class="meta">Greshake et al. · AISec 2023</div>
+        <p>Instructions planted in data the application retrieves (web pages, emails, documents) can hijack LLM-integrated apps: data theft, worming, manipulation.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+  document.querySelectorAll('.dgm').forEach(box => {
+    const caps = JSON.parse(box.dataset.steps), els = [...box.querySelectorAll('[data-step]')], max = Math.max(0, ...els.map(e => +e.dataset.step)), cap = box.querySelector('.dgcap');
+    let k = max, full = true;
+    const show = () => {
+      els.forEach(e => { const s = +e.dataset.step; e.style.opacity = s <= k ? 1 : 0.08; e.style.transition = 'opacity .25s'; e.querySelectorAll('rect').forEach(r => r.style.strokeWidth = s === k && k ? 3.5 : 2); });
+      cap.innerHTML = k === 0 ? 'Press <b>next step</b> to walk through the design.' : k === max && full ? 'Full design shown. Press <b>reset</b>, then <b>next step</b>, to walk through it one step at a time.' : `<b>Step ${k} of ${max}.</b> ${caps[k - 1] || ''}`;
+      full = false;
+    };
+    box.querySelector('[data-dg=next]').addEventListener('click', () => { k = Math.min(max, k + 1); show(); });
+    box.querySelector('[data-dg=all]').addEventListener('click', () => { k = max; full = false; show(); cap.innerHTML = '<b>Full design.</b> ' + caps.map((c, i) => `${i + 1}. ${c}`).join(' '); });
+    box.querySelector('[data-dg=reset]').addEventListener('click', () => { k = 0; show(); });
+    show();
+  });
+
+})();
+</script>
+</body>
+</html>

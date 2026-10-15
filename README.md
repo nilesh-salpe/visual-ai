@@ -220,6 +220,25 @@ Eight 9-beat decks plus 5 hands-on [Colab notebooks](build-it/), checked against
 | 07 | [Parallelism and quantization](vllm/07-parallelism-and-quantization/) |
 | 08 | [Running and tuning vLLM](vllm/08-running-and-tuning/) |
 
+## Visual Agents
+
+Twelve decks in four topics, using the agent template: problem, core idea, high-level design, low-level design, trade-offs, failure modes, challenges in production.
+
+| Topic | Deck |
+|---|---|
+| agent-foundations | [What an agent is](agent-foundations/01-what-is-an-agent/) |
+| agent-foundations | [Tool calling](agent-foundations/02-tool-calling/) |
+| agent-foundations | [ReAct: reasoning and acting](agent-foundations/03-react-loop/) |
+| agent-foundations | [Planning and task decomposition](agent-foundations/04-planning/) |
+| agent-context | [Memory and context management](agent-context/01-memory/) |
+| agent-context | [Agentic retrieval (RAG)](agent-context/02-agentic-rag/) |
+| agent-context | [Model Context Protocol (MCP)](agent-context/03-mcp/) |
+| agent-systems | [Multi-agent systems](agent-systems/01-multi-agent/) |
+| agent-systems | [Computer and browser use](agent-systems/02-computer-use/) |
+| agent-operations | [Evaluating agents](agent-operations/01-evaluating-agents/) |
+| agent-operations | [Safety and reliability](agent-operations/02-safety-and-reliability/) |
+| agent-operations | [Cost and latency](agent-operations/03-cost-and-latency/) |
+
 ## Editing and regenerating
 
 Deck content lives in [`content/`](content/) as Markdown (`deck.md`) plus each deck's interactive code (`widget.js`); see [`content/README.md`](content/README.md) for the format. To rebuild the site:

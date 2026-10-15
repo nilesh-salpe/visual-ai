@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent operations Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Agent operations</a>
+  <div class="label" style="margin-top:28px">Reading list · 12 papers and docs</div>
+  <h1>Agent operations: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://arxiv.org/abs/2406.12045" target="_blank" rel="noopener">τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains</a>
+      <div class="meta">Yao et al. · arXiv 2024 · cited in <a href="01-evaluating-agents/index.html" style="font-weight:500;color:var(--a)">Evaluating agents</a></div>
+      <p>Simulated users, domain APIs and policies; grades the final database state and introduces pass^k to measure consistency across trials.</p><div class="num">Remember: gpt-4o < 50% success; pass^8 < 25% in retail</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2310.06770" target="_blank" rel="noopener">SWE-bench: Can Language Models Resolve Real-World GitHub Issues?</a>
+      <div class="meta">Jimenez et al. · ICLR 2024 · cited in <a href="01-evaluating-agents/index.html" style="font-weight:500;color:var(--a)">Evaluating agents</a></div>
+      <p>Real GitHub issues: the model edits the repository and the project's own tests decide success.</p><div class="num">Remember: 2,294 issues; Claude 2 solved 1.96% at release</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2311.12983" target="_blank" rel="noopener">GAIA: a benchmark for General AI (artificial intelligence) Assistants</a>
+      <div class="meta">Mialon et al. · ICLR 2024 · cited in <a href="01-evaluating-agents/index.html" style="font-weight:500;color:var(--a)">Evaluating agents</a></div>
+      <p>466 real-world questions that are simple for humans but need reasoning, browsing, multimodality and tool use.</p><div class="num">Remember: humans 92% vs 15% for GPT-4 with plugins</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2404.07972" target="_blank" rel="noopener">OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real Computer Environments</a>
+      <div class="meta">Xie et al. · NeurIPS 2024 · cited in <a href="01-evaluating-agents/index.html" style="font-weight:500;color:var(--a)">Evaluating agents</a></div>
+      <p>369 real desktop and web tasks across operating systems with execution-based evaluation scripts.</p><div class="num">Remember: humans 72.36% vs best model 12.24% (at release)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2308.03688" target="_blank" rel="noopener">AgentBench: Evaluating LLMs as Agents</a>
+      <div class="meta">Liu et al. · ICLR 2024 · cited in <a href="01-evaluating-agents/index.html" style="font-weight:500;color:var(--a)">Evaluating agents</a></div>
+      <p>Eight interactive environments for LLM agents; poor long-term reasoning, decision-making and instruction following are the main failure causes.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2302.12173" target="_blank" rel="noopener">Not what you've signed up for: Compromising Real-World LLM-Integrated (LLM = large language model) Applications with Indirect Prompt Injection</a>
+      <div class="meta">Greshake et al. · AISec 2023 · cited in <a href="02-safety-and-reliability/index.html" style="font-weight:500;color:var(--a)">Safety and reliability</a></div>
+      <p>Instructions planted in data the application retrieves (web pages, emails, documents) can hijack LLM-integrated apps: data theft, worming, manipulation.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2406.13352" target="_blank" rel="noopener">AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM Agents</a>
+      <div class="meta">Debenedetti et al. · NeurIPS Datasets and Benchmarks 2024 · cited in <a href="02-safety-and-reliability/index.html" style="font-weight:500;color:var(--a)">Safety and reliability</a></div>
+      <p>An extensible environment of realistic agent tasks with injected tool outputs to measure attacks and defenses.</p><div class="num">Remember: 97 tasks, 629 security test cases</div></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool" target="_blank" rel="noopener">Computer use tool</a>
+      <div class="meta">Anthropic documentation · platform.claude.com 2026 · cited in <a href="02-safety-and-reliability/index.html" style="font-weight:500;color:var(--a)">Safety and reliability</a></div>
+      <p>Screenshot, mouse and keyboard control in an agent loop; recommends a dedicated VM or container, no sensitive data, a domain allowlist and human confirmation for consequential actions.</p></div>
+    <div class="paper-item"><a href="https://modelcontextprotocol.io/specification/2026-07-28" target="_blank" rel="noopener">Model Context Protocol specification (revision 2026-07-28)</a>
+      <div class="meta">MCP maintainers · modelcontextprotocol.io 2026 · cited in <a href="02-safety-and-reliability/index.html" style="font-weight:500;color:var(--a)">Safety and reliability</a></div>
+      <p>Hosts, clients and servers over JSON-RPC (JSON = JavaScript Object Notation) 2.0; servers offer tools, resources and prompts; stdio and Streamable HTTP (Hypertext Transfer Protocol) transports; stateless requests with per-request protocol version and capabilities.</p></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching" target="_blank" rel="noopener">Prompt caching</a>
+      <div class="meta">Anthropic documentation · platform.claude.com 2026 · cited in <a href="03-cost-and-latency/index.html" style="font-weight:500;color:var(--a)">Cost and latency</a></div>
+      <p>Reuse of cached prompt prefixes: 5-minute cache writes cost 1.25× base input, 1-hour writes 2×, and reads 0.1× on most models (lower on some newer ones).</p></div>
+    <div class="paper-item"><a href="https://www.anthropic.com/engineering/multi-agent-research-system" target="_blank" rel="noopener">How we built our multi-agent research system</a>
+      <div class="meta">Anthropic · Anthropic Engineering 2025 · cited in <a href="03-cost-and-latency/index.html" style="font-weight:500;color:var(--a)">Cost and latency</a></div>
+      <p>A lead agent plans and spawns parallel subagents with separate context windows; lessons on delegation, effort scaling, tools, evaluation and production reliability.</p><div class="num">Remember: +90.2% vs single agent on an internal research eval; ~15× chat tokens</div></div>
+    <div class="paper-item"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Building effective agents</a>
+      <div class="meta">Anthropic · Anthropic Engineering 2024 · cited in <a href="03-cost-and-latency/index.html" style="font-weight:500;color:var(--a)">Cost and latency</a></div>
+      <p>Workflows (predefined code paths) vs agents (LLMs (large language models) directing their own process); patterns: prompt chaining, routing, parallelization, orchestrator-workers, evaluator-optimizer. Start with the simplest solution.</p></div>
+  </div>
+</div>
+
+</body>
+</html>

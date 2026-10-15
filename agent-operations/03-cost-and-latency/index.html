@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cost and Latency</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Cost and latency" data-home="../index.html" data-home-label="Operations">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual Agents · Operations · 03</div>
+    <h1>Cost and latency</h1>
+    <p class="sub">Why agent loops are expensive and slow (the context is re-sent every step), and the levers that fix it: prompt caching, compaction, model routing, parallel tool calls, and budgets.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Each iteration re-sends the whole growing context, so total input tokens grow roughly quadratically with the number of steps. Anthropic reports agents use about 4× the tokens of chat and multi-agent systems about 15×.</div>
+      <div class="c"><b>Core idea</b>Make the repeated prefix cheap with <b>prompt caching</b> (cache reads at 0.1× the base input price on most Claude models), keep the context small with <b>compaction</b> and concise tool results, send easy steps to <b>smaller models</b>, run independent tool calls <b>in parallel</b>, and enforce <b>budgets</b> per task.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Previous: <a href="../02-safety-and-reliability/index.html">Safety and reliability</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Loops multiply tokens</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Re-sent context</h3><p>Every model call includes the system prompt, tools and the full history so far.</p></div>
+      <div class="card b"><h3>Growing history</h3><p>Each step appends tool results, so step n sends about n × (tokens per step) more.</p></div>
+      <div class="card c"><h3>Serial latency</h3><p>Model calls and tool calls run one after another; a 30-step task means 30 round trips.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Make repetition cheap, keep context small</h2>
+    <hr>
+<div class="grid2">
+      <div class="card e"><h3>Prompt caching</h3><p>Reuse the unchanged prefix: 5-minute cache writes cost 1.25× base input, 1-hour writes 2×, reads 0.1× on most Claude models (lower on some newer ones).</p></div>
+      <div class="card a"><h3>Compaction and lean results</h3><p>Summarise old history; truncate and summarise large tool outputs.</p></div>
+      <div class="card c"><h3>Routing</h3><p>Send easy steps or queries to smaller, cheaper models; reserve the largest for hard ones (Anthropic's routing pattern).</p></div>
+      <div class="card b"><h3>Parallelism and budgets</h3><p>Run independent tool calls in parallel; cap steps, tokens and time per task.</p></div>
+    </div>
+<div class="visual"><div class="controls" style="margin-top:0"><label class="ctl">steps <input type="range" id="cS" min="1" max="60" step="1" value="20"> <output id="cSo"></output></label><label class="ctl">prefix tokens <input type="range" id="cP" min="1000" max="50000" step="1000" value="10000"> <output id="cPo"></output></label><label class="ctl">tokens added per step <input type="range" id="cT" min="100" max="10000" step="100" value="1500"> <output id="cTo"></output></label><label class="ctl"><input type="checkbox" id="cC" checked> cache</label></div><div id="cBars" style="margin-top:12px"></div><p class="readout" id="cOut"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>Where time and money go</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A task enters the loop.&quot;, &quot;A router picks a model by difficulty.&quot;, &quot;Each call reuses the cached prefix (system prompt, tool definitions, earlier history); only new tokens are processed at full price.&quot;, &quot;Independent tool calls run in parallel to cut wall-clock time.&quot;, &quot;When the context nears its limit, compaction summarises it.&quot;, &quot;A budget guard stops runaway tasks.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah21" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="142.0" y1="148.0" x2="176.0" y2="148.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah21)"/></g><g data-step="3"><line x1="322.0" y1="155.0" x2="376.0" y2="160.3" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah21)"/></g><g data-step="3"><line x1="455.0" y1="88.0" x2="455.0" y2="136.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah21)"/></g><g data-step="4"><line x1="532.0" y1="168.0" x2="576.0" y2="168.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah21)"/></g><g data-step="4"><line x1="578.0" y1="178.0" x2="534.0" y2="178.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah21)"/></g><g data-step="5"><line x1="455.0" y1="198.0" x2="455.0" y2="241.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah21)"/></g><g data-step="6"><line x1="378.0" y1="270.0" x2="324.0" y2="270.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah21)"/></g><g data-step="1"><rect x="20" y="120" width="120" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="80.0" y="153.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Task</text></g><g data-step="2"><rect x="180" y="120" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="250.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Router</text><text x="250.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">small or large model?</text></g><g data-step="3"><rect x="380" y="30" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="455.0" y="56.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Prompt cache</text><text x="455.0" y="72.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">stable prefix</text></g><g data-step="3"><rect x="380" y="140" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="455.0" y="166.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Model call</text><text x="455.0" y="182.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">only new tokens computed</text></g><g data-step="4"><rect x="580" y="140" width="70" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="615.0" y="166.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Tools</text><text x="615.0" y="182.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">parallel</text></g><g data-step="5"><rect x="380" y="245" width="150" height="50" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="455.0" y="268.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Compactor</text><text x="455.0" y="284.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">near the limit</text></g><g data-step="6"><rect x="180" y="245" width="140" height="50" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="250.0" y="268.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Budget guard</text><text x="250.0" y="284.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">steps · tokens · time</text></g><g data-step="3"><text x="455.0" y="107.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">cache hit</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>Token accounting per step</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Step 1 sends the prefix P (system prompt, tools, task).&quot;, &quot;Step 2 also sends the T tokens added by step 1 (assistant turn + tool result).&quot;, &quot;Each step adds another T.&quot;, &quot;Step n sends P + (n \u2212 1)T.&quot;, &quot;Summed over n steps, input tokens \u2248 nP + T\u00b7n(n \u2212 1)/2: quadratic in the number of steps.&quot;, &quot;With a cache hit each step, the repeated part is billed at the read price and only the new tokens at full price.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah22" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="142.0" y1="55.0" x2="156.0" y2="55.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah22)"/></g><g data-step="3"><line x1="302.0" y1="55.0" x2="316.0" y2="55.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah22)"/></g><g data-step="4"><line x1="482.0" y1="55.0" x2="496.0" y2="55.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah22)"/></g><g data-step="5"><line x1="521.2" y1="82.0" x2="393.7" y2="146.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah22)"/></g><g data-step="6"><line x1="330.0" y1="208.0" x2="330.0" y2="236.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah22)"/></g><g data-step="1"><rect x="20" y="30" width="120" height="50" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="80.0" y="53.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">step 1</text><text x="80.0" y="69.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">P</text></g><g data-step="2"><rect x="160" y="30" width="140" height="50" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="230.0" y="53.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">step 2</text><text x="230.0" y="69.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">P + T</text></g><g data-step="3"><rect x="320" y="30" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="400.0" y="53.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">step 3</text><text x="400.0" y="69.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">P + 2T</text></g><g data-step="4"><rect x="500" y="30" width="150" height="50" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="575.0" y="53.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">step n</text><text x="575.0" y="69.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">P + (n−1)T</text></g><g data-step="5"><rect x="160" y="150" width="340" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="330.0" y="176.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">total input ≈ nP + T·n(n−1)/2</text><text x="330.0" y="192.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">grows ~ n² in the history term</text></g><g data-step="6"><rect x="160" y="240" width="340" height="50" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="330.0" y="270.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">cached: prefix at 0.1×, only the new T at full price</text></g></svg><p class="readout dgcap"></p></div>
+<div class="grid3">
+      <div class="card e"><h3>Stable prefixes</h3><p>Caching needs an identical prefix: no timestamps or reordered tools at the top.</p></div>
+      <div class="card a"><h3>Cache lifetime</h3><p>The default TTL (time to live) is 5 minutes, measured from the start of the request; a 1-hour TTL costs 2× to write.</p></div>
+      <div class="card d"><h3>Minimum size</h3><p>Prompts below a model-specific minimum length are not cached.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl"><tr><th>Lever</th><th>Saves</th><th>Costs</th></tr><tr><td>Prompt caching</td><td>most repeated input cost and time to first token</td><td>write premium; needs stable prefixes</td></tr><tr><td>Compaction</td><td>tokens on long tasks</td><td>possible loss of detail</td></tr><tr><td>Smaller model / routing</td><td>price and latency per call</td><td>more steps or lower quality on hard tasks</td></tr><tr><td>Parallel tool calls / subagents</td><td>wall-clock time</td><td>more tokens overall (multi-agent ≈ 15× chat)</td></tr><tr><td>Step budgets</td><td>runaway cost</td><td>some tasks end incomplete</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Runaway loops</td><td>a task burns thousands of calls</td><td>hard caps; repeated-action detection</td></tr><tr><td>Cache misses from unstable prefixes</td><td>cost does not drop with caching on</td><td>move dynamic content after the cached prefix; deterministic tool order</td></tr><tr><td>Tail latency from slow tools</td><td>p99 dominated by one dependency</td><td>timeouts, parallelism, fallbacks</td></tr><tr><td>Context bloat</td><td>huge tool outputs re-sent every step</td><td>truncate and summarise results</td></tr><tr><td>Silent cost growth</td><td>bill surprises after a prompt change</td><td>track cost per task in monitoring</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Cost per task, not per call</h3><p>Budget and report by completed task.</p></div>
+      <div class="card c"><h3>Latency SLOs</h3><p>Stream progress; set service-level objectives (SLOs) for time to first action and completion.</p></div>
+      <div class="card b"><h3>Rate limits</h3><p>Parallel agents hit token and request limits together; queue and back off.</p></div>
+      <div class="card e"><h3>Value check</h3><p>Agents and especially multi-agent systems need tasks valuable enough to pay for their tokens.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching" target="_blank" rel="noopener">Prompt caching</a>
+        <div class="meta">Anthropic documentation · platform.claude.com 2026</div>
+        <p>Reuse of cached prompt prefixes: 5-minute cache writes cost 1.25× base input, 1-hour writes 2×, and reads 0.1× on most models (lower on some newer ones).</p></div>
+      <div class="paper-item"><a href="https://www.anthropic.com/engineering/multi-agent-research-system" target="_blank" rel="noopener">How we built our multi-agent research system</a>
+        <div class="meta">Anthropic · Anthropic Engineering 2025</div>
+        <p>A lead agent plans and spawns parallel subagents with separate context windows; lessons on delegation, effort scaling, tools, evaluation and production reliability.</p><div class="num">Remember: +90.2% vs single agent on an internal research eval; ~15× chat tokens</div></div>
+      <div class="paper-item"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Building effective agents</a>
+        <div class="meta">Anthropic · Anthropic Engineering 2024</div>
+        <p>Workflows (predefined code paths) vs agents (LLMs (large language models) directing their own process); patterns: prompt chaining, routing, parallelization, orchestrator-workers, evaluator-optimizer. Start with the simplest solution.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+  document.querySelectorAll('.dgm').forEach(box => {
+    const caps = JSON.parse(box.dataset.steps), els = [...box.querySelectorAll('[data-step]')], max = Math.max(0, ...els.map(e => +e.dataset.step)), cap = box.querySelector('.dgcap');
+    let k = max, full = true;
+    const show = () => {
+      els.forEach(e => { const s = +e.dataset.step; e.style.opacity = s <= k ? 1 : 0.08; e.style.transition = 'opacity .25s'; e.querySelectorAll('rect').forEach(r => r.style.strokeWidth = s === k && k ? 3.5 : 2); });
+      cap.innerHTML = k === 0 ? 'Press <b>next step</b> to walk through the design.' : k === max && full ? 'Full design shown. Press <b>reset</b>, then <b>next step</b>, to walk through it one step at a time.' : `<b>Step ${k} of ${max}.</b> ${caps[k - 1] || ''}`;
+      full = false;
+    };
+    box.querySelector('[data-dg=next]').addEventListener('click', () => { k = Math.min(max, k + 1); show(); });
+    box.querySelector('[data-dg=all]').addEventListener('click', () => { k = max; full = false; show(); cap.innerHTML = '<b>Full design.</b> ' + caps.map((c, i) => `${i + 1}. ${c}`).join(' '); });
+    box.querySelector('[data-dg=reset]').addEventListener('click', () => { k = 0; show(); });
+    show();
+  });
+  Deck.bind(['cS', 'cP', 'cT', 'cC'], () => {
+    const S = Deck.val('cS'), P = Deck.val('cP'), T = Deck.val('cT'), cache = document.getElementById('cC').checked;
+    Deck.out('cSo', S); Deck.out('cPo', P.toLocaleString()); Deck.out('cTo', T.toLocaleString());
+    let full = 0, cached = 0;
+    for (let i = 0; i < S; i++) { const ctx = P + i * T; full += ctx; const prev = i ? P + (i - 1) * T : 0; cached += i === 0 ? 1.25 * ctx : 0.1 * prev + 1.25 * (ctx - prev); }
+    const eff = cache ? cached : full;
+    Deck.hbars(document.getElementById('cBars'), [{ label: 'naive: input tokens re-sent', value: full, color: 'var(--d)', text: Math.round(full).toLocaleString() + ' tokens' },
+      { label: 'with prompt caching (cost-equivalent)', value: cached, color: 'var(--e)', text: Math.round(cached).toLocaleString() + ' token-equivalents' }], { max: full * 1.05 });
+    document.getElementById('cOut').innerHTML = `${S} steps, ${P.toLocaleString()}-token prefix, +${T.toLocaleString()} tokens per step: last call sends ${(P + (S - 1) * T).toLocaleString()} tokens; total ${Math.round(full).toLocaleString()}. Caching (writes 1.25×, reads 0.1×, 5-minute TTL) cuts input cost to <b>${(100 * cached / full).toFixed(0)}%</b> if each step hits the cache. ${cache ? '' : '(Tick "cache" to compare.)'}`;
+  });
+})();
+</script>
+</body>
+</html>

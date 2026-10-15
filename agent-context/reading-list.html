@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent context Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Agent context</a>
+  <div class="label" style="margin-top:28px">Reading list · 11 papers and docs</div>
+  <h1>Agent context: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">Effective context engineering for AI (artificial intelligence) agents</a>
+      <div class="meta">Anthropic · Anthropic Engineering 2025 · cited in <a href="01-memory/index.html" style="font-weight:500;color:var(--a)">Memory and context management</a></div>
+      <p>Context as a finite "attention budget" (context rot); just-in-time retrieval; compaction, structured note-taking and sub-agents for long-horizon tasks.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2310.08560" target="_blank" rel="noopener">MemGPT: Towards LLMs (large language models) as Operating Systems</a>
+      <div class="meta">Packer et al. · arXiv 2023 · cited in <a href="01-memory/index.html" style="font-weight:500;color:var(--a)">Memory and context management</a></div>
+      <p>Virtual context management: the LLM moves information between a limited main context and external memory tiers via function calls, like OS paging.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2304.03442" target="_blank" rel="noopener">Generative Agents: Interactive Simulacra of Human Behavior</a>
+      <div class="meta">Park et al. · UIST 2023 · cited in <a href="01-memory/index.html" style="font-weight:500;color:var(--a)">Memory and context management</a></div>
+      <p>A memory stream of observations retrieved by recency, importance and relevance, periodically synthesised into reflections that guide planning.</p><div class="num">Remember: retrieval score = recency + importance + relevance (each min-max scaled, weights 1)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2307.03172" target="_blank" rel="noopener">Lost in the Middle: How Language Models Use Long Contexts</a>
+      <div class="meta">Liu et al. · TACL 2024 · cited in <a href="01-memory/index.html" style="font-weight:500;color:var(--a)">Memory and context management</a></div>
+      <p>Performance is often highest when relevant information is at the beginning or end of the context and degrades when it is in the middle.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2005.11401" target="_blank" rel="noopener">Retrieval-Augmented Generation for Knowledge-Intensive NLP (natural language processing) Tasks</a>
+      <div class="meta">Lewis et al. · NeurIPS 2020 · cited in <a href="02-agentic-rag/index.html" style="font-weight:500;color:var(--a)">Agentic retrieval (RAG)</a></div>
+      <p>Combines a seq2seq generator with a dense retriever over Wikipedia (non-parametric memory), trained end to end.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2310.11511" target="_blank" rel="noopener">Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection</a>
+      <div class="meta">Asai et al. · ICLR 2024 · cited in <a href="02-agentic-rag/index.html" style="font-weight:500;color:var(--a)">Agentic retrieval (RAG)</a></div>
+      <p>Trains the model to decide when to retrieve and to critique retrieved passages and its own output with reflection tokens.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2401.15884" target="_blank" rel="noopener">Corrective Retrieval Augmented Generation</a>
+      <div class="meta">Yan et al. · arXiv 2024 · cited in <a href="02-agentic-rag/index.html" style="font-weight:500;color:var(--a)">Agentic retrieval (RAG)</a></div>
+      <p>A lightweight evaluator grades retrieved documents and triggers corrective actions (refinement or web search) when retrieval is poor.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2302.12173" target="_blank" rel="noopener">Not what you've signed up for: Compromising Real-World LLM-Integrated (LLM = large language model) Applications with Indirect Prompt Injection</a>
+      <div class="meta">Greshake et al. · AISec 2023 · cited in <a href="02-agentic-rag/index.html" style="font-weight:500;color:var(--a)">Agentic retrieval (RAG)</a></div>
+      <p>Instructions planted in data the application retrieves (web pages, emails, documents) can hijack LLM-integrated apps: data theft, worming, manipulation.</p></div>
+    <div class="paper-item"><a href="https://modelcontextprotocol.io/specification/2026-07-28" target="_blank" rel="noopener">Model Context Protocol specification (revision 2026-07-28)</a>
+      <div class="meta">MCP maintainers · modelcontextprotocol.io 2026 · cited in <a href="03-mcp/index.html" style="font-weight:500;color:var(--a)">Model Context Protocol (MCP)</a></div>
+      <p>Hosts, clients and servers over JSON-RPC 2.0; servers offer tools, resources and prompts; stdio and Streamable HTTP transports; stateless requests with per-request protocol version and capabilities.</p></div>
+    <div class="paper-item"><a href="https://modelcontextprotocol.io/specification/2026-07-28/changelog" target="_blank" rel="noopener">MCP specification changelog (2026-07-28)</a>
+      <div class="meta">MCP maintainers · modelcontextprotocol.io 2026 · cited in <a href="03-mcp/index.html" style="font-weight:500;color:var(--a)">Model Context Protocol (MCP)</a></div>
+      <p>Removes the initialize handshake and sessions, adds server/discover and subscriptions/listen, replaces server-initiated requests with multi round-trip requests (input_required).</p></div>
+    <div class="paper-item"><a href="https://www.anthropic.com/news/model-context-protocol" target="_blank" rel="noopener">Introducing the Model Context Protocol</a>
+      <div class="meta">Anthropic · Anthropic 2024 · cited in <a href="03-mcp/index.html" style="font-weight:500;color:var(--a)">Model Context Protocol (MCP)</a></div>
+      <p>Announcement of MCP (November 25, 2024) as a universal, open standard for connecting AI systems to data sources and tools.</p></div>
+  </div>
+</div>
+
+</body>
+</html>

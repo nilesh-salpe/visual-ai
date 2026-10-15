@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What an Agent Is</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="What an agent is" data-home="../index.html" data-home-label="Foundations">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual Agents · Foundations · 01</div>
+    <h1>What an agent is</h1>
+    <p class="sub">The difference between a single LLM (large language model) call, a workflow and an agent, and the loop every agent shares: decide, act, observe, repeat.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A single model call cannot look anything up, take actions, or adapt when a step fails. Real tasks need several steps whose number and order are not known in advance.</div>
+      <div class="c"><b>Core idea</b>An <b>agent</b> is an LLM that <b>directs its own process</b>: in a loop it chooses a tool call, the application executes it, the result is fed back, and it decides what to do next until it can answer. A <b>workflow</b> orchestrates LLM calls through <b>predefined code paths</b>. Start with the simplest option that works.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Next: <a href="../02-tool-calling/index.html">Tool calling →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>One call is not enough</h2>
+    <hr>
+<p class="lede">Ask "Which of our three cloud regions had the most failed deployments last week, and open a ticket for it?" A single LLM call has to guess: it has no data, cannot query anything, and cannot act.</p>
+<div class="grid3">
+      <div class="card d"><h3>No access</h3><p>Facts live in databases, APIs (application programming interfaces) and documents outside the model.</p></div>
+      <div class="card b"><h3>No actions</h3><p>Creating a ticket, running code or sending a message requires calling a system.</p></div>
+      <div class="card c"><h3>No adaptation</h3><p>If a query fails or returns surprising data, a single call cannot react and try something else.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>An LLM in a loop</h2>
+    <hr>
+<p class="lede">Anthropic's distinction: <b>workflows</b> are systems where LLMs and tools are orchestrated through predefined code paths; <b>agents</b> are systems where LLMs dynamically direct their own processes and tool usage.</p>
+<div class="grid2">
+      <div class="card f"><h3>Augmented LLM</h3><p>The building block: an LLM with retrieval, tools and memory available.</p></div>
+      <div class="card a"><h3>Workflow</h3><p>Your code decides the steps: chain, route, parallelise, evaluate-and-revise.</p></div>
+      <div class="card e"><h3>Agent</h3><p>The model decides the steps: call a tool, read the result, decide again, until done or stopped.</p></div>
+      <div class="card d"><h3>Rule of thumb</h3><p>"Find the simplest solution possible, and only increase complexity when needed." Agents trade latency and cost for task performance.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>The agent loop</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;The user states a goal, not a step-by-step procedure.&quot;, &quot;The agent loop is an LLM call wrapped in code that keeps going while the model asks for tools.&quot;, &quot;The model picks a tool and arguments; the application executes the call.&quot;, &quot;The tool acts on the environment; the observation (result or error) goes back into the context.&quot;, &quot;Memory keeps what matters across steps: the conversation, notes, retrieved facts.&quot;, &quot;When the model stops asking for tools, its final message goes back to the user.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="1"><line x1="132.0" y1="148.0" x2="196.0" y2="148.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah1)"/></g><g data-step="3"><line x1="352.0" y1="121.8" x2="446.0" y2="89.9" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah1)"/></g><g data-step="4"><line x1="540.0" y1="88.0" x2="540.0" y2="126.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah1)"/></g><g data-step="4"><line x1="447.6" y1="164.5" x2="353.6" y2="161.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah1)"/></g><g data-step="5"><line x1="352.0" y1="179.1" x2="468.2" y2="226.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah1)"/></g><g data-step="6"><line x1="198.0" y1="158.0" x2="134.0" y2="158.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah1)"/></g><g data-step="1"><rect x="20" y="120" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="75.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">User</text><text x="75.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">goal</text></g><g data-step="2"><rect x="200" y="110" width="150" height="76" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="275.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Agent loop</text><text x="275.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">LLM decides</text></g><g data-step="3"><rect x="450" y="30" width="180" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="540.0" y="56.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Tools</text><text x="540.0" y="72.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">search · code · APIs</text></g><g data-step="4"><rect x="450" y="130" width="180" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="540.0" y="156.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Environment</text><text x="540.0" y="172.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">files · web · systems</text></g><g data-step="5"><rect x="450" y="230" width="180" height="50" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="540.0" y="253.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Memory</text><text x="540.0" y="269.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">context · notes</text></g><g data-step="1"><text x="164.0" y="143.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">task</text></g><g data-step="3"><text x="399.0" y="100.9" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">tool call</text></g><g data-step="4"><text x="540.0" y="102.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">acts on</text></g><g data-step="4"><text x="400.6" y="177.7" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">observation</text></g><g data-step="5"><text x="410.1" y="197.5" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">read / write</text></g><g data-step="6"><text x="166.0" y="173.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">answer</text></g></svg><p class="readout dgcap"></p></div>
+<div class="grid3">
+      <div class="card a"><h3>Decide</h3><p>The LLM reads the goal and everything so far and picks the next action.</p></div>
+      <div class="card c"><h3>Act</h3><p>Your code runs the tool with the model's arguments.</p></div>
+      <div class="card b"><h3>Observe</h3><p>The result, including errors, is appended to the context for the next decision.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>Inside one loop iteration</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Assemble the request: system prompt, tool definitions and the conversation so far.&quot;, &quot;Call the model.&quot;, &quot;Check why it stopped. With Anthropic&#x27;s API a tool request comes back as stop_reason \&quot;tool_use\&quot; with tool_use blocks.&quot;, &quot;Validate arguments, then run each requested tool with a timeout.&quot;, &quot;Send each result back as a tool_result block that references the tool_use id.&quot;, &quot;Before looping, enforce limits: maximum iterations, token or cost budget, wall-clock time.&quot;, &quot;If the model ended its turn without tool calls, its text is the answer.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 230" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="162.0" y1="48.0" x2="186.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah2)"/></g><g data-step="3"><line x1="342.0" y1="48.0" x2="366.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah2)"/></g><g data-step="4"><line x1="445.0" y1="78.0" x2="445.0" y2="146.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah2)"/></g><g data-step="5"><line x1="368.0" y1="178.0" x2="344.0" y2="178.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah2)"/></g><g data-step="6"><line x1="188.0" y1="178.0" x2="164.0" y2="178.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah2)"/></g><g data-step="6"><line x1="85.0" y1="148.0" x2="85.0" y2="80.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah2)"/></g><g data-step="7"><line x1="522.0" y1="48.0" x2="546.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah2)"/></g><g data-step="1"><rect x="10" y="20" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="85.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Build context</text><text x="85.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">system · tools · history</text></g><g data-step="2"><rect x="190" y="20" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="265.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Model call</text><text x="265.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">messages API</text></g><g data-step="3"><rect x="370" y="20" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="445.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Stop reason?</text><text x="445.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">tool_use / end_turn</text></g><g data-step="4"><rect x="370" y="150" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="445.0" y="176.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Execute tools</text><text x="445.0" y="192.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">validate · run · time out</text></g><g data-step="5"><rect x="190" y="150" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="265.0" y="176.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Append results</text><text x="265.0" y="192.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">tool_result blocks</text></g><g data-step="6"><rect x="10" y="150" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="85.0" y="176.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Guards</text><text x="85.0" y="192.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">max steps · budget</text></g><g data-step="7"><rect x="550" y="20" width="100" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="600.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Answer</text><text x="600.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">return text</text></g><g data-step="4"><text x="445.0" y="107.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">tool_use</text></g><g data-step="6"><text x="85.0" y="109.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">continue</text></g><g data-step="7"><text x="534.0" y="43.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">end_turn</text></g></svg><p class="readout dgcap"></p></div>
+
+<div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap">messages = [user_goal]&#10;for step in range(MAX_STEPS):&#10;    resp = llm(system, tools, messages)&#10;    messages.append(resp)&#10;    if resp.stop_reason != "tool_use":&#10;        return resp.text&#10;    messages.append(run_tools(resp.tool_calls))   # results, including errors&#10;raise StepLimitExceeded</pre></div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Workflow or agent?</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl"><tr><th>Option</th><th>You gain</th><th>You pay</th><th>Choose when</th></tr><tr><td>Single LLM call (+ retrieval)</td><td>cheapest, fastest, predictable</td><td>no actions, no adaptation</td><td>the answer needs only text in the prompt</td></tr><tr><td>Workflow (chain, route, parallelise)</td><td>predictable steps, easy to test</td><td>breaks on inputs the code did not anticipate</td><td>the steps are known in advance</td></tr><tr><td>Agent (model-directed loop)</td><td>handles open-ended tasks and surprises</td><td>more latency, cost, variance; harder to test</td><td>the number and order of steps cannot be predicted</td></tr><tr><td>Agent with human checkpoints</td><td>safety on consequential actions</td><td>slower, needs a UI (user interface)</td><td>actions are costly or irreversible</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>How agents fail</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>What you see</th><th>Mitigation</th></tr><tr><td>Endless or repetitive loops</td><td>the same tool call again and again</td><td>step and budget limits; detect repeated calls</td></tr><tr><td>Compounding errors</td><td>one wrong observation leads to a confident wrong answer</td><td>verify key facts; let the agent re-check</td></tr><tr><td>Malformed tool calls</td><td>invalid arguments, wrong tool</td><td>strict schemas, validation errors returned to the model</td></tr><tr><td>Premature finish</td><td>answers before doing the work</td><td>explicit completion criteria; evaluator step</td></tr><tr><td>Acting on injected instructions</td><td>tool output tells it to do something else</td><td>treat tool output as data; least privilege (Operations deck 02)</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>Running agents for real</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Cost and latency per task</h3><p>Every iteration re-sends a growing context; Anthropic reports agents use about 4× the tokens of chat (Operations deck 03).</p></div>
+      <div class="card c"><h3>Observability</h3><p>Log every step: prompt, tool call, result, timing. Without traces, failures are unexplainable.</p></div>
+      <div class="card b"><h3>Evaluation</h3><p>Grade end states over many runs; agents are stochastic (Operations deck 01).</p></div>
+      <div class="card d"><h3>Permissions</h3><p>Give tools the minimum access needed; confirm irreversible actions with a human.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Building effective agents</a>
+        <div class="meta">Anthropic · Anthropic Engineering 2024</div>
+        <p>Workflows (predefined code paths) vs agents (LLMs directing their own process); patterns: prompt chaining, routing, parallelization, orchestrator-workers, evaluator-optimizer. Start with the simplest solution.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2210.03629" target="_blank" rel="noopener">ReAct: Synergizing Reasoning and Acting in Language Models</a>
+        <div class="meta">Yao et al. · ICLR 2023</div>
+        <p>Interleaves reasoning traces with actions and observations, so reasoning guides tool use and observations ground reasoning.</p><div class="num">Remember: +34 and +10 points absolute success on ALFWorld and WebShop</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2302.04761" target="_blank" rel="noopener">Toolformer: Language Models Can Teach Themselves to Use Tools</a>
+        <div class="meta">Schick et al. · NeurIPS 2023</div>
+        <p>A model trained self-supervised to decide which APIs to call, when, and with what arguments (calculator, search, QA, translation, calendar).</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+  document.querySelectorAll('.dgm').forEach(box => {
+    const caps = JSON.parse(box.dataset.steps), els = [...box.querySelectorAll('[data-step]')], max = Math.max(0, ...els.map(e => +e.dataset.step)), cap = box.querySelector('.dgcap');
+    let k = max, full = true;
+    const show = () => {
+      els.forEach(e => { const s = +e.dataset.step; e.style.opacity = s <= k ? 1 : 0.08; e.style.transition = 'opacity .25s'; e.querySelectorAll('rect').forEach(r => r.style.strokeWidth = s === k && k ? 3.5 : 2); });
+      cap.innerHTML = k === 0 ? 'Press <b>next step</b> to walk through the design.' : k === max && full ? 'Full design shown. Press <b>reset</b>, then <b>next step</b>, to walk through it one step at a time.' : `<b>Step ${k} of ${max}.</b> ${caps[k - 1] || ''}`;
+      full = false;
+    };
+    box.querySelector('[data-dg=next]').addEventListener('click', () => { k = Math.min(max, k + 1); show(); });
+    box.querySelector('[data-dg=all]').addEventListener('click', () => { k = max; full = false; show(); cap.innerHTML = '<b>Full design.</b> ' + caps.map((c, i) => `${i + 1}. ${c}`).join(' '); });
+    box.querySelector('[data-dg=reset]').addEventListener('click', () => { k = 0; show(); });
+    show();
+  });
+
+})();
+</script>
+</body>
+</html>

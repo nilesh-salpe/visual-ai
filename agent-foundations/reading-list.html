@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent foundations Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Agent foundations</a>
+  <div class="label" style="margin-top:28px">Reading list · 10 papers and docs</div>
+  <h1>Agent foundations: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Building effective agents</a>
+      <div class="meta">Anthropic · Anthropic Engineering 2024 · cited in <a href="01-what-is-an-agent/index.html" style="font-weight:500;color:var(--a)">What an agent is</a>, <a href="04-planning/index.html" style="font-weight:500;color:var(--a)">Planning and task decomposition</a></div>
+      <p>Workflows (predefined code paths) vs agents (LLMs directing their own process); patterns: prompt chaining, routing, parallelization, orchestrator-workers, evaluator-optimizer. Start with the simplest solution.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2210.03629" target="_blank" rel="noopener">ReAct: Synergizing Reasoning and Acting in Language Models</a>
+      <div class="meta">Yao et al. · ICLR 2023 · cited in <a href="01-what-is-an-agent/index.html" style="font-weight:500;color:var(--a)">What an agent is</a>, <a href="03-react-loop/index.html" style="font-weight:500;color:var(--a)">ReAct: reasoning and acting</a></div>
+      <p>Interleaves reasoning traces with actions and observations, so reasoning guides tool use and observations ground reasoning.</p><div class="num">Remember: +34 and +10 points absolute success on ALFWorld and WebShop</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2302.04761" target="_blank" rel="noopener">Toolformer: Language Models Can Teach Themselves to Use Tools</a>
+      <div class="meta">Schick et al. · NeurIPS 2023 · cited in <a href="01-what-is-an-agent/index.html" style="font-weight:500;color:var(--a)">What an agent is</a>, <a href="02-tool-calling/index.html" style="font-weight:500;color:var(--a)">Tool calling</a></div>
+      <p>A model trained self-supervised to decide which APIs to call, when, and with what arguments (calculator, search, QA, translation, calendar).</p></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview" target="_blank" rel="noopener">Tool use with Claude (overview)</a>
+      <div class="meta">Anthropic documentation · platform.claude.com 2026 · cited in <a href="02-tool-calling/index.html" style="font-weight:500;color:var(--a)">Tool calling</a></div>
+      <p>Tools defined with input_schema; client tools return stop_reason "tool_use" and are executed by the application, which replies with tool_result; server tools run on Anthropic's side.</p></div>
+    <div class="paper-item"><a href="https://developers.openai.com/api/docs/guides/function-calling" target="_blank" rel="noopener">Function calling</a>
+      <div class="meta">OpenAI documentation · developers.openai.com 2026 · cited in <a href="02-tool-calling/index.html" style="font-weight:500;color:var(--a)">Tool calling</a></div>
+      <p>Function tools defined by JSON Schema with optional strict mode, tool_choice (auto, required, forced) and parallel_tool_calls; results returned as function_call_output items.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2303.11366" target="_blank" rel="noopener">Reflexion: Language Agents with Verbal Reinforcement Learning</a>
+      <div class="meta">Shinn et al. · NeurIPS 2023 · cited in <a href="03-react-loop/index.html" style="font-weight:500;color:var(--a)">ReAct: reasoning and acting</a></div>
+      <p>Agents write verbal reflections on failed attempts into an episodic memory and use them on the next trial, without weight updates.</p><div class="num">Remember: 91% pass@1 on HumanEval vs 80% for GPT-4</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2308.03688" target="_blank" rel="noopener">AgentBench: Evaluating LLMs (large language models) as Agents</a>
+      <div class="meta">Liu et al. · ICLR 2024 · cited in <a href="03-react-loop/index.html" style="font-weight:500;color:var(--a)">ReAct: reasoning and acting</a></div>
+      <p>Eight interactive environments for LLM agents; poor long-term reasoning, decision-making and instruction following are the main failure causes.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.04091" target="_blank" rel="noopener">Plan-and-Solve Prompting: Improving Zero-Shot Chain-of-Thought Reasoning by Large Language Models</a>
+      <div class="meta">Wang et al. · ACL 2023 · cited in <a href="04-planning/index.html" style="font-weight:500;color:var(--a)">Planning and task decomposition</a></div>
+      <p>First devise a plan that splits the task into subtasks, then carry them out; reduces missing-step errors of zero-shot chain-of-thought.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.10601" target="_blank" rel="noopener">Tree of Thoughts: Deliberate Problem Solving with Large Language Models</a>
+      <div class="meta">Yao et al. · NeurIPS 2023 · cited in <a href="04-planning/index.html" style="font-weight:500;color:var(--a)">Planning and task decomposition</a></div>
+      <p>Search over intermediate "thoughts" with self-evaluation, lookahead and backtracking instead of a single left-to-right chain.</p><div class="num">Remember: Game of 24: 74% vs 4% with chain-of-thought (GPT-4)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2303.17580" target="_blank" rel="noopener">HuggingGPT: Solving AI (artificial intelligence) Tasks with ChatGPT and its Friends in Hugging Face</a>
+      <div class="meta">Shen et al. · NeurIPS 2023 · cited in <a href="04-planning/index.html" style="font-weight:500;color:var(--a)">Planning and task decomposition</a></div>
+      <p>An LLM (large language model) controller plans subtasks, selects specialist models by their descriptions, executes them and summarises the results.</p></div>
+  </div>
+</div>
+
+</body>
+</html>

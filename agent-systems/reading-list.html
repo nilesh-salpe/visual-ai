@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent systems Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Agent systems</a>
+  <div class="label" style="margin-top:28px">Reading list · 6 papers and docs</div>
+  <h1>Agent systems: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://www.anthropic.com/engineering/multi-agent-research-system" target="_blank" rel="noopener">How we built our multi-agent research system</a>
+      <div class="meta">Anthropic · Anthropic Engineering 2025 · cited in <a href="01-multi-agent/index.html" style="font-weight:500;color:var(--a)">Multi-agent systems</a></div>
+      <p>A lead agent plans and spawns parallel subagents with separate context windows; lessons on delegation, effort scaling, tools, evaluation and production reliability.</p><div class="num">Remember: +90.2% vs single agent on an internal research eval; ~15× chat tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2308.08155" target="_blank" rel="noopener">AutoGen: Enabling Next-Gen LLM (large language model) Applications via Multi-Agent Conversation</a>
+      <div class="meta">Wu et al. · COLM 2024 · cited in <a href="01-multi-agent/index.html" style="font-weight:500;color:var(--a)">Multi-agent systems</a></div>
+      <p>A framework of conversable agents (LLMs, humans, tools) whose interaction patterns are programmed in natural language and code.</p></div>
+    <div class="paper-item"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Building effective agents</a>
+      <div class="meta">Anthropic · Anthropic Engineering 2024 · cited in <a href="01-multi-agent/index.html" style="font-weight:500;color:var(--a)">Multi-agent systems</a></div>
+      <p>Workflows (predefined code paths) vs agents (LLMs directing their own process); patterns: prompt chaining, routing, parallelization, orchestrator-workers, evaluator-optimizer. Start with the simplest solution.</p></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool" target="_blank" rel="noopener">Computer use tool</a>
+      <div class="meta">Anthropic documentation · platform.claude.com 2026 · cited in <a href="02-computer-use/index.html" style="font-weight:500;color:var(--a)">Computer and browser use</a></div>
+      <p>Screenshot, mouse and keyboard control in an agent loop; recommends a dedicated VM or container, no sensitive data, a domain allowlist and human confirmation for consequential actions.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2404.07972" target="_blank" rel="noopener">OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real Computer Environments</a>
+      <div class="meta">Xie et al. · NeurIPS 2024 · cited in <a href="02-computer-use/index.html" style="font-weight:500;color:var(--a)">Computer and browser use</a></div>
+      <p>369 real desktop and web tasks across operating systems with execution-based evaluation scripts.</p><div class="num">Remember: humans 72.36% vs best model 12.24% (at release)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2307.13854" target="_blank" rel="noopener">WebArena: A Realistic Web Environment for Building Autonomous Agents</a>
+      <div class="meta">Zhou et al. · ICLR 2024 · cited in <a href="02-computer-use/index.html" style="font-weight:500;color:var(--a)">Computer and browser use</a></div>
+      <p>Self-hosted, functional websites (shopping, forums, code hosting, CMS (content management system)) with tasks graded on functional correctness.</p><div class="num">Remember: best GPT-4 agent 14.41% vs humans 78.24% (at release)</div></div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -56,6 +56,9 @@
   "CLT": {
    "exp": "central limit theorem"
   },
+  "CMS": {
+   "exp": "content management system"
+  },
   "CNN": {
    "exp": "convolutional neural network"
   },
@@ -65,11 +68,17 @@
   "CPU": {
    "exp": "central processing unit"
   },
+  "CRAG": {
+   "exp": "Corrective Retrieval Augmented Generation"
+  },
   "CSS": {
    "exp": "Cascading Style Sheets"
   },
   "CUDA": {
    "exp": "Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors"
+  },
+  "DAG": {
+   "exp": "directed acyclic graph"
   },
   "DCGM": {
    "exp": "NVIDIA Data Center GPU Manager"
@@ -88,6 +97,9 @@
   },
   "DNS": {
    "exp": "Domain Name System"
+  },
+  "DOM": {
+   "exp": "Document Object Model"
   },
   "DP": {
    "exp": "data parallelism"
@@ -227,6 +239,9 @@
   "GSP": {
    "exp": "GPU System Processor"
   },
+  "GUI": {
+   "exp": "graphical user interface"
+  },
   "HBM": {
    "exp": "high-bandwidth memory"
   },
@@ -285,6 +300,9 @@
   "IT": {
    "exp": "information technology"
   },
+  "JSON": {
+   "exp": "JavaScript Object Notation"
+  },
   "KL": {
    "exp": "Kullback-Leibler divergence"
   },
@@ -320,6 +338,9 @@
   },
   "LSTM": {
    "exp": "long short-term memory network"
+  },
+  "MCP": {
+   "exp": "Model Context Protocol"
   },
   "MCQ": {
    "exp": "multiple-choice question"
@@ -592,6 +613,10 @@
   "SSD": {
    "exp": "solid-state drive"
   },
+  "SSE": {
+   "exp": "server-sent events",
+   "plural": "server-sent events"
+  },
   "STEM": {
    "exp": "science, technology, engineering and mathematics"
   },
@@ -631,6 +656,10 @@
   "TOPS": {
    "exp": "trillion operations per second"
   },
+  "ToT": {
+   "exp": "Tree of Thoughts",
+   "plural": "Trees of Thoughts"
+  },
   "TP": {
    "exp": "tensor parallelism"
   },
@@ -645,6 +674,12 @@
   },
   "TTFT": {
    "exp": "time to first token"
+  },
+  "TTL": {
+   "exp": "time to live"
+  },
+  "UI": {
+   "exp": "user interface"
   },
   "UNK": {
    "exp": "unknown token"
@@ -939,6 +974,30 @@
   "ParallelConfig",
   "AsyncLLM",
   "LLMEngine",
-  "ZeroMQ"
+  "ZeroMQ",
+  "GET",
+  "POST",
+  "OAuth",
+  "OpenTelemetry",
+  "UnsupportedProtocolVersionError",
+  "MemGPT",
+  "UIST",
+  "AISec",
+  "ALFWorld",
+  "ReAct",
+  "WebShop",
+  "AgentBench",
+  "FEVER",
+  "HotpotQA",
+  "HuggingGPT",
+  "GAIA",
+  "OSWorld",
+  "WebArena",
+  "AgentDojo",
+  "AutoGen",
+  "BrowseComp",
+  "HumanEval",
+  "SWE",
+  "Reflexion"
  ]
 }

@@ -59,3 +59,8 @@ Markdown content.
 Colours for diagram steps and cards: `a` teal, `b` orange, `c` purple, `d` red, `e` green, `f` grey.
 Acronyms are expanded automatically at their first use in each deck from `shared/glossary.json`; add new
 terms there. Papers live once in `content/papers.yml` and are referenced by key.
+
+## Agent decks (Visual Agents)
+
+Decks under `content/agent-*/` use a different template: title → `s-problem` (1 · Problem) → `s-core` (2 · Core idea) → `s-hld` (3 · High-level design) → `s-lld` (4 · Low-level design) → `s-trade` (5 · Trade-offs) → `s-fail` (6 · Failure modes) → `s-prod` (7 · Challenges in production) → `s-papers`.
+Design diagrams are inline SVG with `data-step` attributes inside a `.dgm` container; the widget script shows the full diagram on load and lets readers step through it with the captions stored in `data-steps`. Keep each diagram's SVG on one line so Markdown passes it through untouched, and give every diagram a unique arrow-marker id.

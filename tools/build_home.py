@@ -36,7 +36,13 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
     ]),
 ]
 
-AGENT_SECTIONS = [  # same shape as LLM_SECTIONS; empty until the first agent topic ships
+AGENT_SECTIONS = [  # same shape as LLM_SECTIONS
+    ('Topics', [
+        ('agent-foundations', 'Topic · 4 decks', 'Agent foundations', 'What an agent is, tool calling, the ReAct loop, and planning and task decomposition.', ['agent loop', 'tool calling', 'ReAct', 'planning']),
+        ('agent-context', 'Topic · 3 decks', 'Agent context', 'Memory and context management, agentic retrieval, and the Model Context Protocol (revision 2026-07-28).', ['memory', 'agentic RAG', 'MCP']),
+        ('agent-systems', 'Topic · 2 decks', 'Agent systems', 'Multi-agent orchestrator-workers designs, and computer and browser use.', ['multi-agent', 'computer use']),
+        ('agent-operations', 'Topic · 3 decks', 'Agent operations', 'Evaluating agents (pass^k), safety and reliability, and cost and latency.', ['evals', 'prompt injection', 'prompt caching']),
+    ]),
 ]
 AGENT_PLANNED = ['What an agent is: an LLM in a loop', 'Tool calling and function schemas', 'ReAct: interleaving reasoning and actions', 'Planning and task decomposition',
                  'Memory: context, retrieval and long-term stores', 'Retrieval for agents', 'MCP and tool ecosystems', 'Multi-agent patterns', 'Computer and browser use',
@@ -97,7 +103,7 @@ def agents_page():
     body = f'''  <a class="brand" href="../index.html">← Visual AI</a>
   <div class="label" style="margin-top:28px">Visual Agents</div>
   <h1>How LLM agents work</h1>
-  <p class="lede">Interactive slide decks on agentic systems built on LLMs: tool use, planning, memory, retrieval, multi-agent patterns, evaluation and safety. They build on the <a href="../llm/index.html">Visual LLM</a> guide and link back to it.</p>
+  <p class="lede">Interactive slide decks on agentic systems built on LLMs. Each deck follows one template: problem, core idea, high-level design, low-level design, trade-offs, failure modes and challenges in production, with diagrams you can step through. They build on the <a href="../llm/index.html">Visual LLM</a> guide.</p>
   {links('../')}{content}
   <p style="margin-top:28px"><a class="btn" href="../llm/index.html">← Visual LLM</a></p>'''
     return PAGE.format(title='Visual Agents', up='../', body=body)

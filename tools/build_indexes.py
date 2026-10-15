@@ -21,6 +21,13 @@ PHASES = [  # (heading, notebook folder, index json)
 ]
 
 
+
+def _write(path, text):
+    """Build first, then write: opening with 'w' before the text exists would truncate the file if building fails."""
+    assert text.strip(), path
+    with open(path, 'w') as fh:
+        fh.write(text)
+
 def load(name):
     return json.load(open(os.path.join(REPO, 'tools', 'notebooks', name)))
 
@@ -124,9 +131,9 @@ def arch_hub():
 
 
 if __name__ == '__main__':
-    open(os.path.join(REPO, 'build-it', 'index.html'), 'w').write(build_it_html())
-    open(os.path.join(REPO, 'build-it', 'README.md'), 'w').write(build_it_md())
-    open(os.path.join(REPO, 'architecture', 'index.html'), 'w').write(arch_hub())
+    _write(os.path.join(REPO, 'build-it', 'index.html'), build_it_html())
+    _write(os.path.join(REPO, 'build-it', 'README.md'), build_it_md())
+    _write(os.path.join(REPO, 'architecture', 'index.html'), arch_hub())
     print('wrote build-it/index.html, build-it/README.md, architecture/index.html')
 
 
@@ -174,7 +181,7 @@ def post_hub():
 
 
 if __name__ == '__main__':
-    open(os.path.join(REPO, 'post-training', 'index.html'), 'w').write(post_hub())
+    _write(os.path.join(REPO, 'post-training', 'index.html'), post_hub())
     print('wrote post-training/index.html')
 
 
@@ -220,7 +227,7 @@ def evals_hub():
 
 
 if __name__ == '__main__':
-    open(os.path.join(REPO, 'evals', 'index.html'), 'w').write(evals_hub())
+    _write(os.path.join(REPO, 'evals', 'index.html'), evals_hub())
     print('wrote evals/index.html')
 
 
@@ -270,14 +277,20 @@ def dist_hub():
 
 
 if __name__ == '__main__':
-    open(os.path.join(REPO, 'distributed', 'index.html'), 'w').write(dist_hub())
+    _write(os.path.join(REPO, 'distributed', 'index.html'), dist_hub())
     print('wrote distributed/index.html')
 
 
-def topic_hub(folder, title, label, lede, nb_index, nb_blurb, cards, sources):
-    """Generic hub page for a topic: header, Build-it banner, deck cards, sources."""
+def topic_hub(folder, title, label, lede, nb_index, nb_blurb, cards, sources, back='../llm/index.html', back_label='Visual LLM'):
+    """Generic hub page for a topic: header, optional Build-it banner, deck cards, sources."""
     grid = ''.join(f'<a class="hub-card" href="{s}/index.html"><div class="n">{s[:2]}</div><h3>{t}</h3><p>{p}</p></a>' for s, t, p in cards)
-    n_nb = len(load(nb_index))
+    n_nb = len(load(nb_index)) if nb_index else 0
+    count = f'{len(cards)} decks' + (f' + {n_nb} Colab notebooks' if n_nb else '')
+    banner = '' if not n_nb else f'''
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: {n_nb} Colab notebooks</h3><p class="caption" style="margin:0">{nb_blurb}</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>'''
     return f'''<!doctype html>
 <html lang="en">
 <head>
@@ -289,14 +302,10 @@ def topic_hub(folder, title, label, lede, nb_index, nb_blurb, cards, sources):
 </head>
 <body>
 <div class="hub">
-  <a class="brand" href="../llm/index.html">← Visual LLM</a>
-  <div class="label" style="margin-top:28px">Visual guide · {len(cards)} decks + {n_nb} Colab notebooks</div>
+  <a class="brand" href="{back}">← {back_label}</a>
+  <div class="label" style="margin-top:28px">Visual guide · {count}</div>
   <h1>{title}</h1>
-  <p class="lede">{lede}</p>
-  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
-    <div><h3 style="margin:0 0 4px">🛠 Build it: {n_nb} Colab notebooks</h3><p class="caption" style="margin:0">{nb_blurb}</p></div>
-    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
-  </div>
+  <p class="lede">{lede}</p>{banner}
   <div class="hub-grid">{grid}</div>
   <p class="cite" style="margin-top:26px">Sources: {sources}</p>
 </div>
@@ -319,7 +328,7 @@ MATH_CARDS = [
 ]
 
 if __name__ == '__main__':
-    open(os.path.join(REPO, 'math', 'index.html'), 'w').write(topic_hub(
+    _write(os.path.join(REPO, 'math', 'index.html'), topic_hub(
         'math', 'Math for LLMs and neural networks', 'Math for LLMs',
         'The mathematics every LLM concept rests on, each idea tied to where it appears in a real model: vectors and matrices, the SVD and low rank, derivatives and backpropagation, probability and sampling, maximum likelihood, information theory, softmax numerics, optimization and floating point. Every deck follows the 9-beat template and has an interactive widget.',
         'index_math.json', 'Implement cosine search, truncated SVD and LoRA counts, hand-written gradients with a gradient checker, entropy/KL/perplexity, a stable and online softmax, and gradient descent, momentum and Adam in NumPy.',
@@ -341,7 +350,7 @@ NN_CARDS = [
 ]
 
 if __name__ == '__main__':
-    open(os.path.join(REPO, 'nn-fundamentals', 'index.html'), 'w').write(topic_hub(
+    _write(os.path.join(REPO, 'nn-fundamentals', 'index.html'), topic_hub(
         'nn-fundamentals', 'Neural network fundamentals for LLMs', 'Neural Network Fundamentals',
         'The deep-learning machinery every LLM is built from: neurons and MLPs, activations, backpropagation, losses, optimizers and schedules, initialization, normalization and residuals, regularization, embeddings, and a first language model. Every deck follows the 9-beat template and has an interactive widget.',
         'index_nn.json', 'Build a micrograd-style autograd engine, an MLP that solves XOR, activation and depth experiments, AdamW with warmup + cosine, initialization tests, dropout and weight decay, and a tiny character-level language model in NumPy.',
@@ -363,7 +372,7 @@ DATA_CARDS = [
 ]
 
 if __name__ == '__main__':
-    open(os.path.join(REPO, 'pretraining-data', 'index.html'), 'w').write(topic_hub(
+    _write(os.path.join(REPO, 'pretraining-data', 'index.html'), topic_hub(
         'pretraining-data', 'Web crawling and pretraining data', 'Web Crawling and Pretraining Data',
         'Where the trillions of training tokens come from and how they are made usable: how crawlers work and stay polite, robots.txt and consent, text extraction, quality filtering, deduplication, PII and safety filtering, data mixtures, and the published pipelines from C4 to Llama 3. Every deck follows the 9-beat template and numbers are checked against the source papers and standards.',
         'index_data.json', 'Build a polite crawler on a simulated web, an RFC 9309 robots.txt parser, an HTML text extractor, C4 and Gopher quality filters, MinHash with LSH banding, and a data-mixture planner in Python.',
@@ -384,7 +393,7 @@ TORCH_CARDS = [
 ]
 
 if __name__ == '__main__':
-    open(os.path.join(REPO, 'pytorch', 'index.html'), 'w').write(topic_hub(
+    _write(os.path.join(REPO, 'pytorch', 'index.html'), topic_hub(
         'pytorch', 'PyTorch for LLMs', 'PyTorch for LLMs',
         'The PyTorch you need to build and train LLMs: tensors and views, autograd, nn.Module, the training loop, data pipelines, mixed precision, torch.compile and fused attention, and distributed training, ending with a tiny GPT. Checked against PyTorch 2.14.1; every notebook was executed with it before publishing.',
         'index_torch.json', 'Split attention heads with strides, write a custom autograd Function, build a transformer block with SDPA, a resumable training loop, padding and packing collators, autocast and GradScaler, torch.compile graph-break hunting, DDP with torchrun, and a tiny GPT, all runnable on a CPU runtime.',
@@ -404,9 +413,36 @@ VLLM_CARDS = [
 ]
 
 if __name__ == '__main__':
-    open(os.path.join(REPO, 'vllm', 'index.html'), 'w').write(topic_hub(
+    _write(os.path.join(REPO, 'vllm', 'index.html'), topic_hub(
         'vllm', 'vLLM internals and operation', 'vLLM',
         'How the vLLM serving engine works inside and how to run it: the process architecture, the paged KV cache manager, the unified token-budget scheduler, automatic prefix caching, speculative decoding, parallelism and quantization, and tuning with metrics. Checked against the vLLM v0.31.0 source and documentation; the concepts are introduced in the LLM Inference topic.',
         'index_vllm.json', 'Re-implement vLLM\'s block pool with ref counts and LRU, chained-hash prefix caching, the token-budget scheduler with chunked prefill and preemption, a GPU memory and concurrency planner, and n-gram speculative decoding, all as CPU simulations.',
         VLLM_CARDS, 'Kwon et al. 2023 (PagedAttention / vLLM); vLLM V1 blog 2025; vLLM v0.31.0 source (vllm/v1/core, vllm/config, vllm/engine) and documentation (architecture overview, automatic prefix caching design, optimization and tuning, OpenAI-compatible server, parallelism and scaling, speculative decoding, quantization); Yu et al. 2022 (Orca); Agrawal et al. 2024 (Sarathi-Serve); Leviathan et al. 2023; Zheng et al. 2024 (SGLang).'))
     print('wrote vllm/index.html')
+
+
+AGENT_HUBS = {
+    'agent-foundations': ('Agent foundations', 'What an agent is, how models call tools, the ReAct loop, and planning: the building blocks every agent shares.', [
+        ('01-what-is-an-agent', 'What an agent is', 'Workflows vs agents; the decide-act-observe loop.'),
+        ('02-tool-calling', 'Tool calling', 'Schemas, structured calls, results, parallel calls, tool choice.'),
+        ('03-react-loop', 'ReAct: reasoning and acting', 'Thought → action → observation; Reflexion.'),
+        ('04-planning', 'Planning and task decomposition', 'Plan-and-execute, task DAGs, Tree of Thoughts, replanning.')]),
+    'agent-context': ('Agent context', 'What an agent knows: memory and context management, agentic retrieval, and the Model Context Protocol for connecting tools and data.', [
+        ('01-memory', 'Memory and context management', 'Context rot, compaction, notes, scored long-term memory.'),
+        ('02-agentic-rag', 'Agentic retrieval (RAG)', 'Retrieve, grade, refine, cite; Self-RAG and CRAG.'),
+        ('03-mcp', 'Model Context Protocol (MCP)', 'Hosts, clients, servers; the stateless 2026-07-28 revision.')]),
+    'agent-systems': ('Agent systems', 'Larger agent architectures: lead agents with parallel subagents, and agents that operate computers and browsers.', [
+        ('01-multi-agent', 'Multi-agent systems', 'Orchestrator-workers, delegation, the 15× token cost.'),
+        ('02-computer-use', 'Computer and browser use', 'Screenshot-action loops, grounding, sandboxing.')]),
+    'agent-operations': ('Agent operations', 'Running agents for real: evaluating them, keeping them safe and reliable, and controlling cost and latency.', [
+        ('01-evaluating-agents', 'Evaluating agents', 'End-state grading, pass^k, harnesses, benchmarks.'),
+        ('02-safety-and-reliability', 'Safety and reliability', 'Prompt injection, least privilege, approvals, idempotency.'),
+        ('03-cost-and-latency', 'Cost and latency', 'Quadratic context growth, prompt caching, routing, budgets.')]),
+}
+
+if __name__ == '__main__':
+    for folder, (title, lede, cards) in AGENT_HUBS.items():
+        _write(os.path.join(REPO, folder, 'index.html'), topic_hub(
+            folder, title, title, lede + ' Each deck follows the agent template: problem, core idea, high-level design, low-level design, trade-offs, failure modes and challenges in production, with steppable diagrams and sources checked against the primary papers, specifications and documentation.',
+            None, '', cards, 'See each deck\'s Key papers slide and this topic\'s reading list.', back='../agents/index.html', back_label='Visual Agents'))
+        print('wrote', folder + '/index.html')

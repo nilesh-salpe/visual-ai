@@ -1528,3 +1528,230 @@ vllm_release:
   year: 2026
   url: https://github.com/vllm-project/vllm/releases/tag/v0.31.0
   summary: The release these decks were checked against (source at vllm/v1/core and vllm/config).
+react:
+  title: 'ReAct: Synergizing Reasoning and Acting in Language Models'
+  authors: Yao et al.
+  venue: ICLR
+  year: 2023
+  url: https://arxiv.org/abs/2210.03629
+  summary: Interleaves reasoning traces with actions and observations, so reasoning guides tool use and observations ground reasoning.
+  number: +34 and +10 points absolute success on ALFWorld and WebShop
+toolformer:
+  title: 'Toolformer: Language Models Can Teach Themselves to Use Tools'
+  authors: Schick et al.
+  venue: NeurIPS
+  year: 2023
+  url: https://arxiv.org/abs/2302.04761
+  summary: A model trained self-supervised to decide which APIs to call, when, and with what arguments (calculator, search, QA, translation, calendar).
+reflexion:
+  title: 'Reflexion: Language Agents with Verbal Reinforcement Learning'
+  authors: Shinn et al.
+  venue: NeurIPS
+  year: 2023
+  url: https://arxiv.org/abs/2303.11366
+  summary: Agents write verbal reflections on failed attempts into an episodic memory and use them on the next trial, without weight updates.
+  number: 91% pass@1 on HumanEval vs 80% for GPT-4
+tot:
+  title: 'Tree of Thoughts: Deliberate Problem Solving with Large Language Models'
+  authors: Yao et al.
+  venue: NeurIPS
+  year: 2023
+  url: https://arxiv.org/abs/2305.10601
+  summary: Search over intermediate "thoughts" with self-evaluation, lookahead and backtracking instead of a single left-to-right chain.
+  number: 'Game of 24: 74% vs 4% with chain-of-thought (GPT-4)'
+planandsolve:
+  title: 'Plan-and-Solve Prompting: Improving Zero-Shot Chain-of-Thought Reasoning by Large Language Models'
+  authors: Wang et al.
+  venue: ACL
+  year: 2023
+  url: https://arxiv.org/abs/2305.04091
+  summary: First devise a plan that splits the task into subtasks, then carry them out; reduces missing-step errors of zero-shot chain-of-thought.
+hugginggpt:
+  title: 'HuggingGPT: Solving AI Tasks with ChatGPT and its Friends in Hugging Face'
+  authors: Shen et al.
+  venue: NeurIPS
+  year: 2023
+  url: https://arxiv.org/abs/2303.17580
+  summary: An LLM controller plans subtasks, selects specialist models by their descriptions, executes them and summarises the results.
+memgpt:
+  title: 'MemGPT: Towards LLMs as Operating Systems'
+  authors: Packer et al.
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2310.08560
+  summary: 'Virtual context management: the LLM moves information between a limited main context and external memory tiers via function calls, like OS paging.'
+genagents:
+  title: 'Generative Agents: Interactive Simulacra of Human Behavior'
+  authors: Park et al.
+  venue: UIST
+  year: 2023
+  url: https://arxiv.org/abs/2304.03442
+  summary: A memory stream of observations retrieved by recency, importance and relevance, periodically synthesised into reflections that guide planning.
+  number: retrieval score = recency + importance + relevance (each min-max scaled, weights 1)
+rag_lewis:
+  title: Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks
+  authors: Lewis et al.
+  venue: NeurIPS
+  year: 2020
+  url: https://arxiv.org/abs/2005.11401
+  summary: Combines a seq2seq generator with a dense retriever over Wikipedia (non-parametric memory), trained end to end.
+selfrag:
+  title: 'Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection'
+  authors: Asai et al.
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2310.11511
+  summary: Trains the model to decide when to retrieve and to critique retrieved passages and its own output with reflection tokens.
+crag:
+  title: Corrective Retrieval Augmented Generation
+  authors: Yan et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2401.15884
+  summary: A lightweight evaluator grades retrieved documents and triggers corrective actions (refinement or web search) when retrieval is poor.
+lostmiddle:
+  title: 'Lost in the Middle: How Language Models Use Long Contexts'
+  authors: Liu et al.
+  venue: TACL
+  year: 2024
+  url: https://arxiv.org/abs/2307.03172
+  summary: Performance is often highest when relevant information is at the beginning or end of the context and degrades when it is in the middle.
+autogen:
+  title: 'AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation'
+  authors: Wu et al.
+  venue: COLM
+  year: 2024
+  url: https://arxiv.org/abs/2308.08155
+  summary: A framework of conversable agents (LLMs, humans, tools) whose interaction patterns are programmed in natural language and code.
+osworld:
+  title: 'OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real Computer Environments'
+  authors: Xie et al.
+  venue: NeurIPS
+  year: 2024
+  url: https://arxiv.org/abs/2404.07972
+  summary: 369 real desktop and web tasks across operating systems with execution-based evaluation scripts.
+  number: humans 72.36% vs best model 12.24% (at release)
+webarena:
+  title: 'WebArena: A Realistic Web Environment for Building Autonomous Agents'
+  authors: Zhou et al.
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2307.13854
+  summary: Self-hosted, functional websites (shopping, forums, code hosting, CMS) with tasks graded on functional correctness.
+  number: best GPT-4 agent 14.41% vs humans 78.24% (at release)
+taubench:
+  title: 'τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains'
+  authors: Yao et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2406.12045
+  summary: Simulated users, domain APIs and policies; grades the final database state and introduces pass^k to measure consistency across trials.
+  number: gpt-4o < 50% success; pass^8 < 25% in retail
+gaia:
+  title: 'GAIA: a benchmark for General AI Assistants'
+  authors: Mialon et al.
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2311.12983
+  summary: 466 real-world questions that are simple for humans but need reasoning, browsing, multimodality and tool use.
+  number: humans 92% vs 15% for GPT-4 with plugins
+agentbench:
+  title: 'AgentBench: Evaluating LLMs as Agents'
+  authors: Liu et al.
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2308.03688
+  summary: Eight interactive environments for LLM agents; poor long-term reasoning, decision-making and instruction following are the main failure causes.
+greshake:
+  title: 'Not what you''ve signed up for: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection'
+  authors: Greshake et al.
+  venue: AISec
+  year: 2023
+  url: https://arxiv.org/abs/2302.12173
+  summary: 'Instructions planted in data the application retrieves (web pages, emails, documents) can hijack LLM-integrated apps: data theft, worming, manipulation.'
+agentdojo:
+  title: 'AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM Agents'
+  authors: Debenedetti et al.
+  venue: NeurIPS Datasets and Benchmarks
+  year: 2024
+  url: https://arxiv.org/abs/2406.13352
+  summary: An extensible environment of realistic agent tasks with injected tool outputs to measure attacks and defenses.
+  number: 97 tasks, 629 security test cases
+bea:
+  title: Building effective agents
+  authors: Anthropic
+  venue: Anthropic Engineering
+  year: 2024
+  url: https://www.anthropic.com/engineering/building-effective-agents
+  summary: 'Workflows (predefined code paths) vs agents (LLMs directing their own process); patterns: prompt chaining, routing, parallelization, orchestrator-workers,
+    evaluator-optimizer. Start with the simplest solution.'
+ma_research:
+  title: How we built our multi-agent research system
+  authors: Anthropic
+  venue: Anthropic Engineering
+  year: 2025
+  url: https://www.anthropic.com/engineering/multi-agent-research-system
+  summary: A lead agent plans and spawns parallel subagents with separate context windows; lessons on delegation, effort scaling, tools, evaluation and production
+    reliability.
+  number: +90.2% vs single agent on an internal research eval; ~15× chat tokens
+context_eng:
+  title: Effective context engineering for AI agents
+  authors: Anthropic
+  venue: Anthropic Engineering
+  year: 2025
+  url: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+  summary: Context as a finite "attention budget" (context rot); just-in-time retrieval; compaction, structured note-taking and sub-agents for long-horizon tasks.
+mcp_spec:
+  title: Model Context Protocol specification (revision 2026-07-28)
+  authors: MCP maintainers
+  venue: modelcontextprotocol.io
+  year: 2026
+  url: https://modelcontextprotocol.io/specification/2026-07-28
+  summary: Hosts, clients and servers over JSON-RPC 2.0; servers offer tools, resources and prompts; stdio and Streamable HTTP transports; stateless requests with
+    per-request protocol version and capabilities.
+mcp_changes:
+  title: MCP specification changelog (2026-07-28)
+  authors: MCP maintainers
+  venue: modelcontextprotocol.io
+  year: 2026
+  url: https://modelcontextprotocol.io/specification/2026-07-28/changelog
+  summary: Removes the initialize handshake and sessions, adds server/discover and subscriptions/listen, replaces server-initiated requests with multi round-trip
+    requests (input_required).
+mcp_announce:
+  title: Introducing the Model Context Protocol
+  authors: Anthropic
+  venue: Anthropic
+  year: 2024
+  url: https://www.anthropic.com/news/model-context-protocol
+  summary: Announcement of MCP (November 25, 2024) as a universal, open standard for connecting AI systems to data sources and tools.
+ant_tools:
+  title: Tool use with Claude (overview)
+  authors: Anthropic documentation
+  venue: platform.claude.com
+  year: 2026
+  url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+  summary: Tools defined with input_schema; client tools return stop_reason "tool_use" and are executed by the application, which replies with tool_result; server
+    tools run on Anthropic's side.
+oai_functions:
+  title: Function calling
+  authors: OpenAI documentation
+  venue: developers.openai.com
+  year: 2026
+  url: https://developers.openai.com/api/docs/guides/function-calling
+  summary: Function tools defined by JSON Schema with optional strict mode, tool_choice (auto, required, forced) and parallel_tool_calls; results returned as function_call_output
+    items.
+ant_computer:
+  title: Computer use tool
+  authors: Anthropic documentation
+  venue: platform.claude.com
+  year: 2026
+  url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool
+  summary: Screenshot, mouse and keyboard control in an agent loop; recommends a dedicated VM or container, no sensitive data, a domain allowlist and human confirmation
+    for consequential actions.
+ant_caching:
+  title: Prompt caching
+  authors: Anthropic documentation
+  venue: platform.claude.com
+  year: 2026
+  url: https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+  summary: 'Reuse of cached prompt prefixes: 5-minute cache writes cost 1.25× base input, 1-hour writes 2×, and reads 0.1× on most models (lower on some newer ones).'

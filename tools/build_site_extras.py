@@ -16,6 +16,10 @@ TOPICS = {  # folder: (title, [(stage, [slug, ...]), ...])
                                      ('Scaling up', ['07-performance', '08-distributed']), ('Together', ['09-putting-it-together'])]),
     'vllm': ('vLLM', [('The engine', ['01-what-is-vllm', '02-engine-architecture']), ('Memory and scheduling', ['03-kv-cache-manager', '04-scheduler', '05-prefix-caching']),
                       ('Speed and scale', ['06-speculative-decoding', '07-parallelism-and-quantization']), ('Operating it', ['08-running-and-tuning'])]),
+    'agent-foundations': ('Agent foundations', [('Basics', ['01-what-is-an-agent', '02-tool-calling']), ('Control', ['03-react-loop', '04-planning'])]),
+    'agent-context': ('Agent context', [('Memory', ['01-memory']), ('Knowledge and tools', ['02-agentic-rag', '03-mcp'])]),
+    'agent-systems': ('Agent systems', [('Architectures', ['01-multi-agent', '02-computer-use'])]),
+    'agent-operations': ('Agent operations', [('Quality', ['01-evaluating-agents']), ('Risk and cost', ['02-safety-and-reliability', '03-cost-and-latency'])]),
     'pretraining-data': ('Web Crawling and Pretraining Data', [('Sources', ['01-where-data-comes-from']), ('Crawling', ['02-how-a-crawler-works', '03-crawling-at-scale', '04-robots-and-consent']),
                                                                ('Cleaning', ['05-text-extraction', '06-quality-filtering', '07-deduplication', '08-pii-and-safety']), ('Assembling', ['09-mixtures-and-repetition', '10-reference-pipelines'])]),
     'nn-fundamentals': ('Neural Network Fundamentals', [('Networks', ['01-perceptron-to-mlp', '02-activation-functions']), ('Learning', ['03-backpropagation', '04-loss-functions', '05-optimizers']),
@@ -97,7 +101,8 @@ def reading_list(folder):
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">{items}
   </div>'''
-    open(os.path.join(REPO, folder, 'reading-list.html'), 'w').write(PAGE.format(title=f'{title} Reading List', up='../', css='', back='index.html', back_label=title, body=body, script=''))
+    page = PAGE.format(title=f'{title} Reading List', up='../', css='', back='index.html', back_label=title, body=body, script='')
+    open(os.path.join(REPO, folder, 'reading-list.html'), 'w').write(page)
     return len(order)
 
 
@@ -155,7 +160,8 @@ def glossary():
   q.addEventListener('input', () => { const t = q.value.trim().toLowerCase(); rows.forEach(r => { r.style.display = !t || r.dataset.k.includes(t) ? '' : 'none'; }); }); })();
 </script>'''
     os.makedirs(os.path.join(REPO, 'glossary'), exist_ok=True)
-    open(os.path.join(REPO, 'glossary', 'index.html'), 'w').write(PAGE.format(title='Glossary', up='../', css='', back='../index.html', back_label='Visual AI', body=body, script=script))
+    page = PAGE.format(title='Glossary', up='../', css='', back='../index.html', back_label='Visual AI', body=body, script=script)
+    open(os.path.join(REPO, 'glossary', 'index.html'), 'w').write(page)
     return len(terms)
 
 
