@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mixed Precision in PyTorch</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Mixed precision in PyTorch" data-home="../index.html" data-home-label="PyTorch">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">PyTorch for LLMs · 06</div>
+    <h1>Mixed precision in PyTorch</h1>
+    <p class="sub">How torch.autocast decides which operations run in BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats) or FP16 (16-bit floating point), why weights and reductions stay in FP32 (32-bit floating point), and how GradScaler protects FP16 training from overflow and underflow.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Low-precision math is much faster on Tensor Cores, but some operations lose too much precision or overflow in 16 bits. Choosing per operation by hand is impractical.</div>
+      <div class="c"><b>Core idea</b>Wrap the forward pass in <code>torch.autocast(device_type, dtype)</code>: matmuls and linear layers run in low precision, while reductions, softmax and losses stay in FP32, and the <b>stored weights stay FP32</b>. For FP16, <code>torch.amp.GradScaler</code> multiplies the loss, <b>skips</b> steps with inf/NaN (not a number) gradients and adapts the scale; BF16 usually needs no scaler.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Where does a BF16 sum stall?</h2>
+    <hr>
+<p class="lede">Repeatedly add a small increment to a running total stored in BF16 versus FP32 (BF16 rounding emulated exactly in your browser).</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">increment 10^ <input type="range" id="bX" min="-5" max="-1" step="0.5" value="-3"> <output id="bXo"></output></label><label class="ctl">additions <input type="range" id="bN" min="2" max="5" step="0.5" value="4"> <output id="bNo"></output></label></div>
+  <div id="bBars" style="margin-top:12px"></div>
+  <p class="readout" id="bOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not run everything in 16 bits?</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Accumulation</h3><p>Long sums lose small terms (the stall above).</p></div>
+      <div class="card b"><h3>Range (FP16)</h3><p>Values above 65,504 overflow and tiny gradients underflow to 0.</p></div>
+      <div class="card c"><h3>Weight updates</h3><p>lr × gradient is often smaller than a BF16 weight's spacing; updates vanish without FP32 masters.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What dtype is the weight?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">Inside torch.autocast("cuda", dtype=torch.bfloat16), what dtype is a Linear layer's weight parameter?</p>
+      <div class="opts">
+      <button>A. bfloat16</button>
+      <button>B. float16</button>
+      <button data-ok>C. float32 (unchanged)</button>
+      <button>D. it depends on the input</button>
+      </div>
+      <div class="why"><b>C.</b> Autocast casts inputs to each op on the fly (with a cache); it never changes stored parameters.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Autocast + (for FP16) GradScaler</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Low-precision ops</h3><p>matmul, linear, conv, SDPA (scaled dot-product attention) run in the autocast dtype.</p></div>
+      <div class="card c"><h3>FP32 ops</h3><p>Reductions (sum), softmax, log, losses and norms stay in FP32 for accuracy.</p></div>
+      <div class="card b"><h3>GradScaler</h3><p>scale(loss).backward(); step(opt) skips if inf/NaN; update() halves or grows the scale.</p></div>
+      <div class="card e"><h3>BF16 shortcut</h3><p>BF16 has FP32's exponent range, so most BF16 training uses autocast without a scaler.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Theory: Distributed deck 09 and Math deck 10." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">FP32 weights</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">master copy</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">autocast forward</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">matmuls in</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">BF16/FP16</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">FP32 reductions</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">softmax, sum, loss</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">backward</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">same dtypes in</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">reverse</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">scaler (FP16 only)</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">scale, unscale,</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">skip, adapt</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Theory: Distributed deck 09 and Math deck 10.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>The FP16 recipe in code</h2>
+    <hr>
+<div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap">scaler = torch.amp.GradScaler("cuda")          # init_scale 65536, growth 2, backoff 0.5, interval 2000&#10;for x, y in loader:&#10;    opt.zero_grad(set_to_none=True)&#10;    with torch.autocast("cuda", dtype=torch.float16):&#10;        loss = model(x, y)&#10;    scaler.scale(loss).backward()&#10;    scaler.unscale_(opt)                                 # so clipping sees true gradients&#10;    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)&#10;    scaler.step(opt)                                     # skipped if any grad is inf/NaN&#10;    scaler.update()&#10;&#10;# BF16: same loop without the scaler lines.</pre></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: what autocast changes (measured)</h2>
+    <hr>
+    <p class="lede">Notebook 06 on CPU (central processing unit) with torch.autocast("cpu", dtype=torch.bfloat16); defaults reported by PyTorch 2.14.1.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Inside autocast: a @ b and nn.Linear outputs are <b>bfloat16</b>; a.sum() and F.softmax outputs stay <b>float32</b>; the Linear's weight is still <b>float32</b>.</li><li>Adding 0.001 ten thousand times: an FP32 total reaches 10.0004; a BF16 total stalls at <b>0.5</b>, because near 0.5 BF16 values are 2⁻⁸ ≈ 0.004 apart and 0.001 rounds away.</li><li>GradScaler defaults: initial scale 65,536, growth ×2 every 2,000 clean steps, backoff ×0.5 on overflow.</li><li>In the notebook, an injected inf loss leaves the weights unchanged (step skipped) and halves the scale; two clean steps later it doubles again.</li></ol><div class="result">Autocast picks precision per op; FP32 is kept exactly where accumulation and range matter.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Speed where it counts</h3><p>Matmuls dominate FLOPs (floating-point operations) and run at Tensor Core rates in BF16/FP16.</p></div>
+      <div class="card e"><h3>Accuracy where it matters</h3><p>Reductions and master weights stay in FP32.</p></div>
+      <div class="card b"><h3>Automatic</h3><p>Op lists maintained by PyTorch replace error-prone manual casting.</p></div>
+      <div class="card c"><h3>Self-tuning scale</h3><p>GradScaler keeps FP16 gradients in range without manual tuning.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Autocast converts the model to half precision."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Weights stay FP32; ops cast their inputs as they run.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"You always need GradScaler."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is for FP16; BF16's 8-bit exponent avoids most underflow.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"A skipped step means training is broken."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Occasional skips are how dynamic scaling finds the largest safe scale.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Autocast only the forward + loss.</b> Backward follows automatically.</li><li><b>Default autocast dtypes.</b> CUDA (Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors) float16, CPU bfloat16; pass dtype=torch.bfloat16 on GPUs (graphics processing units) that support it.</li><li><b>scaler.unscale_(opt) before clipping.</b> Otherwise you clip scaled gradients.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Calling .half() on the model for training.</b> Loses the FP32 master weights.</li><li><b>Clipping scaled gradients.</b> Unscale first.</li><li><b>Autocast around the optimizer step.</b> Not needed and can change update precision.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">GradScaler's default initial scale?</p>
+      <div class="opts">
+      <button>A. 1</button>
+      <button>B. 1,024</button>
+      <button data-ok>C. 65,536</button>
+      <button>D. 2³²</button>
+      </div>
+      <div class="why"><b>65,536</b> (2¹⁶).</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why does autocast keep softmax in FP32?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Exponentials and normalising sums are sensitive to precision and range; FP32 avoids overflow and rounding errors.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What happens when GradScaler finds inf in the gradients?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The optimizer step is skipped and the scale is multiplied by the backoff factor (0.5).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">torch.autocast runs matmuls in BF16/FP16 but keeps reductions, softmax and the weights in FP32; GradScaler adds loss scaling, step skipping and adaptive scale for FP16.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Mixed precision in PyTorch is mostly one context manager. Inside torch autocast, matrix multiplications and linear layers run in bfloat16 or float16, while sums, softmax, losses and normalisations stay in float32, and the stored weights are never changed. The notebook shows why: a total kept in bfloat16 stops growing at one half when you keep adding a thousandth. For float16, a GradScaler multiplies the loss so small gradients survive, skips any step whose gradients overflow, halves its scale when that happens and doubles it after a run of clean steps. Bfloat16 usually needs no scaler.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> speed of 16-bit math without its failures.</span></div><div><span><b>Core idea:</b> autocast per-op dtypes; FP32 weights and reductions.</span></div><div><span><b>FP16:</b> GradScaler: scale, skip, adapt.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/06_mixed_precision.ipynb" target="_blank" rel="noopener">06 · Mixed precision: autocast, BF16 and GradScaler</a> <span style="color:var(--faint)">· 25 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/06_mixed_precision.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../07-performance/index.html">07 · Performance: compile, SDPA, memory →</a> · Previous: <a href="../05-data/index.html">← 05</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://docs.pytorch.org/docs/stable/amp.html" target="_blank" rel="noopener">Automatic Mixed Precision package (torch.amp)</a>
+        <div class="meta">PyTorch documentation · docs.pytorch.org 2026</div>
+        <p>torch.autocast op lists (which ops run in lower precision and which stay in FP32) and GradScaler for FP16 loss scaling.</p><div class="num">Remember: GradScaler: init scale 65,536, ×2 growth, ×0.5 backoff, every 2,000 steps</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1710.03740" target="_blank" rel="noopener">Mixed Precision Training</a>
+        <div class="meta">Micikevicius et al. · ICLR 2018</div>
+        <p>Half-precision weights, activations and gradients with an FP32 master copy of the weights and loss scaling to avoid gradient underflow.</p><div class="num">Remember: nearly 2× less memory</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1905.12322" target="_blank" rel="noopener">A Study of BFLOAT16 for Deep Learning Training</a>
+        <div class="meta">Kalamkar et al. · arXiv 2019</div>
+        <p>BF16 keeps FP32's 8-bit exponent (same range) with a 7-bit mantissa, and trains image, speech, language and recommendation models without hyper-parameter changes.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const f32 = new Float32Array(1), u32 = new Uint32Array(f32.buffer);
+  const bf16 = x => { f32[0] = x; const u = u32[0], r = ((u + 0x7FFF + ((u >>> 16) & 1)) >>> 16) << 16; u32[0] = r >>> 0; return f32[0]; };
+  Deck.bind(['bX', 'bN'], () => {
+    const x = Math.pow(10, Deck.val('bX')), n = Math.round(Math.pow(10, Deck.val('bN'))); Deck.out('bXo', Deck.val('bX')); Deck.out('bNo', n.toLocaleString());
+    let b = 0, s = 0; const xb = bf16(x); f32[0] = x; const xs = f32[0];
+    for (let i = 0; i < n; i++) { b = bf16(b + xb); f32[0] = s + xs; s = f32[0]; }
+    Deck.hbars(document.getElementById('bBars'), [{ label: 'exact n × x', value: n * x, color: 'var(--faint)', text: (n * x).toPrecision(5) }, { label: 'FP32 running total', value: s, color: 'var(--a)', text: s.toPrecision(5) },
+      { label: 'BF16 running total', value: b, color: b < 0.9 * n * x ? 'var(--d)' : 'var(--e)', text: b.toPrecision(5) }], { max: n * x * 1.05 });
+    document.getElementById('bOut').innerHTML = b < 0.9 * n * x ? `The BF16 total stalls at <b>${b}</b>: there, adjacent BF16 values are 2⁻⁷ × 2^⌊log₂ ${b.toPrecision(3)}⌋ ≈ ${(Math.pow(2, Math.floor(Math.log2(b)) - 7)).toExponential(2)} apart, more than twice the increment, so each addition rounds back.` : 'The total stays accurate at this size.';
+  });
+})();
+</script>
+</body>
+</html>

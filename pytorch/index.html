@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PyTorch for LLMs</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body { overflow-y: auto; }</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../llm/index.html">← Visual LLM</a>
+  <div class="label" style="margin-top:28px">Visual guide · 9 decks + 9 Colab notebooks</div>
+  <h1>PyTorch for LLMs</h1>
+  <p class="lede">The PyTorch you need to build and train LLMs (large language models): tensors and views, autograd, nn.Module, the training loop, data pipelines, mixed precision, torch.compile and fused attention, and distributed training, ending with a tiny GPT. Checked against PyTorch 2.14.1; every notebook was executed with it before publishing.</p>
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: 9 Colab notebooks</h3><p class="caption" style="margin:0">Split attention heads with strides, write a custom autograd Function, build a transformer block with SDPA (scaled dot-product attention), a resumable training loop, padding and packing collators, autocast and GradScaler, torch.compile graph-break hunting, DDP (distributed data parallel) with torchrun, and a tiny GPT, all runnable on a CPU (central processing unit) runtime.</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>
+<!--x:map--><style>
+.bigmap { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding: 4px 2px 10px; }
+.bigmap .stage { flex: 1 1 0; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
+.bigmap .stage h4 { margin: 0 0 2px; font: 700 11.5px 'JetBrains Mono', monospace; letter-spacing: .05em; text-transform: uppercase; color: var(--a); }
+.bigmap .stage a { display: block; padding: 9px 11px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 14px; line-height: 1.3; }
+.bigmap .stage a:hover { border-color: var(--a); background: var(--a-soft); }
+.bigmap .stage a span { display: block; font: 600 11px 'JetBrains Mono', monospace; color: var(--faint); }
+.bigmap .arrow { align-self: center; color: var(--faint); font-size: 20px; }
+.hub-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+@media (max-width: 700px) { .bigmap { flex-direction: column; } .bigmap .arrow { transform: rotate(90deg); } }
+</style>
+  <div class="visual" style="margin-top:22px">
+    <h3 style="margin:0 0 10px">The big picture</h3>
+    <div class="bigmap"><div class="stage"><h4>Core</h4><a href="01-tensors/index.html"><span>01</span>Tensors, strides and views</a><a href="02-autograd/index.html"><span>02</span>Autograd</a><a href="03-nn-module/index.html"><span>03</span>nn.Module and a transformer block</a></div><div class="arrow">→</div><div class="stage"><h4>Training</h4><a href="04-training-loop/index.html"><span>04</span>The training loop</a><a href="05-data/index.html"><span>05</span>Data pipelines for LLMs</a><a href="06-mixed-precision/index.html"><span>06</span>Mixed precision in PyTorch</a></div><div class="arrow">→</div><div class="stage"><h4>Scaling up</h4><a href="07-performance/index.html"><span>07</span>Performance: compile, SDPA, memory</a><a href="08-distributed/index.html"><span>08</span>Distributed training in PyTorch</a></div><div class="arrow">→</div><div class="stage"><h4>Together</h4><a href="09-putting-it-together/index.html"><span>09</span>Putting it together: a tiny GPT</a></div></div>
+    <div class="hub-links"><a class="btn" href="reading-list.html">📚 Reading list</a><a class="btn" href="../glossary/index.html">🔤 Glossary</a></div>
+  </div>
+<!--/x:map-->
+  <div class="hub-grid"><a class="hub-card" href="01-tensors/index.html"><div class="n">01</div><h3>Tensors, strides and views</h3><p>Storage, shape, strides; view vs reshape; broadcasting and einsum.</p></a><a class="hub-card" href="02-autograd/index.html"><div class="n">02</div><h3>Autograd</h3><p>grad_fn graphs, accumulation, no_grad, detach, custom Functions.</p></a><a class="hub-card" href="03-nn-module/index.html"><div class="n">03</div><h3>nn.Module and a transformer block</h3><p>Parameters, buffers, state_dict, SDPA, a pre-norm block.</p></a><a class="hub-card" href="04-training-loop/index.html"><div class="n">04</div><h3>The training loop</h3><p>zero_grad → backward → clip → step; decay groups; resumable checkpoints.</p></a><a class="hub-card" href="05-data/index.html"><div class="n">05</div><h3>Data pipelines for LLMs</h3><p>Dataset, DataLoader, padding, −100 labels, packing.</p></a><a class="hub-card" href="06-mixed-precision/index.html"><div class="n">06</div><h3>Mixed precision in PyTorch</h3><p>autocast op dtypes, FP32 (32-bit floating point) accumulation, GradScaler.</p></a><a class="hub-card" href="07-performance/index.html"><div class="n">07</div><h3>Performance: compile, SDPA, memory</h3><p>Dynamo + AOTAutograd + Inductor, graph breaks, fused attention.</p></a><a class="hub-card" href="08-distributed/index.html"><div class="n">08</div><h3>Distributed training in PyTorch</h3><p>torchrun, process groups, DDP buckets, FSDP2 fully_shard.</p></a><a class="hub-card" href="09-putting-it-together/index.html"><div class="n">09</div><h3>Putting it together: a tiny GPT</h3><p>A nanoGPT-style model trained and sampled on CPU.</p></a></div>
+  <p class="cite" style="margin-top:26px">Sources: Paszke et al. 2019 (PyTorch); Ansel et al. 2024 (PyTorch 2); PyTorch 2.14 documentation (tensor views, autograd mechanics, torch.utils.data, torch.amp, torch.compiler, SDPA tutorial, FSDP2 tutorial, torchrun, CUDA semantics); Li et al. 2020 (DDP); Zhao et al. 2023 (FSDP); Micikevicius et al. 2018; Kalamkar et al. 2019; Loshchilov & Hutter 2019; Dao 2023; Radford et al. 2019; Karpathy (nanoGPT).</p>
+</div>
+</body>
+</html>

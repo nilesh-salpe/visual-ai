@@ -118,3 +118,19 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/distributed/
 | [06 · Data mixtures, sampling temperature and epochs](pretraining-data/06_data_mixture.ipynb) | 25 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pretraining-data/06_data_mixture.ipynb) |
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/pretraining-data/
+
+## Frameworks · PyTorch for LLMs
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · Tensors: shapes, strides, views and einsum](pytorch/01_tensors_views.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/01_tensors_views.ipynb) |
+| [02 · Autograd: graphs, custom functions and accumulation](pytorch/02_autograd.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/02_autograd.ipynb) |
+| [03 · nn.Module: a pre-norm transformer block](pytorch/03_transformer_block.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/03_transformer_block.ipynb) |
+| [04 · The training loop: AdamW, schedules, clipping, checkpoints](pytorch/04_training_loop.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/04_training_loop.ipynb) |
+| [05 · Data: Dataset, DataLoader, padding, masks and packing](pytorch/05_data_pipeline.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/05_data_pipeline.ipynb) |
+| [06 · Mixed precision: autocast, BF16 and GradScaler](pytorch/06_mixed_precision.ipynb) | 25 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/06_mixed_precision.ipynb) |
+| [07 · torch.compile and fused attention](pytorch/07_compile_and_sdpa.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/07_compile_and_sdpa.ipynb) |
+| [08 · Distributed: all_reduce and DDP with torchrun](pytorch/08_ddp_torchrun.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/08_ddp_torchrun.ipynb) |
+| [09 · Train a tiny GPT end to end](pytorch/09_tiny_gpt.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/09_tiny_gpt.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/pytorch/

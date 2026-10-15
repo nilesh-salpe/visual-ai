@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Pipelines for LLMs</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Data pipelines for LLMs" data-home="../index.html" data-home-label="PyTorch">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">PyTorch for LLMs · 05</div>
+    <h1>Data pipelines for LLMs</h1>
+    <p class="sub">Getting tokens to the GPU (graphics processing unit): Dataset and DataLoader, fixed windows for pretraining, padding with attention masks and −100 labels for fine-tuning, and sequence packing.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Pretraining consumes a token stream; fine-tuning uses variable-length examples. Batches must be rectangular, padding must not leak into the loss, and the GPU must never wait for data.</div>
+      <div class="c"><b>Core idea</b>A <b>Dataset</b> returns one example; a <b>DataLoader</b> batches (with <code>collate_fn</code>), shuffles and prefetches with worker processes. Pretraining cuts the token stream into fixed <b>windows</b>. Fine-tuning <b>pads</b> and marks ignored labels with <b>−100</b> (cross-entropy's default <code>ignore_index</code>). <b>Packing</b> concatenates examples to avoid padding waste.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>How much is padding?</h2>
+    <hr>
+<p class="lede">A batch of variable-length sequences. Grey cells are padding the GPU still computes on. Change the batch size, or switch to packing.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">batch size <input type="range" id="dB" min="2" max="16" step="1" value="8"> <output id="dBo"></output></label><div class="seg" id="dSeg"><button data-v="pad" class="on">pad to longest</button><button data-v="pack">pack</button></div></div>
+  <svg id="dSvg" viewBox="0 0 660 260" style="margin-top:10px" role="img" aria-label="Padding vs packing"></svg>
+  <p class="readout" id="dOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why data loading is tricky</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Rectangular batches</h3><p>GPUs want fixed shapes; real text has every length.</p></div>
+      <div class="card b"><h3>Loss leakage</h3><p>Padding or prompt tokens that count in the loss distort training.</p></div>
+      <div class="card c"><h3>Starving the GPU</h3><p>Tokenising in the training process makes the GPU wait.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which label is ignored?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">With F.cross_entropy's defaults, which label value is skipped in the loss?</p>
+      <div class="opts">
+      <button>A. 0</button>
+      <button>B. −1</button>
+      <button data-ok>C. −100</button>
+      <button>D. the padding token id</button>
+      </div>
+      <div class="why"><b>C.</b> ignore_index defaults to −100. Padding token ids are ordinary ids unless their labels are set to −100.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Dataset, collate, DataLoader</h2>
+    <hr>
+<div class="grid3">
+      <div class="card a"><h3>Dataset</h3><p><strong>len</strong> and <strong>getitem</strong>: one example, e.g. a window of T + 1 tokens split into inputs and targets.</p></div>
+      <div class="card c"><h3>collate_fn</h3><p>Turns a list of examples into tensors: pad, build attention masks and labels, or pack.</p></div>
+      <div class="card b"><h3>DataLoader</h3><p>batch_size, shuffle, num_workers, pin_memory, prefetch: keeps the GPU fed.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Labels = inputs shifted by one; −100 where no loss should be taken." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">tokens on disk</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">memory-mapped</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">Dataset</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">one example</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">collate_fn</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">pad / pack, labels</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">DataLoader</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">batches, workers,</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">pin_memory</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">GPU</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">x.to(device,</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">non_blocking=True)</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Labels = inputs shifted by one; −100 where no loss should be taken.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>One fine-tuning batch</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th></th><th>example 1</th><th>example 2</th></tr>
+  <tr><td>input_ids</td><td>5 6 7</td><td>8 9 <i>PAD</i></td></tr>
+  <tr><td>attention_mask</td><td>1 1 1</td><td>1 1 0</td></tr>
+  <tr><td>labels (next token)</td><td>6 7 −100</td><td>9 −100 −100</td></tr>
+</table></div>
+<p class="caption">Exactly what notebook 05's pad_collate returns. The loss averages over the 3 real targets only.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: padding vs packing</h2>
+    <hr>
+    <p class="lede">Notebook 05: 64 examples with lengths drawn uniformly between 20 and 400 tokens.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Padded batches of 8 (each padded to its longest example): <b>44%</b> of computed tokens are padding.</li><li>Batches of 32: <b>48%</b> padding; bigger batches make it worse because the longest example dominates.</li><li>Packing the same examples into full rows of fixed length: padding falls to at most the tail of the last row.</li><li>Packed documents need a document mask (or per-document position ids) so tokens do not attend across document boundaries.</li></ol><div class="result">Padding can waste nearly half the compute on varied lengths; packing recovers it.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why this design works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Separation of concerns</h3><p>Datasets know examples; collate knows batching; the loader knows parallelism.</p></div>
+      <div class="card e"><h3>Exact loss</h3><p>The −100 convention makes masking a label choice, with no special loss code.</p></div>
+      <div class="card b"><h3>Throughput</h3><p>Worker processes and pinned memory overlap data preparation and copies with GPU compute.</p></div>
+      <div class="card c"><h3>Packing</h3><p>Fills every position with real tokens; standard for pretraining and common for SFT (supervised fine-tuning).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"The attention mask removes padding from the loss."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It only stops attention to padding; the loss needs labels of −100 at those positions.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Bigger batches reduce padding waste."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">With padding to the longest example, bigger batches usually waste more (44% → 48% in notebook 05).</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Packing lets documents see each other harmlessly."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Without a document mask, tokens attend across unrelated documents.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>labels = −100 on padding and prompt.</b> F.cross_entropy ignores them by default.</li><li><b>pin_memory=True + non_blocking.</b> Overlaps host-to-GPU copies.</li><li><b>num_workers > 0.</b> Tokenisation and collation run in parallel processes.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Padding with a real token id and no mask.</b> The model attends to padding.</li><li><b>Training on prompt tokens in SFT.</b> Usually you mask the prompt to −100.</li><li><b>Overlapping windows by accident.</b> Inflates epochs and leaks validation data.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Pretraining window of T inputs needs how many tokens from the stream?</p>
+      <div class="opts">
+      <button>A. T − 1</button>
+      <button>B. T</button>
+      <button data-ok>C. T + 1</button>
+      <button>D. 2T</button>
+      </div>
+      <div class="why"><b>T + 1</b>: inputs are the first T, targets the last T.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What do pin_memory and non_blocking=True do?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Allocate page-locked host memory so host-to-GPU copies can run asynchronously, overlapping with compute.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">How do you keep packed documents independent?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Use a block-diagonal causal mask (or per-document position ids / varlen attention) so attention stays within each document.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">A Dataset returns examples, a collate function pads or packs them with −100 labels where no loss applies, and a DataLoader with workers keeps the GPU fed.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>PyTorch splits data loading into a Dataset that returns one example, a collate function that turns a list of examples into tensors, and a DataLoader that batches, shuffles and prefetches with worker processes. Pretraining cuts a long token stream into windows of T plus one tokens, inputs and shifted targets. Fine-tuning pads examples to a rectangle, builds an attention mask, and sets labels to minus one hundred wherever no loss should count, because that is cross-entropy's default ignore index. Padding can waste nearly half the compute, so packing concatenates examples into full rows with a document mask.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> variable lengths, exact loss, fed GPUs.</span></div><div><span><b>Core idea:</b> Dataset → collate → DataLoader; −100 labels.</span></div><div><span><b>Efficiency:</b> pack instead of pad; workers + pinned memory.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/05_data_pipeline.ipynb" target="_blank" rel="noopener">05 · Data: Dataset, DataLoader, padding, masks and packing</a> <span style="color:var(--faint)">· 30 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/05_data_pipeline.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../06-mixed-precision/index.html">06 · Mixed precision in PyTorch →</a> · Previous: <a href="../04-training-loop/index.html">← 04</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://docs.pytorch.org/docs/stable/data.html" target="_blank" rel="noopener">torch.utils.data</a>
+        <div class="meta">PyTorch documentation · docs.pytorch.org 2026</div>
+        <p>Dataset, Sampler and DataLoader: batching, collate_fn, worker processes, pinned memory and prefetching.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1912.01703" target="_blank" rel="noopener">PyTorch: An Imperative Style, High-Performance Deep Learning Library</a>
+        <div class="meta">Paszke et al. · NeurIPS 2019</div>
+        <p>PyTorch's design: eager, Pythonic execution ("code as a model") with efficient C++/CUDA (Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors) kernels, a caching allocator and reverse-mode autograd.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  let mode = 'pad', seed = 3; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const LEN = [...Array(64)].map(() => 20 + Math.floor(rnd() * 380));
+  const draw = () => {
+    const B = Deck.val('dB'); Deck.out('dBo', B); const lens = LEN.slice(0, B), s = clear(document.getElementById('dSvg')), L = Math.max(...lens), W = 560 / 400, rh = Math.min(28, 220 / B);
+    let real = lens.reduce((a, b) => a + b), comp;
+    if (mode === 'pad') {
+      lens.forEach((l, i) => { svg('rect', { x: 60, y: 10 + i * rh, width: L * W, height: rh - 3, style: 'fill:var(--panel-2)' }, s); svg('rect', { x: 60, y: 10 + i * rh, width: l * W, height: rh - 3, style: 'fill:var(--a)' }, s); });
+      comp = B * L;
+    } else {
+      const rows = Math.ceil(real / L); let used = 0, col = ['var(--a)', 'var(--c)', 'var(--b)', 'var(--e)'];
+      lens.forEach((l, k) => { let rem = l; while (rem > 0) { const r = Math.floor(used / L), c = used % L, take = Math.min(rem, L - c);
+        svg('rect', { x: 60 + c * W, y: 10 + r * rh, width: take * W - 1, height: rh - 3, style: `fill:${col[k % 4]}` }, s); used += take; rem -= take; } });
+      for (let r = 0; r < rows; r++) svg('rect', { x: 60 + (r === rows - 1 ? (used - r * L) : L) * W, y: 10 + r * rh, width: Math.max(0, (r === rows - 1 ? L - (used - r * L) : 0) * W), height: rh - 3, style: 'fill:var(--panel-2)' }, s);
+      comp = rows * L;
+    }
+    document.getElementById('dOut').innerHTML = `${real.toLocaleString()} real tokens, ${comp.toLocaleString()} computed: <b>${(100 * (1 - real / comp)).toFixed(0)}% padding</b>${mode === 'pack' ? ' (only the tail of the last row). Colours = different documents; they need a document mask.' : '.'}`;
+  };
+  Deck.bind(['dB'], draw); Deck.seg('dSeg', v => { mode = v; draw(); });
+})();
+</script>
+</body>
+</html>

@@ -16,6 +16,7 @@ PHASES = [  # (heading, notebook folder, index json)
     ('Phase 4 · Evaluating LLMs', 'evals', 'index_evals.json'),
     ('Phase 5 · Distributed training & reliability', 'distributed', 'index_distributed.json'),
     ('Phase 6 · Web crawling & pretraining data', 'pretraining-data', 'index_data.json'),
+    ('Frameworks · PyTorch for LLMs', 'pytorch', 'index_torch.json'),
 ]
 
 
@@ -367,3 +368,24 @@ if __name__ == '__main__':
         'index_data.json', 'Build a polite crawler on a simulated web, an RFC 9309 robots.txt parser, an HTML text extractor, C4 and Gopher quality filters, MinHash with LSH banding, and a data-mixture planner in Python.',
         DATA_CARDS, 'RFC 9309 (2022); Common Crawl; Brin & Page 1998; Najork & Heydon 2001 (Mercator); Lee et al. 2008 (IRLbot); Manku et al. 2007; Broder 1997; Raffel et al. 2020 (C4); Rae et al. 2021 (Gopher); Wenzek et al. 2020 (CCNet); Penedo et al. 2023 (RefinedWeb), 2024 (FineWeb); Li et al. 2024 (DCLM); Lee et al. 2022; Soldaini et al. 2024 (Dolma); Longpre et al. 2024; Barbaresi 2021 (trafilatura); Joulin et al. 2017 (fastText); Muennighoff et al. 2023; Xie et al. 2023 (DoReMi); Llama Team 2024 (Llama 3).'))
     print('wrote pretraining-data/index.html')
+
+
+TORCH_CARDS = [
+    ('01-tensors', 'Tensors, strides and views', 'Storage, shape, strides; view vs reshape; broadcasting and einsum.'),
+    ('02-autograd', 'Autograd', 'grad_fn graphs, accumulation, no_grad, detach, custom Functions.'),
+    ('03-nn-module', 'nn.Module and a transformer block', 'Parameters, buffers, state_dict, SDPA, a pre-norm block.'),
+    ('04-training-loop', 'The training loop', 'zero_grad → backward → clip → step; decay groups; resumable checkpoints.'),
+    ('05-data', 'Data pipelines for LLMs', 'Dataset, DataLoader, padding, −100 labels, packing.'),
+    ('06-mixed-precision', 'Mixed precision in PyTorch', 'autocast op dtypes, FP32 accumulation, GradScaler.'),
+    ('07-performance', 'Performance: compile, SDPA, memory', 'Dynamo + AOTAutograd + Inductor, graph breaks, fused attention.'),
+    ('08-distributed', 'Distributed training in PyTorch', 'torchrun, process groups, DDP buckets, FSDP2 fully_shard.'),
+    ('09-putting-it-together', 'Putting it together: a tiny GPT', 'A nanoGPT-style model trained and sampled on CPU.'),
+]
+
+if __name__ == '__main__':
+    open(os.path.join(REPO, 'pytorch', 'index.html'), 'w').write(topic_hub(
+        'pytorch', 'PyTorch for LLMs', 'PyTorch for LLMs',
+        'The PyTorch you need to build and train LLMs: tensors and views, autograd, nn.Module, the training loop, data pipelines, mixed precision, torch.compile and fused attention, and distributed training, ending with a tiny GPT. Checked against PyTorch 2.14.1; every notebook was executed with it before publishing.',
+        'index_torch.json', 'Split attention heads with strides, write a custom autograd Function, build a transformer block with SDPA, a resumable training loop, padding and packing collators, autocast and GradScaler, torch.compile graph-break hunting, DDP with torchrun, and a tiny GPT, all runnable on a CPU runtime.',
+        TORCH_CARDS, 'Paszke et al. 2019 (PyTorch); Ansel et al. 2024 (PyTorch 2); PyTorch 2.14 documentation (tensor views, autograd mechanics, torch.utils.data, torch.amp, torch.compiler, SDPA tutorial, FSDP2 tutorial, torchrun, CUDA semantics); Li et al. 2020 (DDP); Zhao et al. 2023 (FSDP); Micikevicius et al. 2018; Kalamkar et al. 2019; Loshchilov & Hutter 2019; Dao 2023; Radford et al. 2019; Karpathy (nanoGPT).'))
+    print('wrote pytorch/index.html')

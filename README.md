@@ -189,6 +189,22 @@ Ten 9-beat decks plus 6 hands-on [Colab notebooks](build-it/).
 | 09 | [Data mixtures and repetition](pretraining-data/09-mixtures-and-repetition/) |
 | 10 | [Reference pipelines](pretraining-data/10-reference-pipelines/) |
 
+## PyTorch for LLMs
+
+Nine 9-beat decks plus 9 hands-on [Colab notebooks](build-it/), checked against PyTorch 2.14.1.
+
+| # | Deck |
+|---|------|
+| 01 | [Tensors, strides and views](pytorch/01-tensors/) |
+| 02 | [Autograd](pytorch/02-autograd/) |
+| 03 | [nn.Module and a transformer block](pytorch/03-nn-module/) |
+| 04 | [The training loop](pytorch/04-training-loop/) |
+| 05 | [Data pipelines for LLMs](pytorch/05-data/) |
+| 06 | [Mixed precision in PyTorch](pytorch/06-mixed-precision/) |
+| 07 | [Performance: compile, SDPA, memory](pytorch/07-performance/) |
+| 08 | [Distributed training in PyTorch](pytorch/08-distributed/) |
+| 09 | [Putting it together: a tiny GPT](pytorch/09-putting-it-together/) |
+
 ## Editing and regenerating
 
 Deck content lives in [`content/`](content/) as Markdown (`deck.md`) plus each deck's interactive code (`widget.js`); see [`content/README.md`](content/README.md) for the format. To rebuild the site:

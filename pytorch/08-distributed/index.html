@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Distributed Training in PyTorch</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Distributed training in PyTorch" data-home="../index.html" data-home-label="PyTorch">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">PyTorch for LLMs · 08</div>
+    <h1>Distributed training in PyTorch</h1>
+    <p class="sub">The PyTorch APIs (application programming interfaces) behind data parallelism: torchrun, process groups and collectives, DistributedDataParallel and FSDP2's fully_shard, with their key settings.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>You know the theory of data and sharded parallelism (Distributed topic). Now the code: how processes start, find each other, average gradients and shard a model, with as few changes as possible.</div>
+      <div class="c"><b>Core idea</b><b>torchrun</b> starts one process per GPU (graphics processing unit) and sets <code>RANK</code>, <code>LOCAL_RANK</code>, <code>WORLD_SIZE</code>; <code>init_process_group("nccl")</code> connects them. <b>DDP (distributed data parallel)</b> wraps the model and all-reduces gradients in buckets during backward. <b>FSDP2</b> calls <code>fully_shard</code> on each block and then the root, sharding parameters as DTensors.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Ranks, local ranks and world size</h2>
+    <hr>
+<p class="lede">Choose nodes and GPUs per node. Click a GPU to see the environment torchrun gives its process.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">nodes <input type="range" id="rN" min="1" max="4" step="1" value="2"> <output id="rNo"></output></label><label class="ctl">GPUs per node <input type="range" id="rG" min="1" max="8" step="1" value="4"> <output id="rGo"></output></label></div>
+  <svg id="rSvg" viewBox="0 0 660 230" style="margin-top:10px" role="img" aria-label="Ranks"></svg>
+  <p class="readout" id="rOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>What multi-process training needs</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Discovery</h3><p>Processes on many machines must find each other and agree on ranks.</p></div>
+      <div class="card b"><h3>Identical replicas</h3><p>Every rank must start from the same weights and stay in sync.</p></div>
+      <div class="card c"><h3>Different data</h3><p>Each rank needs its own shard of each batch.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What does LOCAL_RANK index?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">On a 2-node × 8-GPU job, what is LOCAL_RANK for global rank 11?</p>
+      <div class="opts">
+      <button>A. 11</button>
+      <button data-ok>B. 3</button>
+      <button>C. 1</button>
+      <button>D. 8</button>
+      </div>
+      <div class="why"><b>3</b>: rank 11 is the fourth GPU (index 3) on node 1. LOCAL_RANK picks the GPU within a node; RANK is global.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Launch, connect, wrap</h2>
+    <hr>
+<div class="grid3">
+      <div class="card f"><h3>torchrun</h3><p>Spawns processes, sets RANK, LOCAL_RANK, WORLD_SIZE, MASTER_ADDR, MASTER_PORT; can restart on failure.</p></div>
+      <div class="card c"><h3>Process group</h3><p>init_process_group("nccl") on GPUs ("gloo" on CPU (central processing unit)); collectives: all_reduce, all_gather, reduce_scatter, broadcast.</p></div>
+      <div class="card a"><h3>DDP or FSDP2</h3><p>DDP(model) for replicated models; fully_shard per block for sharded ones.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Concepts: Distributed decks 02–03." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">torchrun</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">one process per</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">GPU</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">init_process_group</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">nccl (GPU) / gloo</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">(CPU)</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">DDP(model)</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">replicate,</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">all-reduce grads</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">or fully_shard(block)</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">shard params</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">(FSDP2)</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">DistributedSampler</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">different data per</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">rank</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Concepts: Distributed decks 02–03.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>FSDP2 in a few lines</h2>
+    <hr>
+<div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap">from torch.distributed.fsdp import fully_shard, MixedPrecisionPolicy&#10;&#10;mp = MixedPrecisionPolicy(param_dtype=torch.bfloat16, reduce_dtype=torch.float32)&#10;for block in model.blocks:&#10;    fully_shard(block, mp_policy=mp)       # each block: all-gather before use, reduce-scatter grads&#10;fully_shard(model, mp_policy=mp)           # the root (embeddings, head)&#10;opt = torch.optim.AdamW(model.parameters(), lr=3e-4)   # optimizer sees sharded DTensor params</pre></div>
+<div class="deep"><h4>Mapping from FSDP1</h4><p>The FSDP2 tutorial maps FULL_SHARD to reshard_after_forward=True (ZeRO-3-like (ZeRO = Zero Redundancy Optimizer)), SHARD_GRAD_OP to reshard_after_forward=False (ZeRO-2-like), and HYBRID_SHARD to a 2-D device mesh.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: what DDP does for you</h2>
+    <hr>
+    <p class="lede">Notebook 08: two CPU processes launched with torchrun and the gloo backend; each holds half of a 16-example batch.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Manual version: after backward, for every parameter call dist.all_reduce(p.grad, SUM) and divide by the world size.</li><li>Result: identical to the gradient of the full 16-example batch on one process (checked to 10⁻⁶).</li><li>DDP version: wrap the model in DistributedDataParallel and run the same forward/backward: same gradients, with all-reduce launched in buckets during backward.</li><li>PyTorch 2.14.1 DDP bucket size defaults to 25 MB (the first bucket is 1 MiB, so communication can start early).</li></ol><div class="result">DDP is exactly "average the gradients", overlapped with the backward pass and bucketed for efficiency.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why the APIs look like this</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Same model code</h3><p>DDP and FSDP2 wrap modules; the model itself is unchanged.</p></div>
+      <div class="card e"><h3>Overlap</h3><p>Hooks launch communication during backward (DDP buckets, FSDP (Fully Sharded Data Parallel) prefetch).</p></div>
+      <div class="card b"><h3>Per-block sharding</h3><p>Wrapping each block bounds peak memory to one block's full parameters at a time.</p></div>
+      <div class="card c"><h3>Elastic launch</h3><p>torchrun can restart failed workers and re-form the group.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"DDP sums gradients."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It averages them across ranks, so the learning rate means the same as on one GPU with the global batch.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"FSDP needs a different model definition."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">fully_shard wraps existing modules; parameters become sharded DTensors.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Each process sees all GPUs and picks one."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Each process should set its device from LOCAL_RANK; otherwise all processes default to GPU 0.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>torchrun --nproc_per_node=8 train.py.</b> Single node, 8 GPUs.</li><li><b>torch.cuda.set_device(LOCAL_RANK).</b> Before creating the model.</li><li><b>FSDP2: shard blocks, then the root.</b> for b in model.blocks: fully_shard(b); fully_shard(model).</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Same data on every rank.</b> Use DistributedSampler (and call set_epoch).</li><li><b>Saving from every rank.</b> Save on rank 0 (DDP) or use distributed checkpoints (FSDP).</li><li><b>Mismatched collectives.</b> If ranks call collectives in different orders, the job hangs.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Which backend for multi-GPU NVIDIA training?</p>
+      <div class="opts">
+      <button>A. gloo</button>
+      <button data-ok>B. nccl</button>
+      <button>C. mpi only</button>
+      <button>D. tcp</button>
+      </div>
+      <div class="why"><b>nccl</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What environment variables does torchrun set for each process?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">RANK, LOCAL_RANK, WORLD_SIZE, MASTER_ADDR, MASTER_PORT (and others).</div>
+    </div>
+<div class="quiz">
+      <p class="qq">How do you apply FSDP2 to a transformer?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Call fully_shard on each transformer block, then on the root model; create the optimizer afterwards.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">torchrun starts one process per GPU, init_process_group connects them, and DDP (bucketed gradient all-reduce) or FSDP2 (fully_shard per block) turns the same model code into distributed training.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Distributed PyTorch starts with torchrun, which launches one process per GPU and sets each one's global rank, local rank and world size. Each process calls init process group with the nccl backend on GPUs or gloo on CPUs, sets its device from the local rank and reads its own shard of the data. Wrapping the model in DistributedDataParallel averages gradients across ranks with bucketed all-reduces during the backward pass; notebook eight shows this equals the full-batch gradient. For models that do not fit, FSDP2's fully shard is applied to each block and then the root, sharding parameters and gradients.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> launch, connect and sync many processes.</span></div><div><span><b>Core idea:</b> torchrun → process group → DDP or fully_shard.</span></div><div><span><b>Defaults:</b> DDP buckets 25 MB; nccl on GPUs.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/08_ddp_torchrun.ipynb" target="_blank" rel="noopener">08 · Distributed: all_reduce and DDP with torchrun</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/08_ddp_torchrun.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../09-putting-it-together/index.html">09 · Putting it together: a tiny GPT →</a> · Previous: <a href="../07-performance/index.html">← 07</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2006.15704" target="_blank" rel="noopener">PyTorch Distributed: Experiences on Accelerating Data Parallel Training</a>
+        <div class="meta">Li et al. · VLDB 2020</div>
+        <p>PyTorch's DistributedDataParallel design: gradient bucketing, overlapping all-reduce with the backward pass, and skipping synchronization during gradient accumulation.</p><div class="num">Remember: near-linear scaling on 256 GPUs</div></div>
+      <div class="paper-item"><a href="https://docs.pytorch.org/docs/stable/elastic/run.html" target="_blank" rel="noopener">torchrun (Elastic Launch)</a>
+        <div class="meta">PyTorch documentation · docs.pytorch.org 2026</div>
+        <p>Launches one process per device and sets RANK, LOCAL_RANK, WORLD_SIZE, MASTER_ADDR and MASTER_PORT; supports multi-node and elastic restarts.</p></div>
+      <div class="paper-item"><a href="https://docs.pytorch.org/tutorials/intermediate/FSDP_tutorial.html" target="_blank" rel="noopener">Getting Started with Fully Sharded Data Parallel (FSDP2)</a>
+        <div class="meta">PyTorch documentation · docs.pytorch.org 2026</div>
+        <p>fully_shard applied to each transformer block and then the root; parameters become DTensors sharded on dim 0; all-gather before use, reduce-scatter after backward.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2304.11277" target="_blank" rel="noopener">PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel</a>
+        <div class="meta">Zhao et al. · VLDB 2023</div>
+        <p>PyTorch's ZeRO-3-style fully sharded data parallelism, with flattened parameter units, prefetching and hybrid sharding.</p><div class="num">Remember: comparable to DDP speed while supporting much larger models</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  let sel = 0;
+  const draw = () => {
+    const N = Deck.val('rN'), G = Deck.val('rG'), W = N * G; Deck.out('rNo', N); Deck.out('rGo', G); if (sel >= W) sel = 0;
+    const s = clear(document.getElementById('rSvg')), bw = 600 / N;
+    for (let n = 0; n < N; n++) { svg('rect', { x: 30 + n * bw, y: 10, width: bw - 12, height: 170, rx: 10, style: 'fill:var(--panel-2);stroke:var(--line)' }, s); svg('text', { x: 30 + n * bw + 10, y: 30, class: 'tm', text: `node ${n}` }, s);
+      for (let g = 0; g < G; g++) { const r = n * G + g, col = g % 4, row = Math.floor(g / 4), cw = (bw - 32) / 4, x = 40 + n * bw + col * cw, y = 45 + row * 62;
+        const el = svg('rect', { x, y, width: cw - 6, height: 52, rx: 6, style: `fill:${r === sel ? 'var(--b)' : 'var(--a)'};cursor:pointer` }, s);
+        svg('text', { x: x + (cw - 6) / 2, y: y + 22, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px;pointer-events:none', text: `rank ${r}` }, s);
+        svg('text', { x: x + (cw - 6) / 2, y: y + 40, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:10px;pointer-events:none', text: `local ${g}` }, s);
+        el.addEventListener('click', () => { sel = r; draw(); }); } }
+    svg('text', { x: 330, y: 210, 'text-anchor': 'middle', class: 'tm', text: `torchrun --nnodes ${N} --nproc_per_node ${G} train.py` }, s);
+    document.getElementById('rOut').innerHTML = `Selected process: <code>RANK=${sel} LOCAL_RANK=${sel % G} WORLD_SIZE=${W}</code> → <code>torch.cuda.set_device(${sel % G})</code>; it reads data shard ${sel} of ${W}.`;
+  };
+  Deck.bind(['rN', 'rG'], draw);
+})();
+</script>
+</body>
+</html>

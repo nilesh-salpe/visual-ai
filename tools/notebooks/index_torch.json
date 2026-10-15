@@ -1,0 +1,74 @@
+[
+ {
+  "slug": "01_tensors_views",
+  "title": "01 \u00b7 Tensors: shapes, strides, views and einsum",
+  "path": "build-it/pytorch/01_tensors_views.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/01_tensors_views.ipynb",
+  "deck": "pytorch/01-tensors/",
+  "minutes": 30
+ },
+ {
+  "slug": "02_autograd",
+  "title": "02 \u00b7 Autograd: graphs, custom functions and accumulation",
+  "path": "build-it/pytorch/02_autograd.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/02_autograd.ipynb",
+  "deck": "pytorch/02-autograd/",
+  "minutes": 30
+ },
+ {
+  "slug": "03_transformer_block",
+  "title": "03 \u00b7 nn.Module: a pre-norm transformer block",
+  "path": "build-it/pytorch/03_transformer_block.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/03_transformer_block.ipynb",
+  "deck": "pytorch/03-nn-module/",
+  "minutes": 40
+ },
+ {
+  "slug": "04_training_loop",
+  "title": "04 \u00b7 The training loop: AdamW, schedules, clipping, checkpoints",
+  "path": "build-it/pytorch/04_training_loop.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/04_training_loop.ipynb",
+  "deck": "pytorch/04-training-loop/",
+  "minutes": 35
+ },
+ {
+  "slug": "05_data_pipeline",
+  "title": "05 \u00b7 Data: Dataset, DataLoader, padding, masks and packing",
+  "path": "build-it/pytorch/05_data_pipeline.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/05_data_pipeline.ipynb",
+  "deck": "pytorch/05-data/",
+  "minutes": 30
+ },
+ {
+  "slug": "06_mixed_precision",
+  "title": "06 \u00b7 Mixed precision: autocast, BF16 and GradScaler",
+  "path": "build-it/pytorch/06_mixed_precision.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/06_mixed_precision.ipynb",
+  "deck": "pytorch/06-mixed-precision/",
+  "minutes": 25
+ },
+ {
+  "slug": "07_compile_and_sdpa",
+  "title": "07 \u00b7 torch.compile and fused attention",
+  "path": "build-it/pytorch/07_compile_and_sdpa.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/07_compile_and_sdpa.ipynb",
+  "deck": "pytorch/07-performance/",
+  "minutes": 30
+ },
+ {
+  "slug": "08_ddp_torchrun",
+  "title": "08 \u00b7 Distributed: all_reduce and DDP with torchrun",
+  "path": "build-it/pytorch/08_ddp_torchrun.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/08_ddp_torchrun.ipynb",
+  "deck": "pytorch/08-distributed/",
+  "minutes": 35
+ },
+ {
+  "slug": "09_tiny_gpt",
+  "title": "09 \u00b7 Train a tiny GPT end to end",
+  "path": "build-it/pytorch/09_tiny_gpt.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/09_tiny_gpt.ipynb",
+  "deck": "pytorch/09-putting-it-together/",
+  "minutes": 40
+ }
+]

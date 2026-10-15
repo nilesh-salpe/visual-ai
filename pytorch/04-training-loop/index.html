@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Training Loop</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="The training loop" data-home="../index.html" data-home-label="PyTorch">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">PyTorch for LLMs · 04</div>
+    <h1>The training loop</h1>
+    <p class="sub">The handful of lines every PyTorch training script shares: zero_grad, forward, loss, backward, clipping, optimizer and scheduler steps, parameter groups for weight decay, and checkpoints that resume exactly.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Training runs for days, must be stable, and will be interrupted. The loop has to apply the right update every step and resume after a crash as if nothing happened.</div>
+      <div class="c"><b>Core idea</b>Each step: <code>opt.zero_grad(set_to_none=True)</code> → <code>loss = …</code> → <code>loss.backward()</code> → <code>clip_grad_norm_(…, 1.0)</code> → <code>opt.step()</code> → <code>sched.step()</code>. Put biases and norm gains in a no-decay <b>parameter group</b>. A checkpoint stores <b>model, optimizer and scheduler</b> state (plus RNG (random number generator) and data position).</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>What does a checkpoint weigh?</h2>
+    <hr>
+<p class="lede">Model, gradients and AdamW state for a given size and precision. The checkpoint you save is model + optimizer (gradients are recomputed).</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">parameters <input type="range" id="cN" min="8" max="11.6" step="0.05" value="9.85"> <output id="cNo"></output></label><div class="seg" id="cSeg"><button data-v="mixed" class="on">BF16 weights + FP32 master</button><button data-v="fp32">all FP32</button></div></div>
+  <div id="cBars" style="margin-top:12px"></div>
+  <p class="readout" id="cOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>What goes wrong in naive loops</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Stale gradients</h3><p>Forgetting zero_grad adds last step's gradients to this one.</p></div>
+      <div class="card b"><h3>Loss spikes</h3><p>One huge gradient can wreck a run without clipping.</p></div>
+      <div class="card c"><h3>Non-resumable runs</h3><p>Restarting from weights alone changes the optimisation trajectory.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Where does clipping go?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">In which position should torch.nn.utils.clip_grad_norm_ be called?</p>
+      <div class="opts">
+      <button>A. Before loss.backward()</button>
+      <button data-ok>B. Between loss.backward() and opt.step()</button>
+      <button>C. After opt.step()</button>
+      <button>D. After sched.step()</button>
+      </div>
+      <div class="why"><b>B.</b> Gradients exist only after backward, and they must be clipped before the optimizer uses them.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Six lines, in order</h2>
+    <hr>
+<div class="grid3">
+      <div class="card f"><h3>zero_grad</h3><p>Reset .grad (set_to_none=True frees the memory).</p></div>
+      <div class="card a"><h3>forward, loss, backward</h3><p>Compute the loss and fill gradients.</p></div>
+      <div class="card e"><h3>clip, step, schedule</h3><p>Clip the global norm, update weights, advance the learning rate.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 174" role="img" aria-label="Optimizer theory: NN fundamentals deck 05." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">zero_grad</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">clear .grad</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">forward + loss</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">backward</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">fill .grad</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">clip</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">max norm 1.0</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">opt.step + sched.step</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">update, next LR</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M593.2 122 V146 H66.8 V124" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="330.0" y="163" text-anchor="middle" class="tm" style="font-size:11px">every step; checkpoint every N steps</text></svg><p class="caption" style="margin:4px 0 0">Optimizer theory: NN (neural network) fundamentals deck 05.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>The loop in code</h2>
+    <hr>
+<div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap">decay    = [p for p in model.parameters() if p.dim() >= 2]&#10;no_decay = [p for p in model.parameters() if p.dim() < 2]&#10;opt = torch.optim.AdamW([{"params": decay, "weight_decay": 0.1},&#10;                         {"params": no_decay, "weight_decay": 0.0}], lr=3e-4, betas=(0.9, 0.95))&#10;sched = torch.optim.lr_scheduler.LambdaLR(opt, warmup_then_cosine)&#10;&#10;for step, (x, y) in enumerate(loader):&#10;    opt.zero_grad(set_to_none=True)&#10;    logits, loss = model(x, y)&#10;    loss.backward()&#10;    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)&#10;    opt.step(); sched.step()&#10;    if step % 1000 == 0:&#10;        torch.save({"model": model.state_dict(), "opt": opt.state_dict(),&#10;                    "sched": sched.state_dict(), "step": step}, "ckpt.pt")</pre></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: what a checkpoint must contain</h2>
+    <hr>
+    <p class="lede">Notebook 04: train 40 steps straight, versus 20 steps → checkpoint → reload into fresh objects → 20 more steps.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Saving model + optimizer + scheduler state_dicts and loading all three: the final weights match the uninterrupted run exactly (max difference <b>0</b>).</li><li>Saving only the model weights: Adam's moment estimates and the scheduler position are lost; warmup restarts and the weights end up different (max difference ≈ 0.4 in the notebook).</li><li>For a 7B model, AdamW's m and v in FP32 (32-bit floating point) are 8 bytes × 7B = 56 GB, twice the FP32 weights themselves.</li><li>PyTorch's AdamW defaults: lr 10⁻³, betas (0.9, 0.999), eps 10⁻⁸, weight_decay 0.01 (LLM (large language model) recipes often use 0.1 and β₂ 0.95).</li></ol><div class="result">The optimizer state is part of the model's training state; resume with all of it or the run changes.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why each line is there</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>zero_grad</h3><p>Gradients accumulate by design (deck 02).</p></div>
+      <div class="card e"><h3>Clipping</h3><p>Bounds the update size when a rare batch produces a huge gradient.</p></div>
+      <div class="card b"><h3>No decay on norms and biases</h3><p>Shrinking gains toward 0 fights normalisation for no benefit.</p></div>
+      <div class="card c"><h3>Full checkpoints</h3><p>Exact resumption after hardware failures (Distributed deck 11).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"model.state_dict() is a complete checkpoint."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Without optimizer and scheduler state, resuming changes the run (notebook 04).</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"AdamW's default weight decay is 0."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">In PyTorch it is 0.01; Adam's default is 0.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Gradient clipping changes the gradient direction."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Norm clipping rescales all gradients by one factor; the direction is preserved.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Parameter groups.</b> decay = p.dim() ≥ 2; no decay for biases and norms.</li><li><b>LambdaLR(opt, fn).</b> fn(step) multiplies the base learning rate.</li><li><b>torch.save a dict of state_dicts.</b> model, opt, sched, step, RNG.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>sched.step() before opt.step().</b> PyTorch warns and the first LR value is skipped.</li><li><b>Saving the whole model object.</b> Pickles code paths; save state_dicts instead.</li><li><b>Clipping after opt.step().</b> Too late; clip between backward and step.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">FP32 bytes of AdamW m + v for a 1B-parameter model?</p>
+      <div class="opts">
+      <button>A. 4 GB</button>
+      <button data-ok>B. 8 GB</button>
+      <button>C. 16 GB</button>
+      <button>D. 2 GB</button>
+      </div>
+      <div class="why">2 × 4 bytes × 1B = <b>8 GB</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why exclude LayerNorm/RMSNorm (root-mean-square normalization) weights from weight decay?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">They are scale parameters; decaying them toward zero fights the normalisation and does not regularise usefully.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What should a resumable checkpoint store?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Model, optimizer and scheduler state dicts, the step count, RNG states and the data loader position.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Every step is zero_grad → forward → loss → backward → clip → optimizer step → scheduler step; decay only matrices, and checkpoint model + optimizer + scheduler to resume exactly.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>PyTorch training loops share six lines: zero the gradients, run the forward pass and loss, call backward, clip the gradient norm, step the optimizer and step the learning-rate scheduler. AdamW is usually given two parameter groups so weight decay applies only to weight matrices, not biases or normalisation gains, and a LambdaLR scheduler implements warmup plus cosine decay. A checkpoint must contain the model, optimizer and scheduler states: notebook four shows that resuming from weights alone changes the run, because Adam's moment estimates and the schedule position are lost.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> stable, resumable multi-day training.</span></div><div><span><b>Core idea:</b> six lines in a fixed order; decay groups.</span></div><div><span><b>Checkpoint:</b> model + optimizer + scheduler + step + RNG.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/04_training_loop.ipynb" target="_blank" rel="noopener">04 · The training loop: AdamW, schedules, clipping, checkpoints</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/04_training_loop.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../05-data/index.html">05 · Data pipelines for LLMs →</a> · Previous: <a href="../03-nn-module/index.html">← 03</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1711.05101" target="_blank" rel="noopener">Decoupled Weight Decay Regularization (AdamW)</a>
+        <div class="meta">Loshchilov & Hutter · ICLR 2019</div>
+        <p>L2 regularization and weight decay differ for adaptive optimizers; applying decay directly to the weights (AdamW) decouples it from the learning rate and improves generalization.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1912.01703" target="_blank" rel="noopener">PyTorch: An Imperative Style, High-Performance Deep Learning Library</a>
+        <div class="meta">Paszke et al. · NeurIPS 2019</div>
+        <p>PyTorch's design: eager, Pythonic execution ("code as a model") with efficient C++/CUDA (Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors) kernels, a caching allocator and reverse-mode autograd.</p></div>
+      <div class="paper-item"><a href="https://github.com/karpathy/nanoGPT" target="_blank" rel="noopener">nanoGPT</a>
+        <div class="meta">Karpathy · GitHub 2022</div>
+        <p>A minimal, readable GPT training codebase in PyTorch (model.py + train.py) using SDPA (scaled dot-product attention), AdamW with weight-decay groups, cosine schedule, DDP (distributed data parallel) and torch.compile.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  let mode = 'mixed';
+  const draw = () => {
+    const N = Math.pow(10, Deck.val('cN')), f = x => x >= 1e12 ? (x / 1e12).toFixed(2) + ' TB' : (x / 1e9).toFixed(1) + ' GB';
+    Deck.out('cNo', N >= 1e9 ? (N / 1e9).toFixed(1) + 'B' : (N / 1e6).toFixed(0) + 'M');
+    const rows = mode === 'mixed' ? [['BF16 weights', 2], ['BF16 gradients', 2], ['FP32 master weights', 4], ['AdamW m (FP32)', 4], ['AdamW v (FP32)', 4]] : [['FP32 weights', 4], ['FP32 gradients', 4], ['AdamW m', 4], ['AdamW v', 4]];
+    Deck.hbars(document.getElementById('cBars'), rows.map(([l, b]) => ({ label: l, value: b * N, color: /grad/.test(l) ? 'var(--faint)' : /Adam/.test(l) ? 'var(--b)' : 'var(--a)', text: f(b * N) })), { max: 4 * N * 1.05 });
+    const ck = rows.filter(r => !/grad/.test(r[0])).reduce((a, r) => a + r[1], 0) * N, tot = rows.reduce((a, r) => a + r[1], 0) * N;
+    document.getElementById('cOut').innerHTML = `Training state ≈ <b>${f(tot)}</b> (${rows.reduce((a, r) => a + r[1], 0)} bytes/param). A resumable checkpoint (no gradients) ≈ <b>${f(ck)}</b>; weights alone would be ${f((mode === 'mixed' ? 2 : 4) * N)}.`;
+  };
+  Deck.bind(['cN'], draw); Deck.seg('cSeg', v => { mode = v; draw(); });
+})();
+</script>
+</body>
+</html>

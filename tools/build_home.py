@@ -26,6 +26,9 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
         ('distributed', 'Topic · 11 decks + 8 Colab notebooks', 'Distributed training &amp; reliability', 'Data, sharded (ZeRO/FSDP), tensor, pipeline, context and expert parallelism, activation recomputation, mixed precision and FP8, 4D layouts, checkpointing and loss spikes.', ['FSDP', 'pipeline', 'ring attention', 'FP8']),
         ('post-training', 'Topic · 9 decks + 8 Colab notebooks', 'Post-training LLMs', 'SFT, LoRA and QLoRA, reward models, RLHF with PPO, reward hacking, DPO and KTO, RL with verifiable rewards (GRPO, DeepSeek-R1), and Constitutional AI.', ['RLHF', 'DPO', 'GRPO', 'LoRA']),
     ]),
+    ('Frameworks', [
+        ('pytorch', 'Framework · 9 decks + 9 Colab notebooks', 'PyTorch for LLMs', 'Tensors and views, autograd, nn.Module, the training loop, data pipelines, mixed precision, torch.compile and SDPA, DDP and FSDP2, and a tiny GPT. Checked against PyTorch 2.14.1.', ['autograd', 'SDPA', 'torch.compile', 'FSDP2']),
+    ]),
     ('Serving and evaluation', [
         ('inference', 'Topic · 10 decks + 12 Colab notebooks', 'LLM Inference and Serving', 'Prefill vs decode, KV cache, continuous batching, chunked prefill, PagedAttention, speculative decoding, quantization, tensor parallelism, disaggregation, with hands-on notebooks.', ['KV cache', 'vLLM', 'speculative', 'Colab']),
         ('evals', 'Topic · 7 decks + 4 Colab notebooks', 'Evaluating LLMs', 'What a score measures, benchmark failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases and arena ratings.', ['pass@k', 'error bars', 'LLM judge', 'Arena']),

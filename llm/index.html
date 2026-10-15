@@ -10,7 +10,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="../index.html">← Visual AI</a>
-  <div class="label" style="margin-top:28px">Visual LLM · 11 topics · 110 decks</div>
+  <div class="label" style="margin-top:28px">Visual LLM · 12 topics · 119 decks</div>
   <h1>How large language models work</h1>
   <p class="lede">Interactive slide decks on LLM (large language model) systems, from the math and hardware underneath to architecture, data, training, serving and evaluation. Each topic is a folder, and each subtopic is a deck inside it.</p>
   <p style="margin:6px 0 0;display:flex;gap:10px;flex-wrap:wrap"><a class="btn" href="../glossary/index.html">🔤 Glossary of acronyms</a><a class="btn" href="../build-it/index.html">🛠 All Colab notebooks</a></p>
@@ -34,6 +34,10 @@
     <a class="hub-card" href="../pretraining-data/index.html"><div class="n">Topic · 10 decks + 6 Colab notebooks</div><h3>Web crawling and pretraining data</h3><p>How crawlers work and stay polite, robots.txt and consent, text extraction, quality filtering, MinHash deduplication, PII (personally identifiable information) and safety filtering, data mixtures and the C4 → FineWeb → Llama 3 pipelines.</p><div class="tags"><span>crawler</span><span>robots.txt</span><span>MinHash</span><span>FineWeb</span></div></a>
     <a class="hub-card" href="../distributed/index.html"><div class="n">Topic · 11 decks + 8 Colab notebooks</div><h3>Distributed training &amp; reliability</h3><p>Data, sharded (ZeRO (Zero Redundancy Optimizer)/FSDP (Fully Sharded Data Parallel)), tensor, pipeline, context and expert parallelism, activation recomputation, mixed precision and FP8 (8-bit floating point), 4D layouts, checkpointing and loss spikes.</p><div class="tags"><span>FSDP</span><span>pipeline</span><span>ring attention</span><span>FP8</span></div></a>
     <a class="hub-card" href="../post-training/index.html"><div class="n">Topic · 9 decks + 8 Colab notebooks</div><h3>Post-training LLMs</h3><p>SFT (supervised fine-tuning), LoRA (Low-Rank Adaptation) and QLoRA (Quantized Low-Rank Adaptation), reward models, RLHF (reinforcement learning from human feedback) with PPO (Proximal Policy Optimization), reward hacking, DPO (Direct Preference Optimization) and KTO (Kahneman-Tversky Optimization), RL (reinforcement learning) with verifiable rewards (GRPO (Group Relative Policy Optimization), DeepSeek-R1), and Constitutional AI.</p><div class="tags"><span>RLHF</span><span>DPO</span><span>GRPO</span><span>LoRA</span></div></a>
+  </div>
+  <div class="sec">Frameworks</div>
+  <div class="hub-grid">
+    <a class="hub-card" href="../pytorch/index.html"><div class="n">Framework · 9 decks + 9 Colab notebooks</div><h3>PyTorch for LLMs</h3><p>Tensors and views, autograd, nn.Module, the training loop, data pipelines, mixed precision, torch.compile and SDPA (scaled dot-product attention), DDP (distributed data parallel) and FSDP2, and a tiny GPT. Checked against PyTorch 2.14.1.</p><div class="tags"><span>autograd</span><span>SDPA</span><span>torch.compile</span><span>FSDP2</span></div></a>
   </div>
   <div class="sec">Serving and evaluation</div>
   <div class="hub-grid">

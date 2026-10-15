@@ -1373,3 +1373,90 @@ fasttext_lid:
   summary: Pretrained fastText language-ID models (lid.176.bin, 126 MB; lid.176.ftz, 917 kB) trained on Wikipedia, Tatoeba and SETimes; widely used to split web crawls
     by language.
   number: 176 languages
+pytorch:
+  title: 'PyTorch: An Imperative Style, High-Performance Deep Learning Library'
+  authors: Paszke et al.
+  venue: NeurIPS
+  year: 2019
+  url: https://arxiv.org/abs/1912.01703
+  summary: 'PyTorch''s design: eager, Pythonic execution ("code as a model") with efficient C++/CUDA kernels, a caching allocator and reverse-mode autograd.'
+pytorch2:
+  title: 'PyTorch 2: Faster Machine Learning Through Dynamic Python Bytecode Transformation and Graph Compilation'
+  authors: Ansel et al.
+  venue: ASPLOS
+  year: 2024
+  url: https://docs.pytorch.org/assets/pytorch2-2.pdf
+  summary: 'torch.compile: TorchDynamo captures graphs from Python bytecode with guards and graph breaks; TorchInductor generates Triton (GPU) and C++ (CPU) code.'
+  number: 2.27× inference, 1.41× training geomean speedup on A100 (180+ models)
+pt_tensor_views:
+  title: Tensor Views
+  authors: PyTorch documentation
+  venue: docs.pytorch.org
+  year: 2026
+  url: https://docs.pytorch.org/docs/stable/tensor_view.html
+  summary: Which operations return views that share storage with their base (view, transpose, narrow, expand, …) and when a copy is made.
+pt_autograd:
+  title: Autograd mechanics
+  authors: PyTorch documentation
+  venue: docs.pytorch.org
+  year: 2026
+  url: https://docs.pytorch.org/docs/stable/notes/autograd.html
+  summary: How autograd records the graph, saved tensors, no_grad and inference mode, in-place correctness checks and gradient accumulation.
+pt_data:
+  title: torch.utils.data
+  authors: PyTorch documentation
+  venue: docs.pytorch.org
+  year: 2026
+  url: https://docs.pytorch.org/docs/stable/data.html
+  summary: 'Dataset, Sampler and DataLoader: batching, collate_fn, worker processes, pinned memory and prefetching.'
+pt_amp:
+  title: Automatic Mixed Precision package (torch.amp)
+  authors: PyTorch documentation
+  venue: docs.pytorch.org
+  year: 2026
+  url: https://docs.pytorch.org/docs/stable/amp.html
+  summary: torch.autocast op lists (which ops run in lower precision and which stay in FP32) and GradScaler for FP16 loss scaling.
+  number: 'GradScaler: init scale 65,536, ×2 growth, ×0.5 backoff, every 2,000 steps'
+pt_compile:
+  title: torch.compiler
+  authors: PyTorch documentation
+  venue: docs.pytorch.org
+  year: 2026
+  url: https://docs.pytorch.org/docs/stable/torch.compiler.html
+  summary: 'Overview of torch.compile: TorchDynamo graph capture, AOTAutograd, the Inductor backend, compile modes and troubleshooting graph breaks.'
+pt_sdpa:
+  title: (Beta) Implementing High-Performance Transformers with Scaled Dot Product Attention
+  authors: PyTorch documentation
+  venue: docs.pytorch.org
+  year: 2026
+  url: https://docs.pytorch.org/tutorials/intermediate/scaled_dot_product_attention_tutorial.html
+  summary: F.scaled_dot_product_attention and its fused backends (FlashAttention, memory-efficient, cuDNN, math), selectable with sdpa_kernel.
+pt_fsdp2:
+  title: Getting Started with Fully Sharded Data Parallel (FSDP2)
+  authors: PyTorch documentation
+  venue: docs.pytorch.org
+  year: 2026
+  url: https://docs.pytorch.org/tutorials/intermediate/FSDP_tutorial.html
+  summary: fully_shard applied to each transformer block and then the root; parameters become DTensors sharded on dim 0; all-gather before use, reduce-scatter after
+    backward.
+pt_torchrun:
+  title: torchrun (Elastic Launch)
+  authors: PyTorch documentation
+  venue: docs.pytorch.org
+  year: 2026
+  url: https://docs.pytorch.org/docs/stable/elastic/run.html
+  summary: Launches one process per device and sets RANK, LOCAL_RANK, WORLD_SIZE, MASTER_ADDR and MASTER_PORT; supports multi-node and elastic restarts.
+pt_cuda:
+  title: CUDA semantics
+  authors: PyTorch documentation
+  venue: docs.pytorch.org
+  year: 2026
+  url: https://docs.pytorch.org/docs/stable/notes/cuda.html
+  summary: Devices and streams, asynchronous execution, the caching allocator, memory statistics (memory_allocated, max_memory_allocated) and CUDA graphs.
+nanogpt:
+  title: nanoGPT
+  authors: Karpathy
+  venue: GitHub
+  year: 2022
+  url: https://github.com/karpathy/nanoGPT
+  summary: A minimal, readable GPT training codebase in PyTorch (model.py + train.py) using SDPA, AdamW with weight-decay groups, cosine schedule, DDP and torch.compile.

@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tensors, Strides and Views</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Tensors, strides and views" data-home="../index.html" data-home-label="PyTorch">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">PyTorch for LLMs · 01</div>
+    <h1>Tensors, strides and views</h1>
+    <p class="sub">What a PyTorch tensor really is (storage, shape, strides, dtype, device), why reshaping attention heads is free, when it is not, and broadcasting and einsum for attention math.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>LLM (large language model) code constantly reshapes activations: splitting heads, transposing for attention, broadcasting masks. Done wrong it silently copies gigabytes, or fails with "view size is not compatible".</div>
+      <div class="c"><b>Core idea</b>A tensor is a <b>view</b> onto flat <b>storage</b> described by <b>shape</b> and <b>strides</b> (elements to skip per dimension). <code>view</code>, <code>transpose</code>, slicing and <code>expand</code> only change that metadata. After a transpose the tensor is <b>non-contiguous</b>, so <code>view</code> fails and you need <code>reshape</code> or <code>.contiguous()</code>.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Same memory, different views</h2>
+    <hr>
+<p class="lede">A 3 × 4 tensor stored as 12 numbers. Pick an operation: the grid shows which storage index each element reads, and the readout gives shape, strides and contiguity. Checked against PyTorch 2.14.1.</p>
+<div class="visual">
+  <div class="seg" id="tSeg" style="display:flex;flex-wrap:wrap"><button data-v="base" class="on">x (3×4)</button><button data-v="t">x.t()</button><button data-v="slice">x[:, 1:3]</button><button data-v="expand">bias.expand(3, 4)</button><button data-v="cont">x.t().contiguous()</button></div>
+  <svg id="tSvg" viewBox="0 0 660 230" style="margin-top:10px" role="img" aria-label="Tensor view and storage"></svg>
+  <p class="readout" id="tOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why this matters for LLM code</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Hidden copies</h3><p>A stray .contiguous() on a (B, H, T, T) tensor copies gigabytes.</p></div>
+      <div class="card b"><h3>Confusing errors</h3><p>"view size is not compatible" appears exactly where heads are merged after a transpose.</p></div>
+      <div class="card c"><h3>Aliasing</h3><p>Modifying a view in place modifies the original tensor, including weights.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Does this copy?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">x has shape (B, T, C) and is contiguous. Which operation copies data?</p>
+      <div class="opts">
+      <button>A. x.view(B, T, H, C // H)</button>
+      <button>B. x.transpose(1, 2)</button>
+      <button data-ok>C. x.transpose(1, 2).contiguous()</button>
+      <button>D. x[:, -1]</button>
+      </div>
+      <div class="why"><b>C.</b> view, transpose and slicing only change metadata. contiguous() on a non-contiguous tensor allocates new memory in row-major order.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Storage, shape and strides</h2>
+    <hr>
+<div class="grid3">
+      <div class="card f"><h3>Storage</h3><p>A flat 1-D buffer on a device (CPU (central processing unit), CUDA (Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors)) with one dtype.</p></div>
+      <div class="card a"><h3>Shape + strides</h3><p>Element [i₀, i₁, …] is at offset + Σ iₖ·stride[k]. Contiguous: strides decrease right to left.</p></div>
+      <div class="card c"><h3>Views</h3><p>view, transpose/permute, slicing, expand, unsqueeze: new metadata over the same storage.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="element [i, j] lives at offset + i·stride[0] + j·stride[1]" class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--faint)"/><text x="83.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">storage</text><text x="83.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">flat memory</text><rect x="174.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--a)"/><text x="247.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">shape + strides</text><text x="247.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">how to index it</text><line x1="158.5" y1="60.0" x2="172.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="339.0" y="28" width="146.5" height="64" rx="10" style="fill:var(--c)"/><text x="412.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">view / transpose / expand</text><text x="412.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">new metadata, same</text><text x="412.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">memory</text><line x1="323.0" y1="60.0" x2="337.0" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="503.5" y="28" width="146.5" height="64" rx="10" style="fill:var(--b)"/><text x="576.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:13px">contiguous() / reshape</text><text x="576.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">copy only when needed</text><line x1="487.5" y1="60.0" x2="501.5" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">element [i, j] lives at offset + i·stride[0] + j·stride[1]</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>The shapes of attention</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Step</th><th>Code</th><th>Shape</th><th>Copies?</th></tr>
+  <tr><td>project</td><td><code>q, k, v = qkv(x).split(C, 2)</code></td><td>(B, T, C) each</td><td>no (split = views)</td></tr>
+  <tr><td>split heads</td><td><code>q.view(B, T, H, D).transpose(1, 2)</code></td><td>(B, H, T, D)</td><td>no</td></tr>
+  <tr><td>scores</td><td><code>q @ k.transpose(-2, -1) / D**0.5</code></td><td>(B, H, T, T)</td><td>new tensor (compute)</td></tr>
+  <tr><td>mix values</td><td><code>att @ v</code></td><td>(B, H, T, D)</td><td>new tensor</td></tr>
+  <tr><td>merge heads</td><td><code>y.transpose(1, 2).reshape(B, T, C)</code></td><td>(B, T, C)</td><td>yes, one copy</td></tr>
+</table></div>
+<p class="caption">einsum form of the scores: <code>torch.einsum("bhid,bhjd->bhij", q, k)</code>.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: splitting attention heads</h2>
+    <hr>
+    <p class="lede">Activations x of shape (B, T, C) = (2, 5, 12), split into H = 3 heads of D = 4. Notebook 01 runs every line.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Contiguous strides for (2, 5, 12) are (60, 12, 1): one step in the last dimension moves 1 element, one token moves 12.</li><li><code>x.view(2, 5, 3, 4)</code> is free (strides (60, 12, 4, 1)); <code>.transpose(1, 2)</code> gives shape (2, 3, 5, 4) with strides (60, 4, 12, 1), still free but now non-contiguous.</li><li>Merging back with <code>.view(2, 5, 12)</code> on the transposed tensor fails: "view size is not compatible with input tensor's size and stride". <code>.transpose(1, 2).contiguous().view(…)</code> or <code>.reshape(…)</code> copies once and works.</li><li><code>expand</code> gives stride 0 along broadcast dimensions: a (4,) bias expanded to (3, 4) has strides (0, 1) and uses no extra memory.</li></ol><div class="result">Shape changes are metadata until a non-contiguous layout forces a copy; know which operations copy.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why strided tensors are a good design</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Free reshapes</h3><p>Most layout changes cost nothing, so code can be written in the most readable shape.</p></div>
+      <div class="card e"><h3>Broadcasting without memory</h3><p>Stride-0 dimensions let a bias or mask act on a whole batch.</p></div>
+      <div class="card b"><h3>Kernels choose layouts</h3><p>Fused kernels accept strided inputs; copies happen only where a kernel needs contiguity.</p></div>
+      <div class="card c"><h3>Same API on every device</h3><p>The metadata model is identical on CPU and GPU (graphics processing unit).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"reshape and view are the same."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">view never copies and fails if strides do not allow it; reshape returns a view when possible and copies otherwise.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Transpose moves data."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It swaps two strides; the data moves only if you later call contiguous() or an op that needs contiguity.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Broadcasting allocates the expanded tensor."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Expanded dimensions have stride 0; memory is only used when a result is computed.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>stride[i] = product of later dims.</b> For contiguous tensors.</li><li><b>Broadcasting aligns from the right.</b> Size-1 or missing dims stretch.</li><li><b>einsum names the math.</b> "bhid,bhjd->bhij" is QKᵀ per head.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>view after transpose.</b> Fails; use reshape or contiguous().</li><li><b>Editing a view edits the original.</b> Views share storage (notebook 01 shows x[0,0] change).</li><li><b>Silent broadcasting bugs.</b> (B, 1) + (B,) gives (B, B), not (B,).</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Strides of a contiguous tensor with shape (2, 3, 4)?</p>
+      <div class="opts">
+      <button>A. (1, 2, 3)</button>
+      <button data-ok>B. (12, 4, 1)</button>
+      <button>C. (4, 3, 2)</button>
+      <button>D. (24, 12, 4)</button>
+      </div>
+      <div class="why"><b>(12, 4, 1)</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why does view fail after transpose?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The transposed strides cannot express the requested shape over the same memory without reordering; reshape or contiguous() is needed.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Write the attention score computation with einsum.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">torch.einsum("bhid,bhjd-&gt;bhij", q, k) / D ** 0.5.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">A tensor is storage plus shape and strides: view, transpose, slicing and expand are free metadata changes, and a copy happens only when a non-contiguous layout must become contiguous.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>A PyTorch tensor is a view onto a flat block of memory, described by its shape and strides, the number of elements to skip per dimension. Operations like view, transpose, slicing and expand only create new metadata over the same storage, which is why splitting attention heads costs nothing. A transpose leaves the tensor non-contiguous, so view can no longer merge dimensions; reshape or contiguous makes one copy. Broadcasting uses stride zero so a bias or mask applies to a whole batch without extra memory, and einsum writes attention math directly.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> reshaping without hidden copies or errors.</span></div><div><span><b>Core idea:</b> storage + shape + strides; views share memory.</span></div><div><span><b>Rule:</b> transpose → non-contiguous → reshape/contiguous to merge.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/01_tensors_views.ipynb" target="_blank" rel="noopener">01 · Tensors: shapes, strides, views and einsum</a> <span style="color:var(--faint)">· 30 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/01_tensors_views.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../02-autograd/index.html">02 · Autograd →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1912.01703" target="_blank" rel="noopener">PyTorch: An Imperative Style, High-Performance Deep Learning Library</a>
+        <div class="meta">Paszke et al. · NeurIPS 2019</div>
+        <p>PyTorch's design: eager, Pythonic execution ("code as a model") with efficient C++/CUDA kernels, a caching allocator and reverse-mode autograd.</p></div>
+      <div class="paper-item"><a href="https://docs.pytorch.org/docs/stable/tensor_view.html" target="_blank" rel="noopener">Tensor Views</a>
+        <div class="meta">PyTorch documentation · docs.pytorch.org 2026</div>
+        <p>Which operations return views that share storage with their base (view, transpose, narrow, expand, …) and when a copy is made.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const OPS = { base: { shape: [3, 4], st: [4, 1], off: 0, store: 12, label: 'x' }, t: { shape: [4, 3], st: [1, 4], off: 0, store: 12, label: 'x.t()' },
+    slice: { shape: [3, 2], st: [4, 1], off: 1, store: 12, label: 'x[:, 1:3]' }, expand: { shape: [3, 4], st: [0, 1], off: 0, store: 4, label: 'bias.expand(3, 4)' },
+    cont: { shape: [4, 3], st: [3, 1], off: 0, store: 12, label: 'x.t().contiguous()', copy: true } };
+  Deck.seg('tSeg', v => {
+    const o = OPS[v], s = clear(document.getElementById('tSvg')), [R, C] = o.shape, w = 46;
+    for (let i = 0; i < R; i++) for (let j = 0; j < C; j++) {
+      const idx = o.off + i * o.st[0] + j * o.st[1];
+      svg('rect', { x: 30 + j * w, y: 20 + i * 40, width: w - 4, height: 36, rx: 6, style: `fill:color-mix(in srgb, var(--a) ${20 + 6 * idx}%, var(--panel-2))` }, s);
+      svg('text', { x: 30 + j * w + 21, y: 43 + i * 40, 'text-anchor': 'middle', class: 't', style: 'font-weight:700', text: idx }, s); }
+    svg('text', { x: 30, y: 200, class: 'tm', text: o.copy ? 'new storage (a copy):' : 'storage (shared with x):' }, s);
+    for (let k = 0; k < o.store; k++) { svg('rect', { x: 250 + k * 32, y: 186, width: 30, height: 26, rx: 4, style: `fill:${o.copy ? 'var(--b)' : 'var(--a)'};opacity:${.35 + .05 * k}` }, s); svg('text', { x: 265 + k * 32, y: 204, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px', text: k }, s); }
+    const contiguous = o.st[1] === 1 && (R === 1 || o.st[0] === C) && !o.off;
+    document.getElementById('tOut').innerHTML = `<code>${o.label}</code>: shape (${o.shape}), strides (${o.st}), storage offset ${o.off}. Contiguous: <b>${contiguous ? 'yes' : 'no'}</b>${o.st[0] === 0 ? ' (stride 0 = broadcast)' : ''}. Each cell shows the storage index it reads.`;
+  });
+})();
+</script>
+</body>
+</html>

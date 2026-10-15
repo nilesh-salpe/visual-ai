@@ -119,6 +119,9 @@
   "EM": {
    "exp": "expectation-maximization"
   },
+  "EMA": {
+   "exp": "exponential moving average"
+  },
   "EOS": {
    "exp": "end of sequence"
   },
@@ -297,6 +300,9 @@
   "LoRA": {
    "exp": "Low-Rank Adaptation"
   },
+  "LR": {
+   "exp": "learning rate"
+  },
   "LRU": {
    "exp": "least recently used"
   },
@@ -383,6 +389,9 @@
   },
   "NMT": {
    "exp": "neural machine translation"
+  },
+  "NN": {
+   "exp": "neural network"
   },
   "NTK": {
    "exp": "neural tangent kernel"
@@ -513,6 +522,9 @@
   },
   "SDC": {
    "exp": "silent data corruption"
+  },
+  "SDPA": {
+   "exp": "scaled dot-product attention"
   },
   "SE": {
    "exp": "standard error"
@@ -865,6 +877,38 @@
   "OpenHermes",
   "DoReMi",
   "MassiveWeb",
-  "HyperText"
+  "HyperText",
+  "MulBackward",
+  "MulBackward0",
+  "TanhBackward",
+  "TanhBackward0",
+  "SumBackward0",
+  "ModuleDict",
+  "ModuleList",
+  "SDPBackend",
+  "LambdaLR",
+  "DataLoader",
+  "PAD",
+  "GradScaler",
+  "AOTAutograd",
+  "ASPLOS",
+  "TorchDynamo",
+  "TorchInductor",
+  "DTensor",
+  "DistributedSampler",
+  "FSDP2",
+  "RANK",
+  "SUM",
+  "LOCAL_RANK",
+  "WORLD_SIZE",
+  "MASTER_ADDR",
+  "MASTER_PORT",
+  "FLASH_ATTENTION",
+  "EFFICIENT_ATTENTION",
+  "CUDNN_ATTENTION",
+  "MATH",
+  "FULL_SHARD",
+  "SHARD_GRAD_OP",
+  "HYBRID_SHARD"
  ]
 }

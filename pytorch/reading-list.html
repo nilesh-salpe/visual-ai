@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PyTorch for LLMs Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← PyTorch for LLMs</a>
+  <div class="label" style="margin-top:28px">Reading list · 20 papers and docs</div>
+  <h1>PyTorch for LLMs: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://arxiv.org/abs/1912.01703" target="_blank" rel="noopener">PyTorch: An Imperative Style, High-Performance Deep Learning Library</a>
+      <div class="meta">Paszke et al. · NeurIPS 2019 · cited in <a href="01-tensors/index.html" style="font-weight:500;color:var(--a)">Tensors, strides and views</a>, <a href="02-autograd/index.html" style="font-weight:500;color:var(--a)">Autograd</a>, <a href="03-nn-module/index.html" style="font-weight:500;color:var(--a)">nn.Module and a transformer block</a>, <a href="04-training-loop/index.html" style="font-weight:500;color:var(--a)">The training loop</a>, <a href="05-data/index.html" style="font-weight:500;color:var(--a)">Data pipelines for LLMs</a>, <a href="09-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together: a tiny GPT</a></div>
+      <p>PyTorch's design: eager, Pythonic execution ("code as a model") with efficient C++/CUDA kernels, a caching allocator and reverse-mode autograd.</p></div>
+    <div class="paper-item"><a href="https://docs.pytorch.org/docs/stable/tensor_view.html" target="_blank" rel="noopener">Tensor Views</a>
+      <div class="meta">PyTorch documentation · docs.pytorch.org 2026 · cited in <a href="01-tensors/index.html" style="font-weight:500;color:var(--a)">Tensors, strides and views</a></div>
+      <p>Which operations return views that share storage with their base (view, transpose, narrow, expand, …) and when a copy is made.</p></div>
+    <div class="paper-item"><a href="https://docs.pytorch.org/docs/stable/notes/autograd.html" target="_blank" rel="noopener">Autograd mechanics</a>
+      <div class="meta">PyTorch documentation · docs.pytorch.org 2026 · cited in <a href="02-autograd/index.html" style="font-weight:500;color:var(--a)">Autograd</a></div>
+      <p>How autograd records the graph, saved tensors, no_grad and inference mode, in-place correctness checks and gradient accumulation.</p></div>
+    <div class="paper-item"><a href="https://docs.pytorch.org/tutorials/intermediate/scaled_dot_product_attention_tutorial.html" target="_blank" rel="noopener">(Beta) Implementing High-Performance Transformers with Scaled Dot Product Attention</a>
+      <div class="meta">PyTorch documentation · docs.pytorch.org 2026 · cited in <a href="03-nn-module/index.html" style="font-weight:500;color:var(--a)">nn.Module and a transformer block</a>, <a href="07-performance/index.html" style="font-weight:500;color:var(--a)">Performance: compile, SDPA, memory</a></div>
+      <p>F.scaled_dot_product_attention and its fused backends (FlashAttention, memory-efficient, cuDNN, math), selectable with sdpa_kernel.</p></div>
+    <div class="paper-item"><a href="https://github.com/karpathy/nanoGPT" target="_blank" rel="noopener">nanoGPT</a>
+      <div class="meta">Karpathy · GitHub 2022 · cited in <a href="03-nn-module/index.html" style="font-weight:500;color:var(--a)">nn.Module and a transformer block</a>, <a href="04-training-loop/index.html" style="font-weight:500;color:var(--a)">The training loop</a>, <a href="09-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together: a tiny GPT</a></div>
+      <p>A minimal, readable GPT training codebase in PyTorch (model.py + train.py) using SDPA, AdamW with weight-decay groups, cosine schedule, DDP (distributed data parallel) and torch.compile.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2307.08691" target="_blank" rel="noopener">FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning</a>
+      <div class="meta">Dao · ICLR 2024 · cited in <a href="03-nn-module/index.html" style="font-weight:500;color:var(--a)">nn.Module and a transformer block</a></div>
+      <p>Fewer non-matmul FLOPs (floating-point operations), parallelism across the sequence (outer loop over query blocks) and better work split across warps.</p><div class="num">Remember: ~2× FA1 (FlashAttention-1); 50–73% of peak on A100</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1711.05101" target="_blank" rel="noopener">Decoupled Weight Decay Regularization (AdamW)</a>
+      <div class="meta">Loshchilov & Hutter · ICLR 2019 · cited in <a href="04-training-loop/index.html" style="font-weight:500;color:var(--a)">The training loop</a></div>
+      <p>L2 regularization and weight decay differ for adaptive optimizers; applying decay directly to the weights (AdamW) decouples it from the learning rate and improves generalization.</p></div>
+    <div class="paper-item"><a href="https://docs.pytorch.org/docs/stable/data.html" target="_blank" rel="noopener">torch.utils.data</a>
+      <div class="meta">PyTorch documentation · docs.pytorch.org 2026 · cited in <a href="05-data/index.html" style="font-weight:500;color:var(--a)">Data pipelines for LLMs</a></div>
+      <p>Dataset, Sampler and DataLoader: batching, collate_fn, worker processes, pinned memory and prefetching.</p></div>
+    <div class="paper-item"><a href="https://docs.pytorch.org/docs/stable/amp.html" target="_blank" rel="noopener">Automatic Mixed Precision package (torch.amp)</a>
+      <div class="meta">PyTorch documentation · docs.pytorch.org 2026 · cited in <a href="06-mixed-precision/index.html" style="font-weight:500;color:var(--a)">Mixed precision in PyTorch</a></div>
+      <p>torch.autocast op lists (which ops run in lower precision and which stay in FP32) and GradScaler for FP16 loss scaling.</p><div class="num">Remember: GradScaler: init scale 65,536, ×2 growth, ×0.5 backoff, every 2,000 steps</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1710.03740" target="_blank" rel="noopener">Mixed Precision Training</a>
+      <div class="meta">Micikevicius et al. · ICLR 2018 · cited in <a href="06-mixed-precision/index.html" style="font-weight:500;color:var(--a)">Mixed precision in PyTorch</a></div>
+      <p>Half-precision weights, activations and gradients with an FP32 master copy of the weights and loss scaling to avoid gradient underflow.</p><div class="num">Remember: nearly 2× less memory</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1905.12322" target="_blank" rel="noopener">A Study of BFLOAT16 for Deep Learning Training</a>
+      <div class="meta">Kalamkar et al. · arXiv 2019 · cited in <a href="06-mixed-precision/index.html" style="font-weight:500;color:var(--a)">Mixed precision in PyTorch</a></div>
+      <p>BF16 keeps FP32's 8-bit exponent (same range) with a 7-bit mantissa, and trains image, speech, language and recommendation models without hyper-parameter changes.</p></div>
+    <div class="paper-item"><a href="https://docs.pytorch.org/assets/pytorch2-2.pdf" target="_blank" rel="noopener">PyTorch 2: Faster Machine Learning Through Dynamic Python Bytecode Transformation and Graph Compilation</a>
+      <div class="meta">Ansel et al. · ASPLOS 2024 · cited in <a href="07-performance/index.html" style="font-weight:500;color:var(--a)">Performance: compile, SDPA, memory</a></div>
+      <p>torch.compile: TorchDynamo captures graphs from Python bytecode with guards and graph breaks; TorchInductor generates Triton (GPU) and C++ (CPU) code.</p><div class="num">Remember: 2.27× inference, 1.41× training geomean speedup on A100 (180+ models)</div></div>
+    <div class="paper-item"><a href="https://docs.pytorch.org/docs/stable/torch.compiler.html" target="_blank" rel="noopener">torch.compiler</a>
+      <div class="meta">PyTorch documentation · docs.pytorch.org 2026 · cited in <a href="07-performance/index.html" style="font-weight:500;color:var(--a)">Performance: compile, SDPA, memory</a></div>
+      <p>Overview of torch.compile: TorchDynamo graph capture, AOTAutograd, the Inductor backend, compile modes and troubleshooting graph breaks.</p></div>
+    <div class="paper-item"><a href="https://docs.pytorch.org/docs/stable/notes/cuda.html" target="_blank" rel="noopener">CUDA semantics</a>
+      <div class="meta">PyTorch documentation · docs.pytorch.org 2026 · cited in <a href="07-performance/index.html" style="font-weight:500;color:var(--a)">Performance: compile, SDPA, memory</a></div>
+      <p>Devices and streams, asynchronous execution, the caching allocator, memory statistics (memory_allocated, max_memory_allocated) and CUDA graphs.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener">FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness (IO = input/output, memory reads and writes)</a>
+      <div class="meta">Dao et al. · NeurIPS 2022 · cited in <a href="07-performance/index.html" style="font-weight:500;color:var(--a)">Performance: compile, SDPA, memory</a></div>
+      <p>Tiles attention so scores never leave on-chip SRAM (static random-access memory, fast on-chip memory), using an online softmax and recomputation in the backward pass. Exact, with memory linear in sequence length.</p><div class="num">Remember: GPT-2 medium: 40.3 → 4.4 GB of memory traffic, 41.7 → 7.3 ms</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2006.15704" target="_blank" rel="noopener">PyTorch Distributed: Experiences on Accelerating Data Parallel Training</a>
+      <div class="meta">Li et al. · VLDB 2020 · cited in <a href="08-distributed/index.html" style="font-weight:500;color:var(--a)">Distributed training in PyTorch</a></div>
+      <p>PyTorch's DistributedDataParallel design: gradient bucketing, overlapping all-reduce with the backward pass, and skipping synchronization during gradient accumulation.</p><div class="num">Remember: near-linear scaling on 256 GPUs</div></div>
+    <div class="paper-item"><a href="https://docs.pytorch.org/docs/stable/elastic/run.html" target="_blank" rel="noopener">torchrun (Elastic Launch)</a>
+      <div class="meta">PyTorch documentation · docs.pytorch.org 2026 · cited in <a href="08-distributed/index.html" style="font-weight:500;color:var(--a)">Distributed training in PyTorch</a></div>
+      <p>Launches one process per device and sets RANK, LOCAL_RANK, WORLD_SIZE, MASTER_ADDR and MASTER_PORT; supports multi-node and elastic restarts.</p></div>
+    <div class="paper-item"><a href="https://docs.pytorch.org/tutorials/intermediate/FSDP_tutorial.html" target="_blank" rel="noopener">Getting Started with Fully Sharded Data Parallel (FSDP2)</a>
+      <div class="meta">PyTorch documentation · docs.pytorch.org 2026 · cited in <a href="08-distributed/index.html" style="font-weight:500;color:var(--a)">Distributed training in PyTorch</a></div>
+      <p>fully_shard applied to each transformer block and then the root; parameters become DTensors sharded on dim 0; all-gather before use, reduce-scatter after backward.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2304.11277" target="_blank" rel="noopener">PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel</a>
+      <div class="meta">Zhao et al. · VLDB 2023 · cited in <a href="08-distributed/index.html" style="font-weight:500;color:var(--a)">Distributed training in PyTorch</a></div>
+      <p>PyTorch's ZeRO-3-style fully sharded data parallelism, with flattened parameter units, prefetching and hybrid sharding.</p><div class="num">Remember: comparable to DDP speed while supporting much larger models</div></div>
+    <div class="paper-item"><a href="https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf" target="_blank" rel="noopener">Language Models are Unsupervised Multitask Learners (GPT-2)</a>
+      <div class="meta">Radford et al. · OpenAI 2019 · cited in <a href="09-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together: a tiny GPT</a></div>
+      <p>Decoder-only language model that moved layer normalization to the input of each sub-block (pre-norm) and added a final norm.</p><div class="num">Remember: context 1,024 tokens, vocabulary 50,257</div></div>
+  </div>
+</div>
+
+</body>
+</html>

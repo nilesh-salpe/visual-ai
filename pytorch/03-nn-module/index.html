@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nn.Module and a Transformer Block</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="nn.Module and a transformer block" data-home="../index.html" data-home-label="PyTorch">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">PyTorch for LLMs · 03</div>
+    <h1>nn.Module and a transformer block</h1>
+    <p class="sub">How PyTorch models are built: nn.Module, parameters and buffers, state_dict, and a complete pre-norm transformer block with fused attention (scaled_dot_product_attention).</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>An LLM (large language model) has dozens of blocks with hundreds of tensors. Code must organise them, count them, move them between devices, save and load them, and run attention efficiently.</div>
+      <div class="c"><b>Core idea</b>Subclass <b>nn.Module</b>: assign layers in <code>__init__</code>, compute in <code>forward</code>. Assigned <b>parameters</b> and sub-modules are tracked automatically; <b>buffers</b> (<code>register_buffer</code>) hold non-trainable state. Attention is one call: <code>F.scaled_dot_product_attention(q, k, v, is_causal=True)</code>, which picks a fused kernel when available.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Count a model's parameters</h2>
+    <hr>
+<p class="lede">A decoder-only model built from the block on this page. Move width, depth and vocabulary; compare with GPT-2 small. Toggle weight tying.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0">
+    <label class="ctl">width C <input type="range" id="pC" min="64" max="8192" step="64" value="768"> <output id="pCo"></output></label>
+    <label class="ctl">layers L <input type="range" id="pL" min="1" max="96" step="1" value="12"> <output id="pLo"></output></label>
+    <label class="ctl">vocabulary V <input type="range" id="pV" min="1000" max="256000" step="1000" value="50000"> <output id="pVo"></output></label>
+    <label class="ctl"><input type="checkbox" id="pT" checked> tie head to embedding</label>
+  </div>
+  <div id="pBars" style="margin-top:12px"></div>
+  <p class="readout" id="pOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not just write functions?</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Bookkeeping</h3><p>Hundreds of weight tensors must be found for the optimizer, moved to GPUs (graphics processing units), saved and loaded.</p></div>
+      <div class="card b"><h3>Modes</h3><p>Dropout and normalisation behave differently in training and evaluation.</p></div>
+      <div class="card c"><h3>Attention speed</h3><p>A hand-written masked softmax materialises the T × T matrix; fused kernels do not.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which is registered?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">Inside <strong>init</strong> you write self.layers = [nn.Linear(8, 8) for _ in range(4)]. What does model.parameters() contain?</p>
+      <div class="opts">
+      <button>A. All four layers' weights</button>
+      <button data-ok>B. None of them</button>
+      <button>C. Only the first layer</button>
+      <button>D. An error is raised</button>
+      </div>
+      <div class="why"><b>B.</b> A plain Python list is not a Module, so its layers are invisible to parameters(), .to(device) and state_dict(). Use nn.ModuleList.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Modules, parameters, buffers</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>nn.Module</h3><p><strong>init</strong> assigns sub-modules and nn.Parameters; forward computes. Calling the module runs forward plus hooks.</p></div>
+      <div class="card c"><h3>Containers</h3><p>nn.Sequential, nn.ModuleList, nn.ModuleDict register children so they are tracked.</p></div>
+      <div class="card b"><h3>Buffers</h3><p>register_buffer for non-trainable tensors (masks, RoPE (rotary position embedding) frequencies); persistent=False keeps them out of state_dict.</p></div>
+      <div class="card e"><h3>state_dict</h3><p>Name → tensor mapping of parameters and persistent buffers; what checkpoints store.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 138" role="img" aria-label="≈ 12C² weights per block (+ 2C norm gains)." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">x</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">(B, T, C)</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">RMSNorm → attention</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">SDPA, causal</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">+ residual</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">x + attn(norm(x))</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">RMSNorm → MLP</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">C → 4C → C</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">+ residual</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">x + mlp(norm(x))</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">≈ 12C² weights per block (+ 2C norm gains).</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>The block in code</h2>
+    <hr>
+<div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap">class Block(nn.Module):&#10;    def __init__(self, C, H):&#10;        super().__init__()&#10;        self.n1, self.attn = nn.RMSNorm(C), CausalSelfAttention(C, H)&#10;        self.n2 = nn.RMSNorm(C)&#10;        self.mlp = nn.Sequential(nn.Linear(C, 4*C, bias=False), nn.GELU(),&#10;                                 nn.Linear(4*C, C, bias=False))&#10;    def forward(self, x):&#10;        x = x + self.attn(self.n1(x))&#10;        return x + self.mlp(self.n2(x))&#10;&#10;# inside CausalSelfAttention.forward:&#10;y = F.scaled_dot_product_attention(q, k, v, is_causal=True)   # (B, H, T, D)</pre></div>
+<div class="deep"><h4>SDPA backends</h4><p>scaled_dot_product_attention dispatches to one of FLASH_ATTENTION, EFFICIENT_ATTENTION, CUDNN_ATTENTION or MATH (the SDPBackend enum), depending on hardware, dtype and inputs. torch.nn.attention.sdpa_kernel restricts the choice. It also accepts enable_gqa=True for grouped-query attention.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: counting GPT-2 small's parameters</h2>
+    <hr>
+    <p class="lede">GPT-2 small (as in nanoGPT): C = 768, 12 layers, vocabulary 50,257, context 1,024, tied embeddings. Each block ≈ 12C² weights.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Per block: 12 × 768² = <b>7.08M</b>; × 12 blocks = <b>84.9M</b>.</li><li>Token embedding: 50,257 × 768 = <b>38.6M</b> (reused as the output head); positions 1,024 × 768 = 0.79M.</li><li>Total ≈ 124M, plus biases and LayerNorm parameters: nanoGPT reports <b>124M</b>.</li><li>Notebook 03 checks the formula exactly for its RMSNorm (root-mean-square normalization) block without biases: 12 × 64² + 2 × 64 = 49,280.</li></ol><div class="result">Shapes give parameter counts directly; tying the head to the embedding saves a whole V × C matrix.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why this structure works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Automatic tracking</h3><p>Assigning attributes registers parameters, so optimizers, .to(), FSDP (Fully Sharded Data Parallel) and checkpoints find them.</p></div>
+      <div class="card e"><h3>Composable</h3><p>A model is a tree of modules; blocks are reused, replaced (LoRA (Low-Rank Adaptation)) or wrapped (FSDP) per sub-module.</p></div>
+      <div class="card b"><h3>Fused attention for free</h3><p>One SDPA (scaled dot-product attention) call gets FlashAttention-class kernels on supported GPUs.</p></div>
+      <div class="card c"><h3>Testable</h3><p>Each module can be checked alone against a reference, as notebook 03 does.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Buffers are trained like parameters."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Buffers are never returned by parameters(), so optimizers never update them.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"SDPA is an approximation."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It computes exact attention; fused backends just avoid storing the score matrix.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"state_dict contains the optimizer state."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Only the model's parameters and persistent buffers; the optimizer has its own state_dict.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>sum(p.numel() for p in m.parameters()).</b> The parameter count.</li><li><b>register_buffer(…, persistent=False).</b> For caches that should not be saved (e.g. RoPE tables you can recompute).</li><li><b>is_causal=True.</b> Instead of building a T×T mask.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Plain Python lists of layers.</b> Use nn.ModuleList, or parameters are not registered.</li><li><b>Building a mask and passing is_causal too.</b> Use one or the other.</li><li><b>Forgetting model.eval().</b> Dropout stays active during evaluation.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Parameters in one block with C = 1,024 (12C² + 2C)?</p>
+      <div class="opts">
+      <button>A. ≈ 1.2M</button>
+      <button data-ok>B. ≈ 12.6M</button>
+      <button>C. ≈ 126M</button>
+      <button>D. ≈ 4M</button>
+      </div>
+      <div class="why">12 × 1,024² + 2,048 ≈ <b>12.6M</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">When would you use register_buffer(…, persistent=False)?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">For derived, non-trainable state you can recompute (causal masks, RoPE caches) that should not be saved in checkpoints.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does is_causal=True do in SDPA?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Applies a lower-triangular causal mask so each position attends only to itself and earlier positions, without building the mask tensor.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Models are trees of nn.Modules whose parameters and buffers are tracked automatically; a pre-norm block is two residual branches around SDPA attention and an MLP (multilayer perceptron), ≈ 12C² weights.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>In PyTorch a model is an nn.Module: you assign layers in init and compute in forward, and every parameter you assign is tracked, so optimizers, device moves, sharding and checkpoints find it. Containers like ModuleList register children; buffers hold non-trainable state such as masks or rotary tables. A pre-norm transformer block is x plus attention of the normalised x, then x plus an MLP of the normalised x. Attention is one call to scaled dot product attention with is_causal set, which uses fused kernels such as FlashAttention when the hardware allows.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> organise, count, move and save many tensors.</span></div><div><span><b>Core idea:</b> nn.Module tree; parameters vs buffers; state_dict.</span></div><div><span><b>Block:</b> x + attn(norm x); x + mlp(norm x); SDPA.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/03_transformer_block.ipynb" target="_blank" rel="noopener">03 · nn.Module: a pre-norm transformer block</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/03_transformer_block.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../04-training-loop/index.html">04 · The training loop →</a> · Previous: <a href="../02-autograd/index.html">← 02</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1912.01703" target="_blank" rel="noopener">PyTorch: An Imperative Style, High-Performance Deep Learning Library</a>
+        <div class="meta">Paszke et al. · NeurIPS 2019</div>
+        <p>PyTorch's design: eager, Pythonic execution ("code as a model") with efficient C++/CUDA (Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors) kernels, a caching allocator and reverse-mode autograd.</p></div>
+      <div class="paper-item"><a href="https://docs.pytorch.org/tutorials/intermediate/scaled_dot_product_attention_tutorial.html" target="_blank" rel="noopener">(Beta) Implementing High-Performance Transformers with Scaled Dot Product Attention</a>
+        <div class="meta">PyTorch documentation · docs.pytorch.org 2026</div>
+        <p>F.scaled_dot_product_attention and its fused backends (FlashAttention, memory-efficient, cuDNN, math), selectable with sdpa_kernel.</p></div>
+      <div class="paper-item"><a href="https://github.com/karpathy/nanoGPT" target="_blank" rel="noopener">nanoGPT</a>
+        <div class="meta">Karpathy · GitHub 2022</div>
+        <p>A minimal, readable GPT training codebase in PyTorch (model.py + train.py) using SDPA, AdamW with weight-decay groups, cosine schedule, DDP (distributed data parallel) and torch.compile.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2307.08691" target="_blank" rel="noopener">FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning</a>
+        <div class="meta">Dao · ICLR 2024</div>
+        <p>Fewer non-matmul FLOPs (floating-point operations), parallelism across the sequence (outer loop over query blocks) and better work split across warps.</p><div class="num">Remember: ~2× FA1 (FlashAttention-1); 50–73% of peak on A100</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  Deck.bind(['pC', 'pL', 'pV', 'pT'], () => {
+    const C = Deck.val('pC'), L = Deck.val('pL'), V = Deck.val('pV'), tied = document.getElementById('pT').checked;
+    Deck.out('pCo', C.toLocaleString()); Deck.out('pLo', L); Deck.out('pVo', V.toLocaleString());
+    const blocks = L * (12 * C * C + 2 * C), emb = V * C, head = tied ? 0 : V * C, tot = blocks + emb + head;
+    const f = x => x >= 1e9 ? (x / 1e9).toFixed(2) + 'B' : (x / 1e6).toFixed(1) + 'M';
+    Deck.hbars(document.getElementById('pBars'), [{ label: 'blocks (12C² + 2C each)', value: blocks, color: 'var(--a)', text: f(blocks) }, { label: 'token embedding (V × C)', value: emb, color: 'var(--c)', text: f(emb) },
+      { label: 'output head', value: head, color: 'var(--b)', text: tied ? 'tied: 0' : f(head) }, { label: 'total', value: tot, color: 'var(--e)', text: f(tot) }], { log: true, min: 1e5 });
+    document.getElementById('pOut').innerHTML = `Total ≈ <b>${f(tot)}</b> (position embeddings and biases ignored). Training with AdamW in mixed precision needs ≈ 16 bytes/param = <b>${(16 * tot / 1e9).toFixed(1)} GB</b> of model state. GPT-2 small: C 768, L 12, V 50,257, tied → 124M.`;
+  });
+})();
+</script>
+</body>
+</html>
