@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cluster scheduling Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Cluster scheduling</a>
+  <div class="label" style="margin-top:28px">Reading list · 17 papers and docs</div>
+  <h1>Cluster scheduling: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://slurm.schedmd.com/sched_config.html" target="_blank" rel="noopener">Scheduling Configuration Guide (Slurm 26.05)</a>
+      <div class="meta">SchedMD · slurm.schedmd.com 2026 · cited in <a href="01-scheduling-basics/index.html" style="font-weight:500;color:var(--a)">Scheduling a GPU cluster</a>, <a href="02-slurm/index.html" style="font-weight:500;color:var(--a)">Slurm for GPU clusters</a></div>
+      <p>The main scheduler tests jobs in strict priority order per partition (sched_interval 60 s); backfill starts lower-priority jobs that do not delay higher-priority ones and needs realistic time limits (bf_interval 30 s, bf_window 1,440 min, bf_max_job_test 100, bf_resolution 60 s).</p></div>
+    <div class="paper-item"><a href="https://slurm.schedmd.com/priority_multifactor.html" target="_blank" rel="noopener">Multifactor Priority Plugin</a>
+      <div class="meta">SchedMD · slurm.schedmd.com 2026 · cited in <a href="01-scheduling-basics/index.html" style="font-weight:500;color:var(--a)">Scheduling a GPU cluster</a>, <a href="02-slurm/index.html" style="font-weight:500;color:var(--a)">Slurm for GPU clusters</a></div>
+      <p>Priority = weighted sum of factors in [0, 1] (age, association, fair-share, job size, partition, QOS, site, TRES (trackable resources)) minus nice; every weight defaults to 0; PriorityDecayHalfLife defaults to 7 days; Fair Tree is the default fair-share algorithm since 19.05.</p></div>
+    <div class="paper-item"><a href="https://kueue.sigs.k8s.io/docs/overview/" target="_blank" rel="noopener">Kueue overview</a>
+      <div class="meta">Kubernetes SIG (special interest group) Scheduling · kueue.sigs.k8s.io 2026 · cited in <a href="01-scheduling-basics/index.html" style="font-weight:500;color:var(--a)">Scheduling a GPU cluster</a>, <a href="03-kubernetes-gpus/index.html" style="font-weight:500;color:var(--a)">Kubernetes for GPU workloads</a></div>
+      <p>Kubernetes-native job queueing: decides when a job waits, is admitted or is preempted; quotas and fair sharing, resource flavors, admission checks, all-or-nothing scheduling with a timeout, topology-aware scheduling; integrates with Jobs, JobSet, Ray and Kubeflow Trainer.</p></div>
+    <div class="paper-item"><a href="https://kueue.sigs.k8s.io/docs/tasks/manage/setup_wait_for_pods_ready/" target="_blank" rel="noopener">Setup All-or-nothing with ready Pods (waitForPodsReady)</a>
+      <div class="meta">Kubernetes SIG Scheduling · kueue.sigs.k8s.io 2026 · cited in <a href="01-scheduling-basics/index.html" style="font-weight:500;color:var(--a)">Scheduling a GPU cluster</a>, <a href="03-kubernetes-gpus/index.html" style="font-weight:500;color:var(--a)">Kubernetes for GPU workloads</a>, <a href="04-operating-clusters/index.html" style="font-weight:500;color:var(--a)">Operating a training cluster</a></div>
+      <p>Kueue watches an admitted workload until all its pods are ready; if not within the timeout (default 30 minutes) it is evicted and requeued with exponential backoff (60 s up to 3,600 s), which breaks partial-allocation deadlocks between distributed jobs.</p></div>
+    <div class="paper-item"><a href="https://slurm.schedmd.com/overview.html" target="_blank" rel="noopener">Slurm Workload Manager overview</a>
+      <div class="meta">SchedMD · slurm.schedmd.com 2026 · cited in <a href="02-slurm/index.html" style="font-weight:500;color:var(--a)">Slurm for GPU clusters</a></div>
+      <p>Three functions (allocate access to resources, launch and monitor work, arbitrate contention via a queue); slurmctld central manager with optional backup, slurmd on each node, optional slurmdbd accounting; nodes, partitions, jobs and job steps.</p></div>
+    <div class="paper-item"><a href="https://slurm.schedmd.com/gres.html" target="_blank" rel="noopener">Generic Resource (GRES) Scheduling</a>
+      <div class="meta">SchedMD · slurm.schedmd.com 2026 · cited in <a href="02-slurm/index.html" style="font-weight:500;color:var(--a)">Slurm for GPU clusters</a></div>
+      <p>GPUs as GRES (gres.conf, AutoDetect=nvml); --gres=gpu:N per node, --gpus per job, --gpus-per-node/-task; CUDA_VISIBLE_DEVICES set per step; MIG (Multi-Instance GPU, hardware partitioning of one GPU) instances as GPUs (pre-partitioned); gres/shard sharing without isolation; nodes with fewer resources than configured are drained.</p></div>
+    <div class="paper-item"><a href="https://slurm.schedmd.com/classic_fair_share.html" target="_blank" rel="noopener">Classic Fairshare Algorithm</a>
+      <div class="meta">SchedMD · slurm.schedmd.com 2026 · cited in <a href="02-slurm/index.html" style="font-weight:500;color:var(--a)">Slurm for GPU clusters</a></div>
+      <p>F = 2^(−U/S) (refined with effective usage UE through the account tree), with usage decayed by PriorityDecayHalfLife; still available with PriorityFlags=NO_FAIR_TREE.</p></div>
+    <div class="paper-item"><a href="https://slurm.schedmd.com/topology.html" target="_blank" rel="noopener">Topology Guide</a>
+      <div class="meta">SchedMD · slurm.schedmd.com 2026 · cited in <a href="02-slurm/index.html" style="font-weight:500;color:var(--a)">Slurm for GPU clusters</a></div>
+      <p>topology/tree (lowest switch that fits, best-fit leaf switches; --switches=count@time), topology/block (fixed-size blocks to reduce fragmentation; --segment), topology/ring (26.05) and topology/torus3d.</p></div>
+    <div class="paper-item"><a href="https://slurm.schedmd.com/preempt.html" target="_blank" rel="noopener">Preemption</a>
+      <div class="meta">SchedMD · slurm.schedmd.com 2026 · cited in <a href="02-slurm/index.html" style="font-weight:500;color:var(--a)">Slurm for GPU clusters</a>, <a href="04-operating-clusters/index.html" style="font-weight:500;color:var(--a)">Operating a training cluster</a></div>
+      <p>PreemptType none / partition_prio / qos; PreemptMode CANCEL, REQUEUE (only with --requeue or JobRequeue=1), SUSPEND (with GANG), GANG (time-slicing jobs in a partition), OFF; GraceTime sends SIGCONT and SIGTERM at once and SIGKILL at the new end time.</p></div>
+    <div class="paper-item"><a href="https://blogs.nvidia.com/blog/nvidia-acquires-schedmd/" target="_blank" rel="noopener">NVIDIA acquires open-source workload management provider SchedMD</a>
+      <div class="meta">NVIDIA · NVIDIA Blog 2025 · cited in <a href="02-slurm/index.html" style="font-weight:500;color:var(--a)">Slurm for GPU clusters</a></div>
+      <p>NVIDIA acquired SchedMD, Slurm's main developer, on 15 December 2025 and said it will keep Slurm open-source and vendor-neutral; Slurm runs on more than half of the top 10 and top 100 TOP500 systems.</p></div>
+    <div class="paper-item"><a href="https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/" target="_blank" rel="noopener">Schedule GPUs (Kubernetes)</a>
+      <div class="meta">Kubernetes documentation · kubernetes.io 2026 · cited in <a href="03-kubernetes-gpus/index.html" style="font-weight:500;color:var(--a)">Kubernetes for GPU workloads</a></div>
+      <p>Vendor device plugins expose resources such as nvidia.com/gpu; GPUs are specified in limits (requests default to and must equal limits); node labels, selectors and Node Feature Discovery target GPU types.</p></div>
+    <div class="paper-item"><a href="https://kubernetes.io/docs/concepts/scheduling-eviction/dynamic-resource-allocation/" target="_blank" rel="noopener">Dynamic Resource Allocation (Kubernetes)</a>
+      <div class="meta">Kubernetes documentation · kubernetes.io 2026 · cited in <a href="03-kubernetes-gpus/index.html" style="font-weight:500;color:var(--a)">Kubernetes for GPU workloads</a></div>
+      <p>Stable since v1.35 (first in v1.30): DeviceClasses, ResourceClaims and ResourceSlices; devices can be shared through a claim and filtered with CEL expressions, unlike device plugins with per-container requests.</p></div>
+    <div class="paper-item"><a href="https://kueue.sigs.k8s.io/docs/concepts/cluster_queue/" target="_blank" rel="noopener">Cluster Queue (Kueue)</a>
+      <div class="meta">Kubernetes SIG Scheduling · kueue.sigs.k8s.io 2026 · cited in <a href="03-kubernetes-gpus/index.html" style="font-weight:500;color:var(--a)">Kubernetes for GPU workloads</a></div>
+      <p>Cluster-scoped quotas per ResourceFlavor (nominalQuota, borrowingLimit, lendingLimit); cohorts share unused quota; StrictFIFO or BestEffortFIFO (default); preemption withinClusterQueue and reclaimWithinCohort default to Never.</p></div>
+    <div class="paper-item"><a href="https://kueue.sigs.k8s.io/docs/concepts/topology_aware_scheduling/" target="_blank" rel="noopener">Topology Aware Scheduling (Kueue)</a>
+      <div class="meta">Kubernetes SIG Scheduling · kueue.sigs.k8s.io 2026 · cited in <a href="03-kubernetes-gpus/index.html" style="font-weight:500;color:var(--a)">Kubernetes for GPU workloads</a></div>
+      <p>Beta and on by default since Kueue 0.14: a Topology object over node labels (block, rack, node); podset-required-topology keeps all pods in one domain, podset-preferred-topology tries and moves up a level.</p></div>
+    <div class="paper-item"><a href="https://jobset.sigs.k8s.io/docs/overview/" target="_blank" rel="noopener">JobSet overview</a>
+      <div class="meta">Kubernetes SIG Apps · jobset.sigs.k8s.io 2026 · cited in <a href="03-kubernetes-gpus/index.html" style="font-weight:500;color:var(--a)">Kubernetes for GPU workloads</a>, <a href="04-operating-clusters/index.html" style="font-weight:500;color:var(--a)">Operating a training cluster</a></div>
+      <p>A group of Kubernetes Jobs managed as a unit: separate templates per replicated job, the whole set recreated on failure per its failure policy, exclusive placement per topology domain, and a headless service for pod discovery.</p></div>
+    <div class="paper-item"><a href="https://slurm.schedmd.com/slurm.conf.html" target="_blank" rel="noopener">slurm.conf and scontrol reference</a>
+      <div class="meta">SchedMD · slurm.schedmd.com 2026 · cited in <a href="04-operating-clusters/index.html" style="font-weight:500;color:var(--a)">Operating a training cluster</a></div>
+      <p>HealthCheckProgram runs as root on all compute nodes every HealthCheckInterval seconds (0 disables it); JobRequeue=1 (default) lets batch jobs be requeued; the DRAIN state prevents additional jobs from running on a node.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+      <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024 · cited in <a href="04-operating-clusters/index.html" style="font-weight:500;color:var(--a)">Operating a training cluster</a></div>
+      <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+  </div>
+</div>
+
+</body>
+</html>

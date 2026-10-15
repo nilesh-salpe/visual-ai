@@ -2203,3 +2203,115 @@ argo:
   year: 2026
   url: https://argo-workflows.readthedocs.io/en/latest/
   summary: A container-native workflow engine for Kubernetes implemented as a CRD; each step runs as a container, as steps or a DAG; used for machine-learning pipelines, batch processing, and continuous integration and delivery.
+slurm_overview:
+  title: Slurm Workload Manager overview
+  authors: SchedMD
+  venue: slurm.schedmd.com
+  year: 2026
+  url: https://slurm.schedmd.com/overview.html
+  summary: 'Three functions (allocate access to resources, launch and monitor work, arbitrate contention via a queue); slurmctld central manager with optional backup, slurmd on each node, optional slurmdbd accounting; nodes, partitions, jobs and job steps.'
+slurm_gres:
+  title: Generic Resource (GRES) Scheduling
+  authors: SchedMD
+  venue: slurm.schedmd.com
+  year: 2026
+  url: https://slurm.schedmd.com/gres.html
+  summary: 'GPUs as GRES (gres.conf, AutoDetect=nvml); --gres=gpu:N per node, --gpus per job, --gpus-per-node/-task; CUDA_VISIBLE_DEVICES set per step; MIG instances as GPUs (pre-partitioned); gres/shard sharing without isolation; nodes with fewer resources than configured are drained.'
+slurm_priority:
+  title: Multifactor Priority Plugin
+  authors: SchedMD
+  venue: slurm.schedmd.com
+  year: 2026
+  url: https://slurm.schedmd.com/priority_multifactor.html
+  summary: 'Priority = weighted sum of factors in [0, 1] (age, association, fair-share, job size, partition, QOS, site, TRES) minus nice; every weight defaults to 0; PriorityDecayHalfLife defaults to 7 days; Fair Tree is the default fair-share algorithm since 19.05.'
+slurm_fairshare:
+  title: Classic Fairshare Algorithm
+  authors: SchedMD
+  venue: slurm.schedmd.com
+  year: 2026
+  url: https://slurm.schedmd.com/classic_fair_share.html
+  summary: 'F = 2^(−U/S) (refined with effective usage UE through the account tree), with usage decayed by PriorityDecayHalfLife; still available with PriorityFlags=NO_FAIR_TREE.'
+slurm_sched:
+  title: Scheduling Configuration Guide (Slurm 26.05)
+  authors: SchedMD
+  venue: slurm.schedmd.com
+  year: 2026
+  url: https://slurm.schedmd.com/sched_config.html
+  summary: 'The main scheduler tests jobs in strict priority order per partition (sched_interval 60 s); backfill starts lower-priority jobs that do not delay higher-priority ones and needs realistic time limits (bf_interval 30 s, bf_window 1,440 min, bf_max_job_test 100, bf_resolution 60 s).'
+slurm_topology:
+  title: Topology Guide
+  authors: SchedMD
+  venue: slurm.schedmd.com
+  year: 2026
+  url: https://slurm.schedmd.com/topology.html
+  summary: 'topology/tree (lowest switch that fits, best-fit leaf switches; --switches=count@time), topology/block (fixed-size blocks to reduce fragmentation; --segment), topology/ring (26.05) and topology/torus3d.'
+slurm_preempt:
+  title: Preemption
+  authors: SchedMD
+  venue: slurm.schedmd.com
+  year: 2026
+  url: https://slurm.schedmd.com/preempt.html
+  summary: 'PreemptType none / partition_prio / qos; PreemptMode CANCEL, REQUEUE (only with --requeue or JobRequeue=1), SUSPEND (with GANG), GANG (time-slicing jobs in a partition), OFF; GraceTime sends SIGCONT and SIGTERM at once and SIGKILL at the new end time.'
+slurm_conf:
+  title: slurm.conf and scontrol reference
+  authors: SchedMD
+  venue: slurm.schedmd.com
+  year: 2026
+  url: https://slurm.schedmd.com/slurm.conf.html
+  summary: 'HealthCheckProgram runs as root on all compute nodes every HealthCheckInterval seconds (0 disables it); JobRequeue=1 (default) lets batch jobs be requeued; the DRAIN state prevents additional jobs from running on a node.'
+nvidia_schedmd:
+  title: NVIDIA acquires open-source workload management provider SchedMD
+  authors: NVIDIA
+  venue: NVIDIA Blog
+  year: 2025
+  url: https://blogs.nvidia.com/blog/nvidia-acquires-schedmd/
+  summary: 'NVIDIA acquired SchedMD, Slurm''s main developer, on 15 December 2025 and said it will keep Slurm open-source and vendor-neutral; Slurm runs on more than half of the top 10 and top 100 TOP500 systems.'
+k8s_gpus:
+  title: Schedule GPUs (Kubernetes)
+  authors: Kubernetes documentation
+  venue: kubernetes.io
+  year: 2026
+  url: https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/
+  summary: 'Vendor device plugins expose resources such as nvidia.com/gpu; GPUs are specified in limits (requests default to and must equal limits); node labels, selectors and Node Feature Discovery target GPU types.'
+k8s_dra:
+  title: Dynamic Resource Allocation (Kubernetes)
+  authors: Kubernetes documentation
+  venue: kubernetes.io
+  year: 2026
+  url: https://kubernetes.io/docs/concepts/scheduling-eviction/dynamic-resource-allocation/
+  summary: 'Stable since v1.35 (first in v1.30): DeviceClasses, ResourceClaims and ResourceSlices; devices can be shared through a claim and filtered with CEL expressions, unlike device plugins with per-container requests.'
+kueue_overview:
+  title: Kueue overview
+  authors: Kubernetes SIG Scheduling
+  venue: kueue.sigs.k8s.io
+  year: 2026
+  url: https://kueue.sigs.k8s.io/docs/overview/
+  summary: 'Kubernetes-native job queueing: decides when a job waits, is admitted or is preempted; quotas and fair sharing, resource flavors, admission checks, all-or-nothing scheduling with a timeout, topology-aware scheduling; integrates with Jobs, JobSet, Ray and Kubeflow Trainer.'
+kueue_cq:
+  title: Cluster Queue (Kueue)
+  authors: Kubernetes SIG Scheduling
+  venue: kueue.sigs.k8s.io
+  year: 2026
+  url: https://kueue.sigs.k8s.io/docs/concepts/cluster_queue/
+  summary: 'Cluster-scoped quotas per ResourceFlavor (nominalQuota, borrowingLimit, lendingLimit); cohorts share unused quota; StrictFIFO or BestEffortFIFO (default); preemption withinClusterQueue and reclaimWithinCohort default to Never.'
+kueue_waitpods:
+  title: Setup All-or-nothing with ready Pods (waitForPodsReady)
+  authors: Kubernetes SIG Scheduling
+  venue: kueue.sigs.k8s.io
+  year: 2026
+  url: https://kueue.sigs.k8s.io/docs/tasks/manage/setup_wait_for_pods_ready/
+  summary: Kueue watches an admitted workload until all its pods are ready; if not within the timeout (default 30 minutes) it is evicted and requeued with exponential backoff (60 s up to 3,600 s), which breaks partial-allocation deadlocks between distributed jobs.
+kueue_tas:
+  title: Topology Aware Scheduling (Kueue)
+  authors: Kubernetes SIG Scheduling
+  venue: kueue.sigs.k8s.io
+  year: 2026
+  url: https://kueue.sigs.k8s.io/docs/concepts/topology_aware_scheduling/
+  summary: 'Beta and on by default since Kueue 0.14: a Topology object over node labels (block, rack, node); podset-required-topology keeps all pods in one domain, podset-preferred-topology tries and moves up a level.'
+jobset:
+  title: JobSet overview
+  authors: Kubernetes SIG Apps
+  venue: jobset.sigs.k8s.io
+  year: 2026
+  url: https://jobset.sigs.k8s.io/docs/overview/
+  summary: 'A group of Kubernetes Jobs managed as a unit: separate templates per replicated job, the whole set recreated on failure per its failure policy, exclusive placement per topology domain, and a headless service for pod discovery.'

@@ -821,6 +821,30 @@
   },
   "CRD": {
    "exp": "custom resource definition"
+  },
+  "QOS": {
+   "exp": "quality of service"
+  },
+  "TRES": {
+   "exp": "trackable resources"
+  },
+  "GRES": {
+   "exp": "generic resources"
+  },
+  "HPC": {
+   "exp": "high-performance computing"
+  },
+  "CEL": {
+   "exp": "Common Expression Language"
+  },
+  "DRA": {
+   "exp": "Dynamic Resource Allocation"
+  },
+  "OCI": {
+   "exp": "Open Container Initiative"
+  },
+  "SIG": {
+   "exp": "special interest group"
   }
  },
  "exempt": [
@@ -1167,6 +1191,45 @@
   "CNCF",
   "INPUT_REQUIRED",
   "AUTH_REQUIRED",
-  "SendStreamingMessage"
+  "SendStreamingMessage",
+  "EASY",
+  "JobSet",
+  "PriorityDecayHalfLife",
+  "SchedMD",
+  "AutoDetect",
+  "CANCEL",
+  "GANG",
+  "GraceTime",
+  "JobRequeue",
+  "OFF",
+  "PreemptMode",
+  "PreemptType",
+  "PriorityFlags",
+  "PriorityTier",
+  "REQUEUE",
+  "SIGCONT",
+  "SIGKILL",
+  "SIGTERM",
+  "SUSPEND",
+  "TOP500",
+  "UE",
+  "BestEffortFIFO",
+  "ClusterQueue",
+  "DeviceClasses",
+  "LocalQueue",
+  "ResourceClaim",
+  "ResourceClaims",
+  "ResourceFlavor",
+  "ResourceSlice",
+  "ResourceSlices",
+  "StrictFIFO",
+  "WorkloadPriorityClasses",
+  "DRAIN",
+  "HealthCheckInterval",
+  "HealthCheckProgram",
+  "ClusterQueues",
+  "LocalQueues",
+  "ResourceFlavors",
+  "DeviceClass"
  ]
 }

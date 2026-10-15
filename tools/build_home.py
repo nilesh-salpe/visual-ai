@@ -13,8 +13,9 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
         ('math', 'Foundations · 10 decks + 6 Colab notebooks', 'Math for LLMs and neural networks', 'Vectors, matrices, SVD and low rank, the chain rule, probability and sampling, maximum likelihood, entropy and KL, stable softmax, optimization and floating point.', ['dot products', 'backprop', 'KL', 'softmax']),
         ('nn-fundamentals', 'Foundations · 10 decks + 7 Colab notebooks', 'Neural network fundamentals for LLMs', 'MLPs, activations, backpropagation, losses, AdamW and schedules, initialization, normalization and residuals, regularization, embeddings and a first language model.', ['backprop', 'AdamW', 'init', 'embeddings']),
     ]),
-    ('Hardware', [
+    ('Hardware and clusters', [
         ('gpu', 'Topic · 8 decks', 'GPU for GenAI', 'What a GPU is, why AI runs on it, the memory hierarchy, servers, clusters, failures, mixed fleets and sharing.', ['roofline', 'NVLink', 'all-reduce', 'MIG']),
+        ('cluster-scheduling', 'Topic · 4 decks + 2 Colab notebooks', 'Cluster scheduling', 'How GPU clusters are shared: queues, priorities, fair share, gang placement and backfill; Slurm (26.05); Kubernetes with device plugins, DRA, Kueue and JobSet; and automated failure recovery.', ['Slurm', 'backfill', 'Kueue', 'fair share']),
     ]),
     ('The model', [
         ('transformer', 'Paper · 14 decks', 'Attention Is All You Need', 'The original Transformer paper, explained visually: the problem each piece solves and the core idea behind it, checked against arXiv v7.', ['self-attention', 'multi-head', 'positional encoding', 'results']),

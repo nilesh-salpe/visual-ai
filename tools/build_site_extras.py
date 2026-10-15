@@ -20,6 +20,7 @@ TOPICS = {  # folder: (title, [(stage, [slug, ...]), ...])
     'agent-context': ('Agent context', [('Memory', ['01-memory']), ('Knowledge and tools', ['02-agentic-rag', '03-mcp']), ('Other agents', ['04-a2a'])]),
     'agent-systems': ('Agent systems', [('Architectures', ['01-multi-agent', '02-computer-use']), ('Reliability', ['03-durable-workflows'])]),
     'agent-operations': ('Agent operations', [('Quality', ['01-evaluating-agents']), ('Risk and cost', ['02-safety-and-reliability', '03-cost-and-latency'])]),
+    'cluster-scheduling': ('Cluster scheduling', [('Concepts', ['01-scheduling-basics']), ('Schedulers', ['02-slurm', '03-kubernetes-gpus']), ('Operations', ['04-operating-clusters'])]),
     'agent-frameworks': ('Agent frameworks', [('LangChain', ['01-langchain-basics']), ('LangGraph', ['02-langgraph-core', '03-langgraph-production'])]),
     'agent-infra': ('Agent infrastructure', [('Traffic', ['01-llm-gateway', '02-model-router']), ('Security', ['03-access-control', '04-sandboxing'])]),
     'agent-retrieval': ('Retrieval stack', [('Building the index', ['01-indexing']), ('Searching', ['02-vector-databases', '03-rerankers'])]),

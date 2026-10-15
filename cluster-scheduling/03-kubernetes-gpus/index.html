@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kubernetes for GPU Workloads</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Kubernetes for GPU workloads" data-home="../index.html" data-home-label="Cluster scheduling">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual LLM · Cluster scheduling · 03</div>
+    <h1>Kubernetes for GPU workloads</h1>
+    <p class="sub">How Kubernetes exposes GPUs (device plugins, Dynamic Resource Allocation), why the default scheduler is not enough for training, and how Kueue and JobSet add queues, quotas, all-or-nothing admission and topology-aware placement. Kubernetes 1.35.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Kubernetes schedules one pod at a time, has no queue or fair share across teams, and knows nothing about network topology. A 128-GPU training job is 16 pods that must all start together on nearby nodes, or it deadlocks against another half-started job.</div>
+      <div class="c"><b>Core idea</b>Expose GPUs with a <b>device plugin</b> (nvidia.com/gpu, whole GPUs in limits) or <b>DRA (Dynamic Resource Allocation)</b> (stable in 1.35: claims, device classes, attribute filters, sharing). Put <b>Kueue</b> in front of the scheduler: <b>LocalQueues</b> feed <b>ClusterQueues</b> with quotas per <b>ResourceFlavor</b>, cohorts lend unused quota, workloads are admitted as a unit, <b>waitForPodsReady</b> evicts and requeues jobs that do not get all pods running, and <b>topology-aware scheduling</b> keeps them in one block or rack. <b>JobSet</b> runs a training job as one unit.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Previous: <a href="../02-slurm/index.html">Slurm for GPU clusters</a> · Next: <a href="../04-operating-clusters/index.html">Operating a training cluster →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Kubernetes was built for services</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Pod-by-pod scheduling</h3><p>The default scheduler places each pod independently; nothing ensures all 16 pods of a job start.</p></div>
+      <div class="card b"><h3>No queueing or quotas</h3><p>Pending pods are not ordered by team share or priority across namespaces.</p></div>
+      <div class="card c"><h3>No topology</h3><p>Pods can land in different racks or blocks, far apart on the network.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>GPUs as resources, Kueue as the queue</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Device plugin</h3><p>The vendor plugin exposes nvidia.com/gpu; GPUs go in limits (requests default to the limit and must equal it).</p></div>
+      <div class="card a"><h3>DRA</h3><p>Dynamic Resource Allocation, stable since 1.35: DeviceClasses, ResourceClaims and ResourceSlices; sharing between pods and expression-based (CEL (Common Expression Language)) device filtering, which device plugins lack.</p></div>
+      <div class="card c"><h3>Kueue</h3><p>Decides when a job waits, is admitted to start, or is preempted; quotas per flavor; fair sharing; StrictFIFO or BestEffortFIFO (default).</p></div>
+      <div class="card e"><h3>JobSet</h3><p>A group of Jobs managed as one unit (e.g. leader and workers); restarts the whole set on failure, exclusive placement per topology domain, a headless service for stable hostnames.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>A training job on Kubernetes</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A team submits a JobSet: one unit containing all the worker pods of a training run. Kueue keeps it suspended.&quot;, &quot;It enters the team&#x27;s LocalQueue, in the team&#x27;s namespace.&quot;, &quot;The LocalQueue points to a ClusterQueue that holds quotas per ResourceFlavor (e.g. H100 nodes, reserved vs spot). Queues in a cohort can borrow each other&#x27;s unused quota.&quot;, &quot;Kueue admits the whole workload only if the quota covers all of it, choosing a flavor (and, with topology-aware scheduling, a topology domain).&quot;, &quot;Admission unsuspends the job; kube-scheduler then binds the pods to GPU nodes.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="142.0" y1="148.0" x2="176.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="312.0" y1="148.0" x2="346.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="3"><line x1="420.0" y1="68.0" x2="420.0" y2="116.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="420.0" y1="178.0" x2="420.0" y2="226.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="492.0" y1="258.0" x2="536.0" y2="258.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="595.0" y1="228.0" x2="595.0" y2="180.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="130" height="56" rx="10"/><text class="dg-text" x="75.0" y="146.0" text-anchor="middle">JobSet</text><text class="dg-sub" x="75.0" y="162.0" text-anchor="middle">16 worker pods</text></g><g class="dg-node b" data-step="2"><rect x="180" y="120" width="130" height="56" rx="10"/><text class="dg-text" x="245.0" y="146.0" text-anchor="middle">LocalQueue</text><text class="dg-sub" x="245.0" y="162.0" text-anchor="middle">team namespace</text></g><g class="dg-node a" data-step="3"><rect x="350" y="120" width="140" height="56" rx="10"/><text class="dg-text" x="420.0" y="146.0" text-anchor="middle">ClusterQueue</text><text class="dg-sub" x="420.0" y="162.0" text-anchor="middle">quota per flavor</text></g><g class="dg-node b" data-step="3"><rect x="350" y="10" width="140" height="56" rx="10"/><text class="dg-text" x="420.0" y="36.0" text-anchor="middle">Cohort</text><text class="dg-sub" x="420.0" y="52.0" text-anchor="middle">borrow / lend quota</text></g><g class="dg-node c" data-step="4"><rect x="350" y="230" width="140" height="56" rx="10"/><text class="dg-text" x="420.0" y="256.0" text-anchor="middle">Admission</text><text class="dg-sub" x="420.0" y="272.0" text-anchor="middle">all pods or none</text></g><g class="dg-node e" data-step="5"><rect x="540" y="230" width="110" height="56" rx="10"/><text class="dg-text" x="595.0" y="256.0" text-anchor="middle">kube-scheduler</text><text class="dg-sub" x="595.0" y="272.0" text-anchor="middle">binds pods</text></g><g class="dg-node e" data-step="5"><rect x="540" y="120" width="110" height="56" rx="10"/><text class="dg-text" x="595.0" y="146.0" text-anchor="middle">GPU nodes</text><text class="dg-sub" x="595.0" y="162.0" text-anchor="middle">device plugin / DRA</text></g><g data-step="2"><text class="dg-label" x="159.0" y="143.0" text-anchor="middle">submitted</text></g><g data-step="4"><text class="dg-label" x="420.0" y="197.0" text-anchor="middle">fits quota?</text></g><g data-step="5"><text class="dg-label" x="514.0" y="253.0" text-anchor="middle">unsuspend</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>All-or-nothing and topology</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Without gang admission, two distributed jobs can each get some pods and wait forever for the rest.&quot;, &quot;Kueue&#x27;s waitForPodsReady watches an admitted workload until all its pods are ready; the default timeout is 30 minutes.&quot;, &quot;If not all pods are ready in time, the workload is evicted and requeued with exponential backoff (first 60 s, up to 3,600 s).&quot;, &quot;The freed resources let the other job get all its pods and run.&quot;, &quot;Topology-aware scheduling (beta, on by default since Kueue 0.14) uses node labels for block and rack; a required annotation keeps all pods in one domain, a preferred one tries and moves up a level if needed.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga2" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="212.0" y1="69.2" x2="256.0" y2="78.4" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="2"><line x1="212.0" y1="126.8" x2="256.0" y2="117.6" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="442.0" y1="77.1" x2="486.0" y2="67.1" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="4"><line x1="570.0" y1="78.0" x2="570.0" y2="116.0" marker-end="url(#dga2)"/></g><g class="dg-node d" data-step="1"><rect x="10" y="20" width="200" height="56" rx="10"/><text class="dg-text" x="110.0" y="46.0" text-anchor="middle">Job X: 8 of 16 pods</text><text class="dg-sub" x="110.0" y="62.0" text-anchor="middle">waiting for the rest</text></g><g class="dg-node d" data-step="1"><rect x="10" y="120" width="200" height="56" rx="10"/><text class="dg-text" x="110.0" y="146.0" text-anchor="middle">Job Y: 8 of 16 pods</text><text class="dg-sub" x="110.0" y="162.0" text-anchor="middle">waiting for the rest</text></g><g class="dg-node a" data-step="2"><rect x="260" y="70" width="180" height="56" rx="10"/><text class="dg-text" x="350.0" y="96.0" text-anchor="middle">waitForPodsReady</text><text class="dg-sub" x="350.0" y="112.0" text-anchor="middle">timeout 30 min default</text></g><g class="dg-node b" data-step="3"><rect x="490" y="20" width="160" height="56" rx="10"/><text class="dg-text" x="570.0" y="46.0" text-anchor="middle">Evict + requeue Y</text><text class="dg-sub" x="570.0" y="62.0" text-anchor="middle">backoff 60 s → 1 h</text></g><g class="dg-node e" data-step="4"><rect x="490" y="120" width="160" height="56" rx="10"/><text class="dg-text" x="570.0" y="146.0" text-anchor="middle">X gets all pods</text><text class="dg-sub" x="570.0" y="162.0" text-anchor="middle">runs</text></g><g class="dg-node c" data-step="5"><rect x="10" y="230" width="640" height="56" rx="10"/><text class="dg-text" x="330.0" y="256.0" text-anchor="middle">Topology-aware scheduling</text><text class="dg-sub" x="330.0" y="272.0" text-anchor="middle">nodes labelled by block and rack · required = one domain · preferred = try, then go up a level</text></g><g data-step="3"><text class="dg-label" x="464.0" y="67.1" text-anchor="middle">not all ready</text></g><g data-step="4"><text class="dg-label" x="570.0" y="92.0" text-anchor="middle">frees GPUs</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual"><pre class="code">resources:
+  limits:
+    nvidia.com/gpu: 8        # whole GPUs, limits only (requests default to the limit)
+# pod template annotation for Kueue topology-aware scheduling:
+#   kueue.x-k8s.io/podset-required-topology: cloud.provider.com/topology-block</pre></div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Choice</th>
+<th>Benefit</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Kubernetes + Kueue</td>
+<td>one platform for training, inference and services; cloud-native tooling</td>
+<td>more moving parts than Slurm for pure batch</td>
+</tr>
+<tr>
+<td>Device plugin</td>
+<td>simple, widely supported</td>
+<td>whole devices per container; no sharing or attribute filters</td>
+</tr>
+<tr>
+<td>DRA</td>
+<td>claims, sharing, CEL filters, per-workload configuration</td>
+<td>newer; drivers must support it</td>
+</tr>
+<tr>
+<td>BestEffortFIFO (default)</td>
+<td>small jobs pass blocked big ones</td>
+<td>big jobs can wait long</td>
+</tr>
+<tr>
+<td>Borrowing in cohorts</td>
+<td>idle quota gets used</td>
+<td>borrowed capacity may be reclaimed by preemption</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Partial placement deadlock</td>
+<td>jobs hold some GPUs and wait forever</td>
+<td>Kueue admission plus waitForPodsReady</td>
+</tr>
+<tr>
+<td>Scattered pods</td>
+<td>slow all-reduce across racks</td>
+<td>topology-aware scheduling, JobSet exclusive placement</td>
+</tr>
+<tr>
+<td>One failed pod</td>
+<td>the rest of the job hangs</td>
+<td>JobSet failure policy recreates the whole set; resume from checkpoint</td>
+</tr>
+<tr>
+<td>Quota mismatch with real capacity</td>
+<td>admitted jobs cannot schedule</td>
+<td>keep quotas in line with nodes; waitForPodsReady as a backstop</td>
+</tr>
+<tr>
+<td>Reclaimed borrowed quota</td>
+<td>jobs preempted unexpectedly</td>
+<td>checkpoint; run long jobs within nominal quota</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>GPU stack</h3><p>Drivers, device plugin or DRA driver, and node labels (Node Feature Discovery) on every GPU node.</p></div>
+      <div class="card c"><h3>Flavors per hardware</h3><p>One ResourceFlavor per GPU type and capacity type (reserved, spot), with quotas per team.</p></div>
+      <div class="card b"><h3>Priorities and preemption</h3><p>WorkloadPriorityClasses and ClusterQueue preemption policies (withinClusterQueue, reclaimWithinCohort) default to Never: set them deliberately.</p></div>
+      <div class="card e"><h3>Same cluster, many workloads</h3><p>Kubernetes shines when training shares capacity with inference and services.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/" target="_blank" rel="noopener">Schedule GPUs (Kubernetes)</a>
+        <div class="meta">Kubernetes documentation · kubernetes.io 2026</div>
+        <p>Vendor device plugins expose resources such as nvidia.com/gpu; GPUs are specified in limits (requests default to and must equal limits); node labels, selectors and Node Feature Discovery target GPU types.</p></div>
+      <div class="paper-item"><a href="https://kubernetes.io/docs/concepts/scheduling-eviction/dynamic-resource-allocation/" target="_blank" rel="noopener">Dynamic Resource Allocation (Kubernetes)</a>
+        <div class="meta">Kubernetes documentation · kubernetes.io 2026</div>
+        <p>Stable since v1.35 (first in v1.30): DeviceClasses, ResourceClaims and ResourceSlices; devices can be shared through a claim and filtered with CEL expressions, unlike device plugins with per-container requests.</p></div>
+      <div class="paper-item"><a href="https://kueue.sigs.k8s.io/docs/overview/" target="_blank" rel="noopener">Kueue overview</a>
+        <div class="meta">Kubernetes SIG (special interest group) Scheduling · kueue.sigs.k8s.io 2026</div>
+        <p>Kubernetes-native job queueing: decides when a job waits, is admitted or is preempted; quotas and fair sharing, resource flavors, admission checks, all-or-nothing scheduling with a timeout, topology-aware scheduling; integrates with Jobs, JobSet, Ray and Kubeflow Trainer.</p></div>
+      <div class="paper-item"><a href="https://kueue.sigs.k8s.io/docs/concepts/cluster_queue/" target="_blank" rel="noopener">Cluster Queue (Kueue)</a>
+        <div class="meta">Kubernetes SIG Scheduling · kueue.sigs.k8s.io 2026</div>
+        <p>Cluster-scoped quotas per ResourceFlavor (nominalQuota, borrowingLimit, lendingLimit); cohorts share unused quota; StrictFIFO or BestEffortFIFO (default); preemption withinClusterQueue and reclaimWithinCohort default to Never.</p></div>
+      <div class="paper-item"><a href="https://kueue.sigs.k8s.io/docs/tasks/manage/setup_wait_for_pods_ready/" target="_blank" rel="noopener">Setup All-or-nothing with ready Pods (waitForPodsReady)</a>
+        <div class="meta">Kubernetes SIG Scheduling · kueue.sigs.k8s.io 2026</div>
+        <p>Kueue watches an admitted workload until all its pods are ready; if not within the timeout (default 30 minutes) it is evicted and requeued with exponential backoff (60 s up to 3,600 s), which breaks partial-allocation deadlocks between distributed jobs.</p></div>
+      <div class="paper-item"><a href="https://kueue.sigs.k8s.io/docs/concepts/topology_aware_scheduling/" target="_blank" rel="noopener">Topology Aware Scheduling (Kueue)</a>
+        <div class="meta">Kubernetes SIG Scheduling · kueue.sigs.k8s.io 2026</div>
+        <p>Beta and on by default since Kueue 0.14: a Topology object over node labels (block, rack, node); podset-required-topology keeps all pods in one domain, podset-preferred-topology tries and moves up a level.</p></div>
+      <div class="paper-item"><a href="https://jobset.sigs.k8s.io/docs/overview/" target="_blank" rel="noopener">JobSet overview</a>
+        <div class="meta">Kubernetes SIG Apps · jobset.sigs.k8s.io 2026</div>
+        <p>A group of Kubernetes Jobs managed as a unit: separate templates per replicated job, the whole set recreated on failure per its failure policy, exclusive placement per topology domain, and a headless service for pod discovery.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>

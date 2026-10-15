@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slurm for GPU Clusters</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Slurm for GPU clusters" data-home="../index.html" data-home-label="Cluster scheduling">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual LLM · Cluster scheduling · 02</div>
+    <h1>Slurm for GPU clusters</h1>
+    <p class="sub">The workload manager behind most supercomputers and many AI (artificial intelligence) training clusters: daemons, partitions and QOS (quality of service), GPUs (graphics processing units) as GRES (generic resources), multifactor priority and fair share, backfill, topology-aware placement and preemption. Pinned to Slurm 26.05.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A lab needs to share thousands of GPUs between teams, start multi-node training jobs with all their GPUs at once, place them on nearby nodes, account for usage, and keep the cluster full.</div>
+      <div class="c"><b>Core idea</b><b>slurmctld</b> holds the queue and decides; <b>slurmd</b> on every node launches work; <b>slurmdbd</b> stores accounting. Jobs (sbatch, srun) request nodes and GPUs (GRES); <b>partitions</b> group nodes like queues, and <b>QOS</b> sets limits and priority. The <b>multifactor</b> plugin ranks jobs, the <b>backfill</b> plugin fills gaps, <b>topology</b> plugins keep jobs under few switches, and <b>preemption</b> requeues or cancels lower-priority work.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Previous: <a href="../01-scheduling-basics/index.html">Scheduling a GPU cluster</a> · Next: <a href="../03-kubernetes-gpus/index.html">Kubernetes for GPU workloads →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Many teams, one cluster</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Allocation</h3><p>Grant users exclusive or shared access to nodes for a period of time.</p></div>
+      <div class="card b"><h3>Launch</h3><p>Start, run and monitor parallel work (one process per GPU) on the allocated nodes.</p></div>
+      <div class="card c"><h3>Arbitration</h3><p>Queue pending work and settle contention for resources: Slurm's three stated functions.</p></div>
+    </div>
+<p>NVIDIA acquired SchedMD, Slurm's main developer, in December 2025 and said Slurm stays open-source and vendor-neutral; NVIDIA reports Slurm runs on more than half of the top 10 and top 100 TOP500 systems.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Daemons, partitions, GRES, plugins</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Daemons</h3><p>slurmctld (central manager, optional backup), slurmd (one per compute node), slurmdbd (optional accounting database).</p></div>
+      <div class="card a"><h3>Partitions and QOS</h3><p>Partitions are groups of nodes that act as job queues; QOS adds priority, limits and preemption rules.</p></div>
+      <div class="card c"><h3>GPUs as GRES</h3><p>--gres=gpu:8 per node or --gpus per job (and --gpus-per-node / --gpus-per-task); Slurm sets CUDA_VISIBLE_DEVICES so concurrent jobs get separate GPUs.</p></div>
+      <div class="card e"><h3>Plugins</h3><p>priority/multifactor (ranking), backfill (gap filling), topology/tree or /block (placement), preempt/qos or /partition_prio.</p></div>
+    </div>
+<div class="visual"><pre class="code">#!/bin/bash
+#SBATCH --job-name=pretrain-7b
+#SBATCH --partition=train          # a group of nodes acting as a queue
+#SBATCH --nodes=16                 # 16 nodes × 8 GPUs = 128 GPUs, all at once
+#SBATCH --gpus-per-node=8
+#SBATCH --ntasks-per-node=8        # one process per GPU
+#SBATCH --time=48:00:00            # the time limit backfill relies on
+#SBATCH --requeue                  # may be requeued after preemption or node failure
+#SBATCH --switches=1@01:00:00      # wait up to 1 h for nodes under one leaf switch
+
+srun python train.py --resume-from latest</pre></div>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>Slurm architecture</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Users submit batch jobs (sbatch) or launch steps (srun).&quot;, &quot;slurmctld keeps the queue, runs the priority, backfill and topology plugins, and decides where jobs run; a backup can take over.&quot;, &quot;slurmdbd records usage per account, which feeds fair share and reporting.&quot;, &quot;slurmd on each node starts the job&#x27;s tasks with their GPUs, which Slurm tracks as generic resources (GRES).&quot;, &quot;A periodic HealthCheckProgram (disabled unless HealthCheckInterval is set) can mark failing nodes DRAIN so no new jobs land on them.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="1"><line x1="122.0" y1="148.0" x2="166.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="2"><line x1="255.0" y1="62.0" x2="255.0" y2="106.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="255.0" y1="188.0" x2="255.0" y2="231.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="342.0" y1="122.2" x2="417.0" y2="100.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="525.0" y1="98.0" x2="525.0" y2="136.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="525.0" y1="238.0" x2="525.0" y2="200.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="110" height="56" rx="10"/><text class="dg-text" x="65.0" y="146.0" text-anchor="middle">User</text><text class="dg-sub" x="65.0" y="162.0" text-anchor="middle">sbatch · srun</text></g><g class="dg-node a" data-step="2"><rect x="170" y="110" width="170" height="76" rx="10"/><text class="dg-text" x="255.0" y="146.0" text-anchor="middle">slurmctld</text><text class="dg-sub" x="255.0" y="162.0" text-anchor="middle">queue · scheduling</text></g><g class="dg-node b" data-step="2"><rect x="170" y="10" width="170" height="50" rx="10"/><text class="dg-text" x="255.0" y="33.0" text-anchor="middle">Backup slurmctld</text><text class="dg-sub" x="255.0" y="49.0" text-anchor="middle">takes over on failure</text></g><g class="dg-node e" data-step="3"><rect x="170" y="235" width="170" height="56" rx="10"/><text class="dg-text" x="255.0" y="261.0" text-anchor="middle">slurmdbd</text><text class="dg-sub" x="255.0" y="277.0" text-anchor="middle">accounting · usage</text></g><g class="dg-node c" data-step="4"><rect x="400" y="40" width="250" height="56" rx="10"/><text class="dg-text" x="525.0" y="66.0" text-anchor="middle">slurmd on each node</text><text class="dg-sub" x="525.0" y="82.0" text-anchor="middle">launches tasks · reports</text></g><g class="dg-node c" data-step="4"><rect x="400" y="140" width="250" height="56" rx="10"/><text class="dg-text" x="525.0" y="166.0" text-anchor="middle">GPUs as GRES</text><text class="dg-sub" x="525.0" y="182.0" text-anchor="middle">CUDA_VISIBLE_DEVICES set</text></g><g class="dg-node d" data-step="5"><rect x="400" y="240" width="250" height="50" rx="10"/><text class="dg-text" x="525.0" y="263.0" text-anchor="middle">Health check program</text><text class="dg-sub" x="525.0" y="279.0" text-anchor="middle">drains bad nodes</text></g><g data-step="1"><text class="dg-label" x="144.0" y="143.0" text-anchor="middle">submit</text></g><g data-step="3"><text class="dg-label" x="255.0" y="204.5" text-anchor="middle">usage</text></g><g data-step="4"><text class="dg-label" x="379.5" y="106.1" text-anchor="middle">launch</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>How Slurm picks the next job</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Each factor (age, fair-share, job size, partition, QOS, TRES, ...) is a number from 0 to 1.&quot;, &quot;Priority is the weighted sum minus the nice value; every weight defaults to 0, so the site&#x27;s configuration decides what counts.&quot;, &quot;The main scheduler runs on events and every sched_interval (60 s) and starts jobs in strict priority order within a partition.&quot;, &quot;The backfill plugin runs every bf_interval (30 s), looks bf_window ahead (1,440 minutes), tests up to bf_max_job_test jobs (100) and starts jobs that do not delay higher-priority reservations.&quot;, &quot;Topology plugins choose nodes: tree finds the lowest switch that fits; block allocates within fixed-size blocks to cut fragmentation; --switches limits leaf switches with a maximum wait.&quot;, &quot;Fair share: since 19.05 the default Fair Tree ranks users by level fairshare S / U through the account tree; usage decays with PriorityDecayHalfLife (7 days).&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga2" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="212.0" y1="48.0" x2="236.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="2"><line x1="412.0" y1="48.0" x2="436.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="545.0" y1="78.0" x2="545.0" y2="126.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="4"><line x1="545.0" y1="188.0" x2="545.0" y2="231.0" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="5"><line x1="392.0" y1="158.0" x2="436.0" y2="158.0" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="6"><line x1="110.0" y1="128.0" x2="110.0" y2="80.0" marker-end="url(#dga2)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="20" width="200" height="56" rx="10"/><text class="dg-text" x="110.0" y="46.0" text-anchor="middle">Factors in [0, 1]</text><text class="dg-sub" x="110.0" y="62.0" text-anchor="middle">age · fairshare · size · QOS</text></g><g class="dg-node b" data-step="1"><rect x="240" y="20" width="170" height="56" rx="10"/><text class="dg-text" x="325.0" y="46.0" text-anchor="middle">Weights</text><text class="dg-sub" x="325.0" y="62.0" text-anchor="middle">default 0 each</text></g><g class="dg-node a" data-step="2"><rect x="440" y="20" width="210" height="56" rx="10"/><text class="dg-text" x="545.0" y="46.0" text-anchor="middle">Priority</text><text class="dg-sub" x="545.0" y="62.0" text-anchor="middle">Σ weight × factor − nice</text></g><g class="dg-node c" data-step="3"><rect x="440" y="130" width="210" height="56" rx="10"/><text class="dg-text" x="545.0" y="156.0" text-anchor="middle">Main scheduler</text><text class="dg-sub" x="545.0" y="172.0" text-anchor="middle">strict order per partition</text></g><g class="dg-node e" data-step="4"><rect x="440" y="235" width="210" height="56" rx="10"/><text class="dg-text" x="545.0" y="261.0" text-anchor="middle">Backfill plugin</text><text class="dg-sub" x="545.0" y="277.0" text-anchor="middle">every 30 s, 1 day ahead</text></g><g class="dg-node d" data-step="5"><rect x="240" y="130" width="150" height="56" rx="10"/><text class="dg-text" x="315.0" y="156.0" text-anchor="middle">Topology plugin</text><text class="dg-sub" x="315.0" y="172.0" text-anchor="middle">tree / block / ring</text></g><g class="dg-node b" data-step="6"><rect x="10" y="130" width="200" height="56" rx="10"/><text class="dg-text" x="110.0" y="156.0" text-anchor="middle">Fair Tree</text><text class="dg-sub" x="110.0" y="172.0" text-anchor="middle">rank-based fair share</text></g><g data-step="4"><text class="dg-label" x="545.0" y="204.5" text-anchor="middle">cannot start</text></g><g data-step="6"><text class="dg-label" x="110.0" y="99.0" text-anchor="middle">fairshare</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Preemption setting</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PreemptType=preempt/qos or preempt/partition_prio</td>
+<td>who may preempt whom: QOS rules, or partition PriorityTier</td>
+</tr>
+<tr>
+<td>PreemptMode=REQUEUE</td>
+<td>requeue the victim if it allows requeue (--requeue or JobRequeue=1), else cancel</td>
+</tr>
+<tr>
+<td>PreemptMode=CANCEL / SUSPEND</td>
+<td>cancel; or suspend and resume later (SUSPEND needs GANG)</td>
+</tr>
+<tr>
+<td>GraceTime</td>
+<td>SIGCONT and SIGTERM at once, SIGKILL when the grace time ends (default 0)</td>
+</tr>
+<tr>
+<td>GANG</td>
+<td>trap: in Slurm, "gang scheduling" means time-slicing jobs in a partition, not all-at-once placement</td>
+</tr>
+</tbody>
+</table></div>
+<div class="visual colab-banner"><div><b>🛠 Try it in Colab</b><p class="caption">Implement decayed usage, the classic fair-share factor 2^(−U/S), multifactor priority and preemption victim selection.</p></div><a class="btn primary" href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/cluster-scheduling/02_fair_share_priority.ipynb" target="_blank" rel="noopener">Open notebook →</a></div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Choice</th>
+<th>Benefit</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Slurm</td>
+<td>mature HPC (high-performance computing) scheduler: gang allocation, backfill, topology, accounting</td>
+<td>static nodes; less native fit for services and containers</td>
+</tr>
+<tr>
+<td>Exclusive nodes (default for training partitions)</td>
+<td>predictable performance</td>
+<td>idle GPUs for small jobs</td>
+</tr>
+<tr>
+<td>GPU sharding (gres/shard)</td>
+<td>many small jobs per GPU</td>
+<td>no isolation between processes on the GPU</td>
+</tr>
+<tr>
+<td>Fair Tree vs classic fair share</td>
+<td>fairer across account hierarchies</td>
+<td>harder to explain to users</td>
+</tr>
+<tr>
+<td>--switches with a wait</td>
+<td>better collective bandwidth</td>
+<td>jobs wait longer; set max_switch_wait</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Node with a bad GPU</td>
+<td>jobs crash on the same node again and again</td>
+<td>health checks drain it; nodes with fewer GPUs than configured are drained</td>
+</tr>
+<tr>
+<td>Jobs without --requeue</td>
+<td>preempted or failed work is cancelled, not retried</td>
+<td>set --requeue or JobRequeue=1; checkpoint</td>
+</tr>
+<tr>
+<td>Unrealistic time limits</td>
+<td>backfill reservations wrong</td>
+<td>enforce limits; per-partition defaults</td>
+</tr>
+<tr>
+<td>slurmctld overload</td>
+<td>slow squeue, delayed scheduling</td>
+<td>limit bf_max_job_test and queue depth; job arrays instead of many jobs</td>
+</tr>
+<tr>
+<td>Misread "GANG"</td>
+<td>time-slicing enabled instead of all-at-once placement</td>
+<td>Slurm allocates all of a job's nodes together by default</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Partitions per workload</h3><p>Separate partitions or QOS for pretraining, research and interactive use, with preemption rules between them.</p></div>
+      <div class="card c"><h3>Prolog and epilog</h3><p>Check GPUs and clean up before and after every job; drain nodes that fail.</p></div>
+      <div class="card b"><h3>Accounting</h3><p>slurmdbd usage drives fair share and chargeback; review shares quarterly.</p></div>
+      <div class="card e"><h3>Topology config</h3><p>Keep topology.conf (or topology.yaml) in sync with the real network.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://slurm.schedmd.com/overview.html" target="_blank" rel="noopener">Slurm Workload Manager overview</a>
+        <div class="meta">SchedMD · slurm.schedmd.com 2026</div>
+        <p>Three functions (allocate access to resources, launch and monitor work, arbitrate contention via a queue); slurmctld central manager with optional backup, slurmd on each node, optional slurmdbd accounting; nodes, partitions, jobs and job steps.</p></div>
+      <div class="paper-item"><a href="https://slurm.schedmd.com/gres.html" target="_blank" rel="noopener">Generic Resource (GRES) Scheduling</a>
+        <div class="meta">SchedMD · slurm.schedmd.com 2026</div>
+        <p>GPUs as GRES (gres.conf, AutoDetect=nvml); --gres=gpu:N per node, --gpus per job, --gpus-per-node/-task; CUDA_VISIBLE_DEVICES set per step; MIG (Multi-Instance GPU, hardware partitioning of one GPU) instances as GPUs (pre-partitioned); gres/shard sharing without isolation; nodes with fewer resources than configured are drained.</p></div>
+      <div class="paper-item"><a href="https://slurm.schedmd.com/priority_multifactor.html" target="_blank" rel="noopener">Multifactor Priority Plugin</a>
+        <div class="meta">SchedMD · slurm.schedmd.com 2026</div>
+        <p>Priority = weighted sum of factors in [0, 1] (age, association, fair-share, job size, partition, QOS, site, TRES (trackable resources)) minus nice; every weight defaults to 0; PriorityDecayHalfLife defaults to 7 days; Fair Tree is the default fair-share algorithm since 19.05.</p></div>
+      <div class="paper-item"><a href="https://slurm.schedmd.com/classic_fair_share.html" target="_blank" rel="noopener">Classic Fairshare Algorithm</a>
+        <div class="meta">SchedMD · slurm.schedmd.com 2026</div>
+        <p>F = 2^(−U/S) (refined with effective usage UE through the account tree), with usage decayed by PriorityDecayHalfLife; still available with PriorityFlags=NO_FAIR_TREE.</p></div>
+      <div class="paper-item"><a href="https://slurm.schedmd.com/sched_config.html" target="_blank" rel="noopener">Scheduling Configuration Guide (Slurm 26.05)</a>
+        <div class="meta">SchedMD · slurm.schedmd.com 2026</div>
+        <p>The main scheduler tests jobs in strict priority order per partition (sched_interval 60 s); backfill starts lower-priority jobs that do not delay higher-priority ones and needs realistic time limits (bf_interval 30 s, bf_window 1,440 min, bf_max_job_test 100, bf_resolution 60 s).</p></div>
+      <div class="paper-item"><a href="https://slurm.schedmd.com/topology.html" target="_blank" rel="noopener">Topology Guide</a>
+        <div class="meta">SchedMD · slurm.schedmd.com 2026</div>
+        <p>topology/tree (lowest switch that fits, best-fit leaf switches; --switches=count@time), topology/block (fixed-size blocks to reduce fragmentation; --segment), topology/ring (26.05) and topology/torus3d.</p></div>
+      <div class="paper-item"><a href="https://slurm.schedmd.com/preempt.html" target="_blank" rel="noopener">Preemption</a>
+        <div class="meta">SchedMD · slurm.schedmd.com 2026</div>
+        <p>PreemptType none / partition_prio / qos; PreemptMode CANCEL, REQUEUE (only with --requeue or JobRequeue=1), SUSPEND (with GANG), GANG (time-slicing jobs in a partition), OFF; GraceTime sends SIGCONT and SIGTERM at once and SIGKILL at the new end time.</p></div>
+      <div class="paper-item"><a href="https://blogs.nvidia.com/blog/nvidia-acquires-schedmd/" target="_blank" rel="noopener">NVIDIA acquires open-source workload management provider SchedMD</a>
+        <div class="meta">NVIDIA · NVIDIA Blog 2025</div>
+        <p>NVIDIA acquired SchedMD, Slurm's main developer, on 15 December 2025 and said it will keep Slurm open-source and vendor-neutral; Slurm runs on more than half of the top 10 and top 100 TOP500 systems.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>

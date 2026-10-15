@@ -147,6 +147,15 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/pytorch/
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/vllm/
 
+## Infrastructure · Cluster scheduling
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · Queues and backfill: FIFO vs EASY backfill on a GPU cluster](cluster-scheduling/01_backfill_scheduler.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/cluster-scheduling/01_backfill_scheduler.ipynb) |
+| [02 · Fair share, job priority and preemption (Slurm-style)](cluster-scheduling/02_fair_share_priority.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/cluster-scheduling/02_fair_share_priority.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/cluster-scheduling/
+
 ## Agents · LangChain and LangGraph
 
 | Notebook | Time | Colab |

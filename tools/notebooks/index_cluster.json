@@ -1,0 +1,18 @@
+[
+ {
+  "slug": "01_backfill_scheduler",
+  "title": "01 \u00b7 Queues and backfill: FIFO vs EASY backfill on a GPU cluster",
+  "path": "build-it/cluster-scheduling/01_backfill_scheduler.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/cluster-scheduling/01_backfill_scheduler.ipynb",
+  "deck": "cluster-scheduling/01-scheduling-basics/",
+  "minutes": 35
+ },
+ {
+  "slug": "02_fair_share_priority",
+  "title": "02 \u00b7 Fair share, job priority and preemption (Slurm-style)",
+  "path": "build-it/cluster-scheduling/02_fair_share_priority.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/cluster-scheduling/02_fair_share_priority.ipynb",
+  "deck": "cluster-scheduling/02-slurm/",
+  "minutes": 30
+ }
+]

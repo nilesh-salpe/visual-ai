@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cluster scheduling</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body { overflow-y: auto; }</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../llm/index.html">← Visual LLM</a>
+  <div class="label" style="margin-top:28px">Visual guide · 4 decks + 2 Colab notebooks</div>
+  <h1>Cluster scheduling</h1>
+  <p class="lede">How GPU (graphics processing unit) clusters are shared between teams and kept busy: what a scheduler decides, Slurm in depth (pinned to 26.05), Kubernetes with device plugins, Dynamic Resource Allocation, Kueue and JobSet, and the automated loop that recovers jobs from failures. Each deck follows the systems template: problem, core idea, high-level design, low-level design, trade-offs, failure modes and challenges in production.</p>
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: 2 Colab notebooks</h3><p class="caption" style="margin:0">Simulate FIFO (first in, first out) vs EASY backfill on a GPU cluster, then Slurm-style decayed usage, fair share, multifactor priority and preemption. Plain Python, no cluster needed.</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>
+<!--x:map--><style>
+.bigmap { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding: 4px 2px 10px; }
+.bigmap .stage { flex: 1 1 0; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
+.bigmap .stage h4 { margin: 0 0 2px; font: 700 11.5px 'JetBrains Mono', monospace; letter-spacing: .05em; text-transform: uppercase; color: var(--a); }
+.bigmap .stage a { display: block; padding: 9px 11px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 14px; line-height: 1.3; }
+.bigmap .stage a:hover { border-color: var(--a); background: var(--a-soft); }
+.bigmap .stage a span { display: block; font: 600 11px 'JetBrains Mono', monospace; color: var(--faint); }
+.bigmap .arrow { align-self: center; color: var(--faint); font-size: 20px; }
+.hub-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+@media (max-width: 700px) { .bigmap { flex-direction: column; } .bigmap .arrow { transform: rotate(90deg); } }
+</style>
+  <div class="visual" style="margin-top:22px">
+    <h3 style="margin:0 0 10px">The big picture</h3>
+    <div class="bigmap"><div class="stage"><h4>Concepts</h4><a href="01-scheduling-basics/index.html"><span>01</span>Scheduling a GPU cluster</a></div><div class="arrow">→</div><div class="stage"><h4>Schedulers</h4><a href="02-slurm/index.html"><span>02</span>Slurm for GPU clusters</a><a href="03-kubernetes-gpus/index.html"><span>03</span>Kubernetes for GPU workloads</a></div><div class="arrow">→</div><div class="stage"><h4>Operations</h4><a href="04-operating-clusters/index.html"><span>04</span>Operating a training cluster</a></div></div>
+    <div class="hub-links"><a class="btn" href="reading-list.html">📚 Reading list</a><a class="btn" href="../glossary/index.html">🔤 Glossary</a></div>
+  </div>
+<!--/x:map-->
+  <div class="hub-grid"><a class="hub-card" href="01-scheduling-basics/index.html"><div class="n">01</div><h3>Scheduling a GPU cluster</h3><p>Priority, quotas, gang placement, backfill, preemption.</p></a><a class="hub-card" href="02-slurm/index.html"><div class="n">02</div><h3>Slurm for GPU clusters</h3><p>Daemons, GRES (generic resources), multifactor priority, backfill, topology, preemption.</p></a><a class="hub-card" href="03-kubernetes-gpus/index.html"><div class="n">03</div><h3>Kubernetes for GPU workloads</h3><p>Device plugins, DRA (Dynamic Resource Allocation), Kueue, JobSet, topology-aware scheduling.</p></a><a class="hub-card" href="04-operating-clusters/index.html"><div class="n">04</div><h3>Operating a training cluster</h3><p>Health checks, drain, requeue, checkpoints; Slurm or Kubernetes.</p></a></div>
+  <p class="cite" style="margin-top:26px">Sources: Slurm 26.05 documentation (overview, GRES, multifactor priority, fair share, scheduling, topology, preemption, slurm.conf); Kubernetes 1.35 documentation (GPUs, DRA); Kueue and JobSet documentation; NVIDIA (SchedMD acquisition); Llama 3 report.</p>
+</div>
+</body>
+</html>

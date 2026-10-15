@@ -18,6 +18,7 @@ PHASES = [  # (heading, notebook folder, index json)
     ('Phase 6 · Web crawling & pretraining data', 'pretraining-data', 'index_data.json'),
     ('Frameworks · PyTorch for LLMs', 'pytorch', 'index_torch.json'),
     ('Frameworks · vLLM internals', 'vllm', 'index_vllm.json'),
+    ('Infrastructure · Cluster scheduling', 'cluster-scheduling', 'index_cluster.json'),
     ('Agents · LangChain and LangGraph', 'agent-frameworks', 'index_agent_frameworks.json'),
 ]
 
@@ -422,6 +423,22 @@ if __name__ == '__main__':
     print('wrote vllm/index.html')
 
 
+CLUSTER_CARDS = [
+    ('01-scheduling-basics', 'Scheduling a GPU cluster', 'Priority, quotas, gang placement, backfill, preemption.'),
+    ('02-slurm', 'Slurm for GPU clusters', 'Daemons, GRES, multifactor priority, backfill, topology, preemption.'),
+    ('03-kubernetes-gpus', 'Kubernetes for GPU workloads', 'Device plugins, DRA, Kueue, JobSet, topology-aware scheduling.'),
+    ('04-operating-clusters', 'Operating a training cluster', 'Health checks, drain, requeue, checkpoints; Slurm or Kubernetes.'),
+]
+
+
+def write_cluster_hub():
+    _write(os.path.join(REPO, 'cluster-scheduling', 'index.html'), topic_hub(
+        'cluster-scheduling', 'Cluster scheduling', 'Cluster scheduling',
+        'How GPU clusters are shared between teams and kept busy: what a scheduler decides, Slurm in depth (pinned to 26.05), Kubernetes with device plugins, Dynamic Resource Allocation, Kueue and JobSet, and the automated loop that recovers jobs from failures. Each deck follows the systems template: problem, core idea, high-level design, low-level design, trade-offs, failure modes and challenges in production.',
+        'index_cluster.json', 'Simulate FIFO vs EASY backfill on a GPU cluster, then Slurm-style decayed usage, fair share, multifactor priority and preemption. Plain Python, no cluster needed.',
+        CLUSTER_CARDS, 'Slurm 26.05 documentation (overview, GRES, multifactor priority, fair share, scheduling, topology, preemption, slurm.conf); Kubernetes 1.35 documentation (GPUs, DRA); Kueue and JobSet documentation; NVIDIA (SchedMD acquisition); Llama 3 report.'))
+    print('wrote cluster-scheduling/index.html')
+
 AGENT_HUBS = {
     'agent-foundations': ('Agent foundations', 'What an agent is, how models call tools, the ReAct loop, and planning: the building blocks every agent shares.', [
         ('01-what-is-an-agent', 'What an agent is', 'Workflows vs agents; the decide-act-observe loop.'),
@@ -460,6 +477,7 @@ AGENT_HUBS = {
 }
 
 if __name__ == '__main__':
+    write_cluster_hub()
     for folder, (title, lede, cards) in AGENT_HUBS.items():
         _write(os.path.join(REPO, folder, 'index.html'), topic_hub(
             folder, title, title, lede + ' Each deck follows the agent template: problem, core idea, high-level design, low-level design, trade-offs, failure modes and challenges in production, with steppable diagrams and sources checked against the primary papers, specifications and documentation.',

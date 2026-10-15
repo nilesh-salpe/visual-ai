@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operating a Training Cluster</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Operating a training cluster" data-home="../index.html" data-home-label="Cluster scheduling">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual LLM · Cluster scheduling · 04</div>
+    <h1>Operating a training cluster</h1>
+    <p class="sub">Keeping thousands of GPUs (graphics processing units) productive: health checks and draining, automatic requeue and restart from checkpoint, preemption with grace periods, and how labs choose between Slurm and Kubernetes.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>At thousands of GPUs, hardware failures arrive every few hours (see the GPU failures deck). Without automation each failure means a person finds the bad node, removes it, and restarts the job by hand while the rest of the cluster sits idle.</div>
+      <div class="c"><b>Core idea</b>Close the loop automatically: <b>detect</b> bad nodes (health checks, failed jobs), <b>drain</b> them so no new work lands there, <b>requeue</b> the affected job, <b>restart</b> it from the latest <b>checkpoint</b> on healthy nodes, and <b>repair</b> or reboot the node before returning it. Preemption uses the same path with a <b>grace period</b> to checkpoint. Choose the scheduler by workload mix: Slurm for large batch training, Kubernetes with Kueue when training shares a platform with services.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Previous: <a href="../03-kubernetes-gpus/index.html">Kubernetes for GPU workloads</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Failures are routine at scale</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Frequent interruptions</h3><p>Llama 3 405B pretraining saw 466 job interruptions in 54 days, 419 unexpected (GPU failures deck).</p></div>
+      <div class="card b"><h3>One node stops everything</h3><p>A synchronous job runs at the speed of its slowest or broken rank.</p></div>
+      <div class="card c"><h3>Manual recovery is slow</h3><p>Finding, draining and restarting by hand turns minutes of failure into hours of idle GPUs.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Detect, drain, requeue, restart</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Detect</h3><p>Periodic health checks (Slurm HealthCheckProgram every HealthCheckInterval seconds), job-level watchdogs, and GPU error counters.</p></div>
+      <div class="card a"><h3>Drain</h3><p>DRAIN prevents additional jobs from running on a node while running work finishes; Slurm also drains nodes that report fewer GPUs than configured.</p></div>
+      <div class="card c"><h3>Requeue and restart</h3><p>Slurm requeues batch jobs when JobRequeue=1 (the default) or --requeue; JobSet recreates the whole set; the job resumes from its latest checkpoint.</p></div>
+      <div class="card e"><h3>Grace for preemption</h3><p>Slurm sends SIGTERM at once and SIGKILL after GraceTime: enough time to save a checkpoint if the job traps the signal.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>The automated recovery loop</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A large job is running when a GPU or node fails.&quot;, &quot;A health check or the job&#x27;s own watchdog detects the failure.&quot;, &quot;The node is drained so the scheduler sends no new work to it.&quot;, &quot;The job is requeued automatically (it keeps its id and priority).&quot;, &quot;It restarts on healthy nodes and resumes from the latest checkpoint; the work since that checkpoint is lost.&quot;, &quot;The bad node is rebooted or repaired, re-checked, and returned to the pool.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="132.0" y1="118.0" x2="204.2" y2="80.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="342.0" y1="48.0" x2="386.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="268.0" y1="78.0" x2="281.8" y2="216.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="362.0" y1="221.8" x2="426.0" y2="200.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="142.0" y1="248.0" x2="206.0" y2="248.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="522.0" y1="48.0" x2="556.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="6"><line x1="583.8" y1="78.0" x2="542.7" y2="136.0" marker-end="url(#dga1)"/></g><g class="dg-node a" data-step="1"><rect x="10" y="120" width="130" height="56" rx="10"/><text class="dg-text" x="75.0" y="146.0" text-anchor="middle">Training job</text><text class="dg-sub" x="75.0" y="162.0" text-anchor="middle">1,024 GPUs</text></g><g class="dg-node d" data-step="2"><rect x="190" y="20" width="150" height="56" rx="10"/><text class="dg-text" x="265.0" y="46.0" text-anchor="middle">Detect</text><text class="dg-sub" x="265.0" y="62.0" text-anchor="middle">health check · error</text></g><g class="dg-node d" data-step="3"><rect x="390" y="20" width="130" height="56" rx="10"/><text class="dg-text" x="455.0" y="46.0" text-anchor="middle">Drain node</text><text class="dg-sub" x="455.0" y="62.0" text-anchor="middle">no new jobs</text></g><g class="dg-node b" data-step="4"><rect x="210" y="220" width="150" height="56" rx="10"/><text class="dg-text" x="285.0" y="246.0" text-anchor="middle">Requeue job</text><text class="dg-sub" x="285.0" y="262.0" text-anchor="middle">same job id</text></g><g class="dg-node e" data-step="5"><rect x="10" y="220" width="130" height="56" rx="10"/><text class="dg-text" x="75.0" y="246.0" text-anchor="middle">Checkpoint store</text><text class="dg-sub" x="75.0" y="262.0" text-anchor="middle">latest step</text></g><g class="dg-node c" data-step="6"><rect x="560" y="20" width="90" height="56" rx="10"/><text class="dg-text" x="605.0" y="46.0" text-anchor="middle">Repair</text><text class="dg-sub" x="605.0" y="62.0" text-anchor="middle">reboot · RMA</text></g><g class="dg-node e" data-step="5"><rect x="390" y="140" width="260" height="56" rx="10"/><text class="dg-text" x="520.0" y="166.0" text-anchor="middle">Healthy nodes</text><text class="dg-sub" x="520.0" y="182.0" text-anchor="middle">job restarts here</text></g><g data-step="2"><text class="dg-label" x="168.1" y="94.0" text-anchor="middle">fails</text></g><g data-step="5"><text class="dg-label" x="394.0" y="205.9" text-anchor="middle">reschedule</text></g><g data-step="5"><text class="dg-label" x="174.0" y="243.0" text-anchor="middle">resume</text></g><g data-step="6"><text class="dg-label" x="563.2" y="102.0" text-anchor="middle">return</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>Preemption without losing work</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A higher-priority job (by QOS or partition tier) needs GPUs that are busy.&quot;, &quot;The scheduler picks preemptable lower-priority jobs to free enough GPUs.&quot;, &quot;Each victim gets SIGCONT and SIGTERM immediately; its end time becomes now plus GraceTime (default 0).&quot;, &quot;A job that traps SIGTERM writes a checkpoint within the grace period.&quot;, &quot;At the end of the grace period it receives SIGKILL.&quot;, &quot;With PreemptMode=REQUEUE and --requeue (or JobRequeue=1) the victim goes back to the queue and later resumes from that checkpoint; otherwise it is cancelled.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga2" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="172.0" y1="48.0" x2="206.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="372.0" y1="48.0" x2="406.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="4"><line x1="530.0" y1="78.0" x2="530.0" y2="136.0" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="5"><line x1="530.0" y1="198.0" x2="530.0" y2="241.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="6"><line x1="408.0" y1="168.0" x2="214.0" y2="168.0" marker-end="url(#dga2)"/></g><g class="dg-node a" data-step="1"><rect x="10" y="20" width="160" height="56" rx="10"/><text class="dg-text" x="90.0" y="46.0" text-anchor="middle">Urgent job</text><text class="dg-sub" x="90.0" y="62.0" text-anchor="middle">higher QOS</text></g><g class="dg-node b" data-step="2"><rect x="210" y="20" width="160" height="56" rx="10"/><text class="dg-text" x="290.0" y="46.0" text-anchor="middle">Select victims</text><text class="dg-sub" x="290.0" y="62.0" text-anchor="middle">lowest priority first</text></g><g class="dg-node d" data-step="3"><rect x="410" y="20" width="240" height="56" rx="10"/><text class="dg-text" x="530.0" y="46.0" text-anchor="middle">SIGTERM now</text><text class="dg-sub" x="530.0" y="62.0" text-anchor="middle">end time = now + GraceTime</text></g><g class="dg-node e" data-step="4"><rect x="410" y="140" width="240" height="56" rx="10"/><text class="dg-text" x="530.0" y="166.0" text-anchor="middle">Victim saves checkpoint</text><text class="dg-sub" x="530.0" y="182.0" text-anchor="middle">signal handler</text></g><g class="dg-node d" data-step="5"><rect x="410" y="245" width="240" height="50" rx="10"/><text class="dg-text" x="530.0" y="275.0" text-anchor="middle">SIGKILL at grace end</text></g><g class="dg-node c" data-step="6"><rect x="10" y="140" width="200" height="56" rx="10"/><text class="dg-text" x="110.0" y="166.0" text-anchor="middle">Victim requeued</text><text class="dg-sub" x="110.0" y="182.0" text-anchor="middle">needs --requeue</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual"><pre class="code">import signal, sys
+
+def on_sigterm(signum, frame):        # preemption or shutdown: grace period has started
+    save_checkpoint(step)              # must finish before GraceTime runs out
+    sys.exit(0)                        # the scheduler requeues the job (--requeue)
+
+signal.signal(signal.SIGTERM, on_sigterm)</pre></div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Slurm or Kubernetes?</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Question</th>
+<th>Slurm</th>
+<th>Kubernetes + Kueue</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>All-at-once allocation</td>
+<td>built in (a job gets all its nodes together)</td>
+<td>Kueue admission + waitForPodsReady</td>
+</tr>
+<tr>
+<td>Backfill</td>
+<td>built-in plugin with time limits</td>
+<td>BestEffortFIFO lets fitting jobs pass; no reservation-based backfill like Slurm's</td>
+</tr>
+<tr>
+<td>Topology</td>
+<td>tree, block, ring, torus3d plugins</td>
+<td>Kueue topology-aware scheduling (beta), JobSet exclusive placement</td>
+</tr>
+<tr>
+<td>Services and inference</td>
+<td>not its strength</td>
+<td>native (deployments, autoscaling)</td>
+</tr>
+<tr>
+<td>Containers</td>
+<td>supported (OCI (Open Container Initiative) containers, plugins)</td>
+<td>native</td>
+</tr>
+<tr>
+<td>Typical fit</td>
+<td>large batch pretraining on fixed clusters</td>
+<td>mixed training + inference platforms, cloud elasticity</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Flapping node</td>
+<td>jobs keep landing on a node that fails again</td>
+<td>drain on first failure; burn-in tests before returning it</td>
+</tr>
+<tr>
+<td>Checkpoints too rare</td>
+<td>each failure loses hours</td>
+<td>pick the interval from MTBF (mean time between failures) and save cost (Young/Daly, GPU failures deck)</td>
+</tr>
+<tr>
+<td>Signal not handled</td>
+<td>preemption kills the job without saving</td>
+<td>trap SIGTERM; set GraceTime long enough to checkpoint</td>
+</tr>
+<tr>
+<td>Silent data corruption</td>
+<td>loss spikes with no crash</td>
+<td>numerical checks; isolate and test suspect GPUs</td>
+</tr>
+<tr>
+<td>Restart storms</td>
+<td>many jobs restart at once and overload storage</td>
+<td>stagger restarts; scale checkpoint storage</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Goodput</h3><p>Measure the share of GPU time spent on useful training steps, not just allocated GPUs.</p></div>
+      <div class="card c"><h3>Spare capacity</h3><p>Keep hot-spare nodes so restarts do not wait for repairs.</p></div>
+      <div class="card b"><h3>Burn-in</h3><p>Stress-test new and repaired nodes before they join the pool.</p></div>
+      <div class="card e"><h3>Automate the loop</h3><p>Detection, drain, requeue and repair should not need a human for routine failures.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://slurm.schedmd.com/slurm.conf.html" target="_blank" rel="noopener">slurm.conf and scontrol reference</a>
+        <div class="meta">SchedMD · slurm.schedmd.com 2026</div>
+        <p>HealthCheckProgram runs as root on all compute nodes every HealthCheckInterval seconds (0 disables it); JobRequeue=1 (default) lets batch jobs be requeued; the DRAIN state prevents additional jobs from running on a node.</p></div>
+      <div class="paper-item"><a href="https://slurm.schedmd.com/preempt.html" target="_blank" rel="noopener">Preemption</a>
+        <div class="meta">SchedMD · slurm.schedmd.com 2026</div>
+        <p>PreemptType none / partition_prio / qos; PreemptMode CANCEL, REQUEUE (only with --requeue or JobRequeue=1), SUSPEND (with GANG), GANG (time-slicing jobs in a partition), OFF; GraceTime sends SIGCONT and SIGTERM at once and SIGKILL at the new end time.</p></div>
+      <div class="paper-item"><a href="https://kueue.sigs.k8s.io/docs/tasks/manage/setup_wait_for_pods_ready/" target="_blank" rel="noopener">Setup All-or-nothing with ready Pods (waitForPodsReady)</a>
+        <div class="meta">Kubernetes SIG (special interest group) Scheduling · kueue.sigs.k8s.io 2026</div>
+        <p>Kueue watches an admitted workload until all its pods are ready; if not within the timeout (default 30 minutes) it is evicted and requeued with exponential backoff (60 s up to 3,600 s), which breaks partial-allocation deadlocks between distributed jobs.</p></div>
+      <div class="paper-item"><a href="https://jobset.sigs.k8s.io/docs/overview/" target="_blank" rel="noopener">JobSet overview</a>
+        <div class="meta">Kubernetes SIG Apps · jobset.sigs.k8s.io 2026</div>
+        <p>A group of Kubernetes Jobs managed as a unit: separate templates per replicated job, the whole set recreated on failure per its failure policy, exclusive placement per topology domain, and a headless service for pod discovery.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>

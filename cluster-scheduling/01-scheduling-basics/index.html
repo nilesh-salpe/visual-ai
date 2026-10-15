@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scheduling a GPU Cluster</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Scheduling a GPU cluster" data-home="../index.html" data-home-label="Cluster scheduling">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual LLM · Cluster scheduling · 01</div>
+    <h1>Scheduling a GPU cluster</h1>
+    <p class="sub">What a cluster scheduler decides and why GPU (graphics processing unit) training makes it hard: queues and priorities, quotas, all-at-once (gang) placement, topology, backfill and preemption.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Thousands of GPUs, many teams, and jobs from one GPU for an hour to thousands of GPUs for weeks. Starting jobs in arrival order leaves GPUs idle behind big jobs; starting them anywhere scatters a training job across slow links; partial starts deadlock.</div>
+      <div class="c"><b>Core idea</b>A scheduler orders the queue by <b>priority</b> (age, fair share, quality of service), admits jobs within <b>quotas</b>, places each job <b>all at once</b> on nodes that are <b>close in the network</b>, fills idle gaps with <b>backfill</b> (short jobs that cannot delay the reserved start of the job at the head), and <b>preempts</b> low-priority work when urgent work arrives.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Next: <a href="../02-slurm/index.html">Slurm for GPU clusters →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>First come, first served wastes GPUs</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Head-of-line blocking</h3><p>A 1,024-GPU job at the front waits for GPUs to drain while small jobs behind it could have run.</p></div>
+      <div class="card b"><h3>Fragmentation</h3><p>Free GPUs scattered over half-used nodes cannot host a job that needs whole nodes in one network block (see the GPU sharing deck).</p></div>
+      <div class="card c"><h3>Partial starts</h3><p>Two distributed jobs that each get half their GPUs both wait forever.</p></div>
+    </div>
+<p>The GPU decks cover hardware sharing (MIG (Multi-Instance GPU, hardware partitioning of one GPU), time-slicing) and failure rates; this topic is about the scheduler that decides who runs where and when.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Order, admit, place, fill, preempt</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Priority</h3><p>A score per job: in Slurm a weighted sum of age, fair-share, job size, partition, QOS (quality of service) and more, each normalised to [0, 1].</p></div>
+      <div class="card a"><h3>Quotas and fair share</h3><p>Each team gets a share; usage decays over time (Slurm's default half-life is 7 days) so heavy recent users wait longer.</p></div>
+      <div class="card c"><h3>Gang and topology</h3><p>All of a job's GPUs start together, on nodes under as few switches as possible.</p></div>
+      <div class="card e"><h3>Backfill and preemption</h3><p>Short jobs run in gaps if they cannot delay the reserved job; urgent work can requeue or cancel lower-priority jobs.</p></div>
+    </div>
+<div class="visual colab-banner"><div><b>🛠 Try it in Colab</b><p class="caption">Build FIFO (first in, first out) and EASY backfill schedulers and measure mean wait and utilisation. On a random 300-job workload backfill cuts mean wait from 496 to 186 hours and raises utilisation from 55% to 95%.</p></div><a class="btn primary" href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/cluster-scheduling/01_backfill_scheduler.ipynb" target="_blank" rel="noopener">Open notebook →</a></div>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>What a scheduler does</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A job asks for resources (GPUs, nodes) and a time limit.&quot;, &quot;It joins a queue ordered by priority.&quot;, &quot;Quotas decide whether the job may run at all now (its team&#x27;s share, account limits).&quot;, &quot;The head job is placed only when all its GPUs are free together, preferably within one network block.&quot;, &quot;Backfill starts later jobs in the gaps, if they cannot delay the head job&#x27;s reserved start; this relies on honest time limits.&quot;, &quot;Preemption frees GPUs for urgent work by requeueing or cancelling lower-priority jobs.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="132.0" y1="148.0" x2="166.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="240.0" y1="68.0" x2="240.0" y2="116.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="312.0" y1="148.0" x2="356.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="502.0" y1="148.0" x2="536.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="291.8" y1="178.0" x2="374.7" y2="226.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="475.0" y1="228.0" x2="547.0" y2="180.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="595.0" y1="228.0" x2="595.0" y2="180.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="120" height="56" rx="10"/><text class="dg-text" x="70.0" y="146.0" text-anchor="middle">Submit</text><text class="dg-sub" x="70.0" y="162.0" text-anchor="middle">GPUs · time limit</text></g><g class="dg-node a" data-step="2"><rect x="170" y="120" width="140" height="56" rx="10"/><text class="dg-text" x="240.0" y="146.0" text-anchor="middle">Queue</text><text class="dg-sub" x="240.0" y="162.0" text-anchor="middle">sorted by priority</text></g><g class="dg-node b" data-step="3"><rect x="170" y="10" width="140" height="56" rx="10"/><text class="dg-text" x="240.0" y="36.0" text-anchor="middle">Quotas</text><text class="dg-sub" x="240.0" y="52.0" text-anchor="middle">shares · limits</text></g><g class="dg-node c" data-step="4"><rect x="360" y="120" width="140" height="56" rx="10"/><text class="dg-text" x="430.0" y="146.0" text-anchor="middle">Placement</text><text class="dg-sub" x="430.0" y="162.0" text-anchor="middle">gang · topology</text></g><g class="dg-node e" data-step="5"><rect x="360" y="230" width="140" height="56" rx="10"/><text class="dg-text" x="430.0" y="256.0" text-anchor="middle">Backfill</text><text class="dg-sub" x="430.0" y="272.0" text-anchor="middle">fill gaps</text></g><g class="dg-node d" data-step="6"><rect x="540" y="230" width="110" height="56" rx="10"/><text class="dg-text" x="595.0" y="256.0" text-anchor="middle">Preempt</text><text class="dg-sub" x="595.0" y="272.0" text-anchor="middle">requeue / cancel</text></g><g class="dg-node f" data-step="4"><rect x="540" y="120" width="110" height="56" rx="10"/><text class="dg-text" x="595.0" y="146.0" text-anchor="middle">Nodes</text><text class="dg-sub" x="595.0" y="162.0" text-anchor="middle">run job</text></g><g data-step="3"><text class="dg-label" x="240.0" y="87.0" text-anchor="middle">admit?</text></g><g data-step="4"><text class="dg-label" x="334.0" y="143.0" text-anchor="middle">head job</text></g><g data-step="5"><text class="dg-label" x="333.3" y="197.0" text-anchor="middle">later jobs</text></g><g data-step="5"><text class="dg-label" x="511.0" y="199.0" text-anchor="middle">if harmless</text></g><g data-step="6"><text class="dg-label" x="595.0" y="199.0" text-anchor="middle">free GPUs</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>Backfill in one picture</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;An 8-GPU cluster: job A holds 6 GPUs for 10 hours.&quot;, &quot;Job B is at the head of the queue and needs all 8 GPUs.&quot;, &quot;B cannot start, so the scheduler reserves its start at the time A ends: the shadow time, t = 10 h.&quot;, &quot;Job C (2 GPUs, 4 h) fits in the 2 idle GPUs and finishes before the shadow time, so it starts now: backfill.&quot;, &quot;Job D (2 GPUs, 12 h) would still be running at t = 10 and take GPUs B needs, so it waits (EASY backfill).&quot;, &quot;A long job may start early only on GPUs that will still be spare at the shadow time (none here; 2 on a 10-GPU cluster).&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 270" role="img" aria-label="diagram"><defs><marker id="dga2" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="282.0" y1="45.0" x2="366.0" y2="45.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="510.0" y1="72.0" x2="510.0" y2="106.0" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="4"><line x1="282.0" y1="135.0" x2="366.0" y2="135.0" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="6"><line x1="282.0" y1="225.0" x2="366.0" y2="225.0" marker-end="url(#dga2)"/></g><g class="dg-node a" data-step="1"><rect x="10" y="20" width="270" height="50" rx="10"/><text class="dg-text" x="145.0" y="43.0" text-anchor="middle">Job A: 6 GPUs × 10 h</text><text class="dg-sub" x="145.0" y="59.0" text-anchor="middle">running</text></g><g class="dg-node d" data-step="2"><rect x="370" y="20" width="280" height="50" rx="10"/><text class="dg-text" x="510.0" y="43.0" text-anchor="middle">Job B: 8 GPUs × 5 h</text><text class="dg-sub" x="510.0" y="59.0" text-anchor="middle">head of queue: needs all 8</text></g><g class="dg-node d" data-step="3"><rect x="370" y="110" width="280" height="50" rx="10"/><text class="dg-text" x="510.0" y="133.0" text-anchor="middle">Reservation for B at t = 10 h</text><text class="dg-sub" x="510.0" y="149.0" text-anchor="middle">shadow time</text></g><g class="dg-node e" data-step="4"><rect x="10" y="110" width="270" height="50" rx="10"/><text class="dg-text" x="145.0" y="133.0" text-anchor="middle">Job C: 2 GPUs × 4 h</text><text class="dg-sub" x="145.0" y="149.0" text-anchor="middle">starts now in the gap</text></g><g class="dg-node b" data-step="5"><rect x="10" y="200" width="270" height="50" rx="10"/><text class="dg-text" x="145.0" y="223.0" text-anchor="middle">Job D: 2 GPUs × 12 h</text><text class="dg-sub" x="145.0" y="239.0" text-anchor="middle">would delay B: waits</text></g><g class="dg-node c" data-step="6"><rect x="370" y="200" width="280" height="50" rx="10"/><text class="dg-text" x="510.0" y="223.0" text-anchor="middle">Extra GPUs at shadow time</text><text class="dg-sub" x="510.0" y="239.0" text-anchor="middle">long jobs may use only these</text></g><g data-step="4"><text class="dg-label" x="324.0" y="130.0" text-anchor="middle">ends first</text></g><g data-step="6"><text class="dg-label" x="324.0" y="220.0" text-anchor="middle">extra only</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Policy</th>
+<th>Starts a later job when</th>
+<th>Risk</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Strict FIFO</td>
+<td>every job ahead has started</td>
+<td>idle GPUs behind a big job</td>
+</tr>
+<tr>
+<td>EASY backfill</td>
+<td>it cannot delay the head job's reservation</td>
+<td>later high-priority jobs may be delayed</td>
+</tr>
+<tr>
+<td>Conservative backfill</td>
+<td>it cannot delay any queued job's reservation</td>
+<td>less backfill, more planning cost</td>
+</tr>
+<tr>
+<td>Greedy (first fit)</td>
+<td>it fits now</td>
+<td>large jobs starve</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Choice</th>
+<th>Benefit</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Exclusive whole nodes</td>
+<td>no interference; simple topology</td>
+<td>idle GPUs when jobs need fewer than a node</td>
+</tr>
+<tr>
+<td>Shared nodes / fractional GPUs</td>
+<td>higher utilisation for small jobs</td>
+<td>noisy neighbours; fragmentation for big jobs</td>
+</tr>
+<tr>
+<td>Strict topology placement</td>
+<td>fast collectives</td>
+<td>longer waits for a fitting block</td>
+</tr>
+<tr>
+<td>Aggressive preemption</td>
+<td>urgent work starts fast</td>
+<td>lost progress unless jobs checkpoint</td>
+</tr>
+<tr>
+<td>Backfill with padded time limits</td>
+<td>safe reservations</td>
+<td>fewer gaps filled; users learn to under-request</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Starvation</td>
+<td>a large job never starts</td>
+<td>reservations (backfill), age factor in priority</td>
+</tr>
+<tr>
+<td>Partial-allocation deadlock</td>
+<td>two jobs each hold half their GPUs</td>
+<td>gang admission: all or nothing</td>
+</tr>
+<tr>
+<td>Bad time limits</td>
+<td>backfill disabled in practice; reservations wrong</td>
+<td>enforce limits; default limits per partition</td>
+</tr>
+<tr>
+<td>Quota gaming</td>
+<td>many small jobs to grab share</td>
+<td>fair share on usage, per-user limits</td>
+</tr>
+<tr>
+<td>Scattered placement</td>
+<td>jobs run slowly across many switches</td>
+<td>topology-aware placement with a wait limit</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Measure the queue</h3><p>Track wait time by job size, utilisation, and GPU-hours lost to fragmentation and preemption.</p></div>
+      <div class="card c"><h3>Separate pools</h3><p>Large pretraining runs often get dedicated reservations; research and inference share the rest.</p></div>
+      <div class="card b"><h3>Make jobs restartable</h3><p>Preemption and failures are routine; checkpointing turns them into delays, not lost weeks.</p></div>
+      <div class="card e"><h3>Explain decisions</h3><p>Show users why a job is pending (priority, resources, reservation).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://slurm.schedmd.com/sched_config.html" target="_blank" rel="noopener">Scheduling Configuration Guide (Slurm 26.05)</a>
+        <div class="meta">SchedMD · slurm.schedmd.com 2026</div>
+        <p>The main scheduler tests jobs in strict priority order per partition (sched_interval 60 s); backfill starts lower-priority jobs that do not delay higher-priority ones and needs realistic time limits (bf_interval 30 s, bf_window 1,440 min, bf_max_job_test 100, bf_resolution 60 s).</p></div>
+      <div class="paper-item"><a href="https://slurm.schedmd.com/priority_multifactor.html" target="_blank" rel="noopener">Multifactor Priority Plugin</a>
+        <div class="meta">SchedMD · slurm.schedmd.com 2026</div>
+        <p>Priority = weighted sum of factors in [0, 1] (age, association, fair-share, job size, partition, QOS, site, TRES (trackable resources)) minus nice; every weight defaults to 0; PriorityDecayHalfLife defaults to 7 days; Fair Tree is the default fair-share algorithm since 19.05.</p></div>
+      <div class="paper-item"><a href="https://kueue.sigs.k8s.io/docs/overview/" target="_blank" rel="noopener">Kueue overview</a>
+        <div class="meta">Kubernetes SIG (special interest group) Scheduling · kueue.sigs.k8s.io 2026</div>
+        <p>Kubernetes-native job queueing: decides when a job waits, is admitted or is preempted; quotas and fair sharing, resource flavors, admission checks, all-or-nothing scheduling with a timeout, topology-aware scheduling; integrates with Jobs, JobSet, Ray and Kubeflow Trainer.</p></div>
+      <div class="paper-item"><a href="https://kueue.sigs.k8s.io/docs/tasks/manage/setup_wait_for_pods_ready/" target="_blank" rel="noopener">Setup All-or-nothing with ready Pods (waitForPodsReady)</a>
+        <div class="meta">Kubernetes SIG Scheduling · kueue.sigs.k8s.io 2026</div>
+        <p>Kueue watches an admitted workload until all its pods are ready; if not within the timeout (default 30 minutes) it is evicted and requeued with exponential backoff (60 s up to 3,600 s), which breaks partial-allocation deadlocks between distributed jobs.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>
