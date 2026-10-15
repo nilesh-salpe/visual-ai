@@ -10,6 +10,18 @@ styles:
 scripts:
 - ../../shared/deck.js
 - ../../shared/learn.js
+- ../../shared/diagram.js
+intro:
+  kicker: Visual Agents · Infrastructure · 03
+  h1: Identity and access control for agents
+  sub: 'Making an agent act with the user''s permissions and no more: role- and attribute-based policies enforced outside the model, delegated and audience-bound
+    tokens, and permission-aware retrieval.'
+  problem: An agent with one broad service credential can do anything that credential can, for anyone who talks to it, including an attacker hiding instructions in
+    a document. That is a <b>confused deputy</b>. Retrieval without permissions hands users documents they could never open.
+  core: Authorise every action <b>as the user</b>, with <b>least privilege</b>. A policy engine (role-based, attribute-based or relationship-based access control)
+    decides outside the model, a gateway in front of tools enforces it, tokens are <b>scoped and bound to one audience</b> (OAuth 2.1, RFC 8707) and delegation is
+    explicit (RFC 8693). Retrieval filters by the user's access lists <b>before</b> the model sees any text. The model never decides who may do what.
+  hint: 'Previous: [Model and agent routing](../02-model-router/index.html) · [All decks](../index.html)'
 papers:
 - owasp_llm
 - nist_rbac
@@ -19,20 +31,7 @@ papers:
 - rfc8693
 ---
 
-<!-- slide raw -->
-<section class="slide title-slide" id="s-title" data-chapter="Start">
-  <div class="inner">
-    <div class="kicker">Visual Agents · Infrastructure · 03</div>
-    <h1>Identity and access control for agents</h1>
-    <p class="sub">Making an agent act with the user's permissions and no more: role- and attribute-based policies enforced outside the model, delegated and audience-bound tokens, and permission-aware retrieval.</p>
-    <div class="ps">
-      <div class="p"><b>What is the problem?</b>An agent with one broad service credential can do anything that credential can, for anyone who talks to it, including an attacker hiding instructions in a document. That is a <b>confused deputy</b>. Retrieval without permissions hands users documents they could never open.</div>
-      <div class="c"><b>Core idea</b>Authorise every action <b>as the user</b>, with <b>least privilege</b>. A policy engine (role-based, attribute-based or relationship-based access control) decides outside the model, a gateway in front of tools enforces it, tokens are <b>scoped and bound to one audience</b> (OAuth 2.1, RFC 8707) and delegation is explicit (RFC 8693). Retrieval filters by the user's access lists <b>before</b> the model sees any text. The model never decides who may do what.</div>
-    </div>
-    <div class="toc" data-auto></div>
-    <p class="start-hint">Previous: <a href="../02-model-router/index.html">Model and agent routing</a> · <a href="../index.html">All decks</a></p>
-  </div>
-</section>
+<!-- slide from="title" -->
 
 <!-- slide id="s-problem" chapter="Problem" tag="1 · Problem" tagclass="b1" -->
 ## Agents are perfect confused deputies
@@ -73,12 +72,55 @@ The model proposes actions; deterministic code checks them. OWASP's mitigations 
 <!-- slide id="s-hld" chapter="High-level design" tag="3 · High-level design" tagclass="b3" -->
 ## Policy around the agent
 
-<div class="visual dgm" data-steps="[&quot;The user signs in; the session carries their identity, not just the agent&#x27;s.&quot;, &quot;The agent plans with tools, but holds no broad credentials of its own.&quot;, &quot;Every tool call passes an enforcement point that asks the policy engine: may this user, through this agent, do this action on this resource now?&quot;, &quot;Allowed calls go out with a token scoped to that tool and that user; denied calls return an error the model can explain.&quot;, &quot;Retrieval runs with the user&#x27;s identity: the index stores each chunk&#x27;s access list and filters before ranking.&quot;, &quot;Every decision is logged with the user, the agent and the action, so incidents can be traced.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="112.0" y1="148.0" x2="146.0" y2="148.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah5)"/></g><g data-step="3"><line x1="302.0" y1="148.0" x2="336.0" y2="148.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah5)"/></g><g data-step="3"><line x1="415.0" y1="118.0" x2="415.0" y2="80.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah5)"/></g><g data-step="4"><line x1="492.0" y1="148.0" x2="536.0" y2="148.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah5)"/></g><g data-step="5"><line x1="294.1" y1="188.0" x2="359.7" y2="226.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah5)"/></g><g data-step="5"><line x1="492.0" y1="258.0" x2="536.0" y2="258.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah5)"/></g><g data-step="6"><line x1="469.0" y1="118.0" x2="537.4" y2="80.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah5)"/></g><g data-step="1"><rect x="10" y="120" width="100" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="60.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">User</text><text x="60.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">signed in</text></g><g data-step="2"><rect x="150" y="110" width="150" height="76" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="225.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Agent</text><text x="225.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">carries user identity</text></g><g data-step="3"><rect x="340" y="120" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="415.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Tool gateway</text><text x="415.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">enforcement point</text></g><g data-step="3"><rect x="340" y="20" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="415.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Policy engine</text><text x="415.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">RBAC · ABAC · ReBAC</text></g><g data-step="4"><rect x="540" y="120" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="595.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Tools / APIs</text><text x="595.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">scoped tokens</text></g><g data-step="5"><rect x="340" y="230" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="415.0" y="256.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Retriever</text><text x="415.0" y="272.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">filters by ACL</text></g><g data-step="5"><rect x="540" y="230" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="595.0" y="256.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Index</text><text x="595.0" y="272.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">chunks + ACLs</text></g><g data-step="6"><rect x="540" y="20" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="595.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Audit log</text><text x="595.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">user · agent · act</text></g><g data-step="3"><text x="319.0" y="143.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">tool call</text></g><g data-step="3"><text x="415.0" y="94.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">allowed?</text></g><g data-step="4"><text x="514.0" y="143.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">scoped call</text></g><g data-step="5"><text x="326.9" y="202.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">query as user</text></g></svg><p class="readout dgcap"></p></div>
+::: diagram 660x300
+nodes:
+  u: {at: [10, 120, 100, 56], text: User, sub: signed in, color: f, step: 1}
+  ag: {at: [150, 110, 150, 76], text: Agent, sub: carries user identity, color: a, step: 2}
+  pep: {at: [340, 120, 150, 56], text: Tool gateway, sub: enforcement point, color: d, step: 3}
+  pdp: {at: [340, 20, 150, 56], text: Policy engine, sub: RBAC · ABAC · ReBAC, color: b, step: 3}
+  t: {at: [540, 120, 110, 56], text: Tools / APIs, sub: scoped tokens, color: c, step: 4}
+  rt: {at: [340, 230, 150, 56], text: Retriever, sub: filters by ACL, color: e, step: 5}
+  ix: {at: [540, 230, 110, 56], text: Index, sub: chunks + ACLs, color: e, step: 5}
+  au: {at: [540, 20, 110, 56], text: Audit log, sub: user · agent · act, color: f, step: 6}
+edges:
+  - {from: u, to: ag, step: 2}
+  - {from: ag, to: pep, label: tool call, step: 3}
+  - {from: pep, to: pdp, label: 'allowed?', step: 3}
+  - {from: pep, to: t, label: scoped call, step: 4}
+  - {from: ag, to: rt, label: query as user, step: 5}
+  - {from: rt, to: ix, step: 5}
+  - {from: pep, to: au, step: 6, style: dash}
+steps:
+  - 'The user signs in; the session carries their identity, not just the agent''s.'
+  - 'The agent plans with tools, but holds no broad credentials of its own.'
+  - 'Every tool call passes an enforcement point that asks the policy engine: may this user, through this agent, do this action on this resource now?'
+  - Allowed calls go out with a token scoped to that tool and that user; denied calls return an error the model can explain.
+  - 'Retrieval runs with the user''s identity: the index stores each chunk''s access list and filters before ranking.'
+  - 'Every decision is logged with the user, the agent and the action, so incidents can be traced.'
+:::
 
 <!-- slide id="s-lld" chapter="Low-level design" tag="4 · Low-level design" tagclass="b4" -->
 ## Authorization in MCP (revision 2026-07-28)
 
-<div class="visual dgm" data-steps="[&quot;A request without a token gets 401 with a WWW-Authenticate header naming the Protected Resource Metadata (RFC 9728) and the scopes needed. Servers MUST publish that metadata.&quot;, &quot;The client discovers the authorization server, then authorizes with PKCE (S256) and the resource parameter (RFC 8707) naming the server&#x27;s canonical URI, in both the authorization and token requests.&quot;, &quot;The token is issued for that one server and sent as \&quot;Authorization: Bearer\&quot; on every request, never in the URL.&quot;, &quot;The server MUST validate the token was issued for it as audience; a token with too little scope gets 403 insufficient_scope, and the client re-authorizes with the union of old and new scopes (step-up).&quot;, &quot;Calling an upstream API, the server uses a separate token from the upstream authorization server. It MUST NOT pass through the client&#x27;s token.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 290" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="1"><line x1="152.0" y1="118.0" x2="228.5" y2="84.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah6)"/></g><g data-step="2"><line x1="152.0" y1="165.7" x2="436.0" y2="227.4" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah6)"/></g><g data-step="3"><line x1="435.9" y1="237.6" x2="151.9" y2="175.9" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah6)"/></g><g data-step="5"><line x1="392.0" y1="50.0" x2="496.0" y2="50.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah6)"/></g><g data-step="4"><line x1="342.6" y1="82.0" x2="500.1" y2="216.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah6)"/></g><g data-step="1"><rect x="10" y="120" width="140" height="60" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="80.0" y="148.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">MCP client</text><text x="80.0" y="164.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">agent host</text></g><g data-step="1"><rect x="220" y="20" width="170" height="60" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="305.0" y="48.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">MCP server</text><text x="305.0" y="64.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">resource server</text></g><g data-step="2"><rect x="440" y="220" width="200" height="60" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="540.0" y="248.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Authorization server</text><text x="540.0" y="264.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">OAuth 2.1</text></g><g data-step="5"><rect x="500" y="20" width="150" height="60" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="575.0" y="48.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Upstream API</text><text x="575.0" y="64.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">its own tokens</text></g><g data-step="1"><text x="190.2" y="96.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">401 + scope</text></g><g data-step="2"><text x="294.0" y="191.5" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">PKCE + resource</text></g><g data-step="3"><text x="293.9" y="221.7" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">audience-bound token</text></g><g data-step="5"><text x="444.0" y="45.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">separate token</text></g><g data-step="4"><text x="421.3" y="144.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">validate audience</text></g></svg><p class="readout dgcap"></p></div>
+::: diagram 660x290
+nodes:
+  c: {at: [10, 120, 140, 60], text: MCP client, sub: agent host, color: f, step: 1}
+  m: {at: [220, 20, 170, 60], text: MCP server, sub: resource server, color: a, step: 1}
+  as: {at: [440, 220, 200, 60], text: Authorization server, sub: OAuth 2.1, color: b, step: 2}
+  up: {at: [500, 20, 150, 60], text: Upstream API, sub: its own tokens, color: c, step: 5}
+edges:
+  - {from: c, to: m, label: 401 + scope, step: 1}
+  - {from: c, to: as, label: PKCE + resource, step: 2}
+  - {from: as, to: c, label: audience-bound token, step: 3, style: back}
+  - {from: m, to: up, label: separate token, step: 5}
+  - {from: m, to: as, label: validate audience, step: 4, style: dash}
+steps:
+  - A request without a token gets 401 with a WWW-Authenticate header naming the Protected Resource Metadata (RFC 9728) and the scopes needed. Servers MUST publish that metadata.
+  - 'The client discovers the authorization server, then authorizes with PKCE (S256) and the resource parameter (RFC 8707) naming the server''s canonical URI, in both the authorization and token requests.'
+  - 'The token is issued for that one server and sent as "Authorization: Bearer" on every request, never in the URL.'
+  - 'The server MUST validate the token was issued for it as audience; a token with too little scope gets 403 insufficient_scope, and the client re-authorizes with the union of old and new scopes (step-up).'
+  - 'Calling an upstream API, the server uses a separate token from the upstream authorization server. It MUST NOT pass through the client''s token.'
+:::
 
 ::: cards grid2
 ### [e] Permission-aware retrieval
@@ -91,12 +133,30 @@ MCP proxy servers using a static client ID MUST get user consent for each dynami
 <!-- slide id="s-trade" chapter="Trade-offs" tag="5 · Trade-offs" tagclass="b5" -->
 ## Trade-offs
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Choice</th><th>Benefit</th><th>Cost</th></tr><tr><td>One service account for the agent</td><td>simple</td><td>every user gets the agent's full power; no per-user audit</td></tr><tr><td>Per-user delegated tokens (OAuth)</td><td>actions limited to the user's rights; clear audit</td><td>consent flows, token storage and refresh</td></tr><tr><td>RBAC</td><td>easy to reason about and review</td><td>role explosion for fine-grained rules</td></tr><tr><td>ABAC / ReBAC</td><td>fine-grained, contextual decisions</td><td>policy complexity; a check service on the hot path</td></tr><tr><td>Pre-filter retrieval by access list</td><td>no leaked text</td><td>restrictive filters can hurt ANN recall</td></tr><tr><td>Human approval for risky actions</td><td>stops injected or mistaken actions</td><td>latency and approval fatigue</td></tr></table></div>
+::: table
+| Choice | Benefit | Cost |
+|---|---|---|
+| One service account for the agent | simple | every user gets the agent's full power; no per-user audit |
+| Per-user delegated tokens (OAuth) | actions limited to the user's rights; clear audit | consent flows, token storage and refresh |
+| RBAC | easy to reason about and review | role explosion for fine-grained rules |
+| ABAC / ReBAC | fine-grained, contextual decisions | policy complexity; a check service on the hot path |
+| Pre-filter retrieval by access list | no leaked text | restrictive filters can hurt ANN recall |
+| Human approval for risky actions | stops injected or mistaken actions | latency and approval fatigue |
+:::
 
 <!-- slide id="s-fail" chapter="Failure modes" tag="6 · Failure modes" tagclass="b6" -->
 ## Failure modes
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Token passthrough</td><td>a token meant for one service works at another</td><td>audience validation; separate upstream tokens (MCP: MUST NOT pass through)</td></tr><tr><td>Injected instruction uses a permitted tool</td><td>data sent out with a valid token</td><td>authorization does not stop this alone: egress limits, approval for sensitive actions</td></tr><tr><td>Over-broad scopes</td><td>one token can read and write everything</td><td>request minimal scopes; step-up when more are needed</td></tr><tr><td>Stale ACLs in the index</td><td>revoked users still retrieve documents</td><td>propagate permission changes; re-check at read time</td></tr><tr><td>Cross-user memory</td><td>agent recalls one user's data for another</td><td>partition memory and caches by user and tenant</td></tr><tr><td>Tokens in logs or prompts</td><td>credentials leak through traces or the model</td><td>keep tokens in the tool layer, never in the context window</td></tr></table></div>
+::: table
+| Failure | Symptom | Mitigation |
+|---|---|---|
+| Token passthrough | a token meant for one service works at another | audience validation; separate upstream tokens (MCP: MUST NOT pass through) |
+| Injected instruction uses a permitted tool | data sent out with a valid token | authorization does not stop this alone: egress limits, approval for sensitive actions |
+| Over-broad scopes | one token can read and write everything | request minimal scopes; step-up when more are needed |
+| Stale ACLs in the index | revoked users still retrieve documents | propagate permission changes; re-check at read time |
+| Cross-user memory | agent recalls one user's data for another | partition memory and caches by user and tenant |
+| Tokens in logs or prompts | credentials leak through traces or the model | keep tokens in the tool layer, never in the context window |
+:::
 
 <!-- slide id="s-prod" chapter="Production" tag="7 · Challenges in production" tagclass="b7" -->
 ## In production

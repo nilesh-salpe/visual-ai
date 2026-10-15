@@ -10,6 +10,17 @@ styles:
 scripts:
 - ../../shared/deck.js
 - ../../shared/learn.js
+- ../../shared/diagram.js
+intro:
+  kicker: Visual Agents · Operations · 01
+  h1: Evaluating agents
+  sub: 'Measuring agents that take many stochastic steps in changing environments: execution-based end-state checks, reliability over repeated trials (pass^k), trajectory
+    review, and the benchmarks that set the bar.'
+  problem: 'Agents are multi-step and random: the same task can succeed once and fail the next time, many different paths can be correct, and grading by comparing
+    text to a reference answer misses what actually happened.'
+  core: Grade <b>outcomes in the environment</b> (tests pass, database in the goal state, file exists), run each task <b>several times</b> and report <b>pass^k</b>
+    (all k trials succeed) alongside success rate, and review <b>trajectories</b> for how it got there. Build realistic, sandboxed, reproducible environments.
+  hint: 'Next: [Safety and reliability →](../02-safety-and-reliability/index.html) · [All decks](../index.html)'
 papers:
 - taubench
 - swebench
@@ -18,20 +29,7 @@ papers:
 - agentbench
 ---
 
-<!-- slide raw -->
-<section class="slide title-slide" id="s-title" data-chapter="Start">
-  <div class="inner">
-    <div class="kicker">Visual Agents · Operations · 01</div>
-    <h1>Evaluating agents</h1>
-    <p class="sub">Measuring agents that take many stochastic steps in changing environments: execution-based end-state checks, reliability over repeated trials (pass^k), trajectory review, and the benchmarks that set the bar.</p>
-    <div class="ps">
-      <div class="p"><b>What is the problem?</b>Agents are multi-step and random: the same task can succeed once and fail the next time, many different paths can be correct, and grading by comparing text to a reference answer misses what actually happened.</div>
-      <div class="c"><b>Core idea</b>Grade <b>outcomes in the environment</b> (tests pass, database in the goal state, file exists), run each task <b>several times</b> and report <b>pass^k</b> (all k trials succeed) alongside success rate, and review <b>trajectories</b> for how it got there. Build realistic, sandboxed, reproducible environments.</div>
-    </div>
-    <div class="toc" data-auto></div>
-    <p class="start-hint">Next: <a href="../02-safety-and-reliability/index.html">Safety and reliability →</a> · <a href="../index.html">All decks</a></p>
-  </div>
-</section>
+<!-- slide from="title" -->
 
 <!-- slide id="s-problem" chapter="Problem" tag="1 · Problem" tagclass="b1" -->
 ## Why agent evaluation is hard
@@ -64,29 +62,77 @@ GAIA: humans 92% vs 15% for GPT-4 with plugins; OSWorld and WebArena report simi
 Inspect how the agent succeeded: policy violations, wasted steps, risky actions.
 :::
 
-<div class="visual"><div class="controls" style="margin-top:0"><label class="ctl">per-trial success <input type="range" id="eP" min="0.05" max="0.99" step="0.01" value="0.6"> <output id="ePo"></output></label><label class="ctl">trials k <input type="range" id="eK" min="1" max="16" step="1" value="8"> <output id="eKo"></output></label></div><div id="eBars" style="margin-top:12px"></div><p class="readout" id="eOut"></p></div>
+<div class="visual"><div class="controls"><label class="ctl">per-trial success <input type="range" id="eP" min="0.05" max="0.99" step="0.01" value="0.6"> <output id="ePo"></output></label><label class="ctl">trials k <input type="range" id="eK" min="1" max="16" step="1" value="8"> <output id="eKo"></output></label></div><div class="bars"><div id="eBars"></div></div><p class="readout" id="eOut"></p></div>
 
 <!-- slide id="s-hld" chapter="High-level design" tag="3 · High-level design" tagclass="b3" -->
 ## An evaluation harness
 
-<div class="visual dgm" data-steps="[&quot;Each task defines a goal and an initial environment state.&quot;, &quot;A sandboxed environment is reset before every trial for reproducibility.&quot;, &quot;The agent acts; benchmarks like \u03c4-bench add an LLM-simulated user the agent must talk to.&quot;, &quot;A grader checks the end state (tests, database comparison, evaluation scripts) rather than the text of the answer.&quot;, &quot;Full trajectories are stored for review and failure analysis.&quot;, &quot;Report success rate, pass^k, cost and steps per task.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah18" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="152.0" y1="148.0" x2="196.0" y2="148.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah18)"/></g><g data-step="3"><line x1="338.3" y1="118.0" x2="397.4" y2="90.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah18)"/></g><g data-step="3"><line x1="578.0" y1="58.0" x2="534.0" y2="58.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah18)"/></g><g data-step="3"><line x1="405.9" y1="97.0" x2="346.8" y2="125.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah18)"/></g><g data-step="4"><line x1="352.0" y1="160.2" x2="396.0" y2="167.1" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah18)"/></g><g data-step="5"><line x1="438.4" y1="88.0" x2="298.1" y2="246.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah18)"/></g><g data-step="6"><line x1="532.0" y1="178.0" x2="576.0" y2="178.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah18)"/></g><g data-step="1"><rect x="20" y="120" width="130" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="85.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Task set</text><text x="85.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">goal + initial state</text></g><g data-step="2"><rect x="200" y="120" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="275.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Sandbox env</text><text x="275.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">reset per trial</text></g><g data-step="3"><rect x="400" y="30" width="130" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="465.0" y="56.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Agent</text><text x="465.0" y="72.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">under test</text></g><g data-step="3"><rect x="580" y="30" width="70" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="615.0" y="63.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">User sim</text></g><g data-step="4"><rect x="400" y="150" width="130" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="465.0" y="176.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Grader</text><text x="465.0" y="192.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">end state / tests</text></g><g data-step="5"><rect x="200" y="250" width="150" height="44" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="275.0" y="277.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Trace store</text></g><g data-step="6"><rect x="580" y="150" width="70" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="615.0" y="183.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Report</text></g><g data-step="3"><text x="367.9" y="99.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">observations</text></g><g data-step="3"><text x="556.0" y="53.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">dialogue</text></g><g data-step="3"><text x="376.4" y="126.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">actions</text></g><g data-step="4"><text x="374.0" y="158.6" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">final state</text></g><g data-step="5"><text x="368.2" y="162.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">log</text></g></svg><p class="readout dgcap"></p></div>
+::: diagram 660x300
+nodes:
+  ts: {at: [20, 120, 130, 56], text: Task set, sub: goal + initial state, color: f, step: 1}
+  env: {at: [200, 120, 150, 56], text: Sandbox env, sub: reset per trial, color: c, step: 2}
+  ag: {at: [400, 30, 130, 56], text: Agent, sub: under test, color: a, step: 3}
+  us: {at: [580, 30, 70, 56], text: User sim, color: b, step: 3}
+  gr: {at: [400, 150, 130, 56], text: Grader, sub: end state / tests, color: d, step: 4}
+  tr: {at: [200, 250, 150, 44], text: Trace store, color: e, step: 5}
+  rep: {at: [580, 150, 70, 56], text: Report, color: e, step: 6}
+edges:
+  - {from: ts, to: env, step: 2}
+  - {from: env, to: ag, label: observations, step: 3}
+  - {from: us, to: ag, label: dialogue, step: 3, style: dash}
+  - {from: ag, to: env, label: actions, step: 3, style: back}
+  - {from: env, to: gr, label: final state, step: 4}
+  - {from: ag, to: tr, label: log, step: 5, style: dash}
+  - {from: gr, to: rep, step: 6}
+steps:
+  - Each task defines a goal and an initial environment state.
+  - A sandboxed environment is reset before every trial for reproducibility.
+  - The agent acts; benchmarks like τ-bench add an LLM-simulated user the agent must talk to.
+  - 'A grader checks the end state (tests, database comparison, evaluation scripts) rather than the text of the answer.'
+  - Full trajectories are stored for review and failure analysis.
+  - 'Report success rate, pass^k, cost and steps per task.'
+:::
 
 <!-- slide id="s-lld" chapter="Low-level design" tag="4 · Low-level design" tagclass="b4" -->
 ## Metrics in detail
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Metric</th><th>Definition</th><th>Use</th></tr><tr><td>Success rate</td><td>fraction of trials that reach the goal state</td><td>capability</td></tr><tr><td>pass@k</td><td>1 − (1 − p)^k: at least one of k succeeds</td><td>best-of-k systems with a verifier</td></tr><tr><td>pass^k</td><td>p^k (estimated C(c, k)/C(n, k)): all k succeed</td><td>reliability for user-facing agents</td></tr><tr><td>Cost and steps per task</td><td>tokens, tool calls, wall-clock</td><td>efficiency, budgets</td></tr><tr><td>Policy violations</td><td>rule breaks found in trajectories</td><td>safety and compliance</td></tr></table></div>
+::: table
+| Metric | Definition | Use |
+|---|---|---|
+| Success rate | fraction of trials that reach the goal state | capability |
+| pass@k | 1 − (1 − p)^k: at least one of k succeeds | best-of-k systems with a verifier |
+| pass^k | p^k (estimated C(c, k)/C(n, k)): all k succeed | reliability for user-facing agents |
+| Cost and steps per task | tokens, tool calls, wall-clock | efficiency, budgets |
+| Policy violations | rule breaks found in trajectories | safety and compliance |
+:::
 
 <p class="caption">τ-bench defines pass^k; pass@k is the code-generation metric (see Evals deck 03).</p>
 
 <!-- slide id="s-trade" chapter="Trade-offs" tag="5 · Trade-offs" tagclass="b5" -->
 ## Trade-offs
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Choice</th><th>Benefit</th><th>Cost</th></tr><tr><td>Realistic live environments</td><td>closest to production</td><td>flaky, non-reproducible</td></tr><tr><td>Self-hosted snapshots (WebArena, OSWorld)</td><td>reproducible</td><td>drift from the real world</td></tr><tr><td>Outcome grading</td><td>path-independent, objective</td><td>misses unsafe or wasteful paths</td></tr><tr><td>Trajectory grading (human or LLM judge)</td><td>catches process problems</td><td>expensive; judge bias</td></tr><tr><td>More trials per task</td><td>reliability estimates (pass^k)</td><td>multiplies evaluation cost</td></tr></table></div>
+::: table
+| Choice | Benefit | Cost |
+|---|---|---|
+| Realistic live environments | closest to production | flaky, non-reproducible |
+| Self-hosted snapshots (WebArena, OSWorld) | reproducible | drift from the real world |
+| Outcome grading | path-independent, objective | misses unsafe or wasteful paths |
+| Trajectory grading (human or LLM judge) | catches process problems | expensive; judge bias |
+| More trials per task | reliability estimates (pass^k) | multiplies evaluation cost |
+:::
 
 <!-- slide id="s-fail" chapter="Failure modes" tag="6 · Failure modes" tagclass="b6" -->
 ## Failure modes of evaluations
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Contamination</td><td>benchmark solutions in training data</td><td>held-out and fresh tasks</td></tr><tr><td>Flaky environments</td><td>scores vary with network or site changes</td><td>snapshots; reset per trial</td></tr><tr><td>Grader bugs</td><td>passes wrong solutions or fails right ones</td><td>audit graders; human spot checks</td></tr><tr><td>Single-trial reporting</td><td>overstates reliability</td><td>report pass^k and confidence intervals</td></tr><tr><td>Benchmark overfitting</td><td>great scores, poor real use</td><td>evals built from production traces</td></tr></table></div>
+::: table
+| Failure | Symptom | Mitigation |
+|---|---|---|
+| Contamination | benchmark solutions in training data | held-out and fresh tasks |
+| Flaky environments | scores vary with network or site changes | snapshots; reset per trial |
+| Grader bugs | passes wrong solutions or fails right ones | audit graders; human spot checks |
+| Single-trial reporting | overstates reliability | report pass^k and confidence intervals |
+| Benchmark overfitting | great scores, poor real use | evals built from production traces |
+:::
 
 <!-- slide id="s-prod" chapter="Production" tag="7 · Challenges in production" tagclass="b7" -->
 ## In production

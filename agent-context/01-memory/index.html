@@ -55,7 +55,7 @@
     <span class="qtag b3">3 · High-level design</span>
     <h2>Memory architecture</h2>
     <hr>
-<div class="visual dgm" data-steps="[&quot;The agent loop asks for context each step.&quot;, &quot;A context manager decides what goes into the window, compacting history when it nears the limit.&quot;, &quot;Durable notes hold task state outside the window.&quot;, &quot;A long-term store returns the most useful memories for the current query.&quot;, &quot;Periodically, memories are synthesised into higher-level reflections (Generative Agents reflected when summed importance exceeded a threshold, 150 in their implementation).&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="152.0" y1="150.0" x2="206.0" y2="150.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="2"><line x1="363.1" y1="118.0" x2="463.7" y2="74.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="3"><line x1="372.0" y1="141.5" x2="426.0" y2="135.8" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="4"><line x1="372.0" y1="168.8" x2="426.0" y2="181.2" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="5"><line x1="530.0" y1="232.0" x2="530.0" y2="246.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="1"><rect x="20" y="120" width="130" height="60" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="85.0" y="148.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Agent</text><text x="85.0" y="164.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">LLM loop</text></g><g data-step="2"><rect x="210" y="120" width="160" height="60" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="290.0" y="148.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Context manager</text><text x="290.0" y="164.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">assemble · compact</text></g><g data-step="2"><rect x="430" y="20" width="200" height="50" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="530.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Working memory</text><text x="530.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">context window</text></g><g data-step="3"><rect x="430" y="100" width="200" height="50" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="530.0" y="123.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Notes / scratch files</text><text x="530.0" y="139.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">progress, to-dos</text></g><g data-step="4"><rect x="430" y="180" width="200" height="50" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="530.0" y="203.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Long-term store</text><text x="530.0" y="219.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">vector + metadata</text></g><g data-step="5"><rect x="430" y="250" width="200" height="44" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="530.0" y="270.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Reflections</text><text x="530.0" y="286.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">periodic summaries</text></g><g data-step="2"><text x="413.4" y="91.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">fits budget</text></g><g data-step="3"><text x="399.0" y="133.6" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">write / read</text></g><g data-step="4"><text x="399.0" y="170.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">retrieve</text></g><g data-step="5"><text x="530.0" y="234.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">synthesise</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual dgm" data-steps="[&quot;The agent loop asks for context each step.&quot;, &quot;A context manager decides what goes into the window, compacting history when it nears the limit.&quot;, &quot;Durable notes hold task state outside the window.&quot;, &quot;A long-term store returns the most useful memories for the current query.&quot;, &quot;Periodically, memories are synthesised into higher-level reflections (Generative Agents reflected when summed importance exceeded a threshold, 150 in their implementation).&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="152.0" y1="150.0" x2="206.0" y2="150.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="2"><line x1="363.1" y1="118.0" x2="463.7" y2="74.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="372.0" y1="141.5" x2="426.0" y2="135.8" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="372.0" y1="168.8" x2="426.0" y2="181.2" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="530.0" y1="232.0" x2="530.0" y2="246.0" marker-end="url(#dga1)"/></g><g class="dg-node a" data-step="1"><rect x="20" y="120" width="130" height="60" rx="10"/><text class="dg-text" x="85.0" y="148.0" text-anchor="middle">Agent</text><text class="dg-sub" x="85.0" y="164.0" text-anchor="middle">LLM loop</text></g><g class="dg-node c" data-step="2"><rect x="210" y="120" width="160" height="60" rx="10"/><text class="dg-text" x="290.0" y="148.0" text-anchor="middle">Context manager</text><text class="dg-sub" x="290.0" y="164.0" text-anchor="middle">assemble · compact</text></g><g class="dg-node f" data-step="2"><rect x="430" y="20" width="200" height="50" rx="10"/><text class="dg-text" x="530.0" y="43.0" text-anchor="middle">Working memory</text><text class="dg-sub" x="530.0" y="59.0" text-anchor="middle">context window</text></g><g class="dg-node e" data-step="3"><rect x="430" y="100" width="200" height="50" rx="10"/><text class="dg-text" x="530.0" y="123.0" text-anchor="middle">Notes / scratch files</text><text class="dg-sub" x="530.0" y="139.0" text-anchor="middle">progress, to-dos</text></g><g class="dg-node b" data-step="4"><rect x="430" y="180" width="200" height="50" rx="10"/><text class="dg-text" x="530.0" y="203.0" text-anchor="middle">Long-term store</text><text class="dg-sub" x="530.0" y="219.0" text-anchor="middle">vector + metadata</text></g><g class="dg-node d" data-step="5"><rect x="430" y="250" width="200" height="44" rx="10"/><text class="dg-text" x="530.0" y="270.0" text-anchor="middle">Reflections</text><text class="dg-sub" x="530.0" y="286.0" text-anchor="middle">periodic summaries</text></g><g data-step="2"><text class="dg-label" x="413.4" y="91.0" text-anchor="middle">fits budget</text></g><g data-step="3"><text class="dg-label" x="399.0" y="133.6" text-anchor="middle">write / read</text></g><g data-step="4"><text class="dg-label" x="399.0" y="170.0" text-anchor="middle">retrieve</text></g><g data-step="5"><text class="dg-label" x="530.0" y="234.0" text-anchor="middle">synthesise</text></g></svg><p class="readout dgcap"></p></div>
   </div>
 </section>
 
@@ -64,7 +64,7 @@
     <span class="qtag b4">4 · Low-level design</span>
     <h2>Scoring and writing memories</h2>
     <hr>
-<div class="visual dgm" data-steps="[&quot;Each memory record has text, timestamps, an importance rating and an embedding.&quot;, &quot;Three signals (Park et al., 2023): recency (exponential decay, factor 0.995 per sandbox hour), importance (the model rates 1\u201310), relevance (cosine similarity to the query).&quot;, &quot;Each is min-max scaled to [0, 1] and summed with all weights set to 1.&quot;, &quot;The top-ranked memories that fit in the context window go into the prompt.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 250" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="172.0" y1="200.3" x2="236.0" y2="188.1" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah9)"/></g><g data-step="2"><line x1="192.0" y1="63.6" x2="236.0" y2="52.7" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah9)"/></g><g data-step="2"><line x1="192.0" y1="91.9" x2="236.0" y2="95.4" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah9)"/></g><g data-step="2"><line x1="171.7" y1="112.0" x2="255.7" y2="146.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah9)"/></g><g data-step="3"><line x1="392.6" y1="56.0" x2="456.0" y2="76.9" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah9)"/></g><g data-step="3"><line x1="402.0" y1="104.1" x2="456.0" y2="105.5" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah9)"/></g><g data-step="3"><line x1="402.0" y1="149.2" x2="456.0" y2="134.2" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah9)"/></g><g data-step="4"><line x1="550.0" y1="138.0" x2="550.0" y2="186.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah9)"/></g><g data-step="1"><rect x="20" y="190" width="150" height="50" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="95.0" y="220.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Current query</text></g><g data-step="1"><rect x="20" y="60" width="170" height="50" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="105.0" y="83.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Memory records</text><text x="105.0" y="99.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">text · time · importance</text></g><g data-step="2"><rect x="240" y="10" width="160" height="44" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="320.0" y="30.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Recency</text><text x="320.0" y="46.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">decay 0.995 / game hour</text></g><g data-step="2"><rect x="240" y="80" width="160" height="44" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="320.0" y="100.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Importance</text><text x="320.0" y="116.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">LLM-rated 1–10</text></g><g data-step="2"><rect x="240" y="150" width="160" height="44" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="320.0" y="170.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Relevance</text><text x="320.0" y="186.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">cosine similarity</text></g><g data-step="3"><rect x="460" y="80" width="180" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="550.0" y="106.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">score = sum</text><text x="550.0" y="122.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">each min-max scaled, weights 1</text></g><g data-step="4"><rect x="460" y="190" width="180" height="50" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="550.0" y="213.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Top memories</text><text x="550.0" y="229.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">that fit the window</text></g><g data-step="4"><text x="550.0" y="157.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">rank</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual dgm" data-steps="[&quot;Each memory record has text, timestamps, an importance rating and an embedding.&quot;, &quot;Three signals (Park et al., 2023): recency (exponential decay, factor 0.995 per sandbox hour), importance (the model rates 1–10), relevance (cosine similarity to the query).&quot;, &quot;Each is min-max scaled to [0, 1] and summed with all weights set to 1.&quot;, &quot;The top-ranked memories that fit in the context window go into the prompt.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 250" role="img" aria-label="diagram"><defs><marker id="dga2" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="172.0" y1="200.3" x2="236.0" y2="188.1" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="2"><line x1="192.0" y1="63.6" x2="236.0" y2="52.7" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="2"><line x1="192.0" y1="91.9" x2="236.0" y2="95.4" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="2"><line x1="171.7" y1="112.0" x2="255.7" y2="146.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="392.6" y1="56.0" x2="456.0" y2="76.9" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="402.0" y1="104.1" x2="456.0" y2="105.5" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="402.0" y1="149.2" x2="456.0" y2="134.2" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="4"><line x1="550.0" y1="138.0" x2="550.0" y2="186.0" marker-end="url(#dga2)"/></g><g class="dg-node f" data-step="1"><rect x="20" y="190" width="150" height="50" rx="10"/><text class="dg-text" x="95.0" y="220.0" text-anchor="middle">Current query</text></g><g class="dg-node e" data-step="1"><rect x="20" y="60" width="170" height="50" rx="10"/><text class="dg-text" x="105.0" y="83.0" text-anchor="middle">Memory records</text><text class="dg-sub" x="105.0" y="99.0" text-anchor="middle">text · time · importance</text></g><g class="dg-node c" data-step="2"><rect x="240" y="10" width="160" height="44" rx="10"/><text class="dg-text" x="320.0" y="30.0" text-anchor="middle">Recency</text><text class="dg-sub" x="320.0" y="46.0" text-anchor="middle">decay 0.995 / game hour</text></g><g class="dg-node b" data-step="2"><rect x="240" y="80" width="160" height="44" rx="10"/><text class="dg-text" x="320.0" y="100.0" text-anchor="middle">Importance</text><text class="dg-sub" x="320.0" y="116.0" text-anchor="middle">LLM-rated 1–10</text></g><g class="dg-node a" data-step="2"><rect x="240" y="150" width="160" height="44" rx="10"/><text class="dg-text" x="320.0" y="170.0" text-anchor="middle">Relevance</text><text class="dg-sub" x="320.0" y="186.0" text-anchor="middle">cosine similarity</text></g><g class="dg-node d" data-step="3"><rect x="460" y="80" width="180" height="56" rx="10"/><text class="dg-text" x="550.0" y="106.0" text-anchor="middle">score = sum</text><text class="dg-sub" x="550.0" y="122.0" text-anchor="middle">each min-max scaled, weights 1</text></g><g class="dg-node e" data-step="4"><rect x="460" y="190" width="180" height="50" rx="10"/><text class="dg-text" x="550.0" y="213.0" text-anchor="middle">Top memories</text><text class="dg-sub" x="550.0" y="229.0" text-anchor="middle">that fit the window</text></g><g data-step="4"><text class="dg-label" x="550.0" y="157.0" text-anchor="middle">rank</text></g></svg><p class="readout dgcap"></p></div>
 <div class="grid3">
       <div class="card a"><h3>Write policy</h3><p>What to store: decisions, user preferences, outcomes; not every token.</p></div>
       <div class="card c"><h3>Compaction trigger</h3><p>At a set fraction of the window, summarise and restart; keep the goal and open issues verbatim.</p></div>
@@ -78,7 +78,42 @@
     <span class="qtag b5">5 · Trade-offs</span>
     <h2>Trade-offs</h2>
     <hr>
-<div class="visual scroll-x"><table class="tbl"><tr><th>Choice</th><th>Benefit</th><th>Cost</th></tr><tr><td>Keep full history in context</td><td>nothing lost</td><td>context rot, cost grows every step</td></tr><tr><td>Compaction (summarise)</td><td>long tasks fit</td><td>details can be lost in the summary</td></tr><tr><td>Retrieval from a store</td><td>scales to large memories</td><td>retrieval misses; embedding and storage cost</td></tr><tr><td>Agent-managed memory (MemGPT-style)</td><td>model decides what to keep</td><td>extra tool calls; model may manage it badly</td></tr><tr><td>Just-in-time loading</td><td>only identifiers in context, data fetched when needed</td><td>more tool calls, latency</td></tr></table></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Choice</th>
+<th>Benefit</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Keep full history in context</td>
+<td>nothing lost</td>
+<td>context rot, cost grows every step</td>
+</tr>
+<tr>
+<td>Compaction (summarise)</td>
+<td>long tasks fit</td>
+<td>details can be lost in the summary</td>
+</tr>
+<tr>
+<td>Retrieval from a store</td>
+<td>scales to large memories</td>
+<td>retrieval misses; embedding and storage cost</td>
+</tr>
+<tr>
+<td>Agent-managed memory (MemGPT-style)</td>
+<td>model decides what to keep</td>
+<td>extra tool calls; model may manage it badly</td>
+</tr>
+<tr>
+<td>Just-in-time loading</td>
+<td>only identifiers in context, data fetched when needed</td>
+<td>more tool calls, latency</td>
+</tr>
+</tbody>
+</table></div>
   </div>
 </section>
 
@@ -87,7 +122,42 @@
     <span class="qtag b6">6 · Failure modes</span>
     <h2>Failure modes</h2>
     <hr>
-<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Stale or contradictory memories</td><td>acts on outdated preferences</td><td>timestamps, update-in-place, conflict resolution</td></tr><tr><td>Lossy compaction</td><td>forgets a constraint after summarising</td><td>pin critical facts; test summaries</td></tr><tr><td>Memory poisoning</td><td>injected text persists and steers future sessions</td><td>validate what gets written; provenance</td></tr><tr><td>Cross-user leakage</td><td>one user's data appears for another</td><td>strict per-user/tenant isolation</td></tr><tr><td>Needle missed</td><td>fact in context but ignored</td><td>put key facts at the start or end; retrieve fewer, better items</td></tr></table></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stale or contradictory memories</td>
+<td>acts on outdated preferences</td>
+<td>timestamps, update-in-place, conflict resolution</td>
+</tr>
+<tr>
+<td>Lossy compaction</td>
+<td>forgets a constraint after summarising</td>
+<td>pin critical facts; test summaries</td>
+</tr>
+<tr>
+<td>Memory poisoning</td>
+<td>injected text persists and steers future sessions</td>
+<td>validate what gets written; provenance</td>
+</tr>
+<tr>
+<td>Cross-user leakage</td>
+<td>one user's data appears for another</td>
+<td>strict per-user/tenant isolation</td>
+</tr>
+<tr>
+<td>Needle missed</td>
+<td>fact in context but ignored</td>
+<td>put key facts at the start or end; retrieve fewer, better items</td>
+</tr>
+</tbody>
+</table></div>
   </div>
 </section>
 
@@ -130,24 +200,6 @@
 
 <script src="../../shared/deck.js"></script>
 <script src="../../shared/learn.js"></script>
-<script>
-(() => {
-  const { svg, clear } = Deck;
-  document.querySelectorAll('.dgm').forEach(box => {
-    const caps = JSON.parse(box.dataset.steps), els = [...box.querySelectorAll('[data-step]')], max = Math.max(0, ...els.map(e => +e.dataset.step)), cap = box.querySelector('.dgcap');
-    let k = max, full = true;
-    const show = () => {
-      els.forEach(e => { const s = +e.dataset.step; e.style.opacity = s <= k ? 1 : 0.08; e.style.transition = 'opacity .25s'; e.querySelectorAll('rect').forEach(r => r.style.strokeWidth = s === k && k ? 3.5 : 2); });
-      cap.innerHTML = k === 0 ? 'Press <b>next step</b> to walk through the design.' : k === max && full ? 'Full design shown. Press <b>reset</b>, then <b>next step</b>, to walk through it one step at a time.' : `<b>Step ${k} of ${max}.</b> ${caps[k - 1] || ''}`;
-      full = false;
-    };
-    box.querySelector('[data-dg=next]').addEventListener('click', () => { k = Math.min(max, k + 1); show(); });
-    box.querySelector('[data-dg=all]').addEventListener('click', () => { k = max; full = false; show(); cap.innerHTML = '<b>Full design.</b> ' + caps.map((c, i) => `${i + 1}. ${c}`).join(' '); });
-    box.querySelector('[data-dg=reset]').addEventListener('click', () => { k = 0; show(); });
-    show();
-  });
-
-})();
-</script>
+<script src="../../shared/diagram.js"></script>
 </body>
 </html>

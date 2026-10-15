@@ -10,6 +10,18 @@ styles:
 scripts:
 - ../../shared/deck.js
 - ../../shared/learn.js
+- ../../shared/diagram.js
+intro:
+  kicker: Visual Agents · Frameworks · 02
+  h1: LangGraph core
+  sub: 'An agent as a graph: typed shared state with reducers, nodes that return partial updates, fixed and conditional edges, and a runtime that executes in Pregel-style
+    super-steps. Pinned to LangGraph 1.2.15.'
+  problem: 'Real agents are more than one loop: they route, branch in parallel, retry, wait for people and hand off between agents. Encoding that in nested while-loops
+    and flags gets unreadable, and such code cannot be paused, inspected or resumed.'
+  core: 'Describe the agent as a <b>state graph</b>. <b>State</b> is a typed dict where each key has a <b>reducer</b> (default: overwrite). <b>Nodes</b> are functions
+    that read state and return <b>partial updates</b>. <b>Edges</b> are fixed or <b>conditional</b> (a routing function picks the next node). The runtime runs active
+    nodes in <b>super-steps</b>, applies updates through the reducers, and stops when no node is active.'
+  hint: 'Previous: [LangChain basics](../01-langchain-basics/index.html) · Next: [LangGraph in production →](../03-langgraph-production/index.html) · [All decks](../index.html)'
 papers:
 - lg_graph_api
 - lg_overview
@@ -17,20 +29,7 @@ papers:
 - react
 ---
 
-<!-- slide raw -->
-<section class="slide title-slide" id="s-title" data-chapter="Start">
-  <div class="inner">
-    <div class="kicker">Visual Agents · Frameworks · 02</div>
-    <h1>LangGraph core</h1>
-    <p class="sub">An agent as a graph: typed shared state with reducers, nodes that return partial updates, fixed and conditional edges, and a runtime that executes in Pregel-style super-steps. Pinned to LangGraph 1.2.15.</p>
-    <div class="ps">
-      <div class="p"><b>What is the problem?</b>Real agents are more than one loop: they route, branch in parallel, retry, wait for people and hand off between agents. Encoding that in nested while-loops and flags gets unreadable, and such code cannot be paused, inspected or resumed.</div>
-      <div class="c"><b>Core idea</b>Describe the agent as a <b>state graph</b>. <b>State</b> is a typed dict where each key has a <b>reducer</b> (default: overwrite). <b>Nodes</b> are functions that read state and return <b>partial updates</b>. <b>Edges</b> are fixed or <b>conditional</b> (a routing function picks the next node). The runtime runs active nodes in <b>super-steps</b>, applies updates through the reducers, and stops when no node is active.</div>
-    </div>
-    <div class="toc" data-auto></div>
-    <p class="start-hint">Previous: <a href="../01-langchain-basics/index.html">LangChain basics</a> · Next: <a href="../03-langgraph-production/index.html">LangGraph in production →</a> · <a href="../index.html">All decks</a></p>
-  </div>
-</section>
+<!-- slide from="title" -->
 
 <!-- slide id="s-problem" chapter="Problem" tag="1 · Problem" tagclass="b1" -->
 ## Loops with flags do not scale
@@ -68,28 +67,116 @@ The runtime is inspired by Google's Pregel: execution proceeds in discrete <b>su
 <!-- slide id="s-hld" chapter="High-level design" tag="3 · High-level design" tagclass="b3" -->
 ## The ReAct agent as a graph
 
-<div class="visual dgm" data-steps="[&quot;State is MessagesState: one key, messages, merged with add_messages.&quot;, &quot;The agent node calls the model on the messages and returns {\&quot;messages\&quot;: [reply]}.&quot;, &quot;A conditional edge inspects the reply: tools_condition routes to \&quot;tools\&quot; if it contains tool calls.&quot;, &quot;The tools node runs every call and appends one ToolMessage each; a fixed edge goes back to the agent.&quot;, &quot;With no tool calls, tools_condition routes to END and the run returns the final state.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 240" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="162.0" y1="48.0" x2="216.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah2)"/></g><g data-step="3"><line x1="392.0" y1="48.0" x2="446.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah2)"/></g><g data-step="4"><line x1="550.0" y1="78.0" x2="550.0" y2="146.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah2)"/></g><g data-step="4"><line x1="493.5" y1="148.0" x2="365.3" y2="80.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah2)"/></g><g data-step="5"><line x1="493.5" y1="78.0" x2="365.3" y2="146.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah2)"/></g><g data-step="1"><rect x="10" y="20" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="85.0" y="53.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">START</text></g><g data-step="2"><rect x="220" y="20" width="170" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="305.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">agent</text><text x="305.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">model.invoke(messages)</text></g><g data-step="3"><rect x="450" y="20" width="200" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="550.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">tools_condition</text><text x="550.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">tool calls in last message?</text></g><g data-step="4"><rect x="450" y="150" width="200" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="550.0" y="176.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">tools</text><text x="550.0" y="192.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">ToolNode runs each call</text></g><g data-step="5"><rect x="220" y="150" width="170" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="305.0" y="176.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">END</text><text x="305.0" y="192.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">final answer</text></g><g data-step="1"><rect x="10" y="150" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="85.0" y="176.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">MessagesState</text><text x="85.0" y="192.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">add_messages</text></g><g data-step="4"><text x="550.0" y="107.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">yes</text></g><g data-step="4"><text x="429.4" y="109.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">results</text></g><g data-step="5"><text x="429.4" y="107.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">no</text></g></svg><p class="readout dgcap"></p></div>
+::: diagram 660x240
+nodes:
+  st: {at: [10, 20, 150, 56], text: START, color: f, step: 1}
+  ag: {at: [220, 20, 170, 56], text: agent, sub: model.invoke(messages), color: a, step: 2}
+  tc: {at: [450, 20, 200, 56], text: tools_condition, sub: 'tool calls in last message?', color: d, step: 3}
+  tl: {at: [450, 150, 200, 56], text: tools, sub: ToolNode runs each call, color: c, step: 4}
+  en: {at: [220, 150, 170, 56], text: END, sub: final answer, color: e, step: 5}
+  ms: {at: [10, 150, 150, 56], text: MessagesState, sub: add_messages, color: b, step: 1}
+edges:
+  - {from: st, to: ag, step: 2}
+  - {from: ag, to: tc, step: 3}
+  - {from: tc, to: tl, label: 'yes', step: 4}
+  - {from: tl, to: ag, label: results, step: 4, style: dash}
+  - {from: tc, to: en, label: 'no', step: 5}
+steps:
+  - 'State is MessagesState: one key, messages, merged with add_messages.'
+  - 'The agent node calls the model on the messages and returns {"messages": [reply]}.'
+  - 'A conditional edge inspects the reply: tools_condition routes to "tools" if it contains tool calls.'
+  - The tools node runs every call and appends one ToolMessage each; a fixed edge goes back to the agent.
+  - 'With no tool calls, tools_condition routes to END and the run returns the final state.'
+:::
 
-<div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap">from langchain.chat_models import init_chat_model&#10;from langgraph.graph import StateGraph, START, MessagesState&#10;from langgraph.prebuilt import ToolNode, tools_condition&#10;&#10;model = init_chat_model("anthropic:claude-sonnet-5-5").bind_tools(tools)&#10;g = StateGraph(MessagesState)&#10;g.add_node("agent", lambda s: {"messages": [model.invoke(s["messages"])]})&#10;g.add_node("tools", ToolNode(tools))&#10;g.add_edge(START, "agent")&#10;g.add_conditional_edges("agent", tools_condition)   # → "tools" or END&#10;g.add_edge("tools", "agent")&#10;app = g.compile()</pre></div>
+
+
+::: code
+from langchain.chat_models import init_chat_model
+from langgraph.graph import StateGraph, START, MessagesState
+from langgraph.prebuilt import ToolNode, tools_condition
+
+model = init_chat_model("anthropic:claude-sonnet-5-5").bind_tools(tools)
+g = StateGraph(MessagesState)
+g.add_node("agent", lambda s: {"messages": [model.invoke(s["messages"])]})
+g.add_node("tools", ToolNode(tools))
+g.add_edge(START, "agent")
+g.add_conditional_edges("agent", tools_condition)   # → "tools" or END
+g.add_edge("tools", "agent")
+app = g.compile()
+:::
 
 <!-- slide id="s-lld" chapter="Low-level design" tag="4 · Low-level design" tagclass="b4" -->
 ## How a run executes
 
-<div class="visual dgm" data-steps="[&quot;The input is written into the state channels; nodes triggered from START become active.&quot;, &quot;In each super-step all active nodes run, in parallel, on a snapshot of the state.&quot;, &quot;Their partial updates are merged key by key through the reducers. Two nodes writing a plain (overwrite) key in the same step is an error: InvalidUpdateError, \&quot;Can receive only one value per step\&quot;.&quot;, &quot;With a checkpointer, the merged state is saved after the step.&quot;, &quot;Edges (and Send objects for map-reduce fan-out) decide which nodes are active in the next step.&quot;, &quot;The run ends when no node is active. A recursion limit caps the number of super-steps and raises GraphRecursionError.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 240" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="162.0" y1="48.0" x2="186.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah3)"/></g><g data-step="3"><line x1="352.0" y1="48.0" x2="376.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah3)"/></g><g data-step="4"><line x1="512.0" y1="48.0" x2="536.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah3)"/></g><g data-step="5"><line x1="560.4" y1="78.0" x2="481.9" y2="146.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah3)"/></g><g data-step="5"><line x1="404.6" y1="148.0" x2="313.1" y2="80.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah3)"/></g><g data-step="6"><line x1="512.0" y1="178.0" x2="536.0" y2="178.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah3)"/></g><g data-step="6"><line x1="270.0" y1="148.0" x2="270.0" y2="80.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah3)"/></g><g data-step="1"><rect x="10" y="20" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="85.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Input</text><text x="85.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">initial state</text></g><g data-step="2"><rect x="190" y="20" width="160" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="270.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Super-step</text><text x="270.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">active nodes run</text></g><g data-step="3"><rect x="380" y="20" width="130" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="445.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Reducers</text><text x="445.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">merge updates</text></g><g data-step="4"><rect x="540" y="20" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="595.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Checkpoint</text><text x="595.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">if enabled</text></g><g data-step="5"><rect x="380" y="150" width="130" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="445.0" y="176.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Next nodes</text><text x="445.0" y="192.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">edges · Send</text></g><g data-step="6"><rect x="540" y="150" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="595.0" y="176.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Done</text><text x="595.0" y="192.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">none active</text></g><g data-step="6"><rect x="190" y="150" width="160" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="270.0" y="176.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Recursion limit</text><text x="270.0" y="192.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">max super-steps</text></g><g data-step="3"><text x="364.0" y="43.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">updates</text></g><g data-step="5"><text x="358.8" y="109.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">loop</text></g><g data-step="6"><text x="270.0" y="109.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">guards</text></g></svg><p class="readout dgcap"></p></div>
+::: diagram 660x240
+nodes:
+  s0: {at: [10, 20, 150, 56], text: Input, sub: initial state, color: f, step: 1}
+  ss: {at: [190, 20, 160, 56], text: Super-step, sub: active nodes run, color: a, step: 2}
+  rd: {at: [380, 20, 130, 56], text: Reducers, sub: merge updates, color: b, step: 3}
+  ck: {at: [540, 20, 110, 56], text: Checkpoint, sub: if enabled, color: e, step: 4}
+  nx: {at: [380, 150, 130, 56], text: Next nodes, sub: edges · Send, color: c, step: 5}
+  dn: {at: [540, 150, 110, 56], text: Done, sub: none active, color: e, step: 6}
+  lim: {at: [190, 150, 160, 56], text: Recursion limit, sub: max super-steps, color: d, step: 6}
+edges:
+  - {from: s0, to: ss, step: 2}
+  - {from: ss, to: rd, label: updates, step: 3}
+  - {from: rd, to: ck, step: 4}
+  - {from: ck, to: nx, step: 5}
+  - {from: nx, to: ss, label: loop, step: 5, style: dash}
+  - {from: nx, to: dn, step: 6}
+  - {from: lim, to: ss, label: guards, step: 6, style: dash}
+steps:
+  - The input is written into the state channels; nodes triggered from START become active.
+  - 'In each super-step all active nodes run, in parallel, on a snapshot of the state.'
+  - 'Their partial updates are merged key by key through the reducers. Two nodes writing a plain (overwrite) key in the same step is an error: InvalidUpdateError, "Can receive only one value per step".'
+  - 'With a checkpointer, the merged state is saved after the step.'
+  - Edges (and Send objects for map-reduce fan-out) decide which nodes are active in the next step.
+  - The run ends when no node is active. A recursion limit caps the number of super-steps and raises GraphRecursionError.
+:::
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Primitive</th><th>Use</th></tr><tr><td>Send(node, state)</td><td>fan out: run one node many times in parallel with different inputs (map-reduce)</td></tr><tr><td>Command(update=..., goto=...)</td><td>a node updates state and chooses the next node itself; static edges still run as well</td></tr><tr><td>stream_mode</td><td>values, updates, messages (tokens), custom, checkpoints, tasks, debug</td></tr><tr><td>recursion_limit</td><td>set it explicitly: the default has changed across versions (the docs say 1,000 from 1.0.6; the 1.2.15 source sets 10,007)</td></tr></table></div>
 
-<div class="visual" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)"><div><b>🛠 Try it in Colab</b><p class="caption" style="margin:4px 0 0">Write a reducer, route with a conditional edge, and build the ReAct agent from ToolNode and tools_condition. Runs with a scripted fake model: no API key needed.</p></div><a class="btn primary" href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/agent-frameworks/02_langgraph_core.ipynb" target="_blank" rel="noopener">Open notebook →</a></div>
+
+::: table
+| Primitive | Use |
+|---|---|
+| Send(node, state) | fan out: run one node many times in parallel with different inputs (map-reduce) |
+| Command(update=..., goto=...) | a node updates state and chooses the next node itself; static edges still run as well |
+| stream_mode | values, updates, messages (tokens), custom, checkpoints, tasks, debug |
+| recursion_limit | set it explicitly: the default has changed across versions (the docs say 1,000 from 1.0.6; the 1.2.15 source sets 10,007) |
+:::
+
+
+
+::: colab build-it/agent-frameworks/02_langgraph_core.ipynb
+Write a reducer, route with a conditional edge, and build the ReAct agent from ToolNode and tools_condition. Runs with a scripted fake model: no API key needed.
+:::
 
 <!-- slide id="s-trade" chapter="Trade-offs" tag="5 · Trade-offs" tagclass="b5" -->
 ## Trade-offs
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Choice</th><th>Benefit</th><th>Cost</th></tr><tr><td>Explicit graph</td><td>visible control flow; each step inspectable and testable</td><td>more code than a loop for simple agents</td></tr><tr><td>create_agent on top</td><td>the standard loop in one call</td><td>custom flows need the graph API anyway</td></tr><tr><td>Fine-grained nodes</td><td>precise checkpoints and retries</td><td>more state traffic and checkpoint writes</td></tr><tr><td>Parallel branches / Send</td><td>lower latency for independent work</td><td>reducers needed for keys written in parallel</td></tr><tr><td>Command-based routing</td><td>routing logic beside the work</td><td>edges are no longer visible in the graph definition alone</td></tr></table></div>
+::: table
+| Choice | Benefit | Cost |
+|---|---|---|
+| Explicit graph | visible control flow; each step inspectable and testable | more code than a loop for simple agents |
+| create_agent on top | the standard loop in one call | custom flows need the graph API anyway |
+| Fine-grained nodes | precise checkpoints and retries | more state traffic and checkpoint writes |
+| Parallel branches / Send | lower latency for independent work | reducers needed for keys written in parallel |
+| Command-based routing | routing logic beside the work | edges are no longer visible in the graph definition alone |
+:::
 
 <!-- slide id="s-fail" chapter="Failure modes" tag="6 · Failure modes" tagclass="b6" -->
 ## Failure modes
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Missing reducer</td><td>InvalidUpdateError when parallel nodes write the same key</td><td>Annotated reducers for keys with several writers</td></tr><tr><td>Overwrite instead of append</td><td>history disappears after a node returns messages</td><td>use add_messages / operator.add for accumulating keys</td></tr><tr><td>Cycles without exit</td><td>GraphRecursionError or a huge bill</td><td>explicit stop conditions; a small recursion_limit per run</td></tr><tr><td>State bloat</td><td>every step carries megabytes of tool output</td><td>store large blobs outside state; keep references</td></tr><tr><td>Router returns an unknown name</td><td>run fails at the edge</td><td>path maps in add_conditional_edges; tests for each route</td></tr></table></div>
+::: table
+| Failure | Symptom | Mitigation |
+|---|---|---|
+| Missing reducer | InvalidUpdateError when parallel nodes write the same key | Annotated reducers for keys with several writers |
+| Overwrite instead of append | history disappears after a node returns messages | use add_messages / operator.add for accumulating keys |
+| Cycles without exit | GraphRecursionError or a huge bill | explicit stop conditions; a small recursion_limit per run |
+| State bloat | every step carries megabytes of tool output | store large blobs outside state; keep references |
+| Router returns an unknown name | run fails at the edge | path maps in add_conditional_edges; tests for each route |
+:::
 
 <!-- slide id="s-prod" chapter="Production" tag="7 · Challenges in production" tagclass="b7" -->
 ## In production

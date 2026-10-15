@@ -207,3 +207,28 @@ select { font: 500 14px Inter, sans-serif; background: var(--panel); color: var(
 
 /* prose readouts read better in the body font */
 p.readout { font-family: Inter, system-ui, sans-serif; font-weight: 500; font-size: 15px; }
+
+/* Steppable diagrams (::: diagram blocks, tools/decks/diagram.py + shared/diagram.js) */
+.dgm .controls { margin-top: 0; }
+.dgm svg { width: 100%; height: auto; margin-top: 8px; }
+.dg-head path { fill: var(--ink); }
+.dg-edge line { stroke: var(--ink); stroke-width: 1.6; }
+.dg-edge.dash line { stroke-dasharray: 5 4; }
+.dg-label { font: 600 11px Inter, sans-serif; fill: var(--muted); paint-order: stroke; stroke: var(--panel); stroke-width: 4px; }
+.dg-node { --dg: var(--faint); }
+.dg-node.a { --dg: var(--a); } .dg-node.b { --dg: var(--b); } .dg-node.c { --dg: var(--c); } .dg-node.d { --dg: var(--d); } .dg-node.e { --dg: var(--e); }
+.dg-node rect { fill: color-mix(in srgb, var(--dg) 16%, var(--panel)); stroke: var(--dg); stroke-width: 2; }
+.dg-node.dg-now rect { stroke-width: 3.5; }
+.dg-text { font: 700 13px Inter, sans-serif; fill: var(--ink); }
+.dg-sub { font: 500 11px Inter, sans-serif; fill: var(--muted); }
+.dgm [data-step] { transition: opacity .25s; }
+.dgm .dg-off { opacity: .08; }
+
+/* Code samples and notebook banners (::: code, ::: colab) */
+.visual pre.code { margin: 0; white-space: pre-wrap; }
+.colab-banner { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; background: var(--e-soft); border-color: var(--e); }
+.colab-banner p { margin: 4px 0 0; }
+
+/* Widget layout (controls first, bar charts below) */
+.visual > .controls:first-child { margin-top: 0; }
+.visual .bars { margin-top: 12px; }

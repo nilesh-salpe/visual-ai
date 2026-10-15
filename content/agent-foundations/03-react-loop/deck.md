@@ -10,26 +10,23 @@ styles:
 scripts:
 - ../../shared/deck.js
 - ../../shared/learn.js
+- ../../shared/diagram.js
+intro:
+  kicker: Visual Agents · Foundations · 03
+  h1: 'ReAct: reasoning and acting'
+  sub: 'The pattern behind most agents: interleave a reasoning step, an action and an observation, and optionally reflect on failures (Reflexion).'
+  problem: Chain-of-thought alone reasons from memory and can hallucinate facts; acting alone (just calling tools) lacks a plan to decide what to do next or how to
+    handle surprises.
+  core: '<b>ReAct</b> interleaves <b>Thought → Action → Observation</b>: reasoning decides the next action and interprets results; actions gather facts that ground
+    the reasoning. <b>Reflexion</b> adds a memory of verbal self-critiques from failed attempts that guides the next attempt.'
+  hint: 'Previous: [Tool calling](../02-tool-calling/index.html) · Next: [Planning and task decomposition →](../04-planning/index.html) · [All decks](../index.html)'
 papers:
 - react
 - reflexion
 - agentbench
 ---
 
-<!-- slide raw -->
-<section class="slide title-slide" id="s-title" data-chapter="Start">
-  <div class="inner">
-    <div class="kicker">Visual Agents · Foundations · 03</div>
-    <h1>ReAct: reasoning and acting</h1>
-    <p class="sub">The pattern behind most agents: interleave a reasoning step, an action and an observation, and optionally reflect on failures (Reflexion).</p>
-    <div class="ps">
-      <div class="p"><b>What is the problem?</b>Chain-of-thought alone reasons from memory and can hallucinate facts; acting alone (just calling tools) lacks a plan to decide what to do next or how to handle surprises.</div>
-      <div class="c"><b>Core idea</b><b>ReAct</b> interleaves <b>Thought → Action → Observation</b>: reasoning decides the next action and interprets results; actions gather facts that ground the reasoning. <b>Reflexion</b> adds a memory of verbal self-critiques from failed attempts that guides the next attempt.</div>
-    </div>
-    <div class="toc" data-auto></div>
-    <p class="start-hint">Previous: <a href="../02-tool-calling/index.html">Tool calling</a> · Next: <a href="../04-planning/index.html">Planning and task decomposition →</a> · <a href="../index.html">All decks</a></p>
-  </div>
-</section>
+<!-- slide from="title" -->
 
 <!-- slide id="s-problem" chapter="Problem" tag="1 · Problem" tagclass="b1" -->
 ## Reasoning or acting alone
@@ -64,12 +61,48 @@ Results (Yao et al., 2023): on HotpotQA and FEVER, ReAct with a simple Wikipedia
 <!-- slide id="s-hld" chapter="High-level design" tag="3 · High-level design" tagclass="b3" -->
 ## The ReAct loop, with reflection
 
-<div class="visual dgm" data-steps="[&quot;A task arrives (question, game, coding problem).&quot;, &quot;The model writes a thought: what it knows and what to do next.&quot;, &quot;It emits an action, a tool call.&quot;, &quot;The observation is appended; the next thought interprets it. Repeat.&quot;, &quot;When the thought concludes it has enough, it answers.&quot;, &quot;Reflexion: an evaluator (tests, environment reward or the model itself) judges the attempt.&quot;, &quot;On failure, the agent writes a short reflection into episodic memory and retries; Reflexion reached 91% pass@1 on HumanEval versus 80% for GPT-4.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="142.0" y1="119.4" x2="205.7" y2="90.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah5)"/></g><g data-step="3"><line x1="352.0" y1="58.0" x2="416.0" y2="58.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah5)"/></g><g data-step="4"><line x1="495.0" y1="88.0" x2="495.0" y2="146.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah5)"/></g><g data-step="4"><line x1="440.0" y1="148.0" x2="333.7" y2="90.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah5)"/></g><g data-step="5"><line x1="275.0" y1="88.0" x2="275.0" y2="146.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah5)"/></g><g data-step="6"><line x1="350.9" y1="208.0" x2="421.7" y2="236.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah5)"/></g><g data-step="7"><line x1="418.0" y1="265.0" x2="174.0" y2="265.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah5)"/></g><g data-step="7"><line x1="118.5" y1="238.0" x2="247.2" y2="90.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah5)"/></g><g data-step="1"><rect x="20" y="120" width="120" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="80.0" y="153.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Task</text></g><g data-step="2"><rect x="200" y="30" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="275.0" y="56.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Thought</text><text x="275.0" y="72.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">plan next step</text></g><g data-step="3"><rect x="420" y="30" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="495.0" y="56.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Action</text><text x="495.0" y="72.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">tool call</text></g><g data-step="4"><rect x="420" y="150" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="495.0" y="176.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Observation</text><text x="495.0" y="192.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">tool result</text></g><g data-step="5"><rect x="200" y="150" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="275.0" y="176.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Answer</text><text x="275.0" y="192.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">or give up</text></g><g data-step="6"><rect x="420" y="240" width="150" height="50" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="495.0" y="263.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Evaluator</text><text x="495.0" y="279.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">success? feedback</text></g><g data-step="7"><rect x="20" y="240" width="150" height="50" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="95.0" y="263.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Reflection memory</text><text x="95.0" y="279.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">lessons learned</text></g><g data-step="4"><text x="386.8" y="114.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">next thought</text></g><g data-step="5"><text x="275.0" y="112.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">enough info</text></g><g data-step="7"><text x="296.0" y="260.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">failed</text></g><g data-step="7"><text x="182.8" y="159.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">next trial</text></g></svg><p class="readout dgcap"></p></div>
+::: diagram 660x300
+nodes:
+  task: {at: [20, 120, 120, 56], text: Task, color: f, step: 1}
+  th: {at: [200, 30, 150, 56], text: Thought, sub: plan next step, color: a, step: 2}
+  ac: {at: [420, 30, 150, 56], text: Action, sub: tool call, color: c, step: 3}
+  ob: {at: [420, 150, 150, 56], text: Observation, sub: tool result, color: b, step: 4}
+  ans: {at: [200, 150, 150, 56], text: Answer, sub: or give up, color: e, step: 5}
+  ev: {at: [420, 240, 150, 50], text: Evaluator, sub: 'success? feedback', color: d, step: 6}
+  ref: {at: [20, 240, 150, 50], text: Reflection memory, sub: lessons learned, color: d, step: 7}
+edges:
+  - {from: task, to: th, step: 2}
+  - {from: th, to: ac, step: 3}
+  - {from: ac, to: ob, step: 4}
+  - {from: ob, to: th, label: next thought, step: 4, style: dash}
+  - {from: th, to: ans, label: enough info, step: 5}
+  - {from: ans, to: ev, step: 6}
+  - {from: ev, to: ref, label: failed, step: 7}
+  - {from: ref, to: th, label: next trial, step: 7, style: dash}
+steps:
+  - 'A task arrives (question, game, coding problem).'
+  - 'The model writes a thought: what it knows and what to do next.'
+  - 'It emits an action, a tool call.'
+  - The observation is appended; the next thought interprets it. Repeat.
+  - 'When the thought concludes it has enough, it answers.'
+  - 'Reflexion: an evaluator (tests, environment reward or the model itself) judges the attempt.'
+  - 'On failure, the agent writes a short reflection into episodic memory and retries; Reflexion reached 91% pass@1 on HumanEval versus 80% for GPT-4.'
+:::
 
 <!-- slide id="s-lld" chapter="Low-level design" tag="4 · Low-level design" tagclass="b4" -->
 ## What a trajectory looks like
 
-<div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap">Question: Which year was the director of "Inception" born?&#10;Thought 1: I need the director of Inception, then their birth year.&#10;Action 1: search["Inception film director"]&#10;Observation 1: Inception (2010) was written and directed by Christopher Nolan.&#10;Thought 2: Now find Christopher Nolan's birth year.&#10;Action 2: search["Christopher Nolan born"]&#10;Observation 2: Christopher Nolan (born 30 July 1970) ...&#10;Thought 3: The answer is 1970.&#10;Action 3: finish["1970"]</pre></div>
+::: code
+Question: Which year was the director of "Inception" born?
+Thought 1: I need the director of Inception, then their birth year.
+Action 1: search["Inception film director"]
+Observation 1: Inception (2010) was written and directed by Christopher Nolan.
+Thought 2: Now find Christopher Nolan's birth year.
+Action 2: search["Christopher Nolan born"]
+Observation 2: Christopher Nolan (born 30 July 1970) ...
+Thought 3: The answer is 1970.
+Action 3: finish["1970"]
+:::
 
 ::: cards grid3
 ### [f] Scratchpad
@@ -85,12 +118,27 @@ A finish action, a step limit, or repeated identical actions end the loop.
 <!-- slide id="s-trade" chapter="Trade-offs" tag="5 · Trade-offs" tagclass="b5" -->
 ## Trade-offs
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Choice</th><th>Benefit</th><th>Cost</th></tr><tr><td>Explicit thoughts between actions</td><td>better decisions, interpretable traces</td><td>more tokens and latency per step</td></tr><tr><td>Reflection and retry (Reflexion)</td><td>learns from failures within a task</td><td>needs a reliable success signal; multiple attempts cost more</td></tr><tr><td>Few-shot ReAct examples</td><td>teaches format and strategy</td><td>long prompts; may overfit to example style</td></tr><tr><td>Full observation text</td><td>nothing lost</td><td>context bloat; summarise or truncate long observations</td></tr></table></div>
+::: table
+| Choice | Benefit | Cost |
+|---|---|---|
+| Explicit thoughts between actions | better decisions, interpretable traces | more tokens and latency per step |
+| Reflection and retry (Reflexion) | learns from failures within a task | needs a reliable success signal; multiple attempts cost more |
+| Few-shot ReAct examples | teaches format and strategy | long prompts; may overfit to example style |
+| Full observation text | nothing lost | context bloat; summarise or truncate long observations |
+:::
 
 <!-- slide id="s-fail" chapter="Failure modes" tag="6 · Failure modes" tagclass="b6" -->
 ## Failure modes
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Repetitive loops</td><td>same search, same thought</td><td>detect repeats; force a different action or stop</td></tr><tr><td>Thought-action mismatch</td><td>reasoning says one thing, action does another</td><td>validate actions against the stated plan</td></tr><tr><td>Observation overload</td><td>long pages crowd out the goal</td><td>extract only relevant parts; keep the goal at the top</td></tr><tr><td>Bad reflections</td><td>wrong lesson reinforced next trial</td><td>ground reflections in evaluator evidence</td></tr><tr><td>Poor long-term reasoning</td><td>loses track over many steps (AgentBench's main failure causes)</td><td>plans, notes, sub-tasks (decks 04 and Context 01)</td></tr></table></div>
+::: table
+| Failure | Symptom | Mitigation |
+|---|---|---|
+| Repetitive loops | same search, same thought | detect repeats; force a different action or stop |
+| Thought-action mismatch | reasoning says one thing, action does another | validate actions against the stated plan |
+| Observation overload | long pages crowd out the goal | extract only relevant parts; keep the goal at the top |
+| Bad reflections | wrong lesson reinforced next trial | ground reflections in evaluator evidence |
+| Poor long-term reasoning | loses track over many steps (AgentBench's main failure causes) | plans, notes, sub-tasks (decks 04 and Context 01) |
+:::
 
 <!-- slide id="s-prod" chapter="Production" tag="7 · Challenges in production" tagclass="b7" -->
 ## In production

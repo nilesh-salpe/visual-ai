@@ -55,7 +55,7 @@
     <span class="qtag b3">3 · High-level design</span>
     <h2>Components</h2>
     <hr>
-<div class="visual dgm" data-steps="[&quot;A question arrives.&quot;, &quot;The agent plans one or more queries (rewriting the question, splitting multi-hop questions).&quot;, &quot;It searches indexes: semantic vector search and keyword search, often merged and reranked.&quot;, &quot;A grader (a model or prompt) checks relevance; weak results lead to rewritten queries or more searches.&quot;, &quot;If the index lacks the answer, it falls back to other sources such as web search.&quot;, &quot;It answers, citing the passages used.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah10" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="132.0" y1="148.7" x2="176.0" y2="149.2" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="3"><line x1="304.3" y1="118.0" x2="395.8" y2="64.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="3"><line x1="322.0" y1="140.8" x2="376.0" y2="133.8" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="4"><line x1="473.2" y1="62.0" x2="571.5" y2="156.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="4"><line x1="512.0" y1="151.4" x2="556.0" y2="168.7" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="4"><line x1="558.0" y1="183.0" x2="324.0" y2="157.9" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah10)"/></g><g data-step="5"><line x1="306.7" y1="182.0" x2="393.6" y2="231.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah10)"/></g><g data-step="6"><line x1="250.0" y1="182.0" x2="250.0" y2="236.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="1"><rect x="20" y="120" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="75.0" y="153.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Question</text></g><g data-step="2"><rect x="180" y="120" width="140" height="60" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="250.0" y="148.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Agent</text><text x="250.0" y="164.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">plan queries</text></g><g data-step="3"><rect x="380" y="10" width="130" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="445.0" y="33.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Vector search</text><text x="445.0" y="49.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">semantic</text></g><g data-step="3"><rect x="380" y="100" width="130" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="445.0" y="123.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Keyword search</text><text x="445.0" y="139.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">BM25</text></g><g data-step="5"><rect x="380" y="235" width="130" height="50" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="445.0" y="258.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Web / APIs</text><text x="445.0" y="274.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">fresh data</text></g><g data-step="4"><rect x="560" y="160" width="90" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="605.0" y="186.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Grader</text><text x="605.0" y="202.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">relevant?</text></g><g data-step="6"><rect x="180" y="240" width="140" height="50" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="250.0" y="270.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Answer + citations</text></g><g data-step="4"><text x="441.0" y="165.4" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">rewrite / more</text></g><g data-step="5"><text x="350.2" y="201.5" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">fallback</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual dgm" data-steps="[&quot;A question arrives.&quot;, &quot;The agent plans one or more queries (rewriting the question, splitting multi-hop questions).&quot;, &quot;It searches indexes: semantic vector search and keyword search, often merged and reranked.&quot;, &quot;A grader (a model or prompt) checks relevance; weak results lead to rewritten queries or more searches.&quot;, &quot;If the index lacks the answer, it falls back to other sources such as web search.&quot;, &quot;It answers, citing the passages used.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga3" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="132.0" y1="148.7" x2="176.0" y2="149.2" marker-end="url(#dga3)"/></g><g class="dg-edge" data-step="3"><line x1="304.3" y1="118.0" x2="395.8" y2="64.0" marker-end="url(#dga3)"/></g><g class="dg-edge" data-step="3"><line x1="322.0" y1="140.8" x2="376.0" y2="133.8" marker-end="url(#dga3)"/></g><g class="dg-edge" data-step="4"><line x1="473.2" y1="62.0" x2="571.5" y2="156.0" marker-end="url(#dga3)"/></g><g class="dg-edge" data-step="4"><line x1="512.0" y1="151.4" x2="556.0" y2="168.7" marker-end="url(#dga3)"/></g><g class="dg-edge dash" data-step="4"><line x1="558.0" y1="183.0" x2="324.0" y2="157.9" marker-end="url(#dga3)"/></g><g class="dg-edge dash" data-step="5"><line x1="306.7" y1="182.0" x2="393.6" y2="231.0" marker-end="url(#dga3)"/></g><g class="dg-edge" data-step="6"><line x1="250.0" y1="182.0" x2="250.0" y2="236.0" marker-end="url(#dga3)"/></g><g class="dg-node f" data-step="1"><rect x="20" y="120" width="110" height="56" rx="10"/><text class="dg-text" x="75.0" y="153.0" text-anchor="middle">Question</text></g><g class="dg-node a" data-step="2"><rect x="180" y="120" width="140" height="60" rx="10"/><text class="dg-text" x="250.0" y="148.0" text-anchor="middle">Agent</text><text class="dg-sub" x="250.0" y="164.0" text-anchor="middle">plan queries</text></g><g class="dg-node c" data-step="3"><rect x="380" y="10" width="130" height="50" rx="10"/><text class="dg-text" x="445.0" y="33.0" text-anchor="middle">Vector search</text><text class="dg-sub" x="445.0" y="49.0" text-anchor="middle">semantic</text></g><g class="dg-node c" data-step="3"><rect x="380" y="100" width="130" height="50" rx="10"/><text class="dg-text" x="445.0" y="123.0" text-anchor="middle">Keyword search</text><text class="dg-sub" x="445.0" y="139.0" text-anchor="middle">BM25</text></g><g class="dg-node b" data-step="5"><rect x="380" y="235" width="130" height="50" rx="10"/><text class="dg-text" x="445.0" y="258.0" text-anchor="middle">Web / APIs</text><text class="dg-sub" x="445.0" y="274.0" text-anchor="middle">fresh data</text></g><g class="dg-node d" data-step="4"><rect x="560" y="160" width="90" height="56" rx="10"/><text class="dg-text" x="605.0" y="186.0" text-anchor="middle">Grader</text><text class="dg-sub" x="605.0" y="202.0" text-anchor="middle">relevant?</text></g><g class="dg-node e" data-step="6"><rect x="180" y="240" width="140" height="50" rx="10"/><text class="dg-text" x="250.0" y="270.0" text-anchor="middle">Answer + citations</text></g><g data-step="4"><text class="dg-label" x="441.0" y="165.4" text-anchor="middle">rewrite / more</text></g><g data-step="5"><text class="dg-label" x="350.2" y="201.5" text-anchor="middle">fallback</text></g></svg><p class="readout dgcap"></p></div>
   </div>
 </section>
 
@@ -64,7 +64,7 @@
     <span class="qtag b4">4 · Low-level design</span>
     <h2>The retrieval loop in detail</h2>
     <hr>
-<div class="visual dgm" data-steps="[&quot;Turn the question into search queries; split multi-hop questions into steps.&quot;, &quot;Retrieve top-k from hybrid (vector + keyword) search and rerank.&quot;, &quot;Grade each passage for relevance; drop the irrelevant ones.&quot;, &quot;Decide whether the kept evidence answers the question.&quot;, &quot;If not, refine: a new query, a different index, or web search; stop after a budget.&quot;, &quot;Generate the answer from kept passages and check each claim is supported by a cited passage.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah11" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="182.0" y1="45.0" x2="246.0" y2="45.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="3"><line x1="412.0" y1="45.0" x2="476.0" y2="45.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="4"><line x1="560.0" y1="72.0" x2="560.0" y2="126.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="5"><line x1="478.0" y1="155.0" x2="414.0" y2="155.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="5"><line x1="330.0" y1="128.0" x2="330.0" y2="74.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="6"><line x1="560.0" y1="182.0" x2="560.0" y2="226.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="1"><rect x="20" y="20" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="100.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Plan query</text><text x="100.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">rewrite / decompose</text></g><g data-step="2"><rect x="250" y="20" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="330.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Retrieve k</text><text x="330.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">hybrid + rerank</text></g><g data-step="3"><rect x="480" y="20" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="560.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Grade</text><text x="560.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">per passage</text></g><g data-step="4"><rect x="480" y="130" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="560.0" y="160.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Enough evidence?</text></g><g data-step="5"><rect x="250" y="130" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="330.0" y="153.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Refine</text><text x="330.0" y="169.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">new query / source</text></g><g data-step="6"><rect x="480" y="230" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="560.0" y="253.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Generate + cite</text><text x="560.0" y="269.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">check support</text></g><g data-step="5"><text x="446.0" y="150.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">no</text></g><g data-step="6"><text x="560.0" y="199.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">yes</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual dgm" data-steps="[&quot;Turn the question into search queries; split multi-hop questions into steps.&quot;, &quot;Retrieve top-k from hybrid (vector + keyword) search and rerank.&quot;, &quot;Grade each passage for relevance; drop the irrelevant ones.&quot;, &quot;Decide whether the kept evidence answers the question.&quot;, &quot;If not, refine: a new query, a different index, or web search; stop after a budget.&quot;, &quot;Generate the answer from kept passages and check each claim is supported by a cited passage.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga4" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="182.0" y1="45.0" x2="246.0" y2="45.0" marker-end="url(#dga4)"/></g><g class="dg-edge" data-step="3"><line x1="412.0" y1="45.0" x2="476.0" y2="45.0" marker-end="url(#dga4)"/></g><g class="dg-edge" data-step="4"><line x1="560.0" y1="72.0" x2="560.0" y2="126.0" marker-end="url(#dga4)"/></g><g class="dg-edge" data-step="5"><line x1="478.0" y1="155.0" x2="414.0" y2="155.0" marker-end="url(#dga4)"/></g><g class="dg-edge" data-step="5"><line x1="330.0" y1="128.0" x2="330.0" y2="74.0" marker-end="url(#dga4)"/></g><g class="dg-edge" data-step="6"><line x1="560.0" y1="182.0" x2="560.0" y2="226.0" marker-end="url(#dga4)"/></g><g class="dg-node a" data-step="1"><rect x="20" y="20" width="160" height="50" rx="10"/><text class="dg-text" x="100.0" y="43.0" text-anchor="middle">Plan query</text><text class="dg-sub" x="100.0" y="59.0" text-anchor="middle">rewrite / decompose</text></g><g class="dg-node c" data-step="2"><rect x="250" y="20" width="160" height="50" rx="10"/><text class="dg-text" x="330.0" y="43.0" text-anchor="middle">Retrieve k</text><text class="dg-sub" x="330.0" y="59.0" text-anchor="middle">hybrid + rerank</text></g><g class="dg-node d" data-step="3"><rect x="480" y="20" width="160" height="50" rx="10"/><text class="dg-text" x="560.0" y="43.0" text-anchor="middle">Grade</text><text class="dg-sub" x="560.0" y="59.0" text-anchor="middle">per passage</text></g><g class="dg-node b" data-step="4"><rect x="480" y="130" width="160" height="50" rx="10"/><text class="dg-text" x="560.0" y="160.0" text-anchor="middle">Enough evidence?</text></g><g class="dg-node c" data-step="5"><rect x="250" y="130" width="160" height="50" rx="10"/><text class="dg-text" x="330.0" y="153.0" text-anchor="middle">Refine</text><text class="dg-sub" x="330.0" y="169.0" text-anchor="middle">new query / source</text></g><g class="dg-node e" data-step="6"><rect x="480" y="230" width="160" height="50" rx="10"/><text class="dg-text" x="560.0" y="253.0" text-anchor="middle">Generate + cite</text><text class="dg-sub" x="560.0" y="269.0" text-anchor="middle">check support</text></g><g data-step="5"><text class="dg-label" x="446.0" y="150.0" text-anchor="middle">no</text></g><g data-step="6"><text class="dg-label" x="560.0" y="199.0" text-anchor="middle">yes</text></g></svg><p class="readout dgcap"></p></div>
   </div>
 </section>
 
@@ -73,7 +73,42 @@
     <span class="qtag b5">5 · Trade-offs</span>
     <h2>Trade-offs</h2>
     <hr>
-<div class="visual scroll-x"><table class="tbl"><tr><th>Choice</th><th>Benefit</th><th>Cost</th></tr><tr><td>Classic one-shot RAG</td><td>one retrieval, low latency</td><td>fails on multi-hop and bad retrieval</td></tr><tr><td>Agentic retrieval loop</td><td>handles multi-hop, recovers from misses</td><td>several model and search calls per question</td></tr><tr><td>Pre-built index</td><td>fast, controlled corpus</td><td>staleness; ingestion pipeline to maintain</td></tr><tr><td>Just-in-time fetching</td><td>always fresh, no index</td><td>slower; depends on live sources</td></tr><tr><td>Small chunks</td><td>precise matches</td><td>lose surrounding context; more chunks to read</td></tr></table></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Choice</th>
+<th>Benefit</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Classic one-shot RAG</td>
+<td>one retrieval, low latency</td>
+<td>fails on multi-hop and bad retrieval</td>
+</tr>
+<tr>
+<td>Agentic retrieval loop</td>
+<td>handles multi-hop, recovers from misses</td>
+<td>several model and search calls per question</td>
+</tr>
+<tr>
+<td>Pre-built index</td>
+<td>fast, controlled corpus</td>
+<td>staleness; ingestion pipeline to maintain</td>
+</tr>
+<tr>
+<td>Just-in-time fetching</td>
+<td>always fresh, no index</td>
+<td>slower; depends on live sources</td>
+</tr>
+<tr>
+<td>Small chunks</td>
+<td>precise matches</td>
+<td>lose surrounding context; more chunks to read</td>
+</tr>
+</tbody>
+</table></div>
   </div>
 </section>
 
@@ -82,7 +117,42 @@
     <span class="qtag b6">6 · Failure modes</span>
     <h2>Failure modes</h2>
     <hr>
-<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Retrieval miss</td><td>answers from memory or says unknown</td><td>hybrid search, query rewriting, recall evals</td></tr><tr><td>Distracting passages</td><td>answer swayed by irrelevant text</td><td>grading and filtering; fewer, better passages</td></tr><tr><td>Citation hallucination</td><td>cites passages that do not support the claim</td><td>verify claim-passage support</td></tr><tr><td>Indirect prompt injection</td><td>retrieved page instructs the agent</td><td>treat retrieved text as data; restrict actions (Greshake et al.)</td></tr><tr><td>Search loops</td><td>keeps re-searching similar queries</td><td>budget; detect near-duplicate queries</td></tr></table></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Retrieval miss</td>
+<td>answers from memory or says unknown</td>
+<td>hybrid search, query rewriting, recall evals</td>
+</tr>
+<tr>
+<td>Distracting passages</td>
+<td>answer swayed by irrelevant text</td>
+<td>grading and filtering; fewer, better passages</td>
+</tr>
+<tr>
+<td>Citation hallucination</td>
+<td>cites passages that do not support the claim</td>
+<td>verify claim-passage support</td>
+</tr>
+<tr>
+<td>Indirect prompt injection</td>
+<td>retrieved page instructs the agent</td>
+<td>treat retrieved text as data; restrict actions (Greshake et al.)</td>
+</tr>
+<tr>
+<td>Search loops</td>
+<td>keeps re-searching similar queries</td>
+<td>budget; detect near-duplicate queries</td>
+</tr>
+</tbody>
+</table></div>
   </div>
 </section>
 
@@ -125,24 +195,6 @@
 
 <script src="../../shared/deck.js"></script>
 <script src="../../shared/learn.js"></script>
-<script>
-(() => {
-  const { svg, clear } = Deck;
-  document.querySelectorAll('.dgm').forEach(box => {
-    const caps = JSON.parse(box.dataset.steps), els = [...box.querySelectorAll('[data-step]')], max = Math.max(0, ...els.map(e => +e.dataset.step)), cap = box.querySelector('.dgcap');
-    let k = max, full = true;
-    const show = () => {
-      els.forEach(e => { const s = +e.dataset.step; e.style.opacity = s <= k ? 1 : 0.08; e.style.transition = 'opacity .25s'; e.querySelectorAll('rect').forEach(r => r.style.strokeWidth = s === k && k ? 3.5 : 2); });
-      cap.innerHTML = k === 0 ? 'Press <b>next step</b> to walk through the design.' : k === max && full ? 'Full design shown. Press <b>reset</b>, then <b>next step</b>, to walk through it one step at a time.' : `<b>Step ${k} of ${max}.</b> ${caps[k - 1] || ''}`;
-      full = false;
-    };
-    box.querySelector('[data-dg=next]').addEventListener('click', () => { k = Math.min(max, k + 1); show(); });
-    box.querySelector('[data-dg=all]').addEventListener('click', () => { k = max; full = false; show(); cap.innerHTML = '<b>Full design.</b> ' + caps.map((c, i) => `${i + 1}. ${c}`).join(' '); });
-    box.querySelector('[data-dg=reset]').addEventListener('click', () => { k = 0; show(); });
-    show();
-  });
-
-})();
-</script>
+<script src="../../shared/diagram.js"></script>
 </body>
 </html>

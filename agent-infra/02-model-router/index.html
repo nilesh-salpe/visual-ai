@@ -46,7 +46,7 @@
       <div class="card c"><h3>Learned routers</h3><p>Predict from the query alone whether the weak model will do: RouteLLM trains on human preference data (over 2× cheaper in some cases at the same quality); Hybrid LLM makes up to 40% fewer large-model calls with no quality drop.</p></div>
       <div class="card e"><h3>Cascades</h3><p>Call the cheap model, score its answer, escalate if rejected: FrugalGPT matches GPT-4 with up to 98% lower cost on its benchmarks.</p></div>
     </div>
-<div class="visual"><div class="controls" style="margin-top:0"><label class="ctl">easy share <input type="range" id="rP" min="0" max="100" step="5" value="70"> <output id="rPo"></output></label><label class="ctl">small / large price <input type="range" id="rR" min="1" max="60" step="1" value="10"> <output id="rRo"></output></label><label class="ctl">scorer false rejects <input type="range" id="rE" min="0" max="50" step="5" value="10"> <output id="rEo"></output></label></div><div id="rBars" style="margin-top:12px"></div><p class="readout" id="rOut"></p></div>
+<div class="visual"><div class="controls"><label class="ctl">easy share <input type="range" id="rP" min="0" max="100" step="5" value="70"> <output id="rPo"></output></label><label class="ctl">small / large price <input type="range" id="rR" min="1" max="60" step="1" value="10"> <output id="rRo"></output></label><label class="ctl">scorer false rejects <input type="range" id="rE" min="0" max="50" step="5" value="10"> <output id="rEo"></output></label></div><div class="bars"><div id="rBars"></div></div><p class="readout" id="rOut"></p></div>
   </div>
 </section>
 
@@ -55,7 +55,7 @@
     <span class="qtag b3">3 · High-level design</span>
     <h2>Routing in an agent system</h2>
     <hr>
-<div class="visual dgm" data-steps="[&quot;A request (or one step of an agent&#x27;s loop) arrives.&quot;, &quot;The router decides: hand-written rules, a trained classifier, or a small LLM asked to classify.&quot;, &quot;Model routing: the same task can go to a cheap or a strong model depending on predicted difficulty.&quot;, &quot;Agent routing: different intents go to different specialised agents with their own prompts and tools.&quot;, &quot;Log every decision with its outcome; the log becomes training and evaluation data for the router.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="122.0" y1="148.0" x2="166.0" y2="148.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah3)"/></g><g data-step="3"><line x1="322.0" y1="118.0" x2="460.6" y2="64.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah3)"/></g><g data-step="3"><line x1="322.0" y1="141.9" x2="416.0" y2="134.4" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah3)"/></g><g data-step="4"><line x1="322.0" y1="165.8" x2="416.0" y2="187.5" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah3)"/></g><g data-step="5"><line x1="245.0" y1="188.0" x2="245.0" y2="236.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah3)"/></g><g data-step="5"><line x1="235.0" y1="238.0" x2="235.0" y2="190.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah3)"/></g><g data-step="1"><rect x="10" y="120" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="65.0" y="153.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Request</text></g><g data-step="2"><rect x="170" y="110" width="150" height="76" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="245.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Router</text><text x="245.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">rules · classifier · LLM</text></g><g data-step="3"><rect x="420" y="10" width="230" height="50" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="535.0" y="33.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Small model</text><text x="535.0" y="49.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">FAQ, extraction, simple steps</text></g><g data-step="3"><rect x="420" y="100" width="230" height="50" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="535.0" y="123.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Large model</text><text x="535.0" y="139.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">hard reasoning</text></g><g data-step="4"><rect x="420" y="190" width="230" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="535.0" y="213.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Specialist agents</text><text x="535.0" y="229.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">support · code · billing</text></g><g data-step="5"><rect x="170" y="240" width="150" height="50" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="245.0" y="263.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Outcome log</text><text x="245.0" y="279.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">quality · cost</text></g><g data-step="4"><text x="369.0" y="171.6" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">by intent</text></g><g data-step="5"><text x="245.0" y="207.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">decisions</text></g><g data-step="5"><text x="235.0" y="229.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">retrain</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual dgm" data-steps="[&quot;A request (or one step of an agent&#x27;s loop) arrives.&quot;, &quot;The router decides: hand-written rules, a trained classifier, or a small LLM asked to classify.&quot;, &quot;Model routing: the same task can go to a cheap or a strong model depending on predicted difficulty.&quot;, &quot;Agent routing: different intents go to different specialised agents with their own prompts and tools.&quot;, &quot;Log every decision with its outcome; the log becomes training and evaluation data for the router.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga21" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="122.0" y1="148.0" x2="166.0" y2="148.0" marker-end="url(#dga21)"/></g><g class="dg-edge" data-step="3"><line x1="322.0" y1="118.0" x2="460.6" y2="64.0" marker-end="url(#dga21)"/></g><g class="dg-edge" data-step="3"><line x1="322.0" y1="141.9" x2="416.0" y2="134.4" marker-end="url(#dga21)"/></g><g class="dg-edge" data-step="4"><line x1="322.0" y1="165.8" x2="416.0" y2="187.5" marker-end="url(#dga21)"/></g><g class="dg-edge dash" data-step="5"><line x1="245.0" y1="188.0" x2="245.0" y2="236.0" marker-end="url(#dga21)"/></g><g class="dg-edge dash" data-step="5"><line x1="235.0" y1="238.0" x2="235.0" y2="190.0" marker-end="url(#dga21)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="110" height="56" rx="10"/><text class="dg-text" x="65.0" y="153.0" text-anchor="middle">Request</text></g><g class="dg-node a" data-step="2"><rect x="170" y="110" width="150" height="76" rx="10"/><text class="dg-text" x="245.0" y="146.0" text-anchor="middle">Router</text><text class="dg-sub" x="245.0" y="162.0" text-anchor="middle">rules · classifier · LLM</text></g><g class="dg-node e" data-step="3"><rect x="420" y="10" width="230" height="50" rx="10"/><text class="dg-text" x="535.0" y="33.0" text-anchor="middle">Small model</text><text class="dg-sub" x="535.0" y="49.0" text-anchor="middle">FAQ, extraction, simple steps</text></g><g class="dg-node d" data-step="3"><rect x="420" y="100" width="230" height="50" rx="10"/><text class="dg-text" x="535.0" y="123.0" text-anchor="middle">Large model</text><text class="dg-sub" x="535.0" y="139.0" text-anchor="middle">hard reasoning</text></g><g class="dg-node c" data-step="4"><rect x="420" y="190" width="230" height="50" rx="10"/><text class="dg-text" x="535.0" y="213.0" text-anchor="middle">Specialist agents</text><text class="dg-sub" x="535.0" y="229.0" text-anchor="middle">support · code · billing</text></g><g class="dg-node b" data-step="5"><rect x="170" y="240" width="150" height="50" rx="10"/><text class="dg-text" x="245.0" y="263.0" text-anchor="middle">Outcome log</text><text class="dg-sub" x="245.0" y="279.0" text-anchor="middle">quality · cost</text></g><g data-step="4"><text class="dg-label" x="369.0" y="171.6" text-anchor="middle">by intent</text></g><g data-step="5"><text class="dg-label" x="245.0" y="207.0" text-anchor="middle">decisions</text></g><g data-step="5"><text class="dg-label" x="235.0" y="229.0" text-anchor="middle">retrain</text></g></svg><p class="readout dgcap"></p></div>
   </div>
 </section>
 
@@ -64,9 +64,33 @@
     <span class="qtag b4">4 · Low-level design</span>
     <h2>Learned router vs cascade</h2>
     <hr>
-<div class="visual dgm" data-steps="[&quot;Router: a model (RouteLLM trains several, including a BERT classifier and matrix factorisation, on preference data) predicts from the query whether the weak model&#x27;s answer will be good enough.&quot;, &quot;A threshold on that probability sets the cost-quality trade-off; Hybrid LLM tunes the desired quality level at test time. Below the threshold the strong model gets the query.&quot;, &quot;Cascade: always call the cheapest model first.&quot;, &quot;A scorer (a small trained model in FrugalGPT, or an LLM judge, or the model&#x27;s own confidence) grades the answer.&quot;, &quot;Accept good answers; escalate the rest to the next, larger model. Cascades pay the small call on every request but see the answer before deciding.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 250" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="1"><line x1="122.0" y1="48.0" x2="156.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah4)"/></g><g data-step="2"><line x1="322.0" y1="48.0" x2="356.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah4)"/></g><g data-step="2"><line x1="492.0" y1="48.0" x2="526.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah4)"/></g><g data-step="4"><line x1="122.0" y1="198.0" x2="156.0" y2="198.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah4)"/></g><g data-step="5"><line x1="322.0" y1="198.0" x2="356.0" y2="198.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah4)"/></g><g data-step="5"><line x1="492.0" y1="198.0" x2="526.0" y2="198.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah4)"/></g><g data-step="1"><rect x="10" y="20" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="65.0" y="53.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Query</text></g><g data-step="1"><rect x="160" y="20" width="160" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="240.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Router model</text><text x="240.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">P(weak model is enough)</text></g><g data-step="2"><rect x="360" y="20" width="130" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="425.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Threshold</text><text x="425.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">cost-quality knob</text></g><g data-step="2"><rect x="530" y="20" width="120" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="590.0" y="53.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Weak model</text></g><g data-step="3"><rect x="10" y="170" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="65.0" y="196.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Small model</text><text x="65.0" y="212.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">answers first</text></g><g data-step="4"><rect x="160" y="170" width="160" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="240.0" y="196.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Scorer</text><text x="240.0" y="212.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">judge · confidence</text></g><g data-step="5"><rect x="360" y="170" width="130" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="425.0" y="196.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Accept</text><text x="425.0" y="212.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">return answer</text></g><g data-step="5"><rect x="530" y="170" width="120" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="590.0" y="196.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Large model</text><text x="590.0" y="212.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">escalation</text></g><g data-step="2"><text x="509.0" y="43.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">above</text></g><g data-step="4"><text x="139.0" y="193.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">answer</text></g><g data-step="5"><text x="339.0" y="193.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">pass</text></g><g data-step="5"><text x="509.0" y="193.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">else</text></g></svg><p class="readout dgcap"></p></div>
-
-<div class="visual scroll-x"><table class="tbl"><tr><th>Router input</th><th>Router output</th><th>Decision cost</th></tr><tr><td>query text only (RouteLLM, Hybrid LLM)</td><td>which model to call</td><td>one cheap classifier call</td></tr><tr><td>query + small model's answer (FrugalGPT cascade)</td><td>accept or escalate</td><td>a full small-model call per request</td></tr><tr><td>intent label (rules / LLM classifier)</td><td>which specialist prompt or agent</td><td>a regex or one small LLM call</td></tr></table></div>
+<div class="visual dgm" data-steps="[&quot;Router: a model (RouteLLM trains several, including a BERT classifier and matrix factorisation, on preference data) predicts from the query whether the weak model&#x27;s answer will be good enough.&quot;, &quot;A threshold on that probability sets the cost-quality trade-off; Hybrid LLM tunes the desired quality level at test time. Below the threshold the strong model gets the query.&quot;, &quot;Cascade: always call the cheapest model first.&quot;, &quot;A scorer (a small trained model in FrugalGPT, or an LLM judge, or the model&#x27;s own confidence) grades the answer.&quot;, &quot;Accept good answers; escalate the rest to the next, larger model. Cascades pay the small call on every request but see the answer before deciding.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 250" role="img" aria-label="diagram"><defs><marker id="dga22" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="1"><line x1="122.0" y1="48.0" x2="156.0" y2="48.0" marker-end="url(#dga22)"/></g><g class="dg-edge" data-step="2"><line x1="322.0" y1="48.0" x2="356.0" y2="48.0" marker-end="url(#dga22)"/></g><g class="dg-edge" data-step="2"><line x1="492.0" y1="48.0" x2="526.0" y2="48.0" marker-end="url(#dga22)"/></g><g class="dg-edge" data-step="4"><line x1="122.0" y1="198.0" x2="156.0" y2="198.0" marker-end="url(#dga22)"/></g><g class="dg-edge" data-step="5"><line x1="322.0" y1="198.0" x2="356.0" y2="198.0" marker-end="url(#dga22)"/></g><g class="dg-edge dash" data-step="5"><line x1="492.0" y1="198.0" x2="526.0" y2="198.0" marker-end="url(#dga22)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="20" width="110" height="56" rx="10"/><text class="dg-text" x="65.0" y="53.0" text-anchor="middle">Query</text></g><g class="dg-node a" data-step="1"><rect x="160" y="20" width="160" height="56" rx="10"/><text class="dg-text" x="240.0" y="46.0" text-anchor="middle">Router model</text><text class="dg-sub" x="240.0" y="62.0" text-anchor="middle">P(weak model is enough)</text></g><g class="dg-node d" data-step="2"><rect x="360" y="20" width="130" height="56" rx="10"/><text class="dg-text" x="425.0" y="46.0" text-anchor="middle">Threshold</text><text class="dg-sub" x="425.0" y="62.0" text-anchor="middle">cost-quality knob</text></g><g class="dg-node e" data-step="2"><rect x="530" y="20" width="120" height="56" rx="10"/><text class="dg-text" x="590.0" y="53.0" text-anchor="middle">Weak model</text></g><g class="dg-node e" data-step="3"><rect x="10" y="170" width="110" height="56" rx="10"/><text class="dg-text" x="65.0" y="196.0" text-anchor="middle">Small model</text><text class="dg-sub" x="65.0" y="212.0" text-anchor="middle">answers first</text></g><g class="dg-node b" data-step="4"><rect x="160" y="170" width="160" height="56" rx="10"/><text class="dg-text" x="240.0" y="196.0" text-anchor="middle">Scorer</text><text class="dg-sub" x="240.0" y="212.0" text-anchor="middle">judge · confidence</text></g><g class="dg-node e" data-step="5"><rect x="360" y="170" width="130" height="56" rx="10"/><text class="dg-text" x="425.0" y="196.0" text-anchor="middle">Accept</text><text class="dg-sub" x="425.0" y="212.0" text-anchor="middle">return answer</text></g><g class="dg-node d" data-step="5"><rect x="530" y="170" width="120" height="56" rx="10"/><text class="dg-text" x="590.0" y="196.0" text-anchor="middle">Large model</text><text class="dg-sub" x="590.0" y="212.0" text-anchor="middle">escalation</text></g><g data-step="2"><text class="dg-label" x="509.0" y="43.0" text-anchor="middle">above</text></g><g data-step="4"><text class="dg-label" x="139.0" y="193.0" text-anchor="middle">answer</text></g><g data-step="5"><text class="dg-label" x="339.0" y="193.0" text-anchor="middle">pass</text></g><g data-step="5"><text class="dg-label" x="509.0" y="193.0" text-anchor="middle">else</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Router input</th>
+<th>Router output</th>
+<th>Decision cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>query text only (RouteLLM, Hybrid LLM)</td>
+<td>which model to call</td>
+<td>one cheap classifier call</td>
+</tr>
+<tr>
+<td>query + small model's answer (FrugalGPT cascade)</td>
+<td>accept or escalate</td>
+<td>a full small-model call per request</td>
+</tr>
+<tr>
+<td>intent label (rules / LLM classifier)</td>
+<td>which specialist prompt or agent</td>
+<td>a regex or one small LLM call</td>
+</tr>
+</tbody>
+</table></div>
   </div>
 </section>
 
@@ -75,7 +99,42 @@
     <span class="qtag b5">5 · Trade-offs</span>
     <h2>Trade-offs</h2>
     <hr>
-<div class="visual scroll-x"><table class="tbl"><tr><th>Approach</th><th>Benefit</th><th>Cost</th></tr><tr><td>Rules / keywords</td><td>transparent, zero latency</td><td>brittle; misses phrasing it did not foresee</td></tr><tr><td>Trained classifier</td><td>cheap, fast, tunable threshold</td><td>needs labelled or preference data; drifts with traffic</td></tr><tr><td>LLM as router</td><td>handles open-ended intents</td><td>adds a model call of latency and cost</td></tr><tr><td>Cascade</td><td>decides with the answer in hand</td><td>small-model latency added to every escalated request</td></tr><tr><td>Routing inside an agent loop</td><td>cheap model for easy steps</td><td>switching models loses the prompt cache, which belongs to one model</td></tr></table></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Approach</th>
+<th>Benefit</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rules / keywords</td>
+<td>transparent, zero latency</td>
+<td>brittle; misses phrasing it did not foresee</td>
+</tr>
+<tr>
+<td>Trained classifier</td>
+<td>cheap, fast, tunable threshold</td>
+<td>needs labelled or preference data; drifts with traffic</td>
+</tr>
+<tr>
+<td>LLM as router</td>
+<td>handles open-ended intents</td>
+<td>adds a model call of latency and cost</td>
+</tr>
+<tr>
+<td>Cascade</td>
+<td>decides with the answer in hand</td>
+<td>small-model latency added to every escalated request</td>
+</tr>
+<tr>
+<td>Routing inside an agent loop</td>
+<td>cheap model for easy steps</td>
+<td>switching models loses the prompt cache, which belongs to one model</td>
+</tr>
+</tbody>
+</table></div>
   </div>
 </section>
 
@@ -84,7 +143,42 @@
     <span class="qtag b6">6 · Failure modes</span>
     <h2>Failure modes</h2>
     <hr>
-<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Hard queries sent to the weak model</td><td>quality drops quietly on the tail</td><td>conservative threshold; monitor quality per route</td></tr><tr><td>Scorer fooled by fluent wrong answers</td><td>confident errors pass the cascade</td><td>verifiable checks where possible (tests, schemas); calibrate the scorer</td></tr><tr><td>Traffic drift</td><td>router accuracy decays after a launch</td><td>retrain on logged outcomes; shadow-evaluate new routers</td></tr><tr><td>Specialist mismatch</td><td>billing question lands in the coding agent</td><td>a fallback "general" route; let agents hand back</td></tr><tr><td>Format differences</td><td>models differ in tool-call behaviour</td><td>evaluate every destination on the same tool tasks</td></tr></table></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hard queries sent to the weak model</td>
+<td>quality drops quietly on the tail</td>
+<td>conservative threshold; monitor quality per route</td>
+</tr>
+<tr>
+<td>Scorer fooled by fluent wrong answers</td>
+<td>confident errors pass the cascade</td>
+<td>verifiable checks where possible (tests, schemas); calibrate the scorer</td>
+</tr>
+<tr>
+<td>Traffic drift</td>
+<td>router accuracy decays after a launch</td>
+<td>retrain on logged outcomes; shadow-evaluate new routers</td>
+</tr>
+<tr>
+<td>Specialist mismatch</td>
+<td>billing question lands in the coding agent</td>
+<td>a fallback "general" route; let agents hand back</td>
+</tr>
+<tr>
+<td>Format differences</td>
+<td>models differ in tool-call behaviour</td>
+<td>evaluate every destination on the same tool tasks</td>
+</tr>
+</tbody>
+</table></div>
   </div>
 </section>
 
@@ -127,31 +221,18 @@
 
 <script src="../../shared/deck.js"></script>
 <script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
 <script>
 (() => {
-  const { svg, clear } = Deck;
-  document.querySelectorAll('.dgm').forEach(box => {
-    const caps = JSON.parse(box.dataset.steps), els = [...box.querySelectorAll('[data-step]')], max = Math.max(0, ...els.map(e => +e.dataset.step)), cap = box.querySelector('.dgcap');
-    let k = max, full = true;
-    const show = () => {
-      els.forEach(e => { const s = +e.dataset.step; e.style.opacity = s <= k ? 1 : 0.08; e.style.transition = 'opacity .25s'; e.querySelectorAll('rect').forEach(r => r.style.strokeWidth = s === k && k ? 3.5 : 2); });
-      cap.innerHTML = k === 0 ? 'Press <b>next step</b> to walk through the design.' : k === max && full ? 'Full design shown. Press <b>reset</b>, then <b>next step</b>, to walk through it one step at a time.' : `<b>Step ${k} of ${max}.</b> ${caps[k - 1] || ''}`;
-      full = false;
-    };
-    box.querySelector('[data-dg=next]').addEventListener('click', () => { k = Math.min(max, k + 1); show(); });
-    box.querySelector('[data-dg=all]').addEventListener('click', () => { k = max; full = false; show(); cap.innerHTML = '<b>Full design.</b> ' + caps.map((c, i) => `${i + 1}. ${c}`).join(' '); });
-    box.querySelector('[data-dg=reset]').addEventListener('click', () => { k = 0; show(); });
-    show();
-  });
-  Deck.bind(['rP', 'rR', 'rE'], () => {
-    const p = Deck.val('rP') / 100, r = Deck.val('rR') / 100, e = Deck.val('rE') / 100;
-    Deck.out('rPo', Math.round(p * 100) + '%'); Deck.out('rRo', Math.round(r * 100) + '%'); Deck.out('rEo', Math.round(e * 100) + '%');
-    const router = p * r + (1 - p), cascade = r + (1 - p) + p * e;
-    Deck.hbars(document.getElementById('rBars'), [{ label: 'always the large model', value: 1, color: 'var(--d)', text: '100%' },
-      { label: 'router (predict, then send once)', value: router, color: 'var(--a)', text: (100 * router).toFixed(0) + '%' },
-      { label: 'cascade (small first, escalate on reject)', value: cascade, color: 'var(--e)', text: (100 * cascade).toFixed(0) + '%' }], { max: Math.max(1, cascade) * 1.05 });
-    document.getElementById('rOut').innerHTML = `If ${Math.round(p * 100)}% of requests are easy and the small model costs ${Math.round(r * 100)}% of the large one, a perfect router costs <b>${(100 * router).toFixed(0)}%</b> of always-large. A cascade pays the small model on every request and escalates the hard ${Math.round((1 - p) * 100)}% plus ${Math.round(e * 100)}% of easy ones its scorer wrongly rejects: <b>${(100 * cascade).toFixed(0)}%</b>, but it never answers a hard request with the small model unless the scorer is fooled. Real routers also misroute; RouteLLM reports over 2× savings in some cases without quality loss.`;
-  });
+Deck.bind(['rP', 'rR', 'rE'], () => {
+  const p = Deck.val('rP') / 100, r = Deck.val('rR') / 100, e = Deck.val('rE') / 100;
+  Deck.out('rPo', Math.round(p * 100) + '%'); Deck.out('rRo', Math.round(r * 100) + '%'); Deck.out('rEo', Math.round(e * 100) + '%');
+  const router = p * r + (1 - p), cascade = r + (1 - p) + p * e;
+  Deck.hbars(document.getElementById('rBars'), [{ label: 'always the large model', value: 1, color: 'var(--d)', text: '100%' },
+    { label: 'router (predict, then send once)', value: router, color: 'var(--a)', text: (100 * router).toFixed(0) + '%' },
+    { label: 'cascade (small first, escalate on reject)', value: cascade, color: 'var(--e)', text: (100 * cascade).toFixed(0) + '%' }], { max: Math.max(1, cascade) * 1.05 });
+  document.getElementById('rOut').innerHTML = `If ${Math.round(p * 100)}% of requests are easy and the small model costs ${Math.round(r * 100)}% of the large one, a perfect router costs <b>${(100 * router).toFixed(0)}%</b> of always-large. A cascade pays the small model on every request and escalates the hard ${Math.round((1 - p) * 100)}% plus ${Math.round(e * 100)}% of easy ones its scorer wrongly rejects: <b>${(100 * cascade).toFixed(0)}%</b>, but it never answers a hard request with the small model unless the scorer is fooled. Real routers also misroute; RouteLLM reports over 2× savings in some cases without quality loss.`;
+});
 })();
 </script>
 </body>

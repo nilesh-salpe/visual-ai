@@ -10,6 +10,17 @@ styles:
 scripts:
 - ../../shared/deck.js
 - ../../shared/learn.js
+- ../../shared/diagram.js
+intro:
+  kicker: Visual Agents · Context · 02
+  h1: Agentic retrieval (RAG)
+  sub: From retrieve-once-then-generate to agents that decide when and what to retrieve, check what they found, refine queries, and cite sources.
+  problem: Classic RAG retrieves once from the user's question. Multi-hop questions, vague queries and bad retrieval results then lead straight to wrong, confident
+    answers.
+  core: 'Make retrieval a <b>tool the agent calls repeatedly</b>: plan queries, retrieve, <b>grade</b> relevance, <b>rewrite</b> or broaden the query, fall back to
+    other sources, and answer with <b>citations</b>. Self-RAG trains the model to decide when to retrieve and critique; CRAG adds an evaluator and corrective web
+    search.'
+  hint: 'Previous: [Memory and context management](../01-memory/index.html) · Next: [Model Context Protocol (MCP) →](../03-mcp/index.html) · [All decks](../index.html)'
 papers:
 - rag_lewis
 - selfrag
@@ -17,20 +28,7 @@ papers:
 - greshake
 ---
 
-<!-- slide raw -->
-<section class="slide title-slide" id="s-title" data-chapter="Start">
-  <div class="inner">
-    <div class="kicker">Visual Agents · Context · 02</div>
-    <h1>Agentic retrieval (RAG)</h1>
-    <p class="sub">From retrieve-once-then-generate to agents that decide when and what to retrieve, check what they found, refine queries, and cite sources.</p>
-    <div class="ps">
-      <div class="p"><b>What is the problem?</b>Classic RAG retrieves once from the user's question. Multi-hop questions, vague queries and bad retrieval results then lead straight to wrong, confident answers.</div>
-      <div class="c"><b>Core idea</b>Make retrieval a <b>tool the agent calls repeatedly</b>: plan queries, retrieve, <b>grade</b> relevance, <b>rewrite</b> or broaden the query, fall back to other sources, and answer with <b>citations</b>. Self-RAG trains the model to decide when to retrieve and critique; CRAG adds an evaluator and corrective web search.</div>
-    </div>
-    <div class="toc" data-auto></div>
-    <p class="start-hint">Previous: <a href="../01-memory/index.html">Memory and context management</a> · Next: <a href="../03-mcp/index.html">Model Context Protocol (MCP) →</a> · <a href="../index.html">All decks</a></p>
-  </div>
-</section>
+<!-- slide from="title" -->
 
 <!-- slide id="s-problem" chapter="Problem" tag="1 · Problem" tagclass="b1" -->
 ## One retrieval is often not enough
@@ -66,22 +64,85 @@ CRAG: a lightweight evaluator scores retrieval; poor results trigger refinement 
 <!-- slide id="s-hld" chapter="High-level design" tag="3 · High-level design" tagclass="b3" -->
 ## Components
 
-<div class="visual dgm" data-steps="[&quot;A question arrives.&quot;, &quot;The agent plans one or more queries (rewriting the question, splitting multi-hop questions).&quot;, &quot;It searches indexes: semantic vector search and keyword search, often merged and reranked.&quot;, &quot;A grader (a model or prompt) checks relevance; weak results lead to rewritten queries or more searches.&quot;, &quot;If the index lacks the answer, it falls back to other sources such as web search.&quot;, &quot;It answers, citing the passages used.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah10" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="132.0" y1="148.7" x2="176.0" y2="149.2" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="3"><line x1="304.3" y1="118.0" x2="395.8" y2="64.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="3"><line x1="322.0" y1="140.8" x2="376.0" y2="133.8" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="4"><line x1="473.2" y1="62.0" x2="571.5" y2="156.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="4"><line x1="512.0" y1="151.4" x2="556.0" y2="168.7" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="4"><line x1="558.0" y1="183.0" x2="324.0" y2="157.9" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah10)"/></g><g data-step="5"><line x1="306.7" y1="182.0" x2="393.6" y2="231.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah10)"/></g><g data-step="6"><line x1="250.0" y1="182.0" x2="250.0" y2="236.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah10)"/></g><g data-step="1"><rect x="20" y="120" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="75.0" y="153.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Question</text></g><g data-step="2"><rect x="180" y="120" width="140" height="60" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="250.0" y="148.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Agent</text><text x="250.0" y="164.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">plan queries</text></g><g data-step="3"><rect x="380" y="10" width="130" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="445.0" y="33.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Vector search</text><text x="445.0" y="49.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">semantic</text></g><g data-step="3"><rect x="380" y="100" width="130" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="445.0" y="123.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Keyword search</text><text x="445.0" y="139.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">BM25</text></g><g data-step="5"><rect x="380" y="235" width="130" height="50" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="445.0" y="258.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Web / APIs</text><text x="445.0" y="274.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">fresh data</text></g><g data-step="4"><rect x="560" y="160" width="90" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="605.0" y="186.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Grader</text><text x="605.0" y="202.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">relevant?</text></g><g data-step="6"><rect x="180" y="240" width="140" height="50" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="250.0" y="270.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Answer + citations</text></g><g data-step="4"><text x="441.0" y="165.4" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">rewrite / more</text></g><g data-step="5"><text x="350.2" y="201.5" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">fallback</text></g></svg><p class="readout dgcap"></p></div>
+::: diagram 660x300
+nodes:
+  q: {at: [20, 120, 110, 56], text: Question, color: f, step: 1}
+  ag: {at: [180, 120, 140, 60], text: Agent, sub: plan queries, color: a, step: 2}
+  vs: {at: [380, 10, 130, 50], text: Vector search, sub: semantic, color: c, step: 3}
+  kw: {at: [380, 100, 130, 50], text: Keyword search, sub: BM25, color: c, step: 3}
+  web: {at: [380, 235, 130, 50], text: Web / APIs, sub: fresh data, color: b, step: 5}
+  gr: {at: [560, 160, 90, 56], text: Grader, sub: 'relevant?', color: d, step: 4}
+  ans: {at: [180, 240, 140, 50], text: Answer + citations, color: e, step: 6}
+edges:
+  - {from: q, to: ag, step: 2}
+  - {from: ag, to: vs, step: 3}
+  - {from: ag, to: kw, step: 3}
+  - {from: vs, to: gr, step: 4}
+  - {from: kw, to: gr, step: 4}
+  - {from: gr, to: ag, label: rewrite / more, step: 4, style: dash}
+  - {from: ag, to: web, label: fallback, step: 5, style: dash}
+  - {from: ag, to: ans, step: 6}
+steps:
+  - A question arrives.
+  - 'The agent plans one or more queries (rewriting the question, splitting multi-hop questions).'
+  - 'It searches indexes: semantic vector search and keyword search, often merged and reranked.'
+  - A grader (a model or prompt) checks relevance; weak results lead to rewritten queries or more searches.
+  - 'If the index lacks the answer, it falls back to other sources such as web search.'
+  - 'It answers, citing the passages used.'
+:::
 
 <!-- slide id="s-lld" chapter="Low-level design" tag="4 · Low-level design" tagclass="b4" -->
 ## The retrieval loop in detail
 
-<div class="visual dgm" data-steps="[&quot;Turn the question into search queries; split multi-hop questions into steps.&quot;, &quot;Retrieve top-k from hybrid (vector + keyword) search and rerank.&quot;, &quot;Grade each passage for relevance; drop the irrelevant ones.&quot;, &quot;Decide whether the kept evidence answers the question.&quot;, &quot;If not, refine: a new query, a different index, or web search; stop after a budget.&quot;, &quot;Generate the answer from kept passages and check each claim is supported by a cited passage.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah11" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="182.0" y1="45.0" x2="246.0" y2="45.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="3"><line x1="412.0" y1="45.0" x2="476.0" y2="45.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="4"><line x1="560.0" y1="72.0" x2="560.0" y2="126.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="5"><line x1="478.0" y1="155.0" x2="414.0" y2="155.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="5"><line x1="330.0" y1="128.0" x2="330.0" y2="74.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="6"><line x1="560.0" y1="182.0" x2="560.0" y2="226.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="1"><rect x="20" y="20" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="100.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Plan query</text><text x="100.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">rewrite / decompose</text></g><g data-step="2"><rect x="250" y="20" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="330.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Retrieve k</text><text x="330.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">hybrid + rerank</text></g><g data-step="3"><rect x="480" y="20" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="560.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Grade</text><text x="560.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">per passage</text></g><g data-step="4"><rect x="480" y="130" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="560.0" y="160.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Enough evidence?</text></g><g data-step="5"><rect x="250" y="130" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="330.0" y="153.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Refine</text><text x="330.0" y="169.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">new query / source</text></g><g data-step="6"><rect x="480" y="230" width="160" height="50" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="560.0" y="253.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Generate + cite</text><text x="560.0" y="269.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">check support</text></g><g data-step="5"><text x="446.0" y="150.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">no</text></g><g data-step="6"><text x="560.0" y="199.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">yes</text></g></svg><p class="readout dgcap"></p></div>
+::: diagram 660x300
+nodes:
+  p: {at: [20, 20, 160, 50], text: Plan query, sub: rewrite / decompose, color: a, step: 1}
+  r: {at: [250, 20, 160, 50], text: Retrieve k, sub: hybrid + rerank, color: c, step: 2}
+  g: {at: [480, 20, 160, 50], text: Grade, sub: per passage, color: d, step: 3}
+  e: {at: [480, 130, 160, 50], text: 'Enough evidence?', color: b, step: 4}
+  w: {at: [250, 130, 160, 50], text: Refine, sub: new query / source, color: c, step: 5}
+  a: {at: [480, 230, 160, 50], text: Generate + cite, sub: check support, color: e, step: 6}
+edges:
+  - {from: p, to: r, step: 2}
+  - {from: r, to: g, step: 3}
+  - {from: g, to: e, step: 4}
+  - {from: e, to: w, label: 'no', step: 5}
+  - {from: w, to: r, step: 5}
+  - {from: e, to: a, label: 'yes', step: 6}
+steps:
+  - Turn the question into search queries; split multi-hop questions into steps.
+  - Retrieve top-k from hybrid (vector + keyword) search and rerank.
+  - Grade each passage for relevance; drop the irrelevant ones.
+  - Decide whether the kept evidence answers the question.
+  - 'If not, refine: a new query, a different index, or web search; stop after a budget.'
+  - Generate the answer from kept passages and check each claim is supported by a cited passage.
+:::
 
 <!-- slide id="s-trade" chapter="Trade-offs" tag="5 · Trade-offs" tagclass="b5" -->
 ## Trade-offs
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Choice</th><th>Benefit</th><th>Cost</th></tr><tr><td>Classic one-shot RAG</td><td>one retrieval, low latency</td><td>fails on multi-hop and bad retrieval</td></tr><tr><td>Agentic retrieval loop</td><td>handles multi-hop, recovers from misses</td><td>several model and search calls per question</td></tr><tr><td>Pre-built index</td><td>fast, controlled corpus</td><td>staleness; ingestion pipeline to maintain</td></tr><tr><td>Just-in-time fetching</td><td>always fresh, no index</td><td>slower; depends on live sources</td></tr><tr><td>Small chunks</td><td>precise matches</td><td>lose surrounding context; more chunks to read</td></tr></table></div>
+::: table
+| Choice | Benefit | Cost |
+|---|---|---|
+| Classic one-shot RAG | one retrieval, low latency | fails on multi-hop and bad retrieval |
+| Agentic retrieval loop | handles multi-hop, recovers from misses | several model and search calls per question |
+| Pre-built index | fast, controlled corpus | staleness; ingestion pipeline to maintain |
+| Just-in-time fetching | always fresh, no index | slower; depends on live sources |
+| Small chunks | precise matches | lose surrounding context; more chunks to read |
+:::
 
 <!-- slide id="s-fail" chapter="Failure modes" tag="6 · Failure modes" tagclass="b6" -->
 ## Failure modes
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Retrieval miss</td><td>answers from memory or says unknown</td><td>hybrid search, query rewriting, recall evals</td></tr><tr><td>Distracting passages</td><td>answer swayed by irrelevant text</td><td>grading and filtering; fewer, better passages</td></tr><tr><td>Citation hallucination</td><td>cites passages that do not support the claim</td><td>verify claim-passage support</td></tr><tr><td>Indirect prompt injection</td><td>retrieved page instructs the agent</td><td>treat retrieved text as data; restrict actions (Greshake et al.)</td></tr><tr><td>Search loops</td><td>keeps re-searching similar queries</td><td>budget; detect near-duplicate queries</td></tr></table></div>
+::: table
+| Failure | Symptom | Mitigation |
+|---|---|---|
+| Retrieval miss | answers from memory or says unknown | hybrid search, query rewriting, recall evals |
+| Distracting passages | answer swayed by irrelevant text | grading and filtering; fewer, better passages |
+| Citation hallucination | cites passages that do not support the claim | verify claim-passage support |
+| Indirect prompt injection | retrieved page instructs the agent | treat retrieved text as data; restrict actions (Greshake et al.) |
+| Search loops | keeps re-searching similar queries | budget; detect near-duplicate queries |
+:::
 
 <!-- slide id="s-prod" chapter="Production" tag="7 · Challenges in production" tagclass="b7" -->
 ## In production

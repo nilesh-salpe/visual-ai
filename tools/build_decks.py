@@ -35,6 +35,11 @@ A huge batch maximizes tokens/s …
 
 ::: reveal [myth] [label=…]            # open question: "? question", "> answer"
 ::: deep Title                         # "In detail" box
+::: diagram 660x300                    # steppable box-and-arrow diagram in YAML (see tools/decks/diagram.py)
+::: table                              # a Markdown pipe table, styled as .tbl
+::: code [language]                    # a code sample, shown verbatim
+::: colab <notebook path> [label]      # "Try it in Colab" banner; the body is the description
+<!-- slide from="title" -->             # the title slide, from the front-matter `intro` (kicker, h1, sub, problem, core, hint)
 {{glance}}                             # the at-a-glance diagram from front matter
 <!-- slide id="s-example" from="example" -->   # a slide generated from front-matter data (example, traps, papers)
 <!-- slide raw -->                     # a slide given as raw HTML, verbatim, up to the next marker
@@ -50,6 +55,9 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.join(REPO, 'tools', 'decks'))
 from acronyms import process as expand_acronyms                     # noqa: E402
 from extras import glance_html, example_slide, traps_slide, papers_slide  # noqa: E402
+import diagram                                                       # noqa: E402
+
+COLAB = 'https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/'
 
 MD = markdown.Markdown(extensions=['attr_list', 'md_in_html', 'tables'])
 MARKER = re.compile(r'^<!-- slide(.*?)-->\s*$', re.M)
@@ -132,6 +140,16 @@ def render_block(kind, args, body):
         return f'<div class="deep"><h4>{H.escape(args)}</h4>{md(body)}</div>'
     if kind == 'raw':
         return body
+    if kind == 'diagram':
+        return diagram.render(args, body, where=CURRENT[0])
+    if kind == 'table':
+        return '<div class="visual scroll-x">' + md(body.strip()).replace('<table>', '<table class="tbl">', 1) + '</div>'
+    if kind == 'code':
+        return f'<div class="visual"><pre class="code">{H.escape(body.strip(chr(10)))}</pre></div>'
+    if kind == 'colab':
+        path = args.split()[0]
+        return (f'<div class="visual colab-banner"><div><b>🛠 Try it in Colab</b><p class="caption">{md_inline(body)}</p></div>'
+                f'<a class="btn primary" href="{COLAB}{path}" target="_blank" rel="noopener">Open notebook →</a></div>')
     raise ValueError(f'unknown block ::: {kind}')
 
 
@@ -145,6 +163,8 @@ def render_slide(attrs, content, fm):
         return traps_slide(fm['traps'], *([(a['tagclass'], a['tag'])] if 'tag' in a else []))
     if a.get('from') == 'papers':
         return papers_slide(fm['papers'])
+    if a.get('from') == 'title':
+        return title_slide(fm['intro'])
     title, _, body = content.strip().partition('\n')
     title = re.sub(r'^##\s*', '', title)
     tag = f'<span class="qtag {a.get("tagclass", "")}">{a["tag"]}</span>' if 'tag' in a else ''
@@ -155,6 +175,22 @@ def render_slide(attrs, content, fm):
     <h2>{md_inline(title)}</h2>
     <hr>
 {blocks(body, fm)}
+  </div>
+</section>'''
+
+
+def title_slide(t):
+    return f'''<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">{H.escape(t["kicker"])}</div>
+    <h1>{md_inline(t["h1"])}</h1>
+    <p class="sub">{md_inline(t["sub"])}</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>{md_inline(t["problem"])}</div>
+      <div class="c"><b>Core idea</b>{md_inline(t["core"])}</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">{md_inline(t["hint"])}</p>
   </div>
 </section>'''
 
@@ -180,7 +216,11 @@ def normalize(fm):
             t[k] = [tuple(p.strip() for p in s.split('::', 1)) for s in t[k]]
 
 
+CURRENT = ['']
+
+
 def build(folder):
+    CURRENT[0] = os.path.relpath(folder, os.path.join(REPO, 'content'))
     src = open(os.path.join(folder, 'deck.md')).read()
     _, front, body = src.split('---\n', 2)
     fm = yaml.safe_load(front)

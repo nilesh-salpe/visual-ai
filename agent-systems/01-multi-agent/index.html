@@ -56,7 +56,7 @@
     <span class="qtag b3">3 · High-level design</span>
     <h2>Orchestrator-workers</h2>
     <hr>
-<div class="visual dgm" data-steps="[&quot;A user query arrives.&quot;, &quot;The lead agent analyses it and plans the approach.&quot;, &quot;It spawns subagents in parallel, each with a task specification and its own context window.&quot;, &quot;Subagents use tools (search, fetch, code) independently.&quot;, &quot;They return condensed findings; the lead synthesises them, saving its plan to memory in case its own context fills up.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah14" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="122.0" y1="148.0" x2="166.0" y2="148.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah14)"/></g><g data-step="3"><line x1="322.0" y1="113.5" x2="410.2" y2="74.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah14)"/></g><g data-step="3"><line x1="322.0" y1="145.3" x2="396.0" y2="142.7" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah14)"/></g><g data-step="3"><line x1="322.0" y1="177.1" x2="398.3" y2="206.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah14)"/></g><g data-step="4"><line x1="552.0" y1="140.0" x2="586.0" y2="140.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah14)"/></g><g data-step="5"><line x1="418.8" y1="81.1" x2="328.1" y2="121.7" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah14)"/></g><g data-step="5"><line x1="245.0" y1="188.0" x2="245.0" y2="236.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah14)"/></g><g data-step="1"><rect x="20" y="120" width="100" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="70.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">User</text><text x="70.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">query</text></g><g data-step="2"><rect x="170" y="110" width="150" height="76" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="245.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Lead agent</text><text x="245.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">plan · delegate</text></g><g data-step="3"><rect x="400" y="20" width="150" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="475.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Subagent 1</text><text x="475.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">own context</text></g><g data-step="3"><rect x="400" y="115" width="150" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="475.0" y="138.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Subagent 2</text><text x="475.0" y="154.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">own context</text></g><g data-step="3"><rect x="400" y="210" width="150" height="50" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="475.0" y="233.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Subagent 3</text><text x="475.0" y="249.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">own context</text></g><g data-step="4"><rect x="590" y="115" width="60" height="50" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="620.0" y="145.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Tools</text></g><g data-step="5"><rect x="170" y="240" width="150" height="50" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="245.0" y="263.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Memory</text><text x="245.0" y="279.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">plan, results</text></g><g data-step="3"><text x="366.1" y="88.8" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">task spec</text></g><g data-step="5"><text x="373.4" y="116.4" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">findings</text></g><g data-step="5"><text x="245.0" y="207.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">save plan</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual dgm" data-steps="[&quot;A user query arrives.&quot;, &quot;The lead agent analyses it and plans the approach.&quot;, &quot;It spawns subagents in parallel, each with a task specification and its own context window.&quot;, &quot;Subagents use tools (search, fetch, code) independently.&quot;, &quot;They return condensed findings; the lead synthesises them, saving its plan to memory in case its own context fills up.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga40" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="122.0" y1="148.0" x2="166.0" y2="148.0" marker-end="url(#dga40)"/></g><g class="dg-edge" data-step="3"><line x1="322.0" y1="113.5" x2="410.2" y2="74.0" marker-end="url(#dga40)"/></g><g class="dg-edge" data-step="3"><line x1="322.0" y1="145.3" x2="396.0" y2="142.7" marker-end="url(#dga40)"/></g><g class="dg-edge" data-step="3"><line x1="322.0" y1="177.1" x2="398.3" y2="206.0" marker-end="url(#dga40)"/></g><g class="dg-edge" data-step="4"><line x1="552.0" y1="140.0" x2="586.0" y2="140.0" marker-end="url(#dga40)"/></g><g class="dg-edge dash" data-step="5"><line x1="418.8" y1="81.1" x2="328.1" y2="121.7" marker-end="url(#dga40)"/></g><g class="dg-edge dash" data-step="5"><line x1="245.0" y1="188.0" x2="245.0" y2="236.0" marker-end="url(#dga40)"/></g><g class="dg-node f" data-step="1"><rect x="20" y="120" width="100" height="56" rx="10"/><text class="dg-text" x="70.0" y="146.0" text-anchor="middle">User</text><text class="dg-sub" x="70.0" y="162.0" text-anchor="middle">query</text></g><g class="dg-node a" data-step="2"><rect x="170" y="110" width="150" height="76" rx="10"/><text class="dg-text" x="245.0" y="146.0" text-anchor="middle">Lead agent</text><text class="dg-sub" x="245.0" y="162.0" text-anchor="middle">plan · delegate</text></g><g class="dg-node c" data-step="3"><rect x="400" y="20" width="150" height="50" rx="10"/><text class="dg-text" x="475.0" y="43.0" text-anchor="middle">Subagent 1</text><text class="dg-sub" x="475.0" y="59.0" text-anchor="middle">own context</text></g><g class="dg-node c" data-step="3"><rect x="400" y="115" width="150" height="50" rx="10"/><text class="dg-text" x="475.0" y="138.0" text-anchor="middle">Subagent 2</text><text class="dg-sub" x="475.0" y="154.0" text-anchor="middle">own context</text></g><g class="dg-node c" data-step="3"><rect x="400" y="210" width="150" height="50" rx="10"/><text class="dg-text" x="475.0" y="233.0" text-anchor="middle">Subagent 3</text><text class="dg-sub" x="475.0" y="249.0" text-anchor="middle">own context</text></g><g class="dg-node b" data-step="4"><rect x="590" y="115" width="60" height="50" rx="10"/><text class="dg-text" x="620.0" y="145.0" text-anchor="middle">Tools</text></g><g class="dg-node e" data-step="5"><rect x="170" y="240" width="150" height="50" rx="10"/><text class="dg-text" x="245.0" y="263.0" text-anchor="middle">Memory</text><text class="dg-sub" x="245.0" y="279.0" text-anchor="middle">plan, results</text></g><g data-step="3"><text class="dg-label" x="366.1" y="88.8" text-anchor="middle">task spec</text></g><g data-step="5"><text class="dg-label" x="373.4" y="116.4" text-anchor="middle">findings</text></g><g data-step="5"><text class="dg-label" x="245.0" y="207.0" text-anchor="middle">save plan</text></g></svg><p class="readout dgcap"></p></div>
   </div>
 </section>
 
@@ -65,7 +65,7 @@
     <span class="qtag b4">4 · Low-level design</span>
     <h2>Delegation and synthesis</h2>
     <hr>
-<div class="visual dgm" data-steps="[&quot;Each subagent gets a precise spec: the objective, the expected output format, which tools to use and where its task ends; vague delegation causes duplicated work.&quot;, &quot;It runs its own agent loop with a clean context.&quot;, &quot;It returns a compact result rather than its full trajectory.&quot;, &quot;The lead merges results, removing duplicates and resolving conflicts.&quot;, &quot;If gaps remain, it spawns further subagents.&quot;, &quot;The final answer cites sources gathered by the subagents.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah15" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="222.0" y1="65.2" x2="256.0" y2="60.2" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah15)"/></g><g data-step="3"><line x1="422.0" y1="48.0" x2="456.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah15)"/></g><g data-step="4"><line x1="550.0" y1="78.0" x2="550.0" y2="126.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah15)"/></g><g data-step="5"><line x1="458.0" y1="158.0" x2="424.0" y2="158.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah15)"/></g><g data-step="5"><line x1="340.0" y1="128.0" x2="340.0" y2="80.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah15)"/></g><g data-step="6"><line x1="550.0" y1="188.0" x2="550.0" y2="236.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah15)"/></g><g data-step="1"><rect x="20" y="20" width="200" height="120" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="120.0" y="78.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Task spec</text><text x="120.0" y="94.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">objective · output format · tools · boundaries · effort</text></g><g data-step="2"><rect x="260" y="20" width="160" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="340.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Subagent loop</text><text x="340.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">search, read, think</text></g><g data-step="3"><rect x="460" y="20" width="180" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="550.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Condensed result</text><text x="550.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">facts + sources</text></g><g data-step="4"><rect x="460" y="130" width="180" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="550.0" y="156.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Lead synthesises</text><text x="550.0" y="172.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">dedupe · resolve conflicts</text></g><g data-step="5"><rect x="260" y="130" width="160" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="340.0" y="156.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">More subagents?</text><text x="340.0" y="172.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">gaps remain</text></g><g data-step="6"><rect x="460" y="240" width="180" height="50" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="550.0" y="263.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Final answer</text><text x="550.0" y="279.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">with citations</text></g><g data-step="5"><text x="441.0" y="153.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">gaps</text></g><g data-step="6"><text x="550.0" y="207.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">done</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual dgm" data-steps="[&quot;Each subagent gets a precise spec: the objective, the expected output format, which tools to use and where its task ends; vague delegation causes duplicated work.&quot;, &quot;It runs its own agent loop with a clean context.&quot;, &quot;It returns a compact result rather than its full trajectory.&quot;, &quot;The lead merges results, removing duplicates and resolving conflicts.&quot;, &quot;If gaps remain, it spawns further subagents.&quot;, &quot;The final answer cites sources gathered by the subagents.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga41" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="222.0" y1="65.2" x2="256.0" y2="60.2" marker-end="url(#dga41)"/></g><g class="dg-edge" data-step="3"><line x1="422.0" y1="48.0" x2="456.0" y2="48.0" marker-end="url(#dga41)"/></g><g class="dg-edge" data-step="4"><line x1="550.0" y1="78.0" x2="550.0" y2="126.0" marker-end="url(#dga41)"/></g><g class="dg-edge" data-step="5"><line x1="458.0" y1="158.0" x2="424.0" y2="158.0" marker-end="url(#dga41)"/></g><g class="dg-edge dash" data-step="5"><line x1="340.0" y1="128.0" x2="340.0" y2="80.0" marker-end="url(#dga41)"/></g><g class="dg-edge" data-step="6"><line x1="550.0" y1="188.0" x2="550.0" y2="236.0" marker-end="url(#dga41)"/></g><g class="dg-node a" data-step="1"><rect x="20" y="20" width="200" height="120" rx="10"/><text class="dg-text" x="120.0" y="78.0" text-anchor="middle">Task spec</text><text class="dg-sub" x="120.0" y="94.0" text-anchor="middle">objective · output format · tools · boundaries · effort</text></g><g class="dg-node c" data-step="2"><rect x="260" y="20" width="160" height="56" rx="10"/><text class="dg-text" x="340.0" y="46.0" text-anchor="middle">Subagent loop</text><text class="dg-sub" x="340.0" y="62.0" text-anchor="middle">search, read, think</text></g><g class="dg-node e" data-step="3"><rect x="460" y="20" width="180" height="56" rx="10"/><text class="dg-text" x="550.0" y="46.0" text-anchor="middle">Condensed result</text><text class="dg-sub" x="550.0" y="62.0" text-anchor="middle">facts + sources</text></g><g class="dg-node a" data-step="4"><rect x="460" y="130" width="180" height="56" rx="10"/><text class="dg-text" x="550.0" y="156.0" text-anchor="middle">Lead synthesises</text><text class="dg-sub" x="550.0" y="172.0" text-anchor="middle">dedupe · resolve conflicts</text></g><g class="dg-node d" data-step="5"><rect x="260" y="130" width="160" height="56" rx="10"/><text class="dg-text" x="340.0" y="156.0" text-anchor="middle">More subagents?</text><text class="dg-sub" x="340.0" y="172.0" text-anchor="middle">gaps remain</text></g><g class="dg-node b" data-step="6"><rect x="460" y="240" width="180" height="50" rx="10"/><text class="dg-text" x="550.0" y="263.0" text-anchor="middle">Final answer</text><text class="dg-sub" x="550.0" y="279.0" text-anchor="middle">with citations</text></g><g data-step="5"><text class="dg-label" x="441.0" y="153.0" text-anchor="middle">gaps</text></g><g data-step="6"><text class="dg-label" x="550.0" y="207.0" text-anchor="middle">done</text></g></svg><p class="readout dgcap"></p></div>
   </div>
 </section>
 
@@ -74,7 +74,42 @@
     <span class="qtag b5">5 · Trade-offs</span>
     <h2>When it pays off</h2>
     <hr>
-<div class="visual scroll-x"><table class="tbl"><tr><th>Dimension</th><th>Single agent</th><th>Multi-agent</th></tr><tr><td>Breadth-first, parallelisable tasks</td><td>slow, context overflows</td><td>faster; separate contexts add capacity</td></tr><tr><td>Tightly coupled tasks (shared state, many dependencies)</td><td>simpler and coherent</td><td>poor fit: coordination overhead (Anthropic notes most coding tasks)</td></tr><tr><td>Token cost</td><td>≈ 4× chat</td><td>≈ 15× chat</td></tr><tr><td>Debuggability</td><td>one trace</td><td>many interacting traces</td></tr><tr><td>Value per task needed</td><td>moderate</td><td>high enough to pay for the tokens</td></tr></table></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Dimension</th>
+<th>Single agent</th>
+<th>Multi-agent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Breadth-first, parallelisable tasks</td>
+<td>slow, context overflows</td>
+<td>faster; separate contexts add capacity</td>
+</tr>
+<tr>
+<td>Tightly coupled tasks (shared state, many dependencies)</td>
+<td>simpler and coherent</td>
+<td>poor fit: coordination overhead (Anthropic notes most coding tasks)</td>
+</tr>
+<tr>
+<td>Token cost</td>
+<td>≈ 4× chat</td>
+<td>≈ 15× chat</td>
+</tr>
+<tr>
+<td>Debuggability</td>
+<td>one trace</td>
+<td>many interacting traces</td>
+</tr>
+<tr>
+<td>Value per task needed</td>
+<td>moderate</td>
+<td>high enough to pay for the tokens</td>
+</tr>
+</tbody>
+</table></div>
   </div>
 </section>
 
@@ -83,7 +118,42 @@
     <span class="qtag b6">6 · Failure modes</span>
     <h2>Failure modes</h2>
     <hr>
-<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Vague delegation</td><td>subagents duplicate each other or miss parts</td><td>explicit objectives, boundaries and output formats</td></tr><tr><td>Runaway spawning</td><td>dozens of subagents for a simple query</td><td>scale effort to query complexity; caps</td></tr><tr><td>Conflicting results</td><td>contradictory findings merged naively</td><td>source quality checks; explicit conflict resolution</td></tr><tr><td>Error amplification</td><td>one bad finding propagates into the synthesis</td><td>citations, verification passes</td></tr><tr><td>Lost lead context</td><td>lead forgets the plan in long runs</td><td>persist plan to memory; compaction</td></tr></table></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Vague delegation</td>
+<td>subagents duplicate each other or miss parts</td>
+<td>explicit objectives, boundaries and output formats</td>
+</tr>
+<tr>
+<td>Runaway spawning</td>
+<td>dozens of subagents for a simple query</td>
+<td>scale effort to query complexity; caps</td>
+</tr>
+<tr>
+<td>Conflicting results</td>
+<td>contradictory findings merged naively</td>
+<td>source quality checks; explicit conflict resolution</td>
+</tr>
+<tr>
+<td>Error amplification</td>
+<td>one bad finding propagates into the synthesis</td>
+<td>citations, verification passes</td>
+</tr>
+<tr>
+<td>Lost lead context</td>
+<td>lead forgets the plan in long runs</td>
+<td>persist plan to memory; compaction</td>
+</tr>
+</tbody>
+</table></div>
   </div>
 </section>
 
@@ -123,24 +193,6 @@
 
 <script src="../../shared/deck.js"></script>
 <script src="../../shared/learn.js"></script>
-<script>
-(() => {
-  const { svg, clear } = Deck;
-  document.querySelectorAll('.dgm').forEach(box => {
-    const caps = JSON.parse(box.dataset.steps), els = [...box.querySelectorAll('[data-step]')], max = Math.max(0, ...els.map(e => +e.dataset.step)), cap = box.querySelector('.dgcap');
-    let k = max, full = true;
-    const show = () => {
-      els.forEach(e => { const s = +e.dataset.step; e.style.opacity = s <= k ? 1 : 0.08; e.style.transition = 'opacity .25s'; e.querySelectorAll('rect').forEach(r => r.style.strokeWidth = s === k && k ? 3.5 : 2); });
-      cap.innerHTML = k === 0 ? 'Press <b>next step</b> to walk through the design.' : k === max && full ? 'Full design shown. Press <b>reset</b>, then <b>next step</b>, to walk through it one step at a time.' : `<b>Step ${k} of ${max}.</b> ${caps[k - 1] || ''}`;
-      full = false;
-    };
-    box.querySelector('[data-dg=next]').addEventListener('click', () => { k = Math.min(max, k + 1); show(); });
-    box.querySelector('[data-dg=all]').addEventListener('click', () => { k = max; full = false; show(); cap.innerHTML = '<b>Full design.</b> ' + caps.map((c, i) => `${i + 1}. ${c}`).join(' '); });
-    box.querySelector('[data-dg=reset]').addEventListener('click', () => { k = 0; show(); });
-    show();
-  });
-
-})();
-</script>
+<script src="../../shared/diagram.js"></script>
 </body>
 </html>

@@ -63,4 +63,11 @@ terms there. Papers live once in `content/papers.yml` and are referenced by key.
 ## Agent decks (Visual Agents)
 
 Decks under `content/agent-*/` use a different template: title → `s-problem` (1 · Problem) → `s-core` (2 · Core idea) → `s-hld` (3 · High-level design) → `s-lld` (4 · Low-level design) → `s-trade` (5 · Trade-offs) → `s-fail` (6 · Failure modes) → `s-prod` (7 · Challenges in production) → `s-papers`.
-Design diagrams are inline SVG with `data-step` attributes inside a `.dgm` container; the widget script shows the full diagram on load and lets readers step through it with the captions stored in `data-steps`. Keep each diagram's SVG on one line so Markdown passes it through untouched, and give every diagram a unique arrow-marker id.
+Agent decks keep content, markup and style apart: `deck.md` holds only text and data, the build renders it, and all styling is in `shared/deck.css` and `shared/learn.css` (no inline styles).
+
+* **Title slide**: `<!-- slide from="title" -->`, rendered from the front-matter `intro` (`kicker`, `h1`, `sub`, `problem`, `core`, `hint`).
+* **Diagrams**: a `::: diagram 660x300` block in YAML: `nodes` (`at: [x, y, w, h]`, `text`, `sub`, `color` a-e or f, `step`), `edges` (`from`, `to`, `label`, `step`, `style: dash | back`) and `steps` (one caption per step). `tools/decks/diagram.py` draws the SVG and warns when an arrow crosses a box it does not connect; `shared/diagram.js` (listed in `scripts`) shows the full diagram on load and steps through it.
+* **Tables**: a Markdown pipe table inside `::: table`.
+* **Code**: `::: code` shows its body verbatim.
+* **Notebooks**: `::: colab build-it/<topic>/<notebook>.ipynb` with a one-line description as the body.
+* **Widgets**: controls as HTML in `deck.md` (classes only), behaviour in `widget.js`.

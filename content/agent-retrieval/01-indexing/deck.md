@@ -10,6 +10,18 @@ styles:
 scripts:
 - ../../shared/deck.js
 - ../../shared/learn.js
+- ../../shared/diagram.js
+intro:
+  kicker: Visual Agents · Retrieval · 01
+  h1: Indexing pipelines for retrieval
+  sub: 'Everything that happens before the first query: parsing, chunking, adding context and metadata, embedding, lexical indexes, and keeping the index fresh as
+    documents change.'
+  problem: Retrieval quality is mostly decided at indexing time. A chunk that says "revenue grew 3% over the previous quarter" without naming the company cannot be
+    found by a query that names it; garbled tables, stale documents and missing permissions break even the best retriever.
+  core: 'Run an <b>indexing pipeline</b>: parse → chunk → <b>enrich</b> (context, metadata, access lists) → embed and build a <b>lexical (BM25) index</b> → write,
+    with <b>incremental updates</b> keyed by content hash. Anthropic''s <b>Contextual Retrieval</b> prepends 50-100 tokens of chunk-specific context, cutting top-20
+    retrieval failures by 35%, by 49% with BM25, and by 67% with reranking.'
+  hint: 'Next: [Vector databases →](../02-vector-databases/index.html) · [All decks](../index.html)'
 papers:
 - contextual_retrieval
 - late_chunking
@@ -18,20 +30,7 @@ papers:
 - dpr
 ---
 
-<!-- slide raw -->
-<section class="slide title-slide" id="s-title" data-chapter="Start">
-  <div class="inner">
-    <div class="kicker">Visual Agents · Retrieval · 01</div>
-    <h1>Indexing pipelines for retrieval</h1>
-    <p class="sub">Everything that happens before the first query: parsing, chunking, adding context and metadata, embedding, lexical indexes, and keeping the index fresh as documents change.</p>
-    <div class="ps">
-      <div class="p"><b>What is the problem?</b>Retrieval quality is mostly decided at indexing time. A chunk that says "revenue grew 3% over the previous quarter" without naming the company cannot be found by a query that names it; garbled tables, stale documents and missing permissions break even the best retriever.</div>
-      <div class="c"><b>Core idea</b>Run an <b>indexing pipeline</b>: parse → chunk → <b>enrich</b> (context, metadata, access lists) → embed and build a <b>lexical (BM25) index</b> → write, with <b>incremental updates</b> keyed by content hash. Anthropic's <b>Contextual Retrieval</b> prepends 50-100 tokens of chunk-specific context, cutting top-20 retrieval failures by 35%, by 49% with BM25, and by 67% with reranking.</div>
-    </div>
-    <div class="toc" data-auto></div>
-    <p class="start-hint">Next: <a href="../02-vector-databases/index.html">Vector databases →</a> · <a href="../index.html">All decks</a></p>
-  </div>
-</section>
+<!-- slide from="title" -->
 
 <!-- slide id="s-problem" chapter="Problem" tag="1 · Problem" tagclass="b1" -->
 ## Bad indexes cannot be rescued at query time
@@ -72,24 +71,99 @@ When the whole knowledge base is under about 200,000 tokens (about 500 pages), A
 <!-- slide id="s-hld" chapter="High-level design" tag="3 · High-level design" tagclass="b3" -->
 ## The pipeline
 
-<div class="visual dgm" data-steps="[&quot;Connectors pull documents from each source with their permissions and timestamps.&quot;, &quot;Parsing turns files into clean text, keeping tables and headings as structure.&quot;, &quot;Chunking splits on structure into pieces of a few hundred tokens, possibly with overlap.&quot;, &quot;Enrichment adds the document title and section, an LLM-written context sentence, metadata for filters, and the access list.&quot;, &quot;The contextualised chunk is embedded with a pinned model version and also indexed lexically (BM25).&quot;, &quot;Vectors are stored with the chunk text and metadata so results can be filtered and shown.&quot;, &quot;A change feed re-processes only new or changed documents (compare content hashes) and deletes chunks of removed documents.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="152.0" y1="48.0" x2="176.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="3"><line x1="322.0" y1="48.0" x2="346.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="4"><line x1="492.0" y1="48.0" x2="506.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="5"><line x1="580.0" y1="78.0" x2="580.0" y2="126.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="5"><line x1="536.4" y1="78.0" x2="466.5" y2="126.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="6"><line x1="580.0" y1="188.0" x2="580.0" y2="231.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="7"><line x1="126.4" y1="128.0" x2="200.5" y2="80.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah7)"/></g><g data-step="1"><rect x="10" y="20" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="80.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Sources</text><text x="80.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">docs · wikis · code</text></g><g data-step="2"><rect x="180" y="20" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="250.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Parse</text><text x="250.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">text · tables · layout</text></g><g data-step="3"><rect x="350" y="20" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="420.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Chunk</text><text x="420.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">structure-aware</text></g><g data-step="4"><rect x="510" y="20" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="580.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Enrich</text><text x="580.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">context · metadata · ACL</text></g><g data-step="5"><rect x="510" y="130" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="580.0" y="156.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Embed</text><text x="580.0" y="172.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">versioned model</text></g><g data-step="5"><rect x="350" y="130" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="420.0" y="156.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Lexical index</text><text x="420.0" y="172.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">BM25</text></g><g data-step="6"><rect x="510" y="235" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="580.0" y="261.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Vector index</text><text x="580.0" y="277.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">vector · text · metadata</text></g><g data-step="7"><rect x="10" y="130" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="80.0" y="156.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Change feed</text><text x="80.0" y="172.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">hash · version · delete</text></g><g data-step="7"><text x="163.5" y="99.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">changed only</text></g></svg><p class="readout dgcap"></p></div>
+::: diagram 660x300
+nodes:
+  src: {at: [10, 20, 140, 56], text: Sources, sub: docs · wikis · code, color: f, step: 1}
+  ps: {at: [180, 20, 140, 56], text: Parse, sub: text · tables · layout, color: b, step: 2}
+  ch: {at: [350, 20, 140, 56], text: Chunk, sub: structure-aware, color: c, step: 3}
+  en: {at: [510, 20, 140, 56], text: Enrich, sub: context · metadata · ACL, color: a, step: 4}
+  emb: {at: [510, 130, 140, 56], text: Embed, sub: versioned model, color: e, step: 5}
+  bm: {at: [350, 130, 140, 56], text: Lexical index, sub: BM25, color: e, step: 5}
+  vec: {at: [510, 235, 140, 56], text: Vector index, sub: vector · text · metadata, color: e, step: 6}
+  cf: {at: [10, 130, 140, 56], text: Change feed, sub: hash · version · delete, color: d, step: 7}
+edges:
+  - {from: src, to: ps, step: 2}
+  - {from: ps, to: ch, step: 3}
+  - {from: ch, to: en, step: 4}
+  - {from: en, to: emb, step: 5}
+  - {from: en, to: bm, step: 5}
+  - {from: emb, to: vec, step: 6}
+  - {from: cf, to: ps, label: changed only, step: 7, style: dash}
+steps:
+  - Connectors pull documents from each source with their permissions and timestamps.
+  - 'Parsing turns files into clean text, keeping tables and headings as structure.'
+  - 'Chunking splits on structure into pieces of a few hundred tokens, possibly with overlap.'
+  - 'Enrichment adds the document title and section, an LLM-written context sentence, metadata for filters, and the access list.'
+  - The contextualised chunk is embedded with a pinned model version and also indexed lexically (BM25).
+  - Vectors are stored with the chunk text and metadata so results can be filtered and shown.
+  - A change feed re-processes only new or changed documents (compare content hashes) and deletes chunks of removed documents.
+:::
 
 <!-- slide id="s-lld" chapter="Low-level design" tag="4 · Low-level design" tagclass="b4" -->
 ## Contextualising one chunk
 
-<div class="visual dgm" data-steps="[&quot;Each call sees the whole document and one of its chunks. The document part is the same for all its chunks, so prompt caching makes it cheap.&quot;, &quot;A small, fast model is asked for a short context that situates the chunk within the document, to improve search retrieval.&quot;, &quot;Output: e.g. \&quot;This chunk is from ACME&#x27;s Q2 2023 filing; the previous quarter&#x27;s revenue was $314M.\&quot;&quot;, &quot;The context is prepended to the chunk before both embedding and BM25 indexing.&quot;, &quot;Store a record with the content hash, embedding model version and access list, so updates and permission changes can be applied incrementally.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="172.0" y1="70.6" x2="226.0" y2="85.5" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="2"><line x1="172.0" y1="146.9" x2="226.0" y2="132.9" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="3"><line x1="402.0" y1="87.5" x2="456.0" y2="73.6" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="4"><line x1="555.0" y1="78.0" x2="555.0" y2="136.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="5"><line x1="475.0" y1="198.0" x2="400.3" y2="226.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="1"><rect x="10" y="20" width="160" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="90.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Whole document</text><text x="90.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">cached in prompt</text></g><g data-step="1"><rect x="10" y="140" width="160" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="90.0" y="166.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">One chunk</text><text x="90.0" y="182.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">~ few hundred tokens</text></g><g data-step="2"><rect x="230" y="80" width="170" height="60" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="315.0" y="108.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Small LLM</text><text x="315.0" y="124.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">&quot;situate this chunk&quot;</text></g><g data-step="3"><rect x="460" y="20" width="190" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="555.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Context</text><text x="555.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">50-100 tokens</text></g><g data-step="4"><rect x="460" y="140" width="190" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="555.0" y="166.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Context + chunk</text><text x="555.0" y="182.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">embed and BM25</text></g><g data-step="5"><rect x="230" y="230" width="170" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="315.0" y="256.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Index record</text><text x="315.0" y="272.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">hash · model · ACL</text></g><g data-step="4"><text x="555.0" y="102.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">prepend</text></g><g data-step="5"><text x="437.7" y="207.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">write</text></g></svg><p class="readout dgcap"></p></div>
+::: diagram 660x300
+nodes:
+  doc: {at: [10, 20, 160, 56], text: Whole document, sub: cached in prompt, color: f, step: 1}
+  ck: {at: [10, 140, 160, 56], text: One chunk, sub: ~ few hundred tokens, color: c, step: 1}
+  llm: {at: [230, 80, 170, 60], text: Small LLM, sub: '"situate this chunk"', color: a, step: 2}
+  ctx: {at: [460, 20, 190, 56], text: Context, sub: 50-100 tokens, color: b, step: 3}
+  out: {at: [460, 140, 190, 56], text: Context + chunk, sub: embed and BM25, color: e, step: 4}
+  ver: {at: [230, 230, 170, 56], text: Index record, sub: hash · model · ACL, color: d, step: 5}
+edges:
+  - {from: doc, to: llm, step: 2}
+  - {from: ck, to: llm, step: 2}
+  - {from: llm, to: ctx, step: 3}
+  - {from: ctx, to: out, label: prepend, step: 4}
+  - {from: out, to: ver, label: write, step: 5}
+steps:
+  - 'Each call sees the whole document and one of its chunks. The document part is the same for all its chunks, so prompt caching makes it cheap.'
+  - 'A small, fast model is asked for a short context that situates the chunk within the document, to improve search retrieval.'
+  - 'Output: e.g. "This chunk is from ACME''s Q2 2023 filing; the previous quarter''s revenue was $314M."'
+  - The context is prepended to the chunk before both embedding and BM25 indexing.
+  - 'Store a record with the content hash, embedding model version and access list, so updates and permission changes can be applied incrementally.'
+:::
 
-<div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap">for doc in changed_documents():          # from the change feed&#10;    for chunk in chunk(parse(doc)):&#10;        h = sha256(chunk.text + doc.acl)&#10;        if index.has(h): continue           # unchanged: skip LLM and embedding cost&#10;        ctx = small_llm(doc.text, chunk.text)  # document prefix is prompt-cached&#10;        text = ctx + "\n" + chunk.text&#10;        index.upsert(h, embed(text, model=EMBED_V3), bm25_terms(text),&#10;                     meta=dict(doc=doc.id, acl=doc.acl, version=doc.version))&#10;    index.delete_missing(doc.id, keep=current_hashes)</pre></div>
+
+
+::: code
+for doc in changed_documents():          # from the change feed
+    for chunk in chunk(parse(doc)):
+        h = sha256(chunk.text + doc.acl)
+        if index.has(h): continue           # unchanged: skip LLM and embedding cost
+        ctx = small_llm(doc.text, chunk.text)  # document prefix is prompt-cached
+        text = ctx + "\n" + chunk.text
+        index.upsert(h, embed(text, model=EMBED_V3), bm25_terms(text),
+                     meta=dict(doc=doc.id, acl=doc.acl, version=doc.version))
+    index.delete_missing(doc.id, keep=current_hashes)
+:::
 
 <!-- slide id="s-trade" chapter="Trade-offs" tag="5 · Trade-offs" tagclass="b5" -->
 ## Trade-offs
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Choice</th><th>Benefit</th><th>Cost</th></tr><tr><td>Small chunks</td><td>precise matches, less noise in context</td><td>less context per chunk; more chunks to store</td></tr><tr><td>Large chunks</td><td>more self-contained</td><td>embeddings blur several topics; more tokens per result</td></tr><tr><td>Contextual chunks (LLM-written)</td><td>large drop in retrieval failures</td><td>one LLM call per chunk at indexing time</td></tr><tr><td>Late chunking</td><td>context without an LLM call</td><td>needs a long-context embedding model</td></tr><tr><td>Dense only</td><td>semantic matches, one index</td><td>misses exact identifiers and rare terms</td></tr><tr><td>Streaming updates</td><td>fresh results</td><td>more complex than nightly rebuilds</td></tr></table></div>
+::: table
+| Choice | Benefit | Cost |
+|---|---|---|
+| Small chunks | precise matches, less noise in context | less context per chunk; more chunks to store |
+| Large chunks | more self-contained | embeddings blur several topics; more tokens per result |
+| Contextual chunks (LLM-written) | large drop in retrieval failures | one LLM call per chunk at indexing time |
+| Late chunking | context without an LLM call | needs a long-context embedding model |
+| Dense only | semantic matches, one index | misses exact identifiers and rare terms |
+| Streaming updates | fresh results | more complex than nightly rebuilds |
+:::
 
 <!-- slide id="s-fail" chapter="Failure modes" tag="6 · Failure modes" tagclass="b6" -->
 ## Failure modes
 
-<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Mixed embedding versions</td><td>similarity scores meaningless after a partial migration</td><td>version the index; rebuild fully, then swap an alias</td></tr><tr><td>Deleted documents still found</td><td>answers cite removed or revoked content</td><td>process deletes from the change feed; periodic reconciliation</td></tr><tr><td>Tables and figures garbled</td><td>numbers attributed to the wrong row</td><td>layout-aware parsing; keep tables whole</td></tr><tr><td>Answer split across chunks</td><td>neither half retrieves well</td><td>structure-aware splitting, overlap, or returning neighbouring chunks</td></tr><tr><td>Duplicates</td><td>top-k filled with copies of one page</td><td>deduplicate by content hash at ingestion</td></tr></table></div>
+::: table
+| Failure | Symptom | Mitigation |
+|---|---|---|
+| Mixed embedding versions | similarity scores meaningless after a partial migration | version the index; rebuild fully, then swap an alias |
+| Deleted documents still found | answers cite removed or revoked content | process deletes from the change feed; periodic reconciliation |
+| Tables and figures garbled | numbers attributed to the wrong row | layout-aware parsing; keep tables whole |
+| Answer split across chunks | neither half retrieves well | structure-aware splitting, overlap, or returning neighbouring chunks |
+| Duplicates | top-k filled with copies of one page | deduplicate by content hash at ingestion |
+:::
 
 <!-- slide id="s-prod" chapter="Production" tag="7 · Challenges in production" tagclass="b7" -->
 ## In production

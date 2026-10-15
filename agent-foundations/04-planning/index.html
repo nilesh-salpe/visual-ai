@@ -55,7 +55,7 @@
     <span class="qtag b3">3 · High-level design</span>
     <h2>Planner, executor, monitor</h2>
     <hr>
-<div class="visual dgm" data-steps="[&quot;A goal arrives.&quot;, &quot;A planner call decomposes it.&quot;, &quot;The plan is stored explicitly: subtasks, dependencies, status.&quot;, &quot;The executor runs ready subtasks (sequentially or in parallel), each possibly an agent loop.&quot;, &quot;A monitor compares results to expectations; surprises trigger replanning.&quot;, &quot;When all subtasks are done, results are combined into the final output.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="142.0" y1="148.0" x2="186.0" y2="148.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah6)"/></g><g data-step="3"><line x1="325.0" y1="118.0" x2="385.7" y2="90.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah6)"/></g><g data-step="4"><line x1="455.0" y1="88.0" x2="455.0" y2="136.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah6)"/></g><g data-step="5"><line x1="455.0" y1="198.0" x2="455.0" y2="236.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah6)"/></g><g data-step="5"><line x1="410.0" y1="238.0" x2="313.3" y2="180.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah6)"/></g><g data-step="6"><line x1="532.0" y1="168.0" x2="566.0" y2="168.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah6)"/></g><g data-step="1"><rect x="20" y="120" width="120" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="80.0" y="153.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Goal</text></g><g data-step="2"><rect x="190" y="120" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="260.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Planner</text><text x="260.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">LLM</text></g><g data-step="3"><rect x="380" y="30" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="455.0" y="56.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Plan</text><text x="455.0" y="72.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">subtasks + deps</text></g><g data-step="4"><rect x="380" y="140" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="455.0" y="166.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Executor</text><text x="455.0" y="182.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">agent loop / workers</text></g><g data-step="5"><rect x="380" y="240" width="150" height="50" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="455.0" y="263.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Monitor</text><text x="455.0" y="279.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">check progress</text></g><g data-step="6"><rect x="570" y="140" width="80" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="610.0" y="173.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Result</text></g><g data-step="3"><text x="355.3" y="99.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">write plan</text></g><g data-step="4"><text x="455.0" y="107.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">next ready step</text></g><g data-step="5"><text x="455.0" y="212.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">results</text></g><g data-step="5"><text x="361.7" y="204.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">replan</text></g><g data-step="6"><text x="549.0" y="163.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">all done</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual dgm" data-steps="[&quot;A goal arrives.&quot;, &quot;A planner call decomposes it.&quot;, &quot;The plan is stored explicitly: subtasks, dependencies, status.&quot;, &quot;The executor runs ready subtasks (sequentially or in parallel), each possibly an agent loop.&quot;, &quot;A monitor compares results to expectations; surprises trigger replanning.&quot;, &quot;When all subtasks are done, results are combined into the final output.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga12" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="142.0" y1="148.0" x2="186.0" y2="148.0" marker-end="url(#dga12)"/></g><g class="dg-edge" data-step="3"><line x1="325.0" y1="118.0" x2="385.7" y2="90.0" marker-end="url(#dga12)"/></g><g class="dg-edge" data-step="4"><line x1="455.0" y1="88.0" x2="455.0" y2="136.0" marker-end="url(#dga12)"/></g><g class="dg-edge" data-step="5"><line x1="455.0" y1="198.0" x2="455.0" y2="236.0" marker-end="url(#dga12)"/></g><g class="dg-edge dash" data-step="5"><line x1="410.0" y1="238.0" x2="313.3" y2="180.0" marker-end="url(#dga12)"/></g><g class="dg-edge" data-step="6"><line x1="532.0" y1="168.0" x2="566.0" y2="168.0" marker-end="url(#dga12)"/></g><g class="dg-node f" data-step="1"><rect x="20" y="120" width="120" height="56" rx="10"/><text class="dg-text" x="80.0" y="153.0" text-anchor="middle">Goal</text></g><g class="dg-node a" data-step="2"><rect x="190" y="120" width="140" height="56" rx="10"/><text class="dg-text" x="260.0" y="146.0" text-anchor="middle">Planner</text><text class="dg-sub" x="260.0" y="162.0" text-anchor="middle">LLM</text></g><g class="dg-node e" data-step="3"><rect x="380" y="30" width="150" height="56" rx="10"/><text class="dg-text" x="455.0" y="56.0" text-anchor="middle">Plan</text><text class="dg-sub" x="455.0" y="72.0" text-anchor="middle">subtasks + deps</text></g><g class="dg-node c" data-step="4"><rect x="380" y="140" width="150" height="56" rx="10"/><text class="dg-text" x="455.0" y="166.0" text-anchor="middle">Executor</text><text class="dg-sub" x="455.0" y="182.0" text-anchor="middle">agent loop / workers</text></g><g class="dg-node d" data-step="5"><rect x="380" y="240" width="150" height="50" rx="10"/><text class="dg-text" x="455.0" y="263.0" text-anchor="middle">Monitor</text><text class="dg-sub" x="455.0" y="279.0" text-anchor="middle">check progress</text></g><g class="dg-node b" data-step="6"><rect x="570" y="140" width="80" height="56" rx="10"/><text class="dg-text" x="610.0" y="173.0" text-anchor="middle">Result</text></g><g data-step="3"><text class="dg-label" x="355.3" y="99.0" text-anchor="middle">write plan</text></g><g data-step="4"><text class="dg-label" x="455.0" y="107.0" text-anchor="middle">next ready step</text></g><g data-step="5"><text class="dg-label" x="455.0" y="212.0" text-anchor="middle">results</text></g><g data-step="5"><text class="dg-label" x="361.7" y="204.0" text-anchor="middle">replan</text></g><g data-step="6"><text class="dg-label" x="549.0" y="163.0" text-anchor="middle">all done</text></g></svg><p class="readout dgcap"></p></div>
   </div>
 </section>
 
@@ -64,9 +64,12 @@
     <span class="qtag b4">4 · Low-level design</span>
     <h2>Plan as data; search as a tree</h2>
     <hr>
-<div class="visual dgm" data-steps="[&quot;Start from the problem state.&quot;, &quot;Generate several candidate thoughts (next steps) and score each with an evaluator prompt.&quot;, &quot;Expand the most promising (breadth- or depth-first); prune dead ends.&quot;, &quot;Keep alternatives so the search can backtrack if the best branch fails.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 260" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="274.4" y1="58.0" x2="190.0" y2="96.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="2"><line x1="330.0" y1="58.0" x2="330.0" y2="96.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="2"><line x1="385.6" y1="58.0" x2="470.0" y2="96.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="3"><line x1="118.8" y1="148.0" x2="97.2" y2="196.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="3"><line x1="156.2" y1="148.0" x2="206.7" y2="196.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="4"><line x1="530.0" y1="148.0" x2="530.0" y2="196.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="1"><rect x="260" y="10" width="140" height="46" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="330.0" y="38.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">state s0</text></g><g data-step="2"><rect x="60" y="100" width="140" height="46" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="130.0" y="121.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">thought A</text><text x="130.0" y="137.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">value 0.8</text></g><g data-step="2"><rect x="260" y="100" width="140" height="46" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="330.0" y="121.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">thought B</text><text x="330.0" y="137.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">value 0.3</text></g><g data-step="2"><rect x="460" y="100" width="140" height="46" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="530.0" y="121.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">thought C</text><text x="530.0" y="137.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">value 0.6</text></g><g data-step="3"><rect x="20" y="200" width="130" height="46" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="85.0" y="221.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">A → A1</text><text x="85.0" y="237.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">value 0.9</text></g><g data-step="3"><rect x="170" y="200" width="130" height="46" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="235.0" y="221.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">A → A2</text><text x="235.0" y="237.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">dead end</text></g><g data-step="4"><rect x="460" y="200" width="140" height="46" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="530.0" y="221.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">C → C1</text><text x="530.0" y="237.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">kept as backup</text></g></svg><p class="readout dgcap"></p></div>
-
-<div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap">plan = [&#10;  {"id": 1, "task": "list failing services", "deps": [],     "status": "done"},&#10;  {"id": 2, "task": "fetch logs per service", "deps": [1],   "status": "running"},&#10;  {"id": 3, "task": "summarise root causes",  "deps": [2],   "status": "pending"},&#10;  {"id": 4, "task": "draft incident report",  "deps": [3],   "status": "pending"}]</pre></div>
+<div class="visual dgm" data-steps="[&quot;Start from the problem state.&quot;, &quot;Generate several candidate thoughts (next steps) and score each with an evaluator prompt.&quot;, &quot;Expand the most promising (breadth- or depth-first); prune dead ends.&quot;, &quot;Keep alternatives so the search can backtrack if the best branch fails.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 260" role="img" aria-label="diagram"><defs><marker id="dga13" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="274.4" y1="58.0" x2="190.0" y2="96.0" marker-end="url(#dga13)"/></g><g class="dg-edge" data-step="2"><line x1="330.0" y1="58.0" x2="330.0" y2="96.0" marker-end="url(#dga13)"/></g><g class="dg-edge" data-step="2"><line x1="385.6" y1="58.0" x2="470.0" y2="96.0" marker-end="url(#dga13)"/></g><g class="dg-edge" data-step="3"><line x1="118.8" y1="148.0" x2="97.2" y2="196.0" marker-end="url(#dga13)"/></g><g class="dg-edge" data-step="3"><line x1="156.2" y1="148.0" x2="206.7" y2="196.0" marker-end="url(#dga13)"/></g><g class="dg-edge" data-step="4"><line x1="530.0" y1="148.0" x2="530.0" y2="196.0" marker-end="url(#dga13)"/></g><g class="dg-node f" data-step="1"><rect x="260" y="10" width="140" height="46" rx="10"/><text class="dg-text" x="330.0" y="38.0" text-anchor="middle">state s0</text></g><g class="dg-node a" data-step="2"><rect x="60" y="100" width="140" height="46" rx="10"/><text class="dg-text" x="130.0" y="121.0" text-anchor="middle">thought A</text><text class="dg-sub" x="130.0" y="137.0" text-anchor="middle">value 0.8</text></g><g class="dg-node d" data-step="2"><rect x="260" y="100" width="140" height="46" rx="10"/><text class="dg-text" x="330.0" y="121.0" text-anchor="middle">thought B</text><text class="dg-sub" x="330.0" y="137.0" text-anchor="middle">value 0.3</text></g><g class="dg-node c" data-step="2"><rect x="460" y="100" width="140" height="46" rx="10"/><text class="dg-text" x="530.0" y="121.0" text-anchor="middle">thought C</text><text class="dg-sub" x="530.0" y="137.0" text-anchor="middle">value 0.6</text></g><g class="dg-node e" data-step="3"><rect x="20" y="200" width="130" height="46" rx="10"/><text class="dg-text" x="85.0" y="221.0" text-anchor="middle">A → A1</text><text class="dg-sub" x="85.0" y="237.0" text-anchor="middle">value 0.9</text></g><g class="dg-node d" data-step="3"><rect x="170" y="200" width="130" height="46" rx="10"/><text class="dg-text" x="235.0" y="221.0" text-anchor="middle">A → A2</text><text class="dg-sub" x="235.0" y="237.0" text-anchor="middle">dead end</text></g><g class="dg-node c" data-step="4"><rect x="460" y="200" width="140" height="46" rx="10"/><text class="dg-text" x="530.0" y="221.0" text-anchor="middle">C → C1</text><text class="dg-sub" x="530.0" y="237.0" text-anchor="middle">kept as backup</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual"><pre class="code">plan = [
+  {&quot;id&quot;: 1, &quot;task&quot;: &quot;list failing services&quot;, &quot;deps&quot;: [],     &quot;status&quot;: &quot;done&quot;},
+  {&quot;id&quot;: 2, &quot;task&quot;: &quot;fetch logs per service&quot;, &quot;deps&quot;: [1],   &quot;status&quot;: &quot;running&quot;},
+  {&quot;id&quot;: 3, &quot;task&quot;: &quot;summarise root causes&quot;,  &quot;deps&quot;: [2],   &quot;status&quot;: &quot;pending&quot;},
+  {&quot;id&quot;: 4, &quot;task&quot;: &quot;draft incident report&quot;,  &quot;deps&quot;: [3],   &quot;status&quot;: &quot;pending&quot;}]</pre></div>
   </div>
 </section>
 
@@ -75,7 +78,42 @@
     <span class="qtag b5">5 · Trade-offs</span>
     <h2>Trade-offs</h2>
     <hr>
-<div class="visual scroll-x"><table class="tbl"><tr><th>Approach</th><th>Benefit</th><th>Cost</th><th>Use when</th></tr><tr><td>Interleaved (ReAct)</td><td>adapts every step</td><td>drifts on long tasks</td><td>short tasks, uncertain environments</td></tr><tr><td>Plan then execute</td><td>goal stays visible; parallelism</td><td>plan may be wrong; needs replanning</td><td>multi-step tasks with clear structure</td></tr><tr><td>Search (ToT (Tree of Thoughts))</td><td>better on puzzles with dead ends</td><td>many more model calls</td><td>problems with lookahead and verifiable partial states</td></tr><tr><td>Orchestrator-workers</td><td>dynamic decomposition, parallel workers</td><td>coordination overhead</td><td>subtasks cannot be predicted in advance</td></tr></table></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Approach</th>
+<th>Benefit</th>
+<th>Cost</th>
+<th>Use when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Interleaved (ReAct)</td>
+<td>adapts every step</td>
+<td>drifts on long tasks</td>
+<td>short tasks, uncertain environments</td>
+</tr>
+<tr>
+<td>Plan then execute</td>
+<td>goal stays visible; parallelism</td>
+<td>plan may be wrong; needs replanning</td>
+<td>multi-step tasks with clear structure</td>
+</tr>
+<tr>
+<td>Search (ToT (Tree of Thoughts))</td>
+<td>better on puzzles with dead ends</td>
+<td>many more model calls</td>
+<td>problems with lookahead and verifiable partial states</td>
+</tr>
+<tr>
+<td>Orchestrator-workers</td>
+<td>dynamic decomposition, parallel workers</td>
+<td>coordination overhead</td>
+<td>subtasks cannot be predicted in advance</td>
+</tr>
+</tbody>
+</table></div>
   </div>
 </section>
 
@@ -84,7 +122,42 @@
     <span class="qtag b6">6 · Failure modes</span>
     <h2>Failure modes</h2>
     <hr>
-<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Plan ignores the environment</td><td>steps assume files or APIs (application programming interfaces) that do not exist</td><td>explore before planning; validate steps</td></tr><tr><td>Stale plan</td><td>executes steps made obsolete by new results</td><td>monitor and replan on surprises</td></tr><tr><td>Over-decomposition</td><td>dozens of trivial subtasks, slow and costly</td><td>plan at the right granularity</td></tr><tr><td>Evaluator errors in search</td><td>prunes the correct branch</td><td>better value prompts; keep backups</td></tr><tr><td>Silent plan abandonment</td><td>agent stops following the plan</td><td>keep plan status in context; check off steps</td></tr></table></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Plan ignores the environment</td>
+<td>steps assume files or APIs (application programming interfaces) that do not exist</td>
+<td>explore before planning; validate steps</td>
+</tr>
+<tr>
+<td>Stale plan</td>
+<td>executes steps made obsolete by new results</td>
+<td>monitor and replan on surprises</td>
+</tr>
+<tr>
+<td>Over-decomposition</td>
+<td>dozens of trivial subtasks, slow and costly</td>
+<td>plan at the right granularity</td>
+</tr>
+<tr>
+<td>Evaluator errors in search</td>
+<td>prunes the correct branch</td>
+<td>better value prompts; keep backups</td>
+</tr>
+<tr>
+<td>Silent plan abandonment</td>
+<td>agent stops following the plan</td>
+<td>keep plan status in context; check off steps</td>
+</tr>
+</tbody>
+</table></div>
   </div>
 </section>
 
@@ -127,24 +200,6 @@
 
 <script src="../../shared/deck.js"></script>
 <script src="../../shared/learn.js"></script>
-<script>
-(() => {
-  const { svg, clear } = Deck;
-  document.querySelectorAll('.dgm').forEach(box => {
-    const caps = JSON.parse(box.dataset.steps), els = [...box.querySelectorAll('[data-step]')], max = Math.max(0, ...els.map(e => +e.dataset.step)), cap = box.querySelector('.dgcap');
-    let k = max, full = true;
-    const show = () => {
-      els.forEach(e => { const s = +e.dataset.step; e.style.opacity = s <= k ? 1 : 0.08; e.style.transition = 'opacity .25s'; e.querySelectorAll('rect').forEach(r => r.style.strokeWidth = s === k && k ? 3.5 : 2); });
-      cap.innerHTML = k === 0 ? 'Press <b>next step</b> to walk through the design.' : k === max && full ? 'Full design shown. Press <b>reset</b>, then <b>next step</b>, to walk through it one step at a time.' : `<b>Step ${k} of ${max}.</b> ${caps[k - 1] || ''}`;
-      full = false;
-    };
-    box.querySelector('[data-dg=next]').addEventListener('click', () => { k = Math.min(max, k + 1); show(); });
-    box.querySelector('[data-dg=all]').addEventListener('click', () => { k = max; full = false; show(); cap.innerHTML = '<b>Full design.</b> ' + caps.map((c, i) => `${i + 1}. ${c}`).join(' '); });
-    box.querySelector('[data-dg=reset]').addEventListener('click', () => { k = 0; show(); });
-    show();
-  });
-
-})();
-</script>
+<script src="../../shared/diagram.js"></script>
 </body>
 </html>
