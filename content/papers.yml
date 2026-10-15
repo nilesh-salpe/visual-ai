@@ -2489,3 +2489,96 @@ claude_thinking:
   year: 2026
   url: https://platform.claude.com/docs/en/build-with-claude/extended-thinking
   summary: 'Manual budgets (thinking.type enabled, budget_tokens ≥ 1,024) on older models; newer models use adaptive thinking with an effort level, and reject fixed budgets; thinking tokens are billed output (usage.output_tokens_details.thinking_tokens); batch processing above 32k thinking tokens.'
+toy_superposition:
+  title: Toy Models of Superposition
+  authors: Elhage et al. (Anthropic)
+  venue: Transformer Circuits Thread
+  year: 2022
+  url: https://arxiv.org/abs/2209.10652
+  summary: 'Polysemanticity arises when models store more sparse features than dimensions in superposition; with dense features a toy model keeps only the most important (like PCA), with sparse features it packs more (e.g. five in two dimensions), with phase changes, polytope geometry and a link to adversarial examples.'
+induction_heads:
+  title: In-context Learning and Induction Heads
+  authors: Olsson et al. (Anthropic)
+  venue: Transformer Circuits Thread
+  year: 2022
+  url: https://arxiv.org/abs/2209.11895
+  summary: 'Induction heads complete [A][B] ... [A] → [B]; they form at the same point as a sharp rise in in-context learning (a bump in the training loss); causal evidence in small attention-only models, correlational in larger ones.'
+mono_features:
+  title: 'Towards Monosemanticity: Decomposing Language Models With Dictionary Learning'
+  authors: Bricken et al. (Anthropic)
+  venue: Transformer Circuits Thread
+  year: 2023
+  url: https://transformer-circuits.pub/2023/monosemantic-features/index.html
+  summary: 'Sparse autoencoders on the 512-neuron MLP of a one-layer transformer, trained on 8 billion activations, with 512 to 131,072 features (analysis on 4,096); features for Arabic script, DNA, base64 and Hebrew; a single neuron mixes academic citations, English dialogue, HTTP requests and Korean text.'
+sae_cunningham:
+  title: Sparse Autoencoders Find Highly Interpretable Features in Language Models
+  authors: Cunningham et al.
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2309.08600
+  summary: SAE features are more interpretable and monosemantic than alternative decompositions, and pinpoint the features causally responsible for indirect-object identification more finely.
+scaling_mono:
+  title: 'Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet'
+  authors: Templeton et al. (Anthropic)
+  venue: Transformer Circuits Thread
+  year: 2024
+  url: https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html
+  summary: 'SAEs on the middle-layer residual stream of Claude 3 Sonnet with ~1M, ~4M and ~34M features; fewer than 300 active per token, at least 65% of variance explained; multilingual and multimodal features; safety-relevant features (code backdoors, bias, deception, power-seeking, sycophancy); feature clamping steers behaviour.'
+  number: dead features ≈2% (1M), 35% (4M), 65% (34M)
+golden_gate:
+  title: Golden Gate Claude
+  authors: Anthropic
+  venue: Anthropic News
+  year: 2024
+  url: https://www.anthropic.com/news/golden-gate-claude
+  summary: Amplifying the Golden Gate Bridge feature in Claude 3 Sonnet made most replies mention the bridge; available as a 24-hour research demo.
+sae_openai:
+  title: Scaling and evaluating sparse autoencoders
+  authors: Gao et al. (OpenAI)
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2406.04093
+  summary: k-sparse (top-k) autoencoders control sparsity directly and, with other changes, leave few dead latents; clean scaling laws in size and sparsity; new feature-quality metrics.
+  number: a 16 million latent SAE on GPT-4 activations, trained on 40 billion tokens
+gemma_scope:
+  title: 'Gemma Scope: Open Sparse Autoencoders Everywhere All At Once on Gemma 2'
+  authors: Lieberum et al. (Google DeepMind)
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2408.05147
+  summary: Open JumpReLU SAEs trained on all layers and sub-layers of Gemma 2 2B and 9B (and select layers of 27B).
+ioi:
+  title: 'Interpretability in the Wild: a Circuit for Indirect Object Identification in GPT-2 small'
+  authors: Wang et al.
+  venue: ICLR
+  year: 2023
+  url: https://arxiv.org/abs/2211.00593
+  summary: A circuit of 26 attention heads in 7 classes, found with causal interventions and evaluated for faithfulness, completeness and minimality.
+rome:
+  title: Locating and Editing Factual Associations in GPT
+  authors: Meng et al.
+  venue: NeurIPS
+  year: 2022
+  url: https://arxiv.org/abs/2202.05262
+  summary: Causal tracing finds factual recall in mid-layer feed-forward modules at subject tokens; Rank-One Model Editing (ROME) updates a fact by modifying those weights.
+attribution_graphs:
+  title: On the Biology of a Large Language Model
+  authors: Lindsey et al. (Anthropic)
+  venue: Transformer Circuits Thread
+  year: 2025
+  url: https://transformer-circuits.pub/2025/attribution-graphs/biology.html
+  summary: 'Attribution graphs on a replacement model of Claude 3.5 Haiku: multi-hop reasoning (Dallas → Texas → Austin) alongside shortcuts, planning rhymes ahead, shared multilingual circuits; satisfying insight for about a quarter of prompts tried.'
+actadd:
+  title: Steering Language Models With Activation Engineering
+  authors: Turner et al.
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2308.10248
+  summary: 'Activation Addition: the activation difference between contrasting prompts (e.g. "Love" − "Hate") added during the forward pass steers outputs; state-of-the-art sentiment shift and detoxification on LLaMA-3 and OPT with no optimisation.'
+repe:
+  title: 'Representation Engineering: A Top-Down Approach to AI Transparency'
+  authors: Zou et al.
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2310.01405
+  summary: Reads and controls population-level representations (honesty, harmlessness, power-seeking) rather than neurons or circuits.

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interpretability</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body { overflow-y: auto; }</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../llm/index.html">← Visual LLM</a>
+  <div class="label" style="margin-top:28px">Visual guide · 3 decks + 1 Colab notebooks</div>
+  <h1>Interpretability</h1>
+  <p class="lede">What is going on inside a language model: features as directions and superposition, sparse autoencoders from a one-layer transformer to Claude 3 Sonnet and GPT-4, and the causal tools (patching, circuits, attribution graphs, probes and steering vectors) that turn descriptions into mechanisms. 9-beat template; numbers checked against the papers.</p>
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: 1 Colab notebooks</h3><p class="caption" style="margin:0">Measure interference between features in superposition, then build and train a sparse autoencoder in NumPy that recovers 8 hidden features from 4 dimensions where PCA (principal component analysis) cannot.</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>
+<!--x:map--><style>
+.bigmap { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding: 4px 2px 10px; }
+.bigmap .stage { flex: 1 1 0; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
+.bigmap .stage h4 { margin: 0 0 2px; font: 700 11.5px 'JetBrains Mono', monospace; letter-spacing: .05em; text-transform: uppercase; color: var(--a); }
+.bigmap .stage a { display: block; padding: 9px 11px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 14px; line-height: 1.3; }
+.bigmap .stage a:hover { border-color: var(--a); background: var(--a-soft); }
+.bigmap .stage a span { display: block; font: 600 11px 'JetBrains Mono', monospace; color: var(--faint); }
+.bigmap .arrow { align-self: center; color: var(--faint); font-size: 20px; }
+.hub-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+@media (max-width: 700px) { .bigmap { flex-direction: column; } .bigmap .arrow { transform: rotate(90deg); } }
+</style>
+  <div class="visual" style="margin-top:22px">
+    <h3 style="margin:0 0 10px">The big picture</h3>
+    <div class="bigmap"><div class="stage"><h4>Representations</h4><a href="01-features-and-superposition/index.html"><span>01</span>Features and superposition</a></div><div class="arrow">→</div><div class="stage"><h4>Dictionary learning</h4><a href="02-sparse-autoencoders/index.html"><span>02</span>Sparse autoencoders</a></div><div class="arrow">→</div><div class="stage"><h4>Mechanisms</h4><a href="03-circuits-and-steering/index.html"><span>03</span>Circuits, probes and steering</a></div></div>
+    <div class="hub-links"><a class="btn" href="reading-list.html">📚 Reading list</a><a class="btn" href="../glossary/index.html">🔤 Glossary</a></div>
+  </div>
+<!--/x:map-->
+  <div class="hub-grid"><a class="hub-card" href="01-features-and-superposition/index.html"><div class="n">01</div><h3>Features and superposition</h3><p>Directions, polysemantic neurons, packing sparse features.</p></a><a class="hub-card" href="02-sparse-autoencoders/index.html"><div class="n">02</div><h3>Sparse autoencoders</h3><p>Dictionary learning from one layer to Claude 3 Sonnet.</p></a><a class="hub-card" href="03-circuits-and-steering/index.html"><div class="n">03</div><h3>Circuits, probes and steering</h3><p>Patching, IOI (indirect object identification), attribution graphs, ActAdd.</p></a></div>
+  <p class="cite" style="margin-top:26px">Sources: Elhage et al. 2022; Olsson et al. 2022; Bricken et al. 2023; Cunningham et al. 2024; Templeton et al. 2024; Gao et al. 2024; Lieberum et al. 2024; Wang et al. 2023; Meng et al. 2022; Lindsey et al. 2025; Turner et al. 2023; Zou et al. 2023.</p>
+</div>
+</body>
+</html>

@@ -866,6 +866,18 @@
   },
   "PRM": {
    "exp": "process reward model"
+  },
+  "SAE": {
+   "exp": "sparse autoencoder"
+  },
+  "IOI": {
+   "exp": "indirect object identification"
+  },
+  "ROME": {
+   "exp": "Rank-One Model Editing"
+  },
+  "DNA": {
+   "exp": "deoxyribonucleic acid"
   }
  },
  "exempt": [
@@ -1264,6 +1276,10 @@
   "SVAMP",
   "StrategyQA",
   "PRM800K",
-  "AIME24"
+  "AIME24",
+  "DeepMind",
+  "JumpReLU",
+  "ActAdd",
+  "OPT"
  ]
 }

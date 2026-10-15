@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interpretability Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Interpretability</a>
+  <div class="label" style="margin-top:28px">Reading list · 13 papers and docs</div>
+  <h1>Interpretability: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://arxiv.org/abs/2209.10652" target="_blank" rel="noopener">Toy Models of Superposition</a>
+      <div class="meta">Elhage et al. (Anthropic) · Transformer Circuits Thread 2022 · cited in <a href="01-features-and-superposition/index.html" style="font-weight:500;color:var(--a)">Features and superposition</a></div>
+      <p>Polysemanticity arises when models store more sparse features than dimensions in superposition; with dense features a toy model keeps only the most important (like PCA), with sparse features it packs more (e.g. five in two dimensions), with phase changes, polytope geometry and a link to adversarial examples.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2209.11895" target="_blank" rel="noopener">In-context Learning and Induction Heads</a>
+      <div class="meta">Olsson et al. (Anthropic) · Transformer Circuits Thread 2022 · cited in <a href="01-features-and-superposition/index.html" style="font-weight:500;color:var(--a)">Features and superposition</a>, <a href="03-circuits-and-steering/index.html" style="font-weight:500;color:var(--a)">Circuits, probes and steering</a></div>
+      <p>Induction heads complete [A][B] ... [A] → [B]; they form at the same point as a sharp rise in in-context learning (a bump in the training loss); causal evidence in small attention-only models, correlational in larger ones.</p></div>
+    <div class="paper-item"><a href="https://transformer-circuits.pub/2023/monosemantic-features/index.html" target="_blank" rel="noopener">Towards Monosemanticity: Decomposing Language Models With Dictionary Learning</a>
+      <div class="meta">Bricken et al. (Anthropic) · Transformer Circuits Thread 2023 · cited in <a href="01-features-and-superposition/index.html" style="font-weight:500;color:var(--a)">Features and superposition</a>, <a href="02-sparse-autoencoders/index.html" style="font-weight:500;color:var(--a)">Sparse autoencoders</a></div>
+      <p>Sparse autoencoders on the 512-neuron MLP (multilayer perceptron) of a one-layer transformer, trained on 8 billion activations, with 512 to 131,072 features (analysis on 4,096); features for Arabic script, DNA, base64 and Hebrew; a single neuron mixes academic citations, English dialogue, HTTP requests and Korean text.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2309.08600" target="_blank" rel="noopener">Sparse Autoencoders Find Highly Interpretable Features in Language Models</a>
+      <div class="meta">Cunningham et al. · ICLR 2024 · cited in <a href="02-sparse-autoencoders/index.html" style="font-weight:500;color:var(--a)">Sparse autoencoders</a></div>
+      <p>SAE features are more interpretable and monosemantic than alternative decompositions, and pinpoint the features causally responsible for indirect-object identification more finely.</p></div>
+    <div class="paper-item"><a href="https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html" target="_blank" rel="noopener">Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet</a>
+      <div class="meta">Templeton et al. (Anthropic) · Transformer Circuits Thread 2024 · cited in <a href="02-sparse-autoencoders/index.html" style="font-weight:500;color:var(--a)">Sparse autoencoders</a></div>
+      <p>SAEs on the middle-layer residual stream of Claude 3 Sonnet with ~1M, ~4M and ~34M features; fewer than 300 active per token, at least 65% of variance explained; multilingual and multimodal features; safety-relevant features (code backdoors, bias, deception, power-seeking, sycophancy); feature clamping steers behaviour.</p><div class="num">Remember: dead features ≈2% (1M), 35% (4M), 65% (34M)</div></div>
+    <div class="paper-item"><a href="https://www.anthropic.com/news/golden-gate-claude" target="_blank" rel="noopener">Golden Gate Claude</a>
+      <div class="meta">Anthropic · Anthropic News 2024 · cited in <a href="02-sparse-autoencoders/index.html" style="font-weight:500;color:var(--a)">Sparse autoencoders</a></div>
+      <p>Amplifying the Golden Gate Bridge feature in Claude 3 Sonnet made most replies mention the bridge; available as a 24-hour research demo.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2406.04093" target="_blank" rel="noopener">Scaling and evaluating sparse autoencoders</a>
+      <div class="meta">Gao et al. (OpenAI) · arXiv 2024 · cited in <a href="02-sparse-autoencoders/index.html" style="font-weight:500;color:var(--a)">Sparse autoencoders</a></div>
+      <p>k-sparse (top-k) autoencoders control sparsity directly and, with other changes, leave few dead latents; clean scaling laws in size and sparsity; new feature-quality metrics.</p><div class="num">Remember: a 16 million latent SAE on GPT-4 activations, trained on 40 billion tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2408.05147" target="_blank" rel="noopener">Gemma Scope: Open Sparse Autoencoders Everywhere All At Once on Gemma 2</a>
+      <div class="meta">Lieberum et al. (Google DeepMind) · arXiv 2024 · cited in <a href="02-sparse-autoencoders/index.html" style="font-weight:500;color:var(--a)">Sparse autoencoders</a></div>
+      <p>Open JumpReLU SAEs trained on all layers and sub-layers of Gemma 2 2B and 9B (and select layers of 27B).</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2211.00593" target="_blank" rel="noopener">Interpretability in the Wild: a Circuit for Indirect Object Identification in GPT-2 small</a>
+      <div class="meta">Wang et al. · ICLR 2023 · cited in <a href="03-circuits-and-steering/index.html" style="font-weight:500;color:var(--a)">Circuits, probes and steering</a></div>
+      <p>A circuit of 26 attention heads in 7 classes, found with causal interventions and evaluated for faithfulness, completeness and minimality.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2202.05262" target="_blank" rel="noopener">Locating and Editing Factual Associations in GPT</a>
+      <div class="meta">Meng et al. · NeurIPS 2022 · cited in <a href="03-circuits-and-steering/index.html" style="font-weight:500;color:var(--a)">Circuits, probes and steering</a></div>
+      <p>Causal tracing finds factual recall in mid-layer feed-forward modules at subject tokens; Rank-One Model Editing (ROME) updates a fact by modifying those weights.</p></div>
+    <div class="paper-item"><a href="https://transformer-circuits.pub/2025/attribution-graphs/biology.html" target="_blank" rel="noopener">On the Biology of a Large Language Model</a>
+      <div class="meta">Lindsey et al. (Anthropic) · Transformer Circuits Thread 2025 · cited in <a href="03-circuits-and-steering/index.html" style="font-weight:500;color:var(--a)">Circuits, probes and steering</a></div>
+      <p>Attribution graphs on a replacement model of Claude 3.5 Haiku: multi-hop reasoning (Dallas → Texas → Austin) alongside shortcuts, planning rhymes ahead, shared multilingual circuits; satisfying insight for about a quarter of prompts tried.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2308.10248" target="_blank" rel="noopener">Steering Language Models With Activation Engineering</a>
+      <div class="meta">Turner et al. · arXiv 2023 · cited in <a href="03-circuits-and-steering/index.html" style="font-weight:500;color:var(--a)">Circuits, probes and steering</a></div>
+      <p>Activation Addition: the activation difference between contrasting prompts (e.g. "Love" − "Hate") added during the forward pass steers outputs; state-of-the-art sentiment shift and detoxification on LLaMA-3 and OPT with no optimisation.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2310.01405" target="_blank" rel="noopener">Representation Engineering: A Top-Down Approach to AI (artificial intelligence) Transparency</a>
+      <div class="meta">Zou et al. · arXiv 2023 · cited in <a href="03-circuits-and-steering/index.html" style="font-weight:500;color:var(--a)">Circuits, probes and steering</a></div>
+      <p>Reads and controls population-level representations (honesty, harmlessness, power-seeking) rather than neurons or circuits.</p></div>
+  </div>
+</div>
+
+</body>
+</html>

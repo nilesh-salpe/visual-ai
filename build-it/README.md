@@ -165,6 +165,14 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/cluster-scheduling/
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/reasoning/
 
+## Frontier · Interpretability
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · Superposition and sparse autoencoders on a toy model](interpretability/01_superposition_and_sae.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/interpretability/01_superposition_and_sae.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/interpretability/
+
 ## Agents · LangChain and LangGraph
 
 | Notebook | Time | Colab |

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Features and Superposition</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Features and superposition" data-home="../index.html" data-home-label="Interpretability">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Interpretability · 01</div>
+    <h1>Features and superposition</h1>
+    <p class="sub">What interpretability looks for inside a network: features as directions in activation space, why single neurons are polysemantic, and how sparse features are packed into fewer dimensions than there are features.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>To understand or audit a model you want to know what its internal activations represent. Looking at individual neurons fails: a single neuron often responds to several unrelated concepts (polysemanticity), so "what does neuron 1,234 do?" has no clean answer.</div>
+      <div class="c"><b>Core idea</b>Treat a <b>feature</b> as a <b>direction</b> in activation space rather than a neuron. When features are <b>sparse</b> (rarely active at the same time), a network can store <b>more features than it has dimensions</b> by giving them nearly orthogonal directions: <b>superposition</b>. The cost is <b>interference</b> between features, which nonlinearities filter out. Superposition explains polysemantic neurons and motivates dictionary learning (deck 02).</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>What does this neuron do?</h2>
+    <hr>
+<p class="lede">You inspect one neuron of a language model and collect the texts that activate it most. They include academic citations, Korean text, HTTP (Hypertext Transfer Protocol) requests and dialogue. There is no single concept to name.</p>
+<pre><code>        ::: cards grid3
+</code></pre>
+<h3>[d] Polysemantic neurons</h3>
+<p>Many neurons respond to several unrelated concepts.</p>
+<h3>[b] Too many concepts</h3>
+<p>A model knows far more concepts than it has neurons in any layer.</p>
+<h3>[c] Need a unit of analysis</h3>
+<p>Auditing a model requires parts that each mean one thing.
+:::</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why neurons are the wrong unit</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Basis is arbitrary</h3><p>Nothing forces the network to align concepts with individual neurons; any rotation of a layer's space works as well for the next layer, except where nonlinearities act.</p></div>
+      <div class="card b"><h3>Dimensions are scarce</h3><p>A layer with d dimensions has only d orthogonal directions.</p></div>
+      <div class="card c"><h3>PCA does not help</h3><p>Principal components are dense directions of maximum variance, at most d of them.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>More features than dimensions?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">A layer has 2 dimensions and the model needs 5 features. When can it represent all 5?</p>
+      <div class="opts">
+      <button>A. Never: 2 dimensions hold 2 features</button>
+      <button data-ok>B. When the features are sparse, so they are rarely active at the same time</button>
+      <button>C. When the features are dense</button>
+      <button>D. Only with more layers</button>
+      </div>
+      <div class="why"><strong>B.</strong> With sparse features, overlapping directions rarely interfere in practice; the toy model then stores all five as a pentagon.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Features as directions, packed in superposition</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Feature = direction</h3><p>A concept is represented by how far the activation vector points along a direction.</p></div>
+      <div class="card a"><h3>Superposition</h3><p>With sparse features, the model stores more of them than it has dimensions, as nearly orthogonal directions, accepting interference.</p></div>
+      <div class="card c"><h3>Sparsity decides</h3><p>Dense features: only the most important get dimensions. Sparse: more are packed, with phase changes between regimes and polytope geometry.</p></div>
+      <div class="card e"><h3>Circuits use features</h3><p>Mechanisms like induction heads ([A][B] ... [A] → [B]) are built from such features; induction heads appear exactly when in-context learning improves sharply during training.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Packing features into two dimensions <span class="ill">interactive</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">features in 2-D <input type="range" id="sN" min="2" max="8" step="1" value="5"> <output id="sNo"></output></label></div><svg id="sSvg" viewBox="0 0 600 260" class="ill-svg"></svg><p class="readout" id="sOut"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: five features in two dimensions</h2>
+    <hr>
+    <p class="lede">The toy model from Toy Models of Superposition: five features of different importance, embedded in 2 dimensions, followed by a ReLU (rectified linear unit).</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Dense features (often active together): the model represents the two most important features on orthogonal directions, like PCA (principal component analysis), and drops the other three.</li><li>Sparse features (rarely active together): the model stores all five, as the vertices of a pentagon.</li><li>Neighbouring pentagon directions are 72° apart: cosine 0.31, so an active feature leaks 0.31 onto its neighbours (interference).</li><li>Because features are rarely active together, a ReLU with a small negative bias removes most of that leakage.</li></ol><div class="result">Sparsity is what makes superposition worth it: occasional interference costs less than dropping features.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why networks do this</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Capacity</h3><p>The world has far more useful features than any layer has dimensions.</p></div>
+      <div class="card c"><h3>Sparsity is natural</h3><p>Most concepts (a city, a programming language, DNA (deoxyribonucleic acid)) are absent from most inputs.</p></div>
+      <div class="card b"><h3>Nonlinear filtering</h3><p>ReLU-like nonlinearities suppress small interference terms, making overlap cheap.</p></div>
+      <div class="card e"><h3>Consequences</h3><p>Polysemantic neurons, a link to adversarial examples, and the need for dictionary learning to recover features.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Each neuron stands for one concept."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Superposition spreads features across neurons, so most neurons are polysemantic.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"A model can store at most d features in d dimensions."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Only if features are dense; sparse features can be packed far beyond d with tolerable interference.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Interpretability means reading the weights."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Weights alone are hard to read; most methods study activations on real inputs and test causal effects.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Features are directions.</b> Analyse projections onto directions, not single neuron values.</li><li><b>Sparsity enables superposition.</b> Dense features get orthogonal dimensions; sparse ones share.</li><li><b>Phase changes.</b> As sparsity grows, features switch abruptly from absent to stored in superposition.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Reading a neuron as a concept.</b> Polysemantic neurons respond to several unrelated features.</li><li><b>Assuming orthogonality.</b> With more features than dimensions, directions must overlap.</li><li><b>Equating PCA with features.</b> PCA finds at most d dense directions, not the sparse features.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">In the toy model with dense features, what does the network represent?</p>
+      <div class="opts">
+      <button>A. All five features in a pentagon</button>
+      <button data-ok>B. Only the two most important features, orthogonally</button>
+      <button>C. No features</button>
+      <button>D. Random directions</button>
+      </div>
+      <div class="why"><strong>B.</strong> Dense features cannot share directions cheaply, so only the most important get dimensions (like PCA).</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What is polysemanticity, and what explains it?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">A neuron responding to several unrelated concepts; superposition (features stored as overlapping directions) explains it.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What is an induction head?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">An attention head that completes [A][B] ... [A] → [B] by copying what followed a previous occurrence of the current token; it forms when in-context learning improves sharply in training.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Networks store more features than they have neurons by packing sparse features into overlapping directions.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Interpretability treats features as directions in activation space. Individual neurons are often polysemantic because of superposition: when features are sparse, a network can represent more of them than it has dimensions by giving them nearly orthogonal directions and tolerating interference. In the toy model, five features in two dimensions are dropped down to two when dense, but stored as a pentagon when sparse. This is why later methods look for an overcomplete set of sparse directions instead of reading neurons.</p></div>
+    <div class="recap"><div><span><b>Feature:</b> a direction in activation space</span></div><div><span><b>Polysemantic:</b> one neuron, many features</span></div><div><span><b>Superposition:</b> more sparse features than dimensions</span></div><div><span><b>Cost:</b> interference, filtered by nonlinearities</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/interpretability/01_superposition_and_sae.ipynb" target="_blank" rel="noopener">01 · Superposition and sparse autoencoders on a toy model</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/interpretability/01_superposition_and_sae.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../02-sparse-autoencoders/index.html">02 · Sparse autoencoders →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2209.10652" target="_blank" rel="noopener">Toy Models of Superposition</a>
+        <div class="meta">Elhage et al. (Anthropic) · Transformer Circuits Thread 2022</div>
+        <p>Polysemanticity arises when models store more sparse features than dimensions in superposition; with dense features a toy model keeps only the most important (like PCA), with sparse features it packs more (e.g. five in two dimensions), with phase changes, polytope geometry and a link to adversarial examples.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2209.11895" target="_blank" rel="noopener">In-context Learning and Induction Heads</a>
+        <div class="meta">Olsson et al. (Anthropic) · Transformer Circuits Thread 2022</div>
+        <p>Induction heads complete [A][B] ... [A] → [B]; they form at the same point as a sharp rise in in-context learning (a bump in the training loss); causal evidence in small attention-only models, correlational in larger ones.</p></div>
+      <div class="paper-item"><a href="https://transformer-circuits.pub/2023/monosemantic-features/index.html" target="_blank" rel="noopener">Towards Monosemanticity: Decomposing Language Models With Dictionary Learning</a>
+        <div class="meta">Bricken et al. (Anthropic) · Transformer Circuits Thread 2023</div>
+        <p>Sparse autoencoders on the 512-neuron MLP (multilayer perceptron) of a one-layer transformer, trained on 8 billion activations, with 512 to 131,072 features (analysis on 4,096); features for Arabic script, DNA, base64 and Hebrew; a single neuron mixes academic citations, English dialogue, HTTP requests and Korean text.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  Deck.bind(['sN'], () => {
+    const n = Deck.val('sN'); Deck.out('sNo', n);
+    const s = clear(document.getElementById('sSvg')), cx = 300, cy = 130, R = 100;
+    svg('circle', { cx, cy, r: R, fill: 'none', style: 'stroke:var(--line)' }, s);
+    for (let i = 0; i < n; i++) {
+      const a = 2 * Math.PI * i / n - Math.PI / 2, x = cx + R * Math.cos(a), y = cy + R * Math.sin(a);
+      svg('line', { x1: cx, y1: cy, x2: x, y2: y, style: `stroke:var(--${'abcde'[i % 5]});stroke-width:3` }, s);
+      svg('text', { x: cx + (R + 14) * Math.cos(a), y: cy + (R + 14) * Math.sin(a) + 4, 'text-anchor': 'middle', class: 'tm', text: 'f' + (i + 1) }, s);
+    }
+    const inter = n <= 2 ? 0 : Math.abs(Math.cos(2 * Math.PI / n));
+    document.getElementById('sOut').innerHTML = n <= 2 ? `${n} feature${n > 1 ? 's' : ''} in 2 dimensions: orthogonal, no interference.` :
+      `${n} features in 2 dimensions, evenly spaced: neighbours are ${(360 / n).toFixed(0)}° apart, so each active feature leaks <b>${inter.toFixed(2)}</b> onto its neighbours. Superposition pays off only if features are rarely active together.`;
+  });
+})();
+</script>
+</body>
+</html>

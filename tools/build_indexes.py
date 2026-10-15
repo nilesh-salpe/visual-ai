@@ -20,6 +20,7 @@ PHASES = [  # (heading, notebook folder, index json)
     ('Frameworks · vLLM internals', 'vllm', 'index_vllm.json'),
     ('Infrastructure · Cluster scheduling', 'cluster-scheduling', 'index_cluster.json'),
     ('Frontier · Reasoning and test-time compute', 'reasoning', 'index_reasoning.json'),
+    ('Frontier · Interpretability', 'interpretability', 'index_interp.json'),
     ('Agents · LangChain and LangGraph', 'agent-frameworks', 'index_agent_frameworks.json'),
 ]
 
@@ -450,6 +451,12 @@ LLM_HUBS = {
         ('03-verifiers-and-search', 'Verifiers and search', 'ORM vs PRM, step search, compute-optimal scaling.'),
         ('04-reasoning-models', 'Reasoning models and thinking budgets', 'RL on verifiable rewards, budget forcing, limits.')],
         'Wei et al. 2022; Kojima et al. 2022; Wang et al. 2023; Cobbe et al. 2021; Lightman et al. 2024; Snell et al. 2025; Brown et al. 2024; DeepSeek-AI 2025; Muennighoff et al. 2025; Chen et al. 2024; Chen et al. 2025 (Anthropic); Claude API thinking documentation.'),
+    'interpretability': ('Interpretability', 'What is going on inside a language model: features as directions and superposition, sparse autoencoders from a one-layer transformer to Claude 3 Sonnet and GPT-4, and the causal tools (patching, circuits, attribution graphs, probes and steering vectors) that turn descriptions into mechanisms. 9-beat template; numbers checked against the papers.',
+                         'index_interp.json', 'Measure interference between features in superposition, then build and train a sparse autoencoder in NumPy that recovers 8 hidden features from 4 dimensions where PCA cannot.', [
+        ('01-features-and-superposition', 'Features and superposition', 'Directions, polysemantic neurons, packing sparse features.'),
+        ('02-sparse-autoencoders', 'Sparse autoencoders', 'Dictionary learning from one layer to Claude 3 Sonnet.'),
+        ('03-circuits-and-steering', 'Circuits, probes and steering', 'Patching, IOI, attribution graphs, ActAdd.')],
+        'Elhage et al. 2022; Olsson et al. 2022; Bricken et al. 2023; Cunningham et al. 2024; Templeton et al. 2024; Gao et al. 2024; Lieberum et al. 2024; Wang et al. 2023; Meng et al. 2022; Lindsey et al. 2025; Turner et al. 2023; Zou et al. 2023.'),
 }
 
 

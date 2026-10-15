@@ -1,0 +1,10 @@
+[
+ {
+  "slug": "01_superposition_and_sae",
+  "title": "01 \u00b7 Superposition and sparse autoencoders on a toy model",
+  "path": "build-it/interpretability/01_superposition_and_sae.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/interpretability/01_superposition_and_sae.ipynb",
+  "deck": "interpretability/02-sparse-autoencoders/",
+  "minutes": 35
+ }
+]

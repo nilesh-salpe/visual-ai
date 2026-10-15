@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circuits, Probes and Steering</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Circuits, probes and steering" data-home="../index.html" data-home-label="Interpretability">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Interpretability · 03</div>
+    <h1>Circuits, probes and steering</h1>
+    <p class="sub">From features to mechanisms: causal interventions that locate where a model computes something, circuits like indirect-object identification, attribution graphs in Claude, linear probes, and steering vectors that change behaviour at inference.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Knowing which features exist does not tell you how the model gets from input to output, or whether a representation is actually used. To explain or edit behaviour you need to find the components that cause it.</div>
+      <div class="c"><b>Core idea</b>Intervene on activations. <b>Activation patching</b> copies activations from one input into a run on another and measures the effect, locating the components that matter; combined, they form a <b>circuit</b>. <b>Attribution graphs</b> trace feature-to-feature paths through a replacement model. <b>Linear probes</b> test whether information is present. <b>Steering vectors</b> add a direction to activations to change behaviour without training.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>From features to mechanisms</h2>
+    <hr>
+<p class="lede">GPT-2 small completes "When Mary and John went to the store, John gave a drink to" with " Mary". Which parts of the network make that happen?</p>
+<pre><code>        ::: cards grid3
+</code></pre>
+<h3>[d] Many components</h3>
+<p>Hundreds of attention heads and MLP (multilayer perceptron) layers all contribute something.</p>
+<h3>[b] Correlation misleads</h3>
+<p>A component can carry the right information without the model relying on it.</p>
+<h3>[c] Need edits</h3>
+<p>To fix or steer behaviour you need the causal path, not just a description.
+:::</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Limits of looking</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Probes find too much</h3><p>A classifier can decode a property from activations that the model never uses.</p></div>
+      <div class="card b"><h3>Attention patterns</h3><p>Where a head attends is not the same as what it contributes.</p></div>
+      <div class="card c"><h3>Features alone</h3><p>An SAE (sparse autoencoder) dictionary lists parts, not how they connect.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>How do you show a component matters?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">You suspect attention head 9.9 moves the indirect object's name to the output. Which experiment best tests it?</p>
+      <div class="opts">
+      <button>A. Visualise its attention pattern</button>
+      <button data-ok>B. Replace its output with its output on a corrupted prompt (patching) and measure the drop in the correct answer's logit</button>
+      <button>C. Count its parameters</button>
+      <button>D. Train a probe on its output</button>
+      </div>
+      <div class="why"><strong>B.</strong> Activation patching is a causal intervention: if the behaviour breaks when that component's activation is swapped, the model uses it.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Intervene, trace, probe, steer</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Patching and circuits</h3><p>Indirect-object identification in GPT-2 small: 26 attention heads grouped into 7 classes, found with causal interventions and evaluated for faithfulness, completeness and minimality.</p></div>
+      <div class="card a"><h3>Causal tracing and editing</h3><p>Factual recall runs through mid-layer feed-forward modules at the subject tokens; ROME (Rank-One Model Editing) edits a fact with a rank-one weight change.</p></div>
+      <div class="card c"><h3>Attribution graphs</h3><p>Anthropic traced Claude 3.5 Haiku through a replacement model: Dallas → Texas → Austin as an intermediate step, rhyme words planned before a line is written, shared multilingual features. Satisfying insight on about a quarter of prompts tried.</p></div>
+      <div class="card e"><h3>Probes and steering</h3><p>Representation engineering reads and controls population-level directions (honesty, harmlessness, power-seeking); ActAdd steers with one contrast pair.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Steering along a contrast direction <span class="ill">interactive</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">steering coefficient <input type="range" id="gA" min="0" max="3" step="0.1" value="0"> <output id="gAo"></output></label></div><svg id="gSvg" viewBox="0 0 600 260" class="ill-svg"></svg><p class="readout" id="gOut"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: a steering vector</h2>
+    <hr>
+    <p class="lede">Activation Addition (ActAdd): steer sentiment using one pair of prompts.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Run the model on "Love" and on "Hate" and record the activations at a chosen layer.</li><li>Steering vector = activation("Love") − activation("Hate").</li><li>On a new prompt, add a multiple of this vector at the same layer during the forward pass.</li><li>Outputs shift toward positive sentiment; ActAdd reported state-of-the-art negative-to-positive shift and detoxification on LLaMA-3 and OPT while preserving off-target performance.</li></ol><div class="result">A single contrastive pair can define a direction that changes behaviour, with no training at all.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why interventions matter</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Causality</h3><p>Patching and ablation show necessity and sufficiency, which observation cannot.</p></div>
+      <div class="card c"><h3>Editing and control</h3><p>Knowing where a computation happens lets you change it (ROME) or steer it (ActAdd).</p></div>
+      <div class="card b"><h3>Safety audits</h3><p>Mechanisms can reveal hidden reasoning or shortcuts that outputs and chains of thought do not show.</p></div>
+      <div class="card d"><h3>Incomplete</h3><p>Even the best tools explain only part of behaviour on a fraction of prompts; replacement models are approximations.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"If a probe can read it, the model uses it."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Probes test presence, not use; patching tests use.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Each behaviour has one circuit."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Attribution graphs found shortcut paths alongside multi-step ones.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Steering requires finetuning."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">ActAdd needs no optimisation: one contrast pair defines the vector.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Patch, do not just observe.</b> Causal interventions separate used information from mere correlation.</li><li><b>Contrast pairs.</b> Steering and probing directions come from differences between matched inputs.</li><li><b>Judge circuits by faithfulness, completeness, minimality.</b> The IOI (indirect object identification) study used all three criteria.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Probe accuracy ≠ use.</b> A probe can decode information the model never uses.</li><li><b>One mechanism per behaviour.</b> Models often have parallel paths and shortcuts (attribution graphs found both).</li><li><b>Over-steering.</b> Large steering coefficients degrade fluency and off-target abilities.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">What three criteria did the IOI study use to evaluate its circuit?</p>
+      <div class="opts">
+      <button>A. Speed, size, cost</button>
+      <button data-ok>B. Faithfulness, completeness, minimality</button>
+      <button>C. Accuracy, recall, precision</button>
+      <button>D. Loss, perplexity, entropy</button>
+      </div>
+      <div class="why"><strong>B.</strong> Does the circuit reproduce the behaviour, does it include everything that matters, and is every part needed.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does ROME change, and where?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">A rank-one update to a mid-layer feed-forward weight matrix, where causal tracing located factual recall.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">How is an ActAdd steering vector built?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Take the activation difference between two contrasting prompts (e.g. "Love" − "Hate") at a layer and add a multiple of it during the forward pass.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Interpretability becomes useful when it intervenes: patch to find mechanisms, steer to change behaviour.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Activation patching runs the model on one input with some activations copied from another, revealing which components carry the information. The indirect-object identification circuit in GPT-2 small involves 26 attention heads in 7 classes, evaluated for faithfulness, completeness and minimality. Causal tracing located factual recall in mid-layer MLPs at subject tokens, enabling rank-one edits (ROME). Anthropic's attribution graphs found Claude 3.5 Haiku computing "Texas" on the way from Dallas to Austin and planning rhymes ahead, though they gave satisfying insight on about a quarter of prompts. Steering vectors such as ActAdd change behaviour by adding a contrast direction at inference.</p></div>
+    <div class="recap"><div><span><b>Patching:</b> swap activations, measure the effect</span></div><div><span><b>Circuits:</b> IOI: 26 heads in 7 classes</span></div><div><span><b>Attribution graphs:</b> multi-hop and planning in Claude 3.5 Haiku</span></div><div><span><b>Steering:</b> add a contrast direction at inference</span></div></div>
+    <p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../02-sparse-autoencoders/index.html">← 02</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2211.00593" target="_blank" rel="noopener">Interpretability in the Wild: a Circuit for Indirect Object Identification in GPT-2 small</a>
+        <div class="meta">Wang et al. · ICLR 2023</div>
+        <p>A circuit of 26 attention heads in 7 classes, found with causal interventions and evaluated for faithfulness, completeness and minimality.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2202.05262" target="_blank" rel="noopener">Locating and Editing Factual Associations in GPT</a>
+        <div class="meta">Meng et al. · NeurIPS 2022</div>
+        <p>Causal tracing finds factual recall in mid-layer feed-forward modules at subject tokens; Rank-One Model Editing (ROME) updates a fact by modifying those weights.</p></div>
+      <div class="paper-item"><a href="https://transformer-circuits.pub/2025/attribution-graphs/biology.html" target="_blank" rel="noopener">On the Biology of a Large Language Model</a>
+        <div class="meta">Lindsey et al. (Anthropic) · Transformer Circuits Thread 2025</div>
+        <p>Attribution graphs on a replacement model of Claude 3.5 Haiku: multi-hop reasoning (Dallas → Texas → Austin) alongside shortcuts, planning rhymes ahead, shared multilingual circuits; satisfying insight for about a quarter of prompts tried.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2308.10248" target="_blank" rel="noopener">Steering Language Models With Activation Engineering</a>
+        <div class="meta">Turner et al. · arXiv 2023</div>
+        <p>Activation Addition: the activation difference between contrasting prompts (e.g. "Love" − "Hate") added during the forward pass steers outputs; state-of-the-art sentiment shift and detoxification on LLaMA-3 and OPT with no optimisation.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2310.01405" target="_blank" rel="noopener">Representation Engineering: A Top-Down Approach to AI (artificial intelligence) Transparency</a>
+        <div class="meta">Zou et al. · arXiv 2023</div>
+        <p>Reads and controls population-level representations (honesty, harmlessness, power-seeking) rather than neurons or circuits.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2209.11895" target="_blank" rel="noopener">In-context Learning and Induction Heads</a>
+        <div class="meta">Olsson et al. (Anthropic) · Transformer Circuits Thread 2022</div>
+        <p>Induction heads complete [A][B] ... [A] → [B]; they form at the same point as a sharp rise in in-context learning (a bump in the training loss); causal evidence in small attention-only models, correlational in larger ones.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  Deck.bind(['gA'], () => {
+    const a = Deck.val('gA'); Deck.out('gAo', a.toFixed(1));
+    const s = clear(document.getElementById('gSvg')), X = v => 300 + v * 55, Y = v => 130 - v * 55;
+    svg('line', { x1: 170, y1: 130, x2: 430, y2: 130, style: 'stroke:var(--line)' }, s); svg('line', { x1: 300, y1: 10, x2: 300, y2: 250, style: 'stroke:var(--line)' }, s);
+    const pos = [[1.2, 0.9], [1.5, 0.4], [0.9, 1.3]], neg = [[-1.1, -0.8], [-1.4, -0.3], [-0.8, -1.2]];
+    pos.forEach(p => svg('circle', { cx: X(p[0]), cy: Y(p[1]), r: 5, style: 'fill:var(--e)' }, s));
+    neg.forEach(p => svg('circle', { cx: X(p[0]), cy: Y(p[1]), r: 5, style: 'fill:var(--d)' }, s));
+    const mp = [1.2, 0.867], mn = [-1.1, -0.767], v = [mp[0] - mn[0], mp[1] - mn[1]], n = Math.hypot(v[0], v[1]), u = [v[0] / n, v[1] / n];
+    const x0 = [-0.6, 0.2], x = [x0[0] + a * u[0], x0[1] + a * u[1]];
+    svg('line', { x1: X(mn[0]), y1: Y(mn[1]), x2: X(mp[0]), y2: Y(mp[1]), style: 'stroke:var(--a);stroke-width:2;stroke-dasharray:5 4' }, s);
+    svg('line', { x1: X(x0[0]), y1: Y(x0[1]), x2: X(x[0]), y2: Y(x[1]), style: 'stroke:var(--ink);stroke-width:2' }, s);
+    svg('circle', { cx: X(x[0]), cy: Y(x[1]), r: 7, style: 'fill:var(--a)' }, s);
+    const score = 1 / (1 + Math.exp(-3 * (x[0] * u[0] + x[1] * u[1])));
+    document.getElementById('gOut').innerHTML = `Green and red: activations on positive and negative prompts. Dashed: the steering direction (mean positive − mean negative). Adding ${a.toFixed(1)} × the unit direction moves the new prompt\'s activation; a linear probe along the same direction now reads <b>${(100 * score).toFixed(0)}% positive</b>.`;
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sparse Autoencoders</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Sparse autoencoders" data-home="../index.html" data-home-label="Interpretability">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Interpretability · 02</div>
+    <h1>Sparse autoencoders</h1>
+    <p class="sub">Dictionary learning for language models: training a wide, sparse autoencoder on activations to recover interpretable features, from a one-layer transformer to Claude 3 Sonnet and GPT-4, and steering behaviour by clamping features.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>If features are packed in superposition, neither neurons nor principal components give one-concept units. We need a method that finds an overcomplete set of sparse directions, at the scale of production models.</div>
+      <div class="c"><b>Core idea</b>Train a <b>sparse autoencoder</b> (SAE) to reconstruct a layer's activations through a much <b>wider</b> hidden layer where only a <b>few latents</b> are active per token (L1 penalty, or keep the top k). Each decoder direction is a candidate <b>feature</b>. Inspect what activates it, then test causality by <b>clamping</b> it during the forward pass.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Finding features in superposition</h2>
+    <hr>
+<p class="lede">Superposition means a layer's activation vector is a sparse sum of many feature directions that overlap. Given only activations, can we recover those directions?</p>
+<pre><code>        ::: cards grid3
+</code></pre>
+<h3>[d] Overcomplete</h3>
+<p>There are more features than dimensions, so we need more directions than the layer has.</p>
+<h3>[b] Sparse</h3>
+<p>Only a few features should be active on any token.</p>
+<h3>[c] Production scale</h3>
+<p>Frontier models have millions of features across many layers.
+:::</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why simpler decompositions fail</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Neurons</h3><p>Polysemantic: each mixes several features.</p></div>
+      <div class="card b"><h3>PCA / ICA</h3><p>At most d directions, chosen for variance or independence rather than sparsity of concepts.</p></div>
+      <div class="card c"><h3>Supervised probes</h3><p>Find only the concepts you already thought to label.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What should the hidden layer look like?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">You train an autoencoder on activations of dimension d to find features in superposition. What is the key design choice?</p>
+      <div class="opts">
+      <button>A. A hidden layer narrower than d</button>
+      <button data-ok>B. A hidden layer much wider than d with a sparsity penalty, so few latents are active</button>
+      <button>C. No hidden layer</button>
+      <button>D. A dense hidden layer of width d</button>
+      </div>
+      <div class="why"><strong>B.</strong> Overcomplete and sparse: wide enough to give each feature its own latent, sparse so each input uses only a few.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Dictionary learning at scale</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>The model</h3><p>f = ReLU(W_enc(x − b_dec) + b_enc), x̂ = W_dec f + b_dec; loss = reconstruction error + λ‖f‖₁ (or keep only the top k latents).</p></div>
+      <div class="card a"><h3>Towards Monosemanticity</h3><p>A one-layer transformer's 512-neuron MLP (multilayer perceptron); SAEs from 512 to 131,072 features trained on 8 billion activations; features for Arabic script, DNA (deoxyribonucleic acid), base64, Hebrew.</p></div>
+      <div class="card c"><h3>Scaling Monosemanticity</h3><p>Claude 3 Sonnet, middle-layer residual stream; ~1M, ~4M and ~34M features; fewer than 300 active per token; at least 65% of variance explained; features are multilingual and fire on images too.</p></div>
+      <div class="card e"><h3>Other labs</h3><p>OpenAI: k-sparse SAEs with clean scaling laws, a 16M-latent SAE on GPT-4 trained on 40B tokens. DeepMind: Gemma Scope, open JumpReLU SAEs for every layer of Gemma 2 2B and 9B.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Bigger dictionaries, more dead features <span class="ill">paper numbers</span></h2>
+    <hr>
+<div class="visual"><div class="bars"><div id="dBars"></div></div><p class="readout">Share of features never active on a sample of 10⁷ tokens at the end of training, for Anthropic's three Claude 3 Sonnet SAEs. Dead latents waste capacity; OpenAI's top-k changes reduced them even at the largest scales they tried.</p></div>
+
+<p>In the notebook, a 16-latent SAE recovers 8 features hidden in 4 dimensions (mean cosine about 0.94) where PCA (principal component analysis) reaches about 0.82.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: a feature in Claude 3 Sonnet</h2>
+    <hr>
+    <p class="lede">Anthropic trained SAEs with about 1M, 4M and 34M features on Claude 3 Sonnet's middle-layer residual stream.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Feature 34M/31164353 fires most strongly on references to the Golden Gate Bridge, more weakly on other bridges and tourist attractions.</li><li>It also fires on images of the bridge, though the SAE was trained only on text activations.</li><li>Clamping the feature high during the forward pass made the model bring up the bridge in most replies ("Golden Gate Claude", a 24-hour demo).</li><li>The same method surfaced safety-relevant features: code backdoors, bias, deception, power-seeking, sycophancy, dangerous content.</li></ol><div class="result">Activation examples suggest what a feature means; clamping it tests whether the model actually uses it.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why SAEs work, and what they miss</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Matches superposition</h3><p>An overcomplete sparse code is exactly the structure superposition predicts.</p></div>
+      <div class="card c"><h3>Unsupervised</h3><p>Features emerge without labels, including ones nobody thought to look for.</p></div>
+      <div class="card b"><h3>Causal tests</h3><p>Clamping or ablating features checks that the model really uses them (Golden Gate Claude).</p></div>
+      <div class="card d"><h3>Gaps</h3><p>Reconstruction is partial, many latents can be dead, and features depend on dictionary size and training choices.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"SAE features are the model's true atoms."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They are one useful decomposition; different sizes split or merge features, and reconstruction is incomplete.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Finding a deception feature means the model is deceptive."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Anthropic cautions that knowing about lies differs from lying; existence is not behaviour.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Bigger SAEs are always better."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They find finer features but more dead latents and higher cost.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Two objectives.</b> Judge an SAE on reconstruction and sparsity together, plus interpretability.</li><li><b>Top-k sparsity.</b> k-sparse SAEs fix the number of active latents directly, simplifying tuning (OpenAI).</li><li><b>Test by intervention.</b> Clamp or ablate a feature and watch the output.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Dead latents.</b> In the 34M-feature SAE about 65% of features never fired on 10⁷ tokens.</li><li><b>Existence ≠ behaviour.</b> A "deception" feature shows the model represents the concept, not that it lies.</li><li><b>Partial reconstruction.</b> Anthropic's SAEs explained at least 65% of activation variance; the rest is unexplained.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">How does a k-sparse (top-k) SAE control sparsity?</p>
+      <div class="opts">
+      <button>A. With a larger L1 penalty</button>
+      <button data-ok>B. By keeping only the k largest latents per input</button>
+      <button>C. By shrinking the dictionary</button>
+      <button>D. By using PCA first</button>
+      </div>
+      <div class="why"><strong>B.</strong> Exactly k latents stay active, which OpenAI found simplifies tuning and improves the reconstruction-sparsity frontier.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">How would you check that an SAE feature matters to the model?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Intervene: clamp it high or ablate it during the forward pass and measure the change in outputs.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Name two numbers that describe Anthropic's Claude 3 Sonnet SAEs.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Up to ~34M features; fewer than 300 active per token; at least 65% of variance explained; ~65% dead features in the largest (any two).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">A sparse autoencoder turns a layer's tangled activations into many sparse, mostly interpretable features.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Sparse autoencoders learn an overcomplete dictionary for a layer's activations: a wide hidden layer with few active latents per token. Towards Monosemanticity trained them on a one-layer transformer's 512-neuron MLP, with 512 to 131,072 features, and found features for Arabic script, DNA and base64. Scaling Monosemanticity applied them to Claude 3 Sonnet with up to about 34M features, fewer than 300 active per token, explaining at least 65% of variance; clamping the Golden Gate Bridge feature changed behaviour. OpenAI trained a 16M-latent top-k SAE on GPT-4; DeepMind released open SAEs on every layer of Gemma 2.</p></div>
+    <div class="recap"><div><span><b>SAE:</b> wide, sparse autoencoder on activations</span></div><div><span><b>Scale:</b> 1M-34M features on Claude 3 Sonnet; 16M on GPT-4</span></div><div><span><b>Validation:</b> activation examples + clamping</span></div><div><span><b>Caveats:</b> dead latents, partial reconstruction</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/interpretability/01_superposition_and_sae.ipynb" target="_blank" rel="noopener">01 · Superposition and sparse autoencoders on a toy model</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/interpretability/01_superposition_and_sae.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../03-circuits-and-steering/index.html">03 · Circuits, probes and steering →</a> · Previous: <a href="../01-features-and-superposition/index.html">← 01</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://transformer-circuits.pub/2023/monosemantic-features/index.html" target="_blank" rel="noopener">Towards Monosemanticity: Decomposing Language Models With Dictionary Learning</a>
+        <div class="meta">Bricken et al. (Anthropic) · Transformer Circuits Thread 2023</div>
+        <p>Sparse autoencoders on the 512-neuron MLP of a one-layer transformer, trained on 8 billion activations, with 512 to 131,072 features (analysis on 4,096); features for Arabic script, DNA, base64 and Hebrew; a single neuron mixes academic citations, English dialogue, HTTP (Hypertext Transfer Protocol) requests and Korean text.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2309.08600" target="_blank" rel="noopener">Sparse Autoencoders Find Highly Interpretable Features in Language Models</a>
+        <div class="meta">Cunningham et al. · ICLR 2024</div>
+        <p>SAE features are more interpretable and monosemantic than alternative decompositions, and pinpoint the features causally responsible for indirect-object identification more finely.</p></div>
+      <div class="paper-item"><a href="https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html" target="_blank" rel="noopener">Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet</a>
+        <div class="meta">Templeton et al. (Anthropic) · Transformer Circuits Thread 2024</div>
+        <p>SAEs on the middle-layer residual stream of Claude 3 Sonnet with ~1M, ~4M and ~34M features; fewer than 300 active per token, at least 65% of variance explained; multilingual and multimodal features; safety-relevant features (code backdoors, bias, deception, power-seeking, sycophancy); feature clamping steers behaviour.</p><div class="num">Remember: dead features ≈2% (1M), 35% (4M), 65% (34M)</div></div>
+      <div class="paper-item"><a href="https://www.anthropic.com/news/golden-gate-claude" target="_blank" rel="noopener">Golden Gate Claude</a>
+        <div class="meta">Anthropic · Anthropic News 2024</div>
+        <p>Amplifying the Golden Gate Bridge feature in Claude 3 Sonnet made most replies mention the bridge; available as a 24-hour research demo.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2406.04093" target="_blank" rel="noopener">Scaling and evaluating sparse autoencoders</a>
+        <div class="meta">Gao et al. (OpenAI) · arXiv 2024</div>
+        <p>k-sparse (top-k) autoencoders control sparsity directly and, with other changes, leave few dead latents; clean scaling laws in size and sparsity; new feature-quality metrics.</p><div class="num">Remember: a 16 million latent SAE on GPT-4 activations, trained on 40 billion tokens</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2408.05147" target="_blank" rel="noopener">Gemma Scope: Open Sparse Autoencoders Everywhere All At Once on Gemma 2</a>
+        <div class="meta">Lieberum et al. (Google DeepMind) · arXiv 2024</div>
+        <p>Open JumpReLU SAEs trained on all layers and sub-layers of Gemma 2 2B and 9B (and select layers of 27B).</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  Deck.hbars(document.getElementById('dBars'), [
+    { label: '~1M features', value: 2, color: 'var(--e)', text: '≈2% dead' },
+    { label: '~4M features', value: 35, color: 'var(--b)', text: '≈35% dead' },
+    { label: '~34M features', value: 65, color: 'var(--d)', text: '≈65% dead' }], { max: 100 });
+})();
+</script>
+</body>
+</html>
