@@ -20,7 +20,8 @@ intro:
     use about 4× the tokens of chat and multi-agent systems about 15×.
   core: Make the repeated prefix cheap with <b>prompt caching</b> (cache reads at 0.1× the base input price on most Claude models), keep the context small with <b>compaction</b>
     and concise tool results, send easy steps to <b>smaller models</b>, run independent tool calls <b>in parallel</b>, and enforce <b>budgets</b> per task.
-  hint: 'Previous: [Safety and reliability](../02-safety-and-reliability/index.html) · [All decks](../index.html)'
+  hint: 'Previous: [Safety and reliability](../02-safety-and-reliability/index.html) · Next: [Experimentation for LLM products →](../04-experimentation/index.html)
+    · [All decks](../index.html)'
 papers:
 - ant_caching
 - ma_research

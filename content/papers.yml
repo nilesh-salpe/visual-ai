@@ -2315,3 +2315,92 @@ jobset:
   year: 2026
   url: https://jobset.sigs.k8s.io/docs/overview/
   summary: 'A group of Kubernetes Jobs managed as a unit: separate templates per replicated job, the whole set recreated on failure per its failure policy, exclusive placement per topology domain, and a headless service for pod discovery.'
+var_bench:
+  title: Quantifying Variance in Evaluation Benchmarks
+  authors: Madaan et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2406.10229
+  summary: 'Ten Llama-2-7B-architecture models trained for 210B tokens that differ only in seed: seed standard deviation ARC-C 0.80, HellaSwag 0.21, GSM8K 0.41, MMLU 0.57, MMLU-Cloze 0.22; gains should exceed seed variance; use cloze formulations for pretraining ablations.'
+signal_noise:
+  title: 'Signal and Noise: A Framework for Reducing Uncertainty in Language Model Evaluation'
+  authors: Heineman et al.
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2508.13144
+  summary: 'Signal (relative dispersion of scores across models of similar compute) over noise (relative std of one run''s final checkpoints) predicts small-to-large decision accuracy; perplexity beats accuracy; filtering noisy subtasks and averaging checkpoints help. 30 benchmarks, 375 models from 60M to 32B.'
+  number: SNR vs decision accuracy R = 0.791; checkpoint averaging 68.9% → 71.3% decision accuracy (30-task average)
+datadecide:
+  title: 'DataDecide: How to Predict Best Pretraining Data with Small Experiments'
+  authors: Magnusson et al.
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2504.11393
+  summary: 'Controlled pretraining over 25 corpora, up to 100B tokens and 1B parameters, 3 seeds: rankings at a single small scale are a strong baseline; no scaling-law method among 8 baselines beats it for the same compute; continuous likelihood metrics make benchmarks highly predictable.'
+  number: 150M rankings predict ~80% of 1B comparisons; >80% predictable with 0.01% of the compute
+random_search:
+  title: Random Search for Hyper-Parameter Optimization
+  authors: Bergstra & Bengio
+  venue: JMLR
+  year: 2012
+  url: https://www.jmlr.org/papers/v13/bergstra12a.html
+  summary: Randomly chosen trials are more efficient than a grid because only a few hyperparameters really matter, and which ones differ by dataset.
+hyperband:
+  title: 'Hyperband: A Novel Bandit-Based Approach to Hyperparameter Optimization'
+  authors: Li et al.
+  venue: JMLR
+  year: 2018
+  url: https://arxiv.org/abs/1603.06560
+  summary: Speeds up random search with adaptive resource allocation and early stopping, framed as a pure-exploration bandit problem.
+  number: over an order-of-magnitude speedup over the Bayesian-optimisation competitor set
+seed3407:
+  title: 'Torch.manual_seed(3407) is all you need: On the influence of random seeds in deep learning architectures for computer vision'
+  authors: Picard
+  venue: arXiv
+  year: 2021
+  url: https://arxiv.org/abs/2109.08203
+  summary: Scanning up to 10^4 seeds on CIFAR-10 (and fewer on ImageNet) shows it is surprisingly easy to find outlier seeds that perform much better or worse than average.
+kohavi_scale:
+  title: Online Controlled Experiments at Large Scale
+  authors: Kohavi et al.
+  venue: KDD
+  year: 2013
+  url: https://exp-platform.com/large-scale/
+  summary: Lessons from running online controlled experiments at Bing scale; many ideas move key metrics by about 1%, so experiments must be sensitive and trustworthy.
+  number: over 200 concurrent experiments on any given day, each with millions of users
+bing_third:
+  title: Large Scale Experimentation at Bing
+  authors: Bing Search Quality Insights
+  venue: Bing Blogs
+  year: 2013
+  url: https://blogs.bing.com/search-quality-insights/2013/08/08/large-scale-experimentation-at-bing
+  summary: 'Harry Shum (Bing R&D): when ideas are evaluated in controlled experiments, "less than a third move the metrics they were designed to improve".'
+cuped:
+  title: Improving the Sensitivity of Online Controlled Experiments by Utilizing Pre-Experiment Data
+  authors: Deng, Xu, Kohavi & Walker
+  venue: WSDM
+  year: 2013
+  url: https://exp-platform.com/Documents/2013-02-CUPED-ImprovingSensitivityOfControlledExperiments.pdf
+  summary: 'CUPED: use each unit''s pre-experiment metric as a covariate to remove explainable variance (a factor 1 − ρ² for correlation ρ).'
+  number: about 50% variance reduction at Bing, i.e. the same power with half the users or half the duration
+always_valid:
+  title: 'Always Valid Inference: Bringing Sequential Analysis to A/B Testing'
+  authors: Johari, Pekelis & Walsh
+  venue: Operations Research
+  year: 2022
+  url: https://arxiv.org/abs/1512.04922
+  summary: Fixed-horizon p-values are unreliable when users continuously monitor tests and stop when they like; always-valid p-values and confidence intervals stay valid whenever the decision is made. Deployed on a large commercial A/B testing platform.
+srm:
+  title: 'Diagnosing Sample Ratio Mismatch in Online Controlled Experiments: A Taxonomy and Rules of Thumb for Practitioners'
+  authors: Fabijan et al.
+  venue: KDD
+  year: 2019
+  url: https://exp-platform.com/Documents/2019_KDDFabijanGupchupFuptaOmhoverVermeerDmitriev.pdf
+  summary: 'An SRM is when the observed sample ratio differs from the expected one; like a fever it is a symptom of many data-quality issues. Taxonomy from four companies and over 25 products.'
+interleaving:
+  title: Large-Scale Validation and Analysis of Interleaved Search Evaluation
+  authors: Chapelle, Joachims, Radlinski & Yue
+  venue: ACM TOIS
+  year: 2012
+  url: https://www.cs.cornell.edu/people/tj/publications/chapelle_etal_12a.pdf
+  summary: Interleaving merges two rankings into one list shown to the user and credits clicks to each, a paired online comparison; validated with Yahoo!, Bing and arXiv search data against judgments and other online metrics.

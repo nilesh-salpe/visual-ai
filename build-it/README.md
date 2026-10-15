@@ -88,6 +88,7 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/post-training/
 | [02 · Error bars, clustered errors and paired comparisons](evals/02_error_bars.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/02_error_bars.ipynb) |
 | [03 · Detecting benchmark contamination with n-grams](evals/03_contamination.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/03_contamination.ipynb) |
 | [04 · LLM judges and arena ratings](evals/04_judges_and_arenas.ipynb) | 45 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb) |
+| [05 · Experiments: seed noise, A/B sample size and the cost of peeking](evals/05_experiments.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/05_experiments.ipynb) |
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/evals/
 

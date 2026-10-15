@@ -408,3 +408,77 @@ def make_judge(first_bias, seed=0):
         * Arena-style leaderboards turn pairwise votes into ratings. Bradley-Terry maximum likelihood is order-independent and gives proper confidence intervals; online Elo is order- and K-dependent.
         * Report intervals, not just ranks: neighbouring models often overlap.''',
 ))
+
+# ------------------------------------------------------------------ 05
+NBS.append(dict(
+    slug='05_experiments', title='05 · Experiments: seed noise, A/B sample size and the cost of peeking', deck='evals/08-training-experiments/', deck_name='Experiments in LLM training', minutes=30,
+    goals='the smallest training change you can detect given seed noise, the users an online A/B test needs to detect a lift in task success, and a simulation showing how checking an A/B test repeatedly inflates false positives.',
+    setup=r'''
+Z_ALPHA, Z_POWER = 1.96, 0.84      # two-sided 5% test, 80% power: z = 1.96 + 0.84 = 2.80
+''',
+    tasks=[
+        dict(fn='detectable_difference', title='The smallest difference seeds let you see', md=r'''
+            Each training run's benchmark score varies across random seeds with standard deviation `sigma` (points). Comparing the mean of `n_seeds` runs of recipe A against `n_seeds` runs of recipe B, the difference of means has standard error `sigma * sqrt(2 / n_seeds)`. Return the **minimum detectable difference** at 5% significance and 80% power: `(Z_ALPHA + Z_POWER) × SE`.''',
+             starter=r'''
+            def detectable_difference(sigma, n_seeds):
+                # TODO
+                raise NotImplementedError''',
+             test=r'''
+            def _test_detectable_difference(f):
+                assert abs(f(0.57, 1) - 2.80 * 0.57 * math.sqrt(2)) < 1e-9, "one seed per arm: SE = sigma * sqrt(2)"
+                assert abs(f(0.57, 4) - f(0.57, 1) / 2) < 1e-9, "four times the seeds halves the detectable difference"
+                assert f(0.22, 3) < f(0.57, 3), "a lower-noise metric detects smaller differences"''',
+             solution=r'''
+            def detectable_difference_solution(sigma, n_seeds):
+                return (Z_ALPHA + Z_POWER) * sigma * math.sqrt(2 / n_seeds)'''),
+        dict(fn='ab_sample_size', title='Users per arm for an A/B test', md=r'''
+            An agent completes tasks with success rate `p` today. To detect an absolute lift `delta` (to `p + delta`) with a two-sided 5% test and 80% power, each arm needs about `n = (Z_ALPHA + Z_POWER)² × (p(1−p) + q(1−q)) / delta²` users, where `q = p + delta`. Return `n` rounded **up** to an integer.''',
+             starter=r'''
+            def ab_sample_size(p, delta):
+                # TODO
+                raise NotImplementedError''',
+             test=r'''
+            def _test_ab_sample_size(f):
+                assert f(0.5, 0.05) == 1561, f(0.5, 0.05)
+                assert f(0.5, 0.025) > 3.9 * f(0.5, 0.05), "halving the lift needs about four times the users"
+                assert f(0.9, 0.02) < f(0.5, 0.02), "variance p(1-p) is smaller near 0 or 1"''',
+             solution=r'''
+            def ab_sample_size_solution(p, delta):
+                q = p + delta
+                return math.ceil((Z_ALPHA + Z_POWER) ** 2 * (p * (1 - p) + q * (1 - q)) / delta ** 2)'''),
+        dict(fn='peeking_false_positive_rate', title='What peeking does to an A/A test', md=r'''
+            Simulate `trials` **A/A tests** (both arms identical, success rate 0.5) with `n_max` users per arm arriving in `looks` equal batches. After each batch compute the two-proportion z statistic on all data so far; if |z| > 1.96, declare a "win" and stop. Return the fraction of trials that declared a win. With one look it should be near 5%; with many looks it is far higher, although there is no real difference. Use `np.random.default_rng(seed)`.''',
+             starter=r'''
+            def peeking_false_positive_rate(n_max=2000, looks=1, trials=2000, seed=0):
+                rng = np.random.default_rng(seed)
+                # TODO
+                raise NotImplementedError''',
+             test=r'''
+            def _test_peeking_false_positive_rate(f):
+                one = f(looks=1, trials=4000)
+                assert 0.035 < one < 0.065, f"one look should give about 5% false positives, got {one:.3f}"
+                many = f(looks=20, trials=4000)
+                assert many > 0.15, f"checking after every batch should inflate false positives well above 5%, got {many:.3f}"''',
+             solution=r'''
+            def peeking_false_positive_rate_solution(n_max=2000, looks=1, trials=2000, seed=0):
+                rng = np.random.default_rng(seed)
+                size = n_max // looks
+                a = rng.binomial(1, 0.5, (trials, looks * size)).reshape(trials, looks, size).sum(2).cumsum(1)
+                b = rng.binomial(1, 0.5, (trials, looks * size)).reshape(trials, looks, size).sum(2).cumsum(1)
+                n = size * np.arange(1, looks + 1)
+                pa, pb, pool = a / n, b / n, (a + b) / (2 * n)
+                z = (pa - pb) / np.sqrt(np.maximum(pool * (1 - pool) * 2 / n, 1e-12))
+                return float((np.abs(z) > 1.96).any(axis=1).mean())'''),
+    ],
+    explore_md='False positives against the number of looks at an A/A test, and the users needed per arm as the lift you want to detect shrinks.',
+    explore=r'''
+for looks in [1, 2, 5, 10, 20, 50]:
+    print(f"{looks:3} looks: {peeking_false_positive_rate_solution(looks=looks, trials=4000):.1%} of A/A tests declare a winner")
+print()
+for d in [0.10, 0.05, 0.02, 0.01]:
+    print(f"lift {d:.0%} from 50% success: {ab_sample_size_solution(0.5, d):,} users per arm")''',
+    takeaways='''
+        * Seed noise sets a floor: a recipe change smaller than about 2.8 × σ × √(2/n) is invisible with n seeds per arm. Lower-noise metrics (cloze instead of multiple choice, likelihoods instead of accuracy) lower the floor.
+        * Online tests need many users for small lifts: the sample grows with 1/δ².
+        * Looking at a running test and stopping on the first significant result inflates false positives; fix the sample size in advance or use always-valid (sequential) tests.''',
+))

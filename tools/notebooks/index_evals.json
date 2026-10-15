@@ -30,5 +30,13 @@
   "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb",
   "deck": "evals/07-arenas/",
   "minutes": 45
+ },
+ {
+  "slug": "05_experiments",
+  "title": "05 \u00b7 Experiments: seed noise, A/B sample size and the cost of peeking",
+  "path": "build-it/evals/05_experiments.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/05_experiments.ipynb",
+  "deck": "evals/08-training-experiments/",
+  "minutes": 30
  }
 ]

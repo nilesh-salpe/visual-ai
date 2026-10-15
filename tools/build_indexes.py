@@ -195,6 +195,7 @@ EVAL_CARDS = [
     ('05-contamination', 'Contamination', '13-gram overlap, clean vs dirty scores, fresh test sets.'),
     ('06-llm-as-judge', 'LLM-as-judge', 'Agreement with humans; position, verbosity and self-enhancement bias.'),
     ('07-arenas', 'Arenas and ratings', 'Bradley-Terry vs online Elo, confidence intervals.'),
+    ('08-training-experiments', 'Experiments in LLM training', 'Seed noise, low-noise metrics, small-to-large decisions, search.'),
 ]
 
 
@@ -457,7 +458,8 @@ AGENT_HUBS = {
     'agent-operations': ('Agent operations', 'Running agents for real: evaluating them, keeping them safe and reliable, and controlling cost and latency.', [
         ('01-evaluating-agents', 'Evaluating agents', 'End-state grading, pass^k, harnesses, benchmarks.'),
         ('02-safety-and-reliability', 'Safety and reliability', 'Prompt injection, least privilege, approvals, idempotency.'),
-        ('03-cost-and-latency', 'Cost and latency', 'Quadratic context growth, prompt caching, routing, budgets.')]),
+        ('03-cost-and-latency', 'Cost and latency', 'Quadratic context growth, prompt caching, routing, budgets.'),
+        ('04-experimentation', 'Experimentation for LLM products', 'Shadow traffic, A/B tests, guardrails, peeking, SRM, CUPED.')]),
     'agent-frameworks': ('Agent frameworks', 'The agent loop and graph runtime in a widely used framework: LangChain\'s building blocks and create_agent, LangGraph\'s state graphs, and the persistence layer behind memory, approvals and recovery. Pinned to LangChain 1.4.6 and LangGraph 1.2.15.', [
         ('01-langchain-basics', 'LangChain basics', 'Chat models, messages, tools, create_agent, middleware.'),
         ('02-langgraph-core', 'LangGraph core', 'State, reducers, nodes, edges, super-steps.'),

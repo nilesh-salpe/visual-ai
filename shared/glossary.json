@@ -845,6 +845,18 @@
   },
   "SIG": {
    "exp": "special interest group"
+  },
+  "SRM": {
+   "exp": "sample ratio mismatch"
+  },
+  "SNR": {
+   "exp": "signal-to-noise ratio"
+  },
+  "CUPED": {
+   "exp": "Controlled-experiment Using Pre-Experiment Data"
+  },
+  "ARC": {
+   "exp": "AI2 Reasoning Challenge"
   }
  },
  "exempt": [
@@ -1230,6 +1242,13 @@
   "ClusterQueues",
   "LocalQueues",
   "ResourceFlavors",
-  "DeviceClass"
+  "DeviceClass",
+  "KDD",
+  "TOIS",
+  "WSDM",
+  "CIFAR",
+  "DataDecide",
+  "HellaSwag",
+  "AI2"
  ]
 }

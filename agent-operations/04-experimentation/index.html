@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Experimentation for LLM Products</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Experimentation for LLM products" data-home="../index.html" data-home-label="Operations">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual Agents · Operations · 04</div>
+    <h1>Experimentation for LLM and agent products</h1>
+    <p class="sub">Shipping a new model, prompt or tool safely: from offline evals to shadow traffic to online controlled experiments, with guardrail metrics, honest statistics (no peeking), sample-ratio checks and variance reduction.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A change that wins offline can still lower real task success, raise cost or latency, or annoy users: offline sets miss real traffic. And most ideas do not work: at Bing, "less than a third move the metrics they were designed to improve" when tested in controlled experiments.</div>
+      <div class="c"><b>Core idea</b>Move every change up a <b>ladder</b>: offline evals, then <b>shadow traffic</b> (run on real requests, show nothing), then an <b>online controlled experiment</b>. Randomise <b>users</b> into arms, fix one <b>primary metric</b> (e.g. task success) and <b>guardrails</b> (cost per task, latency, safety, escalations), decide the <b>sample size</b> in advance or use <b>always-valid</b> sequential tests, check for <b>sample ratio mismatch</b>, reduce variance with pre-experiment data (<b>CUPED (Controlled-experiment Using Pre-Experiment Data)</b>), then ramp up. These are proven web-experimentation methods applied to LLM (large language model) products.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Previous: <a href="../03-cost-and-latency/index.html">Cost and latency</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Offline wins are not online wins</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Offline ≠ online</h3><p>Eval sets are fixed and curated; real traffic has new intents, longer contexts and adversarial users.</p></div>
+      <div class="card b"><h3>Most ideas fail</h3><p>At Bing, less than a third of ideas moved the metrics they were designed to improve; teams that skip experiments ship the other two thirds.</p></div>
+      <div class="card c"><h3>Small effects, noisy outputs</h3><p>Real gains are often a point or two, and model outputs and costs vary from request to request.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Climb a ladder of evidence</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Offline evals</h3><p>Graded task suites and pass^k (Evaluating agents deck): cheap, repeatable, catch regressions before users see them.</p></div>
+      <div class="card a"><h3>Shadow traffic</h3><p>Run the new version on copies of real requests and compare outputs, cost and latency without showing them to users.</p></div>
+      <div class="card c"><h3>Online controlled experiment</h3><p>Randomly assign users to control or treatment; compare a pre-chosen primary metric and guardrails.</p></div>
+      <div class="card e"><h3>Ramp and hold out</h3><p>Increase exposure stepwise (e.g. 1% → 10% → 50%); keep a small long-term holdout to measure lasting effects.</p></div>
+    </div>
+<div class="visual"><div class="controls"><label class="ctl">baseline task success <input type="range" id="aP" min="5" max="95" step="1" value="50"> <output id="aPo"></output></label><label class="ctl">lift to detect <input type="range" id="aD" min="0.5" max="10" step="0.5" value="2"> <output id="aDo"></output></label></div><div class="bars"><div id="aBars"></div></div><p class="readout" id="aOut"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>The experimentation pipeline</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A change: a new model version, prompt, tool, retrieval setting or routing rule.&quot;, &quot;Offline evals catch regressions on known tasks before any user is exposed.&quot;, &quot;Shadow traffic runs the change on real requests and compares outputs, cost and latency without showing results.&quot;, &quot;An assignment service hashes a stable user id into an arm, so each user sees one consistent version.&quot;, &quot;Both arms log the same events: task outcome, tokens and cost, latency, safety flags, escalations to humans.&quot;, &quot;Analysis first checks that the arms received the planned share of users (sample ratio), then tests the primary metric and the guardrails.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="122.5" y1="118.0" x2="189.0" y2="80.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="122.5" y1="178.0" x2="189.0" y2="216.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="132.0" y1="148.0" x2="366.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="500.0" y1="118.0" x2="546.0" y2="95.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="600.0" y1="98.0" x2="600.0" y2="146.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="569.0" y1="208.0" x2="540.0" y2="236.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="120" height="56" rx="10"/><text class="dg-text" x="70.0" y="146.0" text-anchor="middle">Change</text><text class="dg-sub" x="70.0" y="162.0" text-anchor="middle">model · prompt · tool</text></g><g class="dg-node b" data-step="2"><rect x="170" y="20" width="150" height="56" rx="10"/><text class="dg-text" x="245.0" y="46.0" text-anchor="middle">Offline evals</text><text class="dg-sub" x="245.0" y="62.0" text-anchor="middle">task suites · pass^k</text></g><g class="dg-node b" data-step="3"><rect x="170" y="220" width="150" height="56" rx="10"/><text class="dg-text" x="245.0" y="246.0" text-anchor="middle">Shadow traffic</text><text class="dg-sub" x="245.0" y="262.0" text-anchor="middle">real inputs, hidden</text></g><g class="dg-node a" data-step="4"><rect x="370" y="120" width="140" height="56" rx="10"/><text class="dg-text" x="440.0" y="146.0" text-anchor="middle">Assignment</text><text class="dg-sub" x="440.0" y="162.0" text-anchor="middle">hash(user) → arm</text></g><g class="dg-node c" data-step="4"><rect x="550" y="40" width="100" height="56" rx="10"/><text class="dg-text" x="600.0" y="66.0" text-anchor="middle">A / B arms</text><text class="dg-sub" x="600.0" y="82.0" text-anchor="middle">pinned versions</text></g><g class="dg-node e" data-step="5"><rect x="550" y="150" width="100" height="56" rx="10"/><text class="dg-text" x="600.0" y="176.0" text-anchor="middle">Logs</text><text class="dg-sub" x="600.0" y="192.0" text-anchor="middle">events · cost</text></g><g class="dg-node d" data-step="6"><rect x="370" y="240" width="280" height="50" rx="10"/><text class="dg-text" x="510.0" y="270.0" text-anchor="middle">Analysis: SRM check · primary metric · guardrails</text></g><g data-step="4"><text class="dg-label" x="249.0" y="143.0" text-anchor="middle">passes</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>Honest analysis</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Sample ratio mismatch (SRM): the observed split differs from the planned one. Like a fever, it is a symptom of data-quality problems (bots, logging loss, redirects); results are not trustworthy until it is explained.&quot;, &quot;Test the one primary metric chosen before the experiment; secondary metrics are diagnostics, not decision criteria.&quot;, &quot;Guardrails must not regress: an agent that succeeds 1 point more but costs 30% more per task may be a loss.&quot;, &quot;CUPED subtracts the part of each user&#x27;s metric predicted by their pre-experiment behaviour; with correlation ρ the variance shrinks by a factor of 1 − ρ² (about 50% at Bing).&quot;, &quot;Decide the sample size in advance, or use always-valid p-values: checking a fixed-horizon test repeatedly and stopping at the first significant result inflates false positives.&quot;, &quot;Ship, iterate or stop based on the primary metric and guardrails together.&quot;, &quot;For search and retrieval, interleaving merges both rankers&#x27; results into one list and credits each click to the ranker that contributed the result: a paired online comparison, validated at scale on Yahoo! and Bing search and arXiv full-text search.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga2" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="212.0" y1="48.0" x2="236.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="442.0" y1="48.0" x2="466.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="4"><line x1="340.0" y1="128.0" x2="340.0" y2="80.0" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="5"><line x1="172.7" y1="128.0" x2="273.1" y2="80.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="6"><line x1="560.0" y1="78.0" x2="560.0" y2="126.0" marker-end="url(#dga2)"/></g><g class="dg-node d" data-step="1"><rect x="10" y="20" width="200" height="56" rx="10"/><text class="dg-text" x="110.0" y="46.0" text-anchor="middle">Sample ratio check</text><text class="dg-sub" x="110.0" y="62.0" text-anchor="middle">planned 50/50? χ² test</text></g><g class="dg-node a" data-step="2"><rect x="240" y="20" width="200" height="56" rx="10"/><text class="dg-text" x="340.0" y="46.0" text-anchor="middle">Primary metric</text><text class="dg-sub" x="340.0" y="62.0" text-anchor="middle">task success, pre-chosen</text></g><g class="dg-node b" data-step="3"><rect x="470" y="20" width="180" height="56" rx="10"/><text class="dg-text" x="560.0" y="46.0" text-anchor="middle">Guardrails</text><text class="dg-sub" x="560.0" y="62.0" text-anchor="middle">cost · latency · safety</text></g><g class="dg-node e" data-step="4"><rect x="240" y="130" width="200" height="56" rx="10"/><text class="dg-text" x="340.0" y="156.0" text-anchor="middle">CUPED</text><text class="dg-sub" x="340.0" y="172.0" text-anchor="middle">pre-period covariate</text></g><g class="dg-node c" data-step="5"><rect x="10" y="130" width="200" height="56" rx="10"/><text class="dg-text" x="110.0" y="156.0" text-anchor="middle">Stopping rule</text><text class="dg-sub" x="110.0" y="172.0" text-anchor="middle">fixed n or always-valid</text></g><g class="dg-node f" data-step="6"><rect x="470" y="130" width="180" height="56" rx="10"/><text class="dg-text" x="560.0" y="156.0" text-anchor="middle">Decision</text><text class="dg-sub" x="560.0" y="172.0" text-anchor="middle">ship · iterate · stop</text></g><g class="dg-node c" data-step="7"><rect x="10" y="235" width="640" height="56" rx="10"/><text class="dg-text" x="330.0" y="261.0" text-anchor="middle">Ranking and retrieval changes: interleave both rankers&#x27; results for the same user</text><text class="dg-sub" x="330.0" y="277.0" text-anchor="middle">a paired comparison within each user&#x27;s results</text></g><g data-step="2"><text class="dg-label" x="224.0" y="43.0" text-anchor="middle">ok</text></g><g data-step="4"><text class="dg-label" x="340.0" y="99.0" text-anchor="middle">less variance</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Looks at an A/A test</th>
+<th>Share declaring a "winner"</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 (fixed horizon)</td>
+<td>4.6%</td>
+</tr>
+<tr>
+<td>5</td>
+<td>13.2%</td>
+</tr>
+<tr>
+<td>20</td>
+<td>24.8%</td>
+</tr>
+<tr>
+<td>50</td>
+<td>30.8%</td>
+</tr>
+</tbody>
+</table></div>
+<div class="visual colab-banner"><div><b>🛠 Try it in Colab</b><p class="caption">Compute users per arm for a task-success lift, and simulate how peeking at an A/A test inflates false positives (the table above comes from this notebook).</p></div><a class="btn primary" href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/05_experiments.ipynb" target="_blank" rel="noopener">Open notebook →</a></div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Choice</th>
+<th>Benefit</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Randomise by user</td>
+<td>consistent experience; independent units</td>
+<td>fewer units than requests; slower to reach significance</td>
+</tr>
+<tr>
+<td>Randomise by request</td>
+<td>many units fast</td>
+<td>users see both versions; carry-over effects in conversations</td>
+</tr>
+<tr>
+<td>Fixed-horizon test</td>
+<td>simple, standard statistics</td>
+<td>no early stopping without inflating errors</td>
+</tr>
+<tr>
+<td>Always-valid sequential test</td>
+<td>monitor continuously and stop early safely</td>
+<td>slightly less power at a fixed size</td>
+</tr>
+<tr>
+<td>Shadow traffic first</td>
+<td>catches cost and latency surprises with zero user risk</td>
+<td>cannot measure user behaviour or satisfaction</td>
+</tr>
+<tr>
+<td>LLM-judge metrics online</td>
+<td>scores every conversation</td>
+<td>judge bias; validate against human labels</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Peeking</td>
+<td>many "wins" that vanish on re-test</td>
+<td>fixed sample size or always-valid inference</td>
+</tr>
+<tr>
+<td>Sample ratio mismatch</td>
+<td>arms differ in size; results look too good or bad</td>
+<td>SRM check on every analysis; find the root cause before reading metrics</td>
+</tr>
+<tr>
+<td>Proxy metric moves, goal does not</td>
+<td>thumbs-up rises while task completion falls</td>
+<td>a primary metric tied to the real outcome; guardrails</td>
+</tr>
+<tr>
+<td>Model version drift</td>
+<td>a provider updates the model mid-test</td>
+<td>pin model versions and prompts in the experiment config</td>
+</tr>
+<tr>
+<td>Novelty effects</td>
+<td>early lift fades over weeks</td>
+<td>run long enough; long-term holdouts</td>
+</tr>
+<tr>
+<td>Interference between arms</td>
+<td>shared caches, rate limits or memory leak effects across arms</td>
+<td>separate caches and quotas per arm</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Config, not code</h3><p>Model, prompt, tools and routing live in versioned config that the assignment service selects per arm.</p></div>
+      <div class="card c"><h3>Many experiments at once</h3><p>Bing ran over 200 concurrent experiments on any given day; that needs a platform for assignment, logging and analysis.</p></div>
+      <div class="card b"><h3>Cost is a metric</h3><p>Track tokens and cost per completed task in every experiment, not only quality.</p></div>
+      <div class="card e"><h3>Review samples</h3><p>Read real transcripts from both arms: numbers say what changed, transcripts say why.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://exp-platform.com/large-scale/" target="_blank" rel="noopener">Online Controlled Experiments at Large Scale</a>
+        <div class="meta">Kohavi et al. · KDD 2013</div>
+        <p>Lessons from running online controlled experiments at Bing scale; many ideas move key metrics by about 1%, so experiments must be sensitive and trustworthy.</p><div class="num">Remember: over 200 concurrent experiments on any given day, each with millions of users</div></div>
+      <div class="paper-item"><a href="https://blogs.bing.com/search-quality-insights/2013/08/08/large-scale-experimentation-at-bing" target="_blank" rel="noopener">Large Scale Experimentation at Bing</a>
+        <div class="meta">Bing Search Quality Insights · Bing Blogs 2013</div>
+        <p>Harry Shum (Bing R&D): when ideas are evaluated in controlled experiments, "less than a third move the metrics they were designed to improve".</p></div>
+      <div class="paper-item"><a href="https://exp-platform.com/Documents/2013-02-CUPED-ImprovingSensitivityOfControlledExperiments.pdf" target="_blank" rel="noopener">Improving the Sensitivity of Online Controlled Experiments by Utilizing Pre-Experiment Data</a>
+        <div class="meta">Deng, Xu, Kohavi & Walker · WSDM 2013</div>
+        <p>CUPED: use each unit's pre-experiment metric as a covariate to remove explainable variance (a factor 1 − ρ² for correlation ρ).</p><div class="num">Remember: about 50% variance reduction at Bing, i.e. the same power with half the users or half the duration</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1512.04922" target="_blank" rel="noopener">Always Valid Inference: Bringing Sequential Analysis to A/B Testing</a>
+        <div class="meta">Johari, Pekelis & Walsh · Operations Research 2022</div>
+        <p>Fixed-horizon p-values are unreliable when users continuously monitor tests and stop when they like; always-valid p-values and confidence intervals stay valid whenever the decision is made. Deployed on a large commercial A/B testing platform.</p></div>
+      <div class="paper-item"><a href="https://exp-platform.com/Documents/2019_KDDFabijanGupchupFuptaOmhoverVermeerDmitriev.pdf" target="_blank" rel="noopener">Diagnosing Sample Ratio Mismatch in Online Controlled Experiments: A Taxonomy and Rules of Thumb for Practitioners</a>
+        <div class="meta">Fabijan et al. · KDD 2019</div>
+        <p>An SRM is when the observed sample ratio differs from the expected one; like a fever it is a symptom of many data-quality issues. Taxonomy from four companies and over 25 products.</p></div>
+      <div class="paper-item"><a href="https://www.cs.cornell.edu/people/tj/publications/chapelle_etal_12a.pdf" target="_blank" rel="noopener">Large-Scale Validation and Analysis of Interleaved Search Evaluation</a>
+        <div class="meta">Chapelle, Joachims, Radlinski & Yue · ACM TOIS 2012</div>
+        <p>Interleaving merges two rankings into one list shown to the user and credits clicks to each, a paired online comparison; validated with Yahoo!, Bing and arXiv search data against judgments and other online metrics.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2411.00640" target="_blank" rel="noopener">Adding Error Bars to Evals: A Statistical Approach to Language Model Evaluations</a>
+        <div class="meta">Miller · arXiv 2024</div>
+        <p>Standard errors from the central limit theorem, clustered standard errors, paired comparisons and power analysis for evals.</p><div class="num">Remember: clustered SEs can be over 3× naive ones</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+<script>
+(() => {
+Deck.bind(['aP', 'aD'], () => {
+  const p = Deck.val('aP') / 100, d = Deck.val('aD') / 100, q = Math.min(p + d, 0.999);
+  Deck.out('aPo', Math.round(p * 100) + '%'); Deck.out('aDo', (d * 100).toFixed(1) + ' pts');
+  const n = Math.ceil(2.80 ** 2 * (p * (1 - p) + q * (1 - q)) / (d * d)), half = Math.ceil(n / 2);
+  Deck.hbars(document.getElementById('aBars'), [{ label: 'users per arm', value: n, color: 'var(--a)', text: n.toLocaleString() },
+    { label: 'with CUPED (≈50% less variance)', value: half, color: 'var(--e)', text: half.toLocaleString() }], { max: n * 1.08 });
+  document.getElementById('aOut').innerHTML = `Detecting a lift from ${Math.round(p * 100)}% to ${(q * 100).toFixed(1)}% task success (two-sided 5%, 80% power) needs about <b>${n.toLocaleString()} users per arm</b>. Halving the lift needs about four times as many. CUPED cut variance by about 50% at Bing, which halves the users or the duration.`;
+});
+})();
+</script>
+</body>
+</html>

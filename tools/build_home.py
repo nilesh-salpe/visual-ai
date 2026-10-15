@@ -33,7 +33,7 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
     ]),
     ('Serving and evaluation', [
         ('inference', 'Topic · 10 decks + 12 Colab notebooks', 'LLM Inference and Serving', 'Prefill vs decode, KV cache, continuous batching, chunked prefill, PagedAttention, speculative decoding, quantization, tensor parallelism, disaggregation, with hands-on notebooks.', ['KV cache', 'vLLM', 'speculative', 'Colab']),
-        ('evals', 'Topic · 7 decks + 4 Colab notebooks', 'Evaluating LLMs', 'What a score measures, benchmark failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases and arena ratings.', ['pass@k', 'error bars', 'LLM judge', 'Arena']),
+        ('evals', 'Topic · 8 decks + 5 Colab notebooks', 'Evaluating LLMs', 'What a score measures, benchmark failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases, arena ratings, and experiments in LLM training (seed noise, small-to-large decisions).', ['pass@k', 'error bars', 'LLM judge', 'Arena']),
     ]),
 ]
 
@@ -50,7 +50,7 @@ AGENT_SECTIONS = [  # same shape as LLM_SECTIONS
         ('agent-models', 'Topic · 2 decks', 'Models for agents', 'Training LLMs for tool use and agency, and serving LLMs for agent workloads.', ['tool-use SFT', 'agentic RL', 'prefix reuse', 'constrained decoding']),
     ]),
     ('Running agents', [
-        ('agent-operations', 'Topic · 3 decks', 'Agent operations', 'Evaluating agents (pass^k), safety and reliability, and cost and latency.', ['evals', 'prompt injection', 'prompt caching']),
+        ('agent-operations', 'Topic · 4 decks', 'Agent operations', 'Evaluating agents (pass^k), safety and reliability, cost and latency, and online experimentation for LLM products.', ['evals', 'prompt injection', 'prompt caching', 'A/B tests']),
     ]),
 ]
 AGENT_PLANNED = ['What an agent is: an LLM in a loop', 'Tool calling and function schemas', 'ReAct: interleaving reasoning and actions', 'Planning and task decomposition',

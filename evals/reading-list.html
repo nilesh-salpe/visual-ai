@@ -11,7 +11,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="index.html">← Evaluating LLMs</a>
-  <div class="label" style="margin-top:28px">Reading list · 13 papers and docs</div>
+  <div class="label" style="margin-top:28px">Reading list · 19 papers and docs</div>
   <h1>Evaluating LLMs: key papers</h1>
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">
@@ -37,7 +37,7 @@
       <div class="meta">Chen et al. · arXiv 2021 · cited in <a href="03-pass-at-k/index.html" style="font-weight:500;color:var(--a)">pass@k and sampling metrics</a></div>
       <p>HumanEval's 164 hand-written problems scored by unit tests, and the unbiased pass@k estimator.</p><div class="num">Remember: Codex-12B: 28.8% pass@1, 70.2% with 100 samples</div></div>
     <div class="paper-item"><a href="https://arxiv.org/abs/2411.00640" target="_blank" rel="noopener">Adding Error Bars to Evals: A Statistical Approach to Language Model Evaluations</a>
-      <div class="meta">Miller · arXiv 2024 · cited in <a href="04-error-bars/index.html" style="font-weight:500;color:var(--a)">Error bars and comparing models</a></div>
+      <div class="meta">Miller · arXiv 2024 · cited in <a href="04-error-bars/index.html" style="font-weight:500;color:var(--a)">Error bars and comparing models</a>, <a href="08-training-experiments/index.html" style="font-weight:500;color:var(--a)">Experiments in LLM training</a></div>
       <p>Standard errors from the central limit theorem, clustered standard errors, paired comparisons and power analysis for evals.</p><div class="num">Remember: clustered SEs can be over 3× naive ones</div></div>
     <div class="paper-item"><a href="https://arxiv.org/abs/2403.04132" target="_blank" rel="noopener">Chatbot Arena: An Open Platform for Evaluating LLMs (large language models) by Human Preference</a>
       <div class="meta">Chiang et al. · ICML 2024 · cited in <a href="04-error-bars/index.html" style="font-weight:500;color:var(--a)">Error bars and comparing models</a>, <a href="07-arenas/index.html" style="font-weight:500;color:var(--a)">Arenas and ratings</a></div>
@@ -54,6 +54,24 @@
     <div class="paper-item"><a href="https://arxiv.org/abs/2404.04475" target="_blank" rel="noopener">Length-Controlled AlpacaEval: A Simple Way to Debias Automatic Evaluators</a>
       <div class="meta">Dubois et al. · arXiv 2024 · cited in <a href="06-llm-as-judge/index.html" style="font-weight:500;color:var(--a)">LLM-as-judge</a></div>
       <p>Removes the judge's length preference by predicting win rates as if both answers had the same length.</p><div class="num">Remember: Spearman with Chatbot Arena 0.94 → 0.98</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2406.10229" target="_blank" rel="noopener">Quantifying Variance in Evaluation Benchmarks</a>
+      <div class="meta">Madaan et al. · arXiv 2024 · cited in <a href="08-training-experiments/index.html" style="font-weight:500;color:var(--a)">Experiments in LLM training</a></div>
+      <p>Ten Llama-2-7B-architecture models trained for 210B tokens that differ only in seed: seed standard deviation ARC-C 0.80, HellaSwag 0.21, GSM8K (Grade School Math 8K) 0.41, MMLU 0.57, MMLU-Cloze 0.22; gains should exceed seed variance; use cloze formulations for pretraining ablations.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2508.13144" target="_blank" rel="noopener">Signal and Noise: A Framework for Reducing Uncertainty in Language Model Evaluation</a>
+      <div class="meta">Heineman et al. · arXiv 2025 · cited in <a href="08-training-experiments/index.html" style="font-weight:500;color:var(--a)">Experiments in LLM training</a></div>
+      <p>Signal (relative dispersion of scores across models of similar compute) over noise (relative std of one run's final checkpoints) predicts small-to-large decision accuracy; perplexity beats accuracy; filtering noisy subtasks and averaging checkpoints help. 30 benchmarks, 375 models from 60M to 32B.</p><div class="num">Remember: SNR vs decision accuracy R = 0.791; checkpoint averaging 68.9% → 71.3% decision accuracy (30-task average)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2504.11393" target="_blank" rel="noopener">DataDecide: How to Predict Best Pretraining Data with Small Experiments</a>
+      <div class="meta">Magnusson et al. · arXiv 2025 · cited in <a href="08-training-experiments/index.html" style="font-weight:500;color:var(--a)">Experiments in LLM training</a></div>
+      <p>Controlled pretraining over 25 corpora, up to 100B tokens and 1B parameters, 3 seeds: rankings at a single small scale are a strong baseline; no scaling-law method among 8 baselines beats it for the same compute; continuous likelihood metrics make benchmarks highly predictable.</p><div class="num">Remember: 150M rankings predict ~80% of 1B comparisons; >80% predictable with 0.01% of the compute</div></div>
+    <div class="paper-item"><a href="https://www.jmlr.org/papers/v13/bergstra12a.html" target="_blank" rel="noopener">Random Search for Hyper-Parameter Optimization</a>
+      <div class="meta">Bergstra & Bengio · JMLR 2012 · cited in <a href="08-training-experiments/index.html" style="font-weight:500;color:var(--a)">Experiments in LLM training</a></div>
+      <p>Randomly chosen trials are more efficient than a grid because only a few hyperparameters really matter, and which ones differ by dataset.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1603.06560" target="_blank" rel="noopener">Hyperband: A Novel Bandit-Based Approach to Hyperparameter Optimization</a>
+      <div class="meta">Li et al. · JMLR 2018 · cited in <a href="08-training-experiments/index.html" style="font-weight:500;color:var(--a)">Experiments in LLM training</a></div>
+      <p>Speeds up random search with adaptive resource allocation and early stopping, framed as a pure-exploration bandit problem.</p><div class="num">Remember: over an order-of-magnitude speedup over the Bayesian-optimisation competitor set</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2109.08203" target="_blank" rel="noopener">Torch.manual_seed(3407) is all you need: On the influence of random seeds in deep learning architectures for computer vision</a>
+      <div class="meta">Picard · arXiv 2021 · cited in <a href="08-training-experiments/index.html" style="font-weight:500;color:var(--a)">Experiments in LLM training</a></div>
+      <p>Scanning up to 10^4 seeds on CIFAR-10 (and fewer on ImageNet) shows it is surprisingly easy to find outlier seeds that perform much better or worse than average.</p></div>
   </div>
 </div>
 

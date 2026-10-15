@@ -11,7 +11,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="index.html">← Agent operations</a>
-  <div class="label" style="margin-top:28px">Reading list · 12 papers and docs</div>
+  <div class="label" style="margin-top:28px">Reading list · 19 papers and docs</div>
   <h1>Agent operations: key papers</h1>
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">
@@ -51,6 +51,27 @@
     <div class="paper-item"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Building effective agents</a>
       <div class="meta">Anthropic · Anthropic Engineering 2024 · cited in <a href="03-cost-and-latency/index.html" style="font-weight:500;color:var(--a)">Cost and latency</a></div>
       <p>Workflows (predefined code paths) vs agents (LLMs (large language models) directing their own process); patterns: prompt chaining, routing, parallelization, orchestrator-workers, evaluator-optimizer. Start with the simplest solution.</p></div>
+    <div class="paper-item"><a href="https://exp-platform.com/large-scale/" target="_blank" rel="noopener">Online Controlled Experiments at Large Scale</a>
+      <div class="meta">Kohavi et al. · KDD 2013 · cited in <a href="04-experimentation/index.html" style="font-weight:500;color:var(--a)">Experimentation for LLM products</a></div>
+      <p>Lessons from running online controlled experiments at Bing scale; many ideas move key metrics by about 1%, so experiments must be sensitive and trustworthy.</p><div class="num">Remember: over 200 concurrent experiments on any given day, each with millions of users</div></div>
+    <div class="paper-item"><a href="https://blogs.bing.com/search-quality-insights/2013/08/08/large-scale-experimentation-at-bing" target="_blank" rel="noopener">Large Scale Experimentation at Bing</a>
+      <div class="meta">Bing Search Quality Insights · Bing Blogs 2013 · cited in <a href="04-experimentation/index.html" style="font-weight:500;color:var(--a)">Experimentation for LLM products</a></div>
+      <p>Harry Shum (Bing R&D): when ideas are evaluated in controlled experiments, "less than a third move the metrics they were designed to improve".</p></div>
+    <div class="paper-item"><a href="https://exp-platform.com/Documents/2013-02-CUPED-ImprovingSensitivityOfControlledExperiments.pdf" target="_blank" rel="noopener">Improving the Sensitivity of Online Controlled Experiments by Utilizing Pre-Experiment Data</a>
+      <div class="meta">Deng, Xu, Kohavi & Walker · WSDM 2013 · cited in <a href="04-experimentation/index.html" style="font-weight:500;color:var(--a)">Experimentation for LLM products</a></div>
+      <p>CUPED: use each unit's pre-experiment metric as a covariate to remove explainable variance (a factor 1 − ρ² for correlation ρ).</p><div class="num">Remember: about 50% variance reduction at Bing, i.e. the same power with half the users or half the duration</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1512.04922" target="_blank" rel="noopener">Always Valid Inference: Bringing Sequential Analysis to A/B Testing</a>
+      <div class="meta">Johari, Pekelis & Walsh · Operations Research 2022 · cited in <a href="04-experimentation/index.html" style="font-weight:500;color:var(--a)">Experimentation for LLM products</a></div>
+      <p>Fixed-horizon p-values are unreliable when users continuously monitor tests and stop when they like; always-valid p-values and confidence intervals stay valid whenever the decision is made. Deployed on a large commercial A/B testing platform.</p></div>
+    <div class="paper-item"><a href="https://exp-platform.com/Documents/2019_KDDFabijanGupchupFuptaOmhoverVermeerDmitriev.pdf" target="_blank" rel="noopener">Diagnosing Sample Ratio Mismatch in Online Controlled Experiments: A Taxonomy and Rules of Thumb for Practitioners</a>
+      <div class="meta">Fabijan et al. · KDD 2019 · cited in <a href="04-experimentation/index.html" style="font-weight:500;color:var(--a)">Experimentation for LLM products</a></div>
+      <p>An SRM is when the observed sample ratio differs from the expected one; like a fever it is a symptom of many data-quality issues. Taxonomy from four companies and over 25 products.</p></div>
+    <div class="paper-item"><a href="https://www.cs.cornell.edu/people/tj/publications/chapelle_etal_12a.pdf" target="_blank" rel="noopener">Large-Scale Validation and Analysis of Interleaved Search Evaluation</a>
+      <div class="meta">Chapelle, Joachims, Radlinski & Yue · ACM TOIS 2012 · cited in <a href="04-experimentation/index.html" style="font-weight:500;color:var(--a)">Experimentation for LLM products</a></div>
+      <p>Interleaving merges two rankings into one list shown to the user and credits clicks to each, a paired online comparison; validated with Yahoo!, Bing and arXiv search data against judgments and other online metrics.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2411.00640" target="_blank" rel="noopener">Adding Error Bars to Evals: A Statistical Approach to Language Model Evaluations</a>
+      <div class="meta">Miller · arXiv 2024 · cited in <a href="04-experimentation/index.html" style="font-weight:500;color:var(--a)">Experimentation for LLM products</a></div>
+      <p>Standard errors from the central limit theorem, clustered standard errors, paired comparisons and power analysis for evals.</p><div class="num">Remember: clustered SEs can be over 3× naive ones</div></div>
   </div>
 </div>
 

@@ -222,7 +222,7 @@ Answer from memory. If you can't, revisit the slide named in the answer.
 
 <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb" target="_blank" rel="noopener">04 · LLM judges and arena ratings</a> <span style="color:var(--faint)">· 45 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/evals/04_judges_and_arenas.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
 
-<p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../06-llm-as-judge/index.html">← 06</a> · <a href="../index.html">All decks</a></p>
+<p class="start-hint">Next: <a href="../08-training-experiments/index.html">08 · Experiments in LLM training →</a> · Previous: <a href="../06-llm-as-judge/index.html">← 06</a> · <a href="../index.html">All decks</a></p>
 
 <p class="cite">Sources: Chiang et al. 2024, "Chatbot Arena: An Open Platform for Evaluating LLMs by Human Preference" (240K+ votes; Bradley-Terry maximum likelihood with sandwich and bootstrap intervals); Zheng et al. 2023 (MT-Bench and Arena agreement); Elo 1978.</p>
 
