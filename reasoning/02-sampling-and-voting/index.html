@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sampling, Voting and Coverage</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Sampling, voting and coverage" data-home="../index.html" data-home-label="Reasoning">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Reasoning and test-time compute · 02</div>
+    <h1>Sampling, voting and coverage</h1>
+    <p class="sub">Spending more inference compute by sampling many reasoning paths: self-consistency (majority voting), coverage that keeps rising with samples, and why picking the right sample is the real bottleneck.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Greedy decoding gives one chain of thought, and one wrong step ruins it. Many problems are solved by some sample when you draw enough of them, but you still have to decide which answer to return.</div>
+      <div class="c"><b>Core idea</b>Sample <b>many</b> chains of thought at temperature above zero. <b>Self-consistency</b> returns the most common final answer (majority vote). <b>Coverage</b>, the share of problems solved by any sample, keeps growing roughly log-linearly with the number of samples; turning coverage into accuracy needs a way to <b>select</b>: votes, a verifier, or an automatic check such as unit tests.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>One chain, one chance</h2>
+    <hr>
+<p class="lede">Greedy decoding produces a single reasoning path. If any step goes wrong, the answer is wrong, even though a different path would have worked.</p>
+<pre><code>        ::: cards grid3
+</code></pre>
+<h3>[d] Fragile paths</h3>
+<p>Long chains have many places to slip.</p>
+<h3>[b] Many valid routes</h3>
+<p>Hard problems usually admit several ways of reasoning to the same answer.</p>
+<h3>[c] Unused compute</h3>
+<p>Inference typically makes one attempt, even when more attempts would be cheap compared with a bigger model.
+:::</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>More samples, but which answer?</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>No ground truth at inference</h3><p>For most questions you cannot check an answer automatically.</p></div>
+      <div class="card b"><h3>Correlated mistakes</h3><p>If most wrong chains share the same mistake, the wrong answer gets the most votes.</p></div>
+      <div class="card c"><h3>Plateaus</h3><p>Large Language Monkeys found majority voting and reward models plateau beyond several hundred samples, while coverage keeps growing.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Coverage or accuracy?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">With 250 samples per issue, DeepSeek-Coder-V2 solved 56% of SWE-bench (SWE = software engineering) Lite issues versus 15.9% with one sample. Why could this gain be realised?</p>
+      <div class="opts">
+      <button>A. Because voting picks the best patch</button>
+      <button data-ok>B. Because each candidate patch can be checked by running the tests</button>
+      <button>C. Because the model got larger</button>
+      <button>D. Because the issues got easier</button>
+      </div>
+      <div class="why"><strong>B.</strong> In code, tests act as an automatic verifier, so any correct sample can be selected: coverage becomes accuracy.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Sample, then select</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Self-consistency</h3><p>Sample diverse reasoning paths and return the most consistent final answer: GSM8K (Grade School Math 8K) +17.9, SVAMP +11.0, AQuA +12.2, StrategyQA +6.4, ARC-Challenge (ARC = AI2 Reasoning Challenge) +3.9 points.</p></div>
+      <div class="card a"><h3>Coverage scales</h3><p>The share of problems solved by any sample grows with the number of samples over four orders of magnitude, often log-linearly.</p></div>
+      <div class="card c"><h3>Automatic verifiers</h3><p>Unit tests, proof checkers and exact-answer checks select a correct sample when one exists.</p></div>
+      <div class="card e"><h3>Learned verifiers</h3><p>Without automatic checks, a trained model scores candidates (deck 03).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Voting vs coverage <span class="ill">simulation</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">p(one sample right) <input type="range" id="vP" min="5" max="90" step="5" value="30"> <output id="vPo"></output></label><label class="ctl">samples <input type="range" id="vN" min="1" max="64" step="1" value="16"> <output id="vNo"></output></label><label class="ctl">distinct wrong answers <input type="range" id="vW" min="1" max="20" step="1" value="10"> <output id="vWo"></output></label></div><div class="bars"><div id="vBars"></div></div><p class="readout" id="vOut"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: when does voting help?</h2>
+    <hr>
+    <p class="lede">Each sampled chain is right with probability 0.3.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Wrong chains scatter over 10 different wrong answers: each wrong answer gets about 0.07 of the votes, the right one 0.3, so with 25 samples the majority is right most of the time (the notebook measures above 60%).</li><li>Wrong chains all agree on one wrong answer (a common misconception): that answer gets 0.7 of the votes and wins almost every time.</li><li>Voting amplifies whatever answer is most likely, right or wrong.</li><li>With an automatic checker (run the unit tests), any correct sample can be returned: accuracy approaches coverage, 1 − 0.7²⁵ ≈ <b>99.98%</b>.</li></ol><div class="result">Voting needs errors to disagree with each other; verification needs a reliable checker.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why sampling works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Errors disagree</h3><p>There are many ways to be wrong and usually one way to be right, so wrong answers split the vote.</p></div>
+      <div class="card c"><h3>Marginalising over paths</h3><p>Voting approximates the most probable final answer across reasoning paths, not the most probable single path.</p></div>
+      <div class="card b"><h3>Compute as a dial</h3><p>More samples trade inference compute for accuracy without changing the model.</p></div>
+      <div class="card e"><h3>Parallel</h3><p>Samples are independent, so they can run in parallel; latency grows less than cost.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"More samples always means a better answer."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Only coverage keeps rising; without a good selector, accuracy plateaus.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Majority voting fixes systematic errors."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">If the model is consistently wrong, voting makes the wrong answer more certain.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Sampling is free."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">N samples cost N times the output tokens; batching helps throughput, not cost.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Coverage = pass@N.</b> The share of problems where at least one sample is right.</li><li><b>Verify when you can.</b> Code and proofs can be checked automatically, so repeated sampling pays off directly.</li><li><b>Sample with temperature.</b> Greedy decoding returns the same chain every time.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Voting on free-form answers.</b> Majority voting needs answers that can be compared (numbers, options).</li><li><b>Expecting voting to scale forever.</b> Majority voting and reward models plateau beyond several hundred samples.</li><li><b>Ignoring cost.</b> N samples cost about N times the tokens.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Which selector turns coverage into accuracy most directly?</p>
+      <div class="opts">
+      <button>A. Majority vote</button>
+      <button>B. Picking the longest answer</button>
+      <button data-ok>C. An automatic verifier such as unit tests</button>
+      <button>D. The first sample</button>
+      </div>
+      <div class="why"><strong>C.</strong> A reliable checker accepts any correct sample, so accuracy approaches coverage.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">When does majority voting hurt?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">When wrong samples concentrate on the same wrong answer, so it outvotes the correct one.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What is coverage?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The fraction of problems solved by at least one of the generated samples (pass@N).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Sampling more solutions raises the chance one is right; the hard part is knowing which one.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Instead of one greedy chain of thought, sample many and aggregate. Self-consistency takes the majority answer and improved GSM8K by 17.9 points. Coverage, the share of problems that any sample solves, grows log-linearly over four orders of magnitude of samples: on SWE-bench Lite, DeepSeek-Coder-V2 went from 15.9% with one sample to 56% with 250 when tests could verify the fixes. Without automatic checks, majority voting and reward models plateau after several hundred samples.</p></div>
+    <div class="recap"><div><span><b>Self-consistency:</b> majority vote over sampled chains</span></div><div><span><b>Coverage:</b> any sample right; grows with N</span></div><div><span><b>Bottleneck:</b> selecting the right sample</span></div><div><span><b>Checkable tasks:</b> tests and proofs turn coverage into accuracy</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/reasoning/01_test_time_compute.ipynb" target="_blank" rel="noopener">01 · Test-time compute: majority voting, coverage and best-of-N</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/reasoning/01_test_time_compute.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../03-verifiers-and-search/index.html">03 · Verifiers and search →</a> · Previous: <a href="../01-chain-of-thought/index.html">← 01</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2203.11171" target="_blank" rel="noopener">Self-Consistency Improves Chain of Thought Reasoning in Language Models</a>
+        <div class="meta">Wang et al. · ICLR 2023</div>
+        <p>Sample diverse reasoning paths and return the most consistent final answer (marginalising over paths) instead of greedy decoding.</p><div class="num">Remember: GSM8K +17.9, SVAMP +11.0, AQuA +12.2, StrategyQA +6.4, ARC-Challenge +3.9 points</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21787" target="_blank" rel="noopener">Large Language Monkeys: Scaling Inference Compute with Repeated Sampling</a>
+        <div class="meta">Brown et al. · arXiv 2024</div>
+        <p>Coverage (problems solved by any sample) scales with the number of samples over four orders of magnitude, often log-linearly; with automatic verifiers it becomes accuracy, while majority voting and reward models plateau beyond several hundred samples.</p><div class="num">Remember: SWE-bench Lite: 15.9% (1 sample) → 56% (250 samples) vs 43% single-sample state of the art</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2201.11903" target="_blank" rel="noopener">Chain-of-Thought Prompting Elicits Reasoning in Large Language Models</a>
+        <div class="meta">Wei et al. · NeurIPS 2022</div>
+        <p>A few exemplars with intermediate reasoning steps make large models much better at arithmetic, commonsense and symbolic reasoning; the ability emerges around 100B parameters and helps most on multi-step tasks with flat scaling curves.</p><div class="num">Remember: GSM8K: PaLM 540B 18% → 57% with 8 exemplars (prior best 55%)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2107.03374" target="_blank" rel="noopener">Evaluating Large Language Models Trained on Code (Codex, HumanEval)</a>
+        <div class="meta">Chen et al. · arXiv 2021</div>
+        <p>HumanEval's 164 hand-written problems scored by unit tests, and the unbiased pass@k estimator.</p><div class="num">Remember: Codex-12B: 28.8% pass@1, 70.2% with 100 samples</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const rnd = (() => { let s = 7; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+  Deck.bind(['vP', 'vN', 'vW'], () => {
+    const p = Deck.val('vP') / 100, n = Deck.val('vN'), w = Deck.val('vW');
+    Deck.out('vPo', Math.round(p * 100) + '%'); Deck.out('vNo', n); Deck.out('vWo', w);
+    let hit = 0; const T = 600;
+    for (let t = 0; t < T; t++) {
+      const c = new Array(w + 1).fill(0);
+      for (let i = 0; i < n; i++) { if (rnd() < p) c[0]++; else c[1 + Math.floor(rnd() * w)]++; }
+      let best = 0; for (let j = 1; j <= w; j++) if (c[j] > c[best]) best = j;
+      if (best === 0 && c[0] > 0) hit++;
+    }
+    const cov = 1 - Math.pow(1 - p, n), maj = hit / T;
+    Deck.hbars(document.getElementById('vBars'), [{ label: 'one sample', value: p, color: 'var(--faint)', text: (100 * p).toFixed(0) + '%' },
+      { label: 'majority vote', value: maj, color: 'var(--a)', text: (100 * maj).toFixed(0) + '%' },
+      { label: 'coverage (any sample right)', value: cov, color: 'var(--e)', text: (100 * cov).toFixed(0) + '%' }], { max: 1 });
+    document.getElementById('vOut').innerHTML = `${n} samples, each right with probability ${Math.round(p * 100)}%, wrong answers spread over ${w} value${w > 1 ? 's' : ''}: majority voting is right about <b>${(100 * maj).toFixed(0)}%</b> of the time (simulated), while some sample is right <b>${(100 * cov).toFixed(0)}%</b> of the time. ${w === 1 ? 'With one dominant wrong answer, voting can be worse than a single sample.' : ''}`;
+  });
+})();
+</script>
+</body>
+</html>

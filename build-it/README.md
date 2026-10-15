@@ -157,6 +157,14 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/vllm/
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/cluster-scheduling/
 
+## Frontier · Reasoning and test-time compute
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · Test-time compute: majority voting, coverage and best-of-N](reasoning/01_test_time_compute.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/reasoning/01_test_time_compute.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/reasoning/
+
 ## Agents · LangChain and LangGraph
 
 | Notebook | Time | Colab |

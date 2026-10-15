@@ -1,0 +1,10 @@
+[
+ {
+  "slug": "01_test_time_compute",
+  "title": "01 \u00b7 Test-time compute: majority voting, coverage and best-of-N",
+  "path": "build-it/reasoning/01_test_time_compute.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/reasoning/01_test_time_compute.ipynb",
+  "deck": "reasoning/02-sampling-and-voting/",
+  "minutes": 35
+ }
+]

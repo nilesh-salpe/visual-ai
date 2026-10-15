@@ -31,6 +31,9 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
         ('pytorch', 'Framework · 9 decks + 9 Colab notebooks', 'PyTorch for LLMs', 'Tensors and views, autograd, nn.Module, the training loop, data pipelines, mixed precision, torch.compile and SDPA, DDP and FSDP2, and a tiny GPT. Checked against PyTorch 2.14.1.', ['autograd', 'SDPA', 'torch.compile', 'FSDP2']),
         ('vllm', 'Framework · 8 decks + 5 Colab notebooks', 'vLLM internals and operation', 'How the vLLM engine works and how to run it: process architecture, paged KV cache, the token-budget scheduler, prefix caching, speculative decoding, parallelism, quantization and tuning. Checked against vLLM v0.31.0.', ['PagedAttention', 'scheduler', 'prefix cache', 'vllm serve']),
     ]),
+    ('Frontier topics', [
+        ('reasoning', 'Topic · 4 decks + 1 Colab notebook', 'Reasoning and test-time compute', 'Chain of thought, self-consistency and coverage, verifiers and process reward models, compute-optimal search, and reasoning models (RL on verifiable rewards, budget forcing, thinking budgets, faithfulness).', ['chain of thought', 'best-of-N', 'PRM', 'R1']),
+    ]),
     ('Serving and evaluation', [
         ('inference', 'Topic · 10 decks + 12 Colab notebooks', 'LLM Inference and Serving', 'Prefill vs decode, KV cache, continuous batching, chunked prefill, PagedAttention, speculative decoding, quantization, tensor parallelism, disaggregation, with hands-on notebooks.', ['KV cache', 'vLLM', 'speculative', 'Colab']),
         ('evals', 'Topic · 8 decks + 5 Colab notebooks', 'Evaluating LLMs', 'What a score measures, benchmark failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases, arena ratings, and experiments in LLM training (seed noise, small-to-large decisions).', ['pass@k', 'error bars', 'LLM judge', 'Arena']),

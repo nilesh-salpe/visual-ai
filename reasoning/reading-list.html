@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reasoning and test-time compute Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Reasoning and test-time compute</a>
+  <div class="label" style="margin-top:28px">Reading list · 14 papers and docs</div>
+  <h1>Reasoning and test-time compute: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://arxiv.org/abs/2201.11903" target="_blank" rel="noopener">Chain-of-Thought Prompting Elicits Reasoning in Large Language Models</a>
+      <div class="meta">Wei et al. · NeurIPS 2022 · cited in <a href="01-chain-of-thought/index.html" style="font-weight:500;color:var(--a)">Chain of thought</a>, <a href="02-sampling-and-voting/index.html" style="font-weight:500;color:var(--a)">Sampling, voting and coverage</a></div>
+      <p>A few exemplars with intermediate reasoning steps make large models much better at arithmetic, commonsense and symbolic reasoning; the ability emerges around 100B parameters and helps most on multi-step tasks with flat scaling curves.</p><div class="num">Remember: GSM8K: PaLM 540B 18% → 57% with 8 exemplars (prior best 55%)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2205.11916" target="_blank" rel="noopener">Large Language Models are Zero-Shot Reasoners</a>
+      <div class="meta">Kojima et al. · NeurIPS 2022 · cited in <a href="01-chain-of-thought/index.html" style="font-weight:500;color:var(--a)">Chain of thought</a></div>
+      <p>Adding "Let's think step by step" before the answer elicits chain-of-thought reasoning without any exemplars.</p><div class="num">Remember: text-davinci-002: MultiArith 17.7% → 78.7%, GSM8K 10.4% → 40.7%</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2110.14168" target="_blank" rel="noopener">Training Verifiers to Solve Math Word Problems</a>
+      <div class="meta">Cobbe et al. · arXiv 2021 · cited in <a href="01-chain-of-thought/index.html" style="font-weight:500;color:var(--a)">Chain of thought</a>, <a href="03-verifiers-and-search/index.html" style="font-weight:500;color:var(--a)">Verifiers and search</a></div>
+      <p>Introduces GSM8K (8.5K grade-school math word problems) and trained verifiers: generate many candidate solutions and pick the one the verifier ranks highest; verification scales better with data than a finetuning baseline.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2203.11171" target="_blank" rel="noopener">Self-Consistency Improves Chain of Thought Reasoning in Language Models</a>
+      <div class="meta">Wang et al. · ICLR 2023 · cited in <a href="02-sampling-and-voting/index.html" style="font-weight:500;color:var(--a)">Sampling, voting and coverage</a></div>
+      <p>Sample diverse reasoning paths and return the most consistent final answer (marginalising over paths) instead of greedy decoding.</p><div class="num">Remember: GSM8K +17.9, SVAMP +11.0, AQuA +12.2, StrategyQA +6.4, ARC-Challenge +3.9 points</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.21787" target="_blank" rel="noopener">Large Language Monkeys: Scaling Inference Compute with Repeated Sampling</a>
+      <div class="meta">Brown et al. · arXiv 2024 · cited in <a href="02-sampling-and-voting/index.html" style="font-weight:500;color:var(--a)">Sampling, voting and coverage</a>, <a href="03-verifiers-and-search/index.html" style="font-weight:500;color:var(--a)">Verifiers and search</a></div>
+      <p>Coverage (problems solved by any sample) scales with the number of samples over four orders of magnitude, often log-linearly; with automatic verifiers it becomes accuracy, while majority voting and reward models plateau beyond several hundred samples.</p><div class="num">Remember: SWE-bench Lite: 15.9% (1 sample) → 56% (250 samples) vs 43% single-sample state of the art</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2107.03374" target="_blank" rel="noopener">Evaluating Large Language Models Trained on Code (Codex, HumanEval)</a>
+      <div class="meta">Chen et al. · arXiv 2021 · cited in <a href="02-sampling-and-voting/index.html" style="font-weight:500;color:var(--a)">Sampling, voting and coverage</a></div>
+      <p>HumanEval's 164 hand-written problems scored by unit tests, and the unbiased pass@k estimator.</p><div class="num">Remember: Codex-12B: 28.8% pass@1, 70.2% with 100 samples</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.20050" target="_blank" rel="noopener">Let's Verify Step by Step</a>
+      <div class="meta">Lightman et al. · ICLR 2024 · cited in <a href="03-verifiers-and-search/index.html" style="font-weight:500;color:var(--a)">Verifiers and search</a></div>
+      <p>Process supervision (feedback on each reasoning step) significantly outperforms outcome supervision for training reward models on MATH; active learning improves it further; releases PRM800K.</p><div class="num">Remember: 78% of a representative MATH test subset; 800,000 step-level labels</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2408.03314" target="_blank" rel="noopener">Scaling LLM (large language model) Test-Time Compute Optimally can be More Effective than Scaling Model Parameters</a>
+      <div class="meta">Snell et al. · ICLR 2025 · cited in <a href="03-verifiers-and-search/index.html" style="font-weight:500;color:var(--a)">Verifiers and search</a></div>
+      <p>The best way to spend test-time compute (search against process verifiers, or revising responses) depends on prompt difficulty; allocating it adaptively per prompt is compute-optimal.</p><div class="num">Remember: over 4× more efficient than best-of-N; FLOPs-matched, beats a 14× larger model where the small model has non-trivial success</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.10601" target="_blank" rel="noopener">Tree of Thoughts: Deliberate Problem Solving with Large Language Models</a>
+      <div class="meta">Yao et al. · NeurIPS 2023 · cited in <a href="03-verifiers-and-search/index.html" style="font-weight:500;color:var(--a)">Verifiers and search</a></div>
+      <p>Search over intermediate "thoughts" with self-evaluation, lookahead and backtracking instead of a single left-to-right chain.</p><div class="num">Remember: Game of 24: 74% vs 4% with chain-of-thought (GPT-4)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2501.12948" target="_blank" rel="noopener">DeepSeek-R1: Incentivizing Reasoning Capability in LLMs (large language models) via Reinforcement Learning</a>
+      <div class="meta">DeepSeek-AI · arXiv 2025 · cited in <a href="04-reasoning-models/index.html" style="font-weight:500;color:var(--a)">Reasoning models and thinking budgets</a></div>
+      <p>R1-Zero: RL with rule-based accuracy and format rewards directly on a base model; R1 adds cold-start data and a multi-stage pipeline.</p><div class="num">Remember: AIME 2024 pass@1 15.6% → 77.9% (R1-Zero)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2501.19393" target="_blank" rel="noopener">s1: Simple test-time scaling</a>
+      <div class="meta">Muennighoff et al. · arXiv 2025 · cited in <a href="04-reasoning-models/index.html" style="font-weight:500;color:var(--a)">Reasoning models and thinking budgets</a></div>
+      <p>Supervised finetuning of Qwen2.5-32B-Instruct on 1,000 curated reasoning traces (s1K) plus budget forcing: end thinking at a budget, or append "Wait" to extend it so the model double-checks its answer.</p><div class="num">Remember: s1-32B beats o1-preview by up to 27% (MATH, AIME24); AIME24 50% → 57% with budget forcing</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2412.21187" target="_blank" rel="noopener">Do NOT Think That Much for 2+3=? On the Overthinking of o1-Like LLMs</a>
+      <div class="meta">Chen et al. · arXiv 2024 · cited in <a href="04-reasoning-models/index.html" style="font-weight:500;color:var(--a)">Reasoning models and thinking budgets</a></div>
+      <p>o1-like models allocate excessive compute to simple problems with minimal benefit; efficiency metrics and self-training strategies reduce overhead without hurting accuracy.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2505.05410" target="_blank" rel="noopener">Reasoning Models Don't Always Say What They Think</a>
+      <div class="meta">Chen et al. (Anthropic) · arXiv 2025 · cited in <a href="04-reasoning-models/index.html" style="font-weight:500;color:var(--a)">Reasoning models and thinking budgets</a></div>
+      <p>Reasoning models often use hints without mentioning them; outcome-based RL improves faithfulness then plateaus, and increased reward hacking is not verbalised more. CoT (chain of thought) monitoring helps but cannot rule out rare bad behaviour.</p><div class="num">Remember: faithfulness: 25% Claude 3.7 Sonnet, 39% DeepSeek R1</div></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/build-with-claude/extended-thinking" target="_blank" rel="noopener">Extended and adaptive thinking (Claude API)</a>
+      <div class="meta">Anthropic documentation · platform.claude.com 2026 · cited in <a href="04-reasoning-models/index.html" style="font-weight:500;color:var(--a)">Reasoning models and thinking budgets</a></div>
+      <p>Manual budgets (thinking.type enabled, budget_tokens ≥ 1,024) on older models; newer models use adaptive thinking with an effort level, and reject fixed budgets; thinking tokens are billed output (usage.output_tokens_details.thinking_tokens); batch processing above 32k thinking tokens.</p></div>
+  </div>
+</div>
+
+</body>
+</html>

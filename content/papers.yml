@@ -2404,3 +2404,88 @@ interleaving:
   year: 2012
   url: https://www.cs.cornell.edu/people/tj/publications/chapelle_etal_12a.pdf
   summary: Interleaving merges two rankings into one list shown to the user and credits clicks to each, a paired online comparison; validated with Yahoo!, Bing and arXiv search data against judgments and other online metrics.
+cot:
+  title: Chain-of-Thought Prompting Elicits Reasoning in Large Language Models
+  authors: Wei et al.
+  venue: NeurIPS
+  year: 2022
+  url: https://arxiv.org/abs/2201.11903
+  summary: A few exemplars with intermediate reasoning steps make large models much better at arithmetic, commonsense and symbolic reasoning; the ability emerges around 100B parameters and helps most on multi-step tasks with flat scaling curves.
+  number: 'GSM8K: PaLM 540B 18% → 57% with 8 exemplars (prior best 55%)'
+zeroshot_cot:
+  title: Large Language Models are Zero-Shot Reasoners
+  authors: Kojima et al.
+  venue: NeurIPS
+  year: 2022
+  url: https://arxiv.org/abs/2205.11916
+  summary: Adding "Let's think step by step" before the answer elicits chain-of-thought reasoning without any exemplars.
+  number: 'text-davinci-002: MultiArith 17.7% → 78.7%, GSM8K 10.4% → 40.7%'
+gsm8k_verifiers:
+  title: Training Verifiers to Solve Math Word Problems
+  authors: Cobbe et al.
+  venue: arXiv
+  year: 2021
+  url: https://arxiv.org/abs/2110.14168
+  summary: 'Introduces GSM8K (8.5K grade-school math word problems) and trained verifiers: generate many candidate solutions and pick the one the verifier ranks highest; verification scales better with data than a finetuning baseline.'
+selfconsistency:
+  title: Self-Consistency Improves Chain of Thought Reasoning in Language Models
+  authors: Wang et al.
+  venue: ICLR
+  year: 2023
+  url: https://arxiv.org/abs/2203.11171
+  summary: Sample diverse reasoning paths and return the most consistent final answer (marginalising over paths) instead of greedy decoding.
+  number: GSM8K +17.9, SVAMP +11.0, AQuA +12.2, StrategyQA +6.4, ARC-Challenge +3.9 points
+monkeys:
+  title: 'Large Language Monkeys: Scaling Inference Compute with Repeated Sampling'
+  authors: Brown et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2407.21787
+  summary: Coverage (problems solved by any sample) scales with the number of samples over four orders of magnitude, often log-linearly; with automatic verifiers it becomes accuracy, while majority voting and reward models plateau beyond several hundred samples.
+  number: 'SWE-bench Lite: 15.9% (1 sample) → 56% (250 samples) vs 43% single-sample state of the art'
+prm:
+  title: "Let's Verify Step by Step"
+  authors: Lightman et al.
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2305.20050
+  summary: Process supervision (feedback on each reasoning step) significantly outperforms outcome supervision for training reward models on MATH; active learning improves it further; releases PRM800K.
+  number: 78% of a representative MATH test subset; 800,000 step-level labels
+snell_ttc:
+  title: Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters
+  authors: Snell et al.
+  venue: ICLR
+  year: 2025
+  url: https://arxiv.org/abs/2408.03314
+  summary: The best way to spend test-time compute (search against process verifiers, or revising responses) depends on prompt difficulty; allocating it adaptively per prompt is compute-optimal.
+  number: over 4× more efficient than best-of-N; FLOPs-matched, beats a 14× larger model where the small model has non-trivial success
+s1:
+  title: 's1: Simple test-time scaling'
+  authors: Muennighoff et al.
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2501.19393
+  summary: 'Supervised finetuning of Qwen2.5-32B-Instruct on 1,000 curated reasoning traces (s1K) plus budget forcing: end thinking at a budget, or append "Wait" to extend it so the model double-checks its answer.'
+  number: s1-32B beats o1-preview by up to 27% (MATH, AIME24); AIME24 50% → 57% with budget forcing
+overthinking:
+  title: 'Do NOT Think That Much for 2+3=? On the Overthinking of o1-Like LLMs'
+  authors: Chen et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2412.21187
+  summary: o1-like models allocate excessive compute to simple problems with minimal benefit; efficiency metrics and self-training strategies reduce overhead without hurting accuracy.
+cot_faithful:
+  title: "Reasoning Models Don't Always Say What They Think"
+  authors: Chen et al. (Anthropic)
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2505.05410
+  summary: Reasoning models often use hints without mentioning them; outcome-based RL improves faithfulness then plateaus, and increased reward hacking is not verbalised more. CoT monitoring helps but cannot rule out rare bad behaviour.
+  number: 'faithfulness: 25% Claude 3.7 Sonnet, 39% DeepSeek R1'
+claude_thinking:
+  title: Extended and adaptive thinking (Claude API)
+  authors: Anthropic documentation
+  venue: platform.claude.com
+  year: 2026
+  url: https://platform.claude.com/docs/en/build-with-claude/extended-thinking
+  summary: 'Manual budgets (thinking.type enabled, budget_tokens ≥ 1,024) on older models; newer models use adaptive thinking with an effort level, and reject fixed budgets; thinking tokens are billed output (usage.output_tokens_details.thinking_tokens); batch processing above 32k thinking tokens.'

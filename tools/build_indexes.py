@@ -19,6 +19,7 @@ PHASES = [  # (heading, notebook folder, index json)
     ('Frameworks · PyTorch for LLMs', 'pytorch', 'index_torch.json'),
     ('Frameworks · vLLM internals', 'vllm', 'index_vllm.json'),
     ('Infrastructure · Cluster scheduling', 'cluster-scheduling', 'index_cluster.json'),
+    ('Frontier · Reasoning and test-time compute', 'reasoning', 'index_reasoning.json'),
     ('Agents · LangChain and LangGraph', 'agent-frameworks', 'index_agent_frameworks.json'),
 ]
 
@@ -440,6 +441,23 @@ def write_cluster_hub():
         CLUSTER_CARDS, 'Slurm 26.05 documentation (overview, GRES, multifactor priority, fair share, scheduling, topology, preemption, slurm.conf); Kubernetes 1.35 documentation (GPUs, DRA); Kueue and JobSet documentation; NVIDIA (SchedMD acquisition); Llama 3 report.'))
     print('wrote cluster-scheduling/index.html')
 
+# Visual LLM topics with a standard hub: (title, lede, notebook index, notebook blurb, cards, sources)
+LLM_HUBS = {
+    'reasoning': ('Reasoning and test-time compute', 'How models get better answers by spending more compute at inference: chain of thought, sampling and majority voting, verifiers and step-level search, and reasoning models trained with reinforcement learning, with their thinking budgets and limits. Every deck follows the 9-beat template and numbers are checked against the papers.',
+                  'index_reasoning.json', 'Simulate majority voting, coverage and best-of-N with a noisy verifier, and see why selection, not sampling, is the bottleneck.', [
+        ('01-chain-of-thought', 'Chain of thought', 'Few-shot and zero-shot CoT; why steps help.'),
+        ('02-sampling-and-voting', 'Sampling, voting and coverage', 'Self-consistency, coverage, automatic verifiers.'),
+        ('03-verifiers-and-search', 'Verifiers and search', 'ORM vs PRM, step search, compute-optimal scaling.'),
+        ('04-reasoning-models', 'Reasoning models and thinking budgets', 'RL on verifiable rewards, budget forcing, limits.')],
+        'Wei et al. 2022; Kojima et al. 2022; Wang et al. 2023; Cobbe et al. 2021; Lightman et al. 2024; Snell et al. 2025; Brown et al. 2024; DeepSeek-AI 2025; Muennighoff et al. 2025; Chen et al. 2024; Chen et al. 2025 (Anthropic); Claude API thinking documentation.'),
+}
+
+
+def write_llm_hubs():
+    for folder, (title, lede, nb, blurb, cards, sources) in LLM_HUBS.items():
+        _write(os.path.join(REPO, folder, 'index.html'), topic_hub(folder, title, title, lede, nb, blurb, cards, sources))
+        print('wrote', folder + '/index.html')
+
 AGENT_HUBS = {
     'agent-foundations': ('Agent foundations', 'What an agent is, how models call tools, the ReAct loop, and planning: the building blocks every agent shares.', [
         ('01-what-is-an-agent', 'What an agent is', 'Workflows vs agents; the decide-act-observe loop.'),
@@ -480,6 +498,7 @@ AGENT_HUBS = {
 
 if __name__ == '__main__':
     write_cluster_hub()
+    write_llm_hubs()
     for folder, (title, lede, cards) in AGENT_HUBS.items():
         _write(os.path.join(REPO, folder, 'index.html'), topic_hub(
             folder, title, title, lede + ' Each deck follows the agent template: problem, core idea, high-level design, low-level design, trade-offs, failure modes and challenges in production, with steppable diagrams and sources checked against the primary papers, specifications and documentation.',

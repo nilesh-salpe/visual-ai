@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chain of Thought</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Chain of thought" data-home="../index.html" data-home-label="Reasoning">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Reasoning and test-time compute · 01</div>
+    <h1>Chain of thought</h1>
+    <p class="sub">Why asking a model to write out intermediate steps makes it better at multi-step problems: few-shot and zero-shot chain-of-thought prompting, when it helps, and what the extra tokens buy.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A model asked for an answer directly must compute it in a single forward pass per output token. Multi-step problems (arithmetic word problems, logic, planning) need more sequential computation than that, so direct answers fail.</div>
+      <div class="c"><b>Core idea</b>Let the model <b>write the intermediate steps</b> before the answer. Each generated token is another forward pass that can build on the previous steps, so a <b>chain of thought</b> turns one hard step into many easy ones. Show a few worked examples (few-shot CoT), or simply add "Let's think step by step" (zero-shot CoT).</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Some answers need more than one step</h2>
+    <hr>
+<p class="lede">"Roger has 5 tennis balls. He buys 2 more cans of 3 tennis balls each. How many tennis balls does he have now?" Asked for the number directly, large models in 2022 often got problems like this wrong.</p>
+<pre><code>        ::: cards grid3
+</code></pre>
+<h3>[d] Fixed compute per token</h3>
+<p>Each output token gets one forward pass through the network.</p>
+<h3>[b] Hidden intermediate results</h3>
+<p>A direct answer must hold "2 × 3 = 6" and "5 + 6 = 11" implicitly inside one pass.</p>
+<h3>[c] Benchmarks</h3>
+<p>GSM8K (Grade School Math 8K), 8.5K grade-school math word problems, was built because even the largest models then struggled with multi-step arithmetic.
+:::</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Bigger models alone did not fix it</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Flat scaling</h3><p>The chain-of-thought paper notes scaling up model size alone had not been enough for arithmetic, commonsense and symbolic reasoning.</p></div>
+      <div class="card b"><h3>Finetuning is costly</h3><p>Training models to produce rationales needs large labelled datasets of worked solutions.</p></div>
+      <div class="card c"><h3>Direct answers waste the model</h3><p>The capability to do each step is there; the prompt never asks for the steps.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Why would writing steps help?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">Why does generating intermediate reasoning steps improve accuracy on multi-step problems?</p>
+      <div class="opts">
+      <button>A. The model memorised the steps</button>
+      <button data-ok>B. Each generated token is another forward pass, and earlier results are in the context for later steps</button>
+      <button>C. It makes the prompt longer</button>
+      <button>D. It changes the model weights</button>
+      </div>
+      <div class="why"><strong>B.</strong> The model computes a little per token; writing steps spreads the computation over many tokens and keeps intermediate results available as text.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Ask for the reasoning, then the answer</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Few-shot CoT</h3><p>Include a few exemplars (question, worked steps, answer) in the prompt: the model imitates the format on the new question.</p></div>
+      <div class="card a"><h3>Zero-shot CoT</h3><p>Append "Let's think step by step": MultiArith 17.7% → 78.7% and GSM8K 10.4% → 40.7% with text-davinci-002.</p></div>
+      <div class="card c"><h3>Scale matters</h3><p>CoT was an emergent ability around 100B parameters in 2022; smaller models produced fluent but illogical chains.</p></div>
+      <div class="card e"><h3>Where it helps</h3><p>Multi-step tasks, large models, flat scaling curves; little gain on one- or two-step problems already above 90%.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>The GSM8K result <span class="ill">paper figure</span></h2>
+    <hr>
+<div class="visual"><div class="bars"><div id="cBars"></div></div><p class="readout">GSM8K solve rate (Wei et al. 2022, Figure 2): eight chain-of-thought exemplars took PaLM 540B from 18% to 57%, above the previous best, a finetuned GPT-3 with a separately trained verifier.</p></div>
+
+<p>Chain of thought is also the starting point for everything in this topic: sampling many chains and voting (deck 02), scoring chains with verifiers (deck 03), and training models to produce long chains with reinforcement learning (deck 04).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: a word problem, direct vs step by step</h2>
+    <hr>
+    <p class="lede">"A cafeteria had 23 apples. They used 20 for lunch and bought 6 more. How many apples do they have?" (an exemplar style from the chain-of-thought paper).</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Direct answer: the model must produce "9" in one step, combining both operations implicitly; in the paper's standard-prompting example the model answers 27.</li><li>Chain of thought: "They had 23 apples. They used 20, so 23 − 20 = 3. They bought 6 more, so 3 + 6 = 9."</li><li>Each line is a simple operation the model can do reliably, and each result is now text in the context for the next step.</li><li>The final answer is read from the end of the chain: <b>9</b>.</li></ol><div class="result">The chain externalises intermediate results, so no single step has to do the whole computation.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Serial computation</h3><p>Depth per token is fixed; generating more tokens adds sequential steps of computation.</p></div>
+      <div class="card c"><h3>Working memory</h3><p>Intermediate results become context tokens the model can attend to.</p></div>
+      <div class="card b"><h3>Decomposition</h3><p>Exemplars show how to break a problem into steps the model already handles well.</p></div>
+      <div class="card e"><h3>Inspectable (with limits)</h3><p>You can read the steps to debug errors, though they may not be the model's true reasons (deck 04).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Chain of thought makes any model reason."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">In the original experiments the gains appeared only at large scale (about 100B parameters); small models wrote fluent nonsense.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"The written steps are exactly how the model got its answer."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Not necessarily: reasoning models often fail to mention hints they used (only 25% to 39% of the time in Anthropic's study).</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Longer chains are always better."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Extra steps on easy problems waste tokens and time (overthinking, deck 04).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>CoT helps most on multi-step tasks.</b> Little gain when a problem takes one or two steps and accuracy is already high.</li><li><b>Zero-shot CoT is one line.</b> "Let's think step by step" lifted GSM8K from 10.4% to 40.7% on text-davinci-002.</li><li><b>Put the answer last.</b> Reasoning first, answer at the end, so the answer can depend on the steps.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Small models.</b> Below about 100B parameters (in 2022 models) chains were fluent but illogical.</li><li><b>Answer first, reasons after.</b> A justification written after the answer cannot improve it.</li><li><b>Treating the chain as an explanation.</b> The written steps are not guaranteed to be how the model actually decided (deck 04).</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Where in the output should the final answer go for chain-of-thought prompting?</p>
+      <div class="opts">
+      <button>A. First, then the reasoning</button>
+      <button data-ok>B. At the end, after the reasoning</button>
+      <button>C. In a separate request</button>
+      <button>D. It does not matter</button>
+      </div>
+      <div class="why"><strong>B.</strong> The answer must be generated after, and conditioned on, the intermediate steps.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Name two conditions under which chain of thought helps most.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The task needs multiple steps, the model is large enough, and the standard-prompting scaling curve is flat (any two).</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What is zero-shot chain of thought?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Adding a trigger phrase such as "Let's think step by step" without any worked exemplars.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">A chain of thought buys the model more sequential computation, one token at a time, before it commits to an answer.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>A transformer does a fixed amount of computation per generated token, so a direct answer to a multi-step problem has to happen in very few steps. Chain-of-thought prompting asks the model to write intermediate steps first; each step is cheap, and its result is in the context for the next one. With eight worked exemplars, PaLM 540B went from 18% to 57% on GSM8K, beating the previous best of 55%. Zero-shot, "Let's think step by step" took text-davinci-002 from 10.4% to 40.7% on GSM8K.</p></div>
+    <div class="recap"><div><span><b>Mechanism:</b> intermediate steps are extra sequential computation</span></div><div><span><b>Few-shot:</b> worked exemplars in the prompt</span></div><div><span><b>Zero-shot:</b> "Let's think step by step"</span></div><div><span><b>Fit:</b> multi-step tasks, large models</span></div></div>
+    <p class="start-hint">Next: <a href="../02-sampling-and-voting/index.html">02 · Sampling, voting and coverage →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2201.11903" target="_blank" rel="noopener">Chain-of-Thought Prompting Elicits Reasoning in Large Language Models</a>
+        <div class="meta">Wei et al. · NeurIPS 2022</div>
+        <p>A few exemplars with intermediate reasoning steps make large models much better at arithmetic, commonsense and symbolic reasoning; the ability emerges around 100B parameters and helps most on multi-step tasks with flat scaling curves.</p><div class="num">Remember: GSM8K: PaLM 540B 18% → 57% with 8 exemplars (prior best 55%)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2205.11916" target="_blank" rel="noopener">Large Language Models are Zero-Shot Reasoners</a>
+        <div class="meta">Kojima et al. · NeurIPS 2022</div>
+        <p>Adding "Let's think step by step" before the answer elicits chain-of-thought reasoning without any exemplars.</p><div class="num">Remember: text-davinci-002: MultiArith 17.7% → 78.7%, GSM8K 10.4% → 40.7%</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2110.14168" target="_blank" rel="noopener">Training Verifiers to Solve Math Word Problems</a>
+        <div class="meta">Cobbe et al. · arXiv 2021</div>
+        <p>Introduces GSM8K (8.5K grade-school math word problems) and trained verifiers: generate many candidate solutions and pick the one the verifier ranks highest; verification scales better with data than a finetuning baseline.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  Deck.hbars(document.getElementById('cBars'), [
+    { label: 'PaLM 540B, standard prompting', value: 18, color: 'var(--faint)', text: '18%' },
+    { label: 'finetuned GPT-3 175B', value: 33, color: 'var(--b)', text: '33%' },
+    { label: 'prior best (finetuned GPT-3 + verifier)', value: 55, color: 'var(--c)', text: '55%' },
+    { label: 'PaLM 540B, chain of thought (8 exemplars)', value: 57, color: 'var(--e)', text: '57%' }], { max: 70 });
+})();
+</script>
+</body>
+</html>
