@@ -44,6 +44,7 @@ papers:
 - sarathi_serve
 - orca
 - vllm_release
+status: {label: current, reviewed: 2026-10-15, note: "v0.31.0 is still the latest release; defaults unchanged"}
 ---
 
 <!-- slide raw -->

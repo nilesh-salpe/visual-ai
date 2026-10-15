@@ -11,7 +11,7 @@
 
 <section class="slide title-slide" id="s-title" data-chapter="Start">
   <div class="inner">
-    <div class="kicker">PyTorch for LLMs · 08</div>
+    <div class="kicker">PyTorch for LLMs · 08</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-15</span><span class="status-note">PyTorch 2.14.1 is still the latest release; FSDP1 deprecated in favour of FSDP2</span></div>
     <h1>Distributed training in PyTorch</h1>
     <p class="sub">The PyTorch APIs (application programming interfaces) behind data parallelism: torchrun, process groups and collectives, DistributedDataParallel and FSDP2's fully_shard, with their key settings.</p>
     <div class="ps">
@@ -88,7 +88,7 @@
     <h2>FSDP2 in a few lines</h2>
     <hr>
 <div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap">from torch.distributed.fsdp import fully_shard, MixedPrecisionPolicy&#10;&#10;mp = MixedPrecisionPolicy(param_dtype=torch.bfloat16, reduce_dtype=torch.float32)&#10;for block in model.blocks:&#10;    fully_shard(block, mp_policy=mp)       # each block: all-gather before use, reduce-scatter grads&#10;fully_shard(model, mp_policy=mp)           # the root (embeddings, head)&#10;opt = torch.optim.AdamW(model.parameters(), lr=3e-4)   # optimizer sees sharded DTensor params</pre></div>
-<div class="deep"><h4>Mapping from FSDP1</h4><p>The FSDP2 tutorial maps FULL_SHARD to reshard_after_forward=True (ZeRO-3-like (ZeRO = Zero Redundancy Optimizer)), SHARD_GRAD_OP to reshard_after_forward=False (ZeRO-2-like), and HYBRID_SHARD to a 2-D device mesh.</p></div>
+<div class="deep"><h4>Mapping from FSDP1</h4><p>The official FSDP2 tutorial states that FSDP1 (FullyShardedDataParallel) <span class="lbl lbl-legacy" title="superseded; mostly found in older systems">Legacy</span> is deprecated; new code should use fully_shard (FSDP2) <span class="lbl lbl-current" title="widely used in production today">Current practice</span>. The tutorial maps FULL_SHARD to reshard_after_forward=True (ZeRO-3-like (ZeRO = Zero Redundancy Optimizer)), SHARD_GRAD_OP to reshard_after_forward=False (ZeRO-2-like), and HYBRID_SHARD to a 2-D device mesh.</p></div>
   </div>
 </section>
 

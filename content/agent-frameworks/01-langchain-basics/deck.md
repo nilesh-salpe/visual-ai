@@ -30,6 +30,8 @@ papers:
 - oai_agents_sdk
 - claude_agent_sdk
 - lc_pypi
+- lc_v1_migration
+status: {label: current, reviewed: 2026-10-15, note: "langchain 1.4.6 still latest; create_react_agent and legacy chains labelled"}
 ---
 
 <!-- slide from="title" -->
@@ -66,6 +68,8 @@ Model + tools + system prompt + middleware → a compiled LangGraph graph with a
 :::
 
 Anthropic's advice still applies: frameworks "make it easy to get started" but "often create extra layers of abstraction that can obscure the underlying prompts and responses". Know what the framework sends: the next slides open it up.
+
+Since LangChain and LangGraph 1.0: build agents with `langchain.agents.create_agent` [[current]]; `langgraph.prebuilt.create_react_agent` is deprecated [[legacy]], and legacy chains such as LLMChain moved to the separate langchain-classic package [[legacy]].
 
 <!-- slide id="s-hld" chapter="High-level design" tag="3 · High-level design" tagclass="b3" -->
 ## What create_agent builds

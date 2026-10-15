@@ -28,6 +28,7 @@ papers:
 - nist_abac
 - zanzibar
 - mcp_auth
+- mcp_changes
 - rfc8693
 ---
 
@@ -127,7 +128,7 @@ steps:
 Store access lists with each chunk and filter inside the search (pre-filter), not after the model has read the text. Sync access changes into the index promptly.
 
 ### [d] Proxy servers
-MCP proxy servers using a static client ID MUST get user consent for each dynamically registered client before forwarding to a third-party authorization server, which closes a confused-deputy hole.
+MCP proxy servers using a static client ID MUST get user consent for each dynamically registered client before forwarding to a third-party authorization server, which closes a confused-deputy hole. Dynamic Client Registration itself is deprecated in 2026-07-28 in favour of Client ID Metadata Documents [[legacy]].
 :::
 
 <!-- slide id="s-trade" chapter="Trade-offs" tag="5 · Trade-offs" tagclass="b5" -->

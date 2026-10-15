@@ -41,6 +41,7 @@ papers:
 - pt_torchrun
 - pt_fsdp2
 - fsdp
+status: {label: current, reviewed: 2026-10-15, note: "PyTorch 2.14.1 is still the latest release; FSDP1 deprecated in favour of FSDP2"}
 ---
 
 <!-- slide raw -->
@@ -120,7 +121,7 @@ DDP(model) for replicated models; fully_shard per block for sharded ones.
 <div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap">from torch.distributed.fsdp import fully_shard, MixedPrecisionPolicy&#10;&#10;mp = MixedPrecisionPolicy(param_dtype=torch.bfloat16, reduce_dtype=torch.float32)&#10;for block in model.blocks:&#10;    fully_shard(block, mp_policy=mp)       # each block: all-gather before use, reduce-scatter grads&#10;fully_shard(model, mp_policy=mp)           # the root (embeddings, head)&#10;opt = torch.optim.AdamW(model.parameters(), lr=3e-4)   # optimizer sees sharded DTensor params</pre></div>
 
 ::: deep Mapping from FSDP1
-The FSDP2 tutorial maps FULL_SHARD to reshard_after_forward=True (ZeRO-3-like), SHARD_GRAD_OP to reshard_after_forward=False (ZeRO-2-like), and HYBRID_SHARD to a 2-D device mesh.
+The official FSDP2 tutorial states that FSDP1 (FullyShardedDataParallel) [[legacy]] is deprecated; new code should use fully_shard (FSDP2) [[current]]. The tutorial maps FULL_SHARD to reshard_after_forward=True (ZeRO-3-like), SHARD_GRAD_OP to reshard_after_forward=False (ZeRO-2-like), and HYBRID_SHARD to a 2-D device mesh.
 :::
 
 <!-- slide id="s-example" from="example" -->

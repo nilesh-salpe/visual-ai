@@ -11,13 +11,16 @@
 <body>
 <div class="hub">
   <a class="brand" href="index.html">← vLLM</a>
-  <div class="label" style="margin-top:28px">Reading list · 18 papers and docs</div>
+  <div class="label" style="margin-top:28px">Reading list · 20 papers and docs</div>
   <h1>vLLM: key papers</h1>
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">
     <div class="paper-item"><a href="https://arxiv.org/abs/2309.06180" target="_blank" rel="noopener">Efficient Memory Management for Large Language Model Serving with PagedAttention</a>
       <div class="meta">Kwon et al. · SOSP 2023 · cited in <a href="01-what-is-vllm/index.html" style="font-weight:500;color:var(--a)">What vLLM is and a request's life</a>, <a href="03-kv-cache-manager/index.html" style="font-weight:500;color:var(--a)">KV cache manager and PagedAttention</a></div>
       <p>Stores the KV cache in fixed-size blocks mapped by a block table, like virtual memory pages, giving near-zero fragmentation and sharing with copy-on-write. The basis of vLLM.</p><div class="num">Remember: 2–4× throughput vs FasterTransformer and Orca at the same latency</div></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/releases/tag/v0.11.0" target="_blank" rel="noopener">vLLM v0.11.0 release notes</a>
+      <div class="meta">vLLM project · GitHub releases 2025 · cited in <a href="01-what-is-vllm/index.html" style="font-weight:500;color:var(--a)">What vLLM is and a request's life</a></div>
+      <p>Completes the removal of the V0 engine (AsyncLLMEngine, LLMEngine, MQLLMEngine, V0 attention backends): V1 is the only engine in the codebase.</p></div>
     <div class="paper-item"><a href="https://blog.vllm.ai/2025/01/27/v1-alpha-release.html" target="_blank" rel="noopener">vLLM V1: A Major Upgrade to vLLM's Core Architecture</a>
       <div class="meta">vLLM Team · vLLM blog 2025 · cited in <a href="01-what-is-vllm/index.html" style="font-weight:500;color:var(--a)">What vLLM is and a request's life</a>, <a href="02-engine-architecture/index.html" style="font-weight:500;color:var(--a)">Engine architecture</a>, <a href="05-prefix-caching/index.html" style="font-weight:500;color:var(--a)">Automatic prefix caching</a></div>
       <p>The V1 re-architecture: an isolated EngineCore busy loop (scheduler + executor) in its own process, a unified token-budget scheduler, zero-overhead prefix caching, torch.compile and piecewise CUDA graphs.</p><div class="num">Remember: up to 1.7× higher throughput than V0</div></div>
@@ -27,6 +30,9 @@
     <div class="paper-item"><a href="https://github.com/vllm-project/vllm/releases/tag/v0.31.0" target="_blank" rel="noopener">vLLM v0.31.0 release</a>
       <div class="meta">vLLM project · GitHub 2026 · cited in <a href="02-engine-architecture/index.html" style="font-weight:500;color:var(--a)">Engine architecture</a>, <a href="03-kv-cache-manager/index.html" style="font-weight:500;color:var(--a)">KV cache manager and PagedAttention</a>, <a href="04-scheduler/index.html" style="font-weight:500;color:var(--a)">The scheduler: continuous batching and chunked prefill</a>, <a href="06-speculative-decoding/index.html" style="font-weight:500;color:var(--a)">Speculative decoding in vLLM</a>, <a href="08-running-and-tuning/index.html" style="font-weight:500;color:var(--a)">Running and tuning vLLM</a></div>
       <p>The release these decks were checked against (source at vllm/v1/core and vllm/config).</p></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/releases/tag/v0.29.0" target="_blank" rel="noopener">vLLM v0.29.0 release notes</a>
+      <div class="meta">vLLM project · GitHub releases 2026 · cited in <a href="02-engine-architecture/index.html" style="font-weight:500;color:var(--a)">Engine architecture</a></div>
+      <p>Model Runner V2 becomes the default for all models; Model Runner V1 is deprecated, with removal targeted for v0.32 (it remains a fallback for a few unsupported features).</p></div>
     <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/design/prefix_caching.html" target="_blank" rel="noopener">Automatic Prefix Caching (design)</a>
       <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="03-kv-cache-manager/index.html" style="font-weight:500;color:var(--a)">KV cache manager and PagedAttention</a>, <a href="05-prefix-caching/index.html" style="font-weight:500;color:var(--a)">Automatic prefix caching</a></div>
       <p>Each KV block is hashed with its tokens and the prefix before it; blocks are reference-counted, freed blocks are evicted in LRU order, and cache hits skip prefill.</p></div>

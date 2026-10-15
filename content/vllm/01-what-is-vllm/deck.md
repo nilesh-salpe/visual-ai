@@ -38,12 +38,14 @@ traps:
   - 'Read the Inference topic first. :: KV cache, batching, PagedAttention concepts.'
   traps:
   - 'Benchmarking one request at a time. :: vLLM''s gains come from batching many.'
-  - 'Assuming V0 behaviour. :: V1 changed the scheduler, process layout and defaults.'
+  - 'Assuming V0 behaviour. :: V1 changed the scheduler, process layout and defaults; the V0 engine was removed entirely in v0.11.0 (October 2025).'
   - 'Pinning advice to old versions. :: Defaults change between releases; check the version you run.'
 papers:
 - vllm
+- vllm_v011
 - vllm_v1
 - vllm_arch
+status: {label: current, reviewed: 2026-10-15, note: "v0.31.0 is still the latest release; V0 engine removed in v0.11.0"}
 ---
 
 <!-- slide raw -->

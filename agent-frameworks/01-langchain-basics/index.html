@@ -11,7 +11,7 @@
 
 <section class="slide title-slide" id="s-title" data-chapter="Start">
   <div class="inner">
-    <div class="kicker">Visual Agents · Frameworks · 01</div>
+    <div class="kicker">Visual Agents · Frameworks · 01</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-15</span><span class="status-note">langchain 1.4.6 still latest; create_react_agent and legacy chains labelled</span></div>
     <h1>LangChain basics</h1>
     <p class="sub">The building blocks LangChain standardises across model providers (chat models, messages, tools, structured output) and create_agent, the agent loop compiled as a LangGraph graph. Pinned to LangChain 1.4.6.</p>
     <div class="ps">
@@ -48,6 +48,7 @@
       <div class="card e"><h3>create_agent</h3><p>Model + tools + system prompt + middleware → a compiled LangGraph graph with a model node and a tools node.</p></div>
     </div>
 <p>Anthropic's advice still applies: frameworks "make it easy to get started" but "often create extra layers of abstraction that can obscure the underlying prompts and responses". Know what the framework sends: the next slides open it up.</p>
+<p>Since LangChain and LangGraph 1.0: build agents with <code>langchain.agents.create_agent</code> <span class="lbl lbl-current" title="widely used in production today">Current practice</span>; <code>langgraph.prebuilt.create_react_agent</code> is deprecated <span class="lbl lbl-legacy" title="superseded; mostly found in older systems">Legacy</span>, and legacy chains such as LLMChain moved to the separate langchain-classic package <span class="lbl lbl-legacy" title="superseded; mostly found in older systems">Legacy</span>.</p>
   </div>
 </section>
 
@@ -245,6 +246,9 @@ out = agent.invoke({&quot;messages&quot;: [{&quot;role&quot;: &quot;user&quot;, 
       <div class="paper-item"><a href="https://pypi.org/project/langgraph/1.2.15/" target="_blank" rel="noopener">langchain 1.4.6 and langgraph 1.2.15 (release pins)</a>
         <div class="meta">PyPI · pypi.org 2026</div>
         <p>The versions these decks and notebooks are verified against: langchain 1.4.6, langchain-core 1.6.10, langgraph 1.2.15, langgraph-checkpoint 4.3.0.</p></div>
+      <div class="paper-item"><a href="https://docs.langchain.com/oss/python/migrate/langchain-v1" target="_blank" rel="noopener">LangChain v1 migration guide</a>
+        <div class="meta">LangChain documentation · docs.langchain.com 2025</div>
+        <p>Agents are now built with langchain.agents.create_agent (previously langgraph.prebuilt.create_react_agent, deprecated since LangGraph 1.0); legacy chains, retrievers, the indexing API and hub moved to the langchain-classic package.</p></div>
     </div>
   </div>
 </section>

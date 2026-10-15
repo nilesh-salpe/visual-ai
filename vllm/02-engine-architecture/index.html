@@ -11,7 +11,7 @@
 
 <section class="slide title-slide" id="s-title" data-chapter="Start">
   <div class="inner">
-    <div class="kicker">vLLM · 02</div>
+    <div class="kicker">vLLM · 02</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-15</span><span class="status-note">v0.31.0 latest; Model Runner V2 default since v0.29, V1 deprecated</span></div>
     <h1>Engine architecture</h1>
     <p class="sub">How vLLM V1 splits work across processes (API (application programming interface) servers, engine cores, GPU (graphics processing unit) workers, a data-parallel coordinator), why the engine loop is isolated, and how the pieces talk.</p>
     <div class="ps">
@@ -76,7 +76,7 @@
 <div class="grid3">
       <div class="card c"><h3>API server</h3><p>HTTP (OpenAI-compatible), input processing, detokenisation, streaming. Count defaults to DP (--api-server-count).</p></div>
       <div class="card a"><h3>EngineCore</h3><p>Busy loop: schedule → execute model → update outputs. Holds the scheduler and KV (key-value) cache manager. One per DP rank.</p></div>
-      <div class="card b"><h3>GPU worker</h3><p>One per GPU: loads its shard of the model, holds its KV cache, runs forward passes (model runner, CUDA graphs).</p></div>
+      <div class="card b"><h3>GPU worker</h3><p>One per GPU: loads its shard of the model, holds its KV cache, runs forward passes (model runner, CUDA graphs). Model Runner V2 has been the default since v0.29 <span class="lbl lbl-current" title="widely used in production today">Current practice</span>; Model Runner V1 is deprecated, targeted for removal in v0.32 <span class="lbl lbl-legacy" title="superseded; mostly found in older systems">Legacy</span>.</p></div>
     </div>
 <!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="From the vLLM architecture overview (process count summary)." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">API server × A</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">HTTP, tokenise,</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">stream</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">ZMQ</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">many-to-many</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">EngineCore × DP</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">busy loop:</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">schedule + KV</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">GPU worker × N</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">N = DP × PP × TP</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">DP coordinator</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">only if DP &gt; 1</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">From the vLLM architecture overview (process count summary).</p></div><!--/x:glance-->
   </div>
@@ -218,6 +218,9 @@
       <div class="paper-item"><a href="https://github.com/vllm-project/vllm/releases/tag/v0.31.0" target="_blank" rel="noopener">vLLM v0.31.0 release</a>
         <div class="meta">vLLM project · GitHub 2026</div>
         <p>The release these decks were checked against (source at vllm/v1/core and vllm/config).</p></div>
+      <div class="paper-item"><a href="https://github.com/vllm-project/vllm/releases/tag/v0.29.0" target="_blank" rel="noopener">vLLM v0.29.0 release notes</a>
+        <div class="meta">vLLM project · GitHub releases 2026</div>
+        <p>Model Runner V2 becomes the default for all models; Model Runner V1 is deprecated, with removal targeted for v0.32 (it remains a fallback for a few unsupported features).</p></div>
     </div>
   </div>
 </section>

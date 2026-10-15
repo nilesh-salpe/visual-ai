@@ -23,7 +23,7 @@ Do not cite: content farms and SEO blogs, unattributed Medium posts, Q&A sites, 
 2. **Pin versions.** Software facts are true for a version: record it in the deck ("vLLM v0.31.0", "LangGraph 1.2.15", "MCP revision 2026-07-28") and check PyPI or GitHub releases for the latest.
 3. **Prefer the newest authoritative statement.** If docs and an older paper disagree on a product default, the current docs win for "how it works now"; the paper stays the source for its own experiments. Say so when they differ (e.g. the LangGraph recursion-limit default).
 4. **Quote numbers with their conditions.** Model, dataset, setting and date ("PaLM 540B, GSM8K, 8 exemplars, 2022").
-5. **Two independent tier-1 sources** for any claim that something is *outdated*, *deprecated* or *no longer used in production*.
+5. **Deprecation vs usage.** A maintainer's own official notice (release notes, changelog, docs or a deprecation warning in its source code) is enough to call that maintainer's feature *deprecated* or *removed*. Claims about the wider world (*outdated*, *superseded across the industry*, *no longer used in production*) need **two independent tier-1 sources**.
 6. **Record it.** Add the source to `content/papers.yml` (unique key; title, authors, venue, year, URL, a one-line summary and the key number) and run `python3 tools/check_papers.py`.
 7. **Access problems.** Some sites (OpenAI, ACM Digital Library, Microsoft Research, LMArena, MLCommons) return 403 to scripts. Read them in a browser if needed, and cite a stable alternative that the link checker can reach: the arXiv version of a paper, the GitHub repository, or the official docs mirror.
 

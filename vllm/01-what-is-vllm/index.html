@@ -11,7 +11,7 @@
 
 <section class="slide title-slide" id="s-title" data-chapter="Start">
   <div class="inner">
-    <div class="kicker">vLLM · 01</div>
+    <div class="kicker">vLLM · 01</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-15</span><span class="status-note">v0.31.0 is still the latest release; V0 engine removed in v0.11.0</span></div>
     <h1>What vLLM is and a request's life</h1>
     <p class="sub">The open-source LLM (large language model) inference and serving engine built around PagedAttention: what it does, the two ways to use it, and every stage a request passes through.</p>
     <div class="ps">
@@ -148,7 +148,7 @@
     <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
     <div class="tt-grid">
       <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Offline: LLM(model).generate(prompts).</b> Batches everything for throughput.</li><li><b>Online: vllm serve <model>.</b> OpenAI-compatible /v1/chat/completions.</li><li><b>Read the Inference topic first.</b> KV cache, batching, PagedAttention concepts.</li></ul></div>
-      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Benchmarking one request at a time.</b> vLLM's gains come from batching many.</li><li><b>Assuming V0 behaviour.</b> V1 changed the scheduler, process layout and defaults.</li><li><b>Pinning advice to old versions.</b> Defaults change between releases; check the version you run.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Benchmarking one request at a time.</b> vLLM's gains come from batching many.</li><li><b>Assuming V0 behaviour.</b> V1 changed the scheduler, process layout and defaults; the V0 engine was removed entirely in v0.11.0 (October 2025).</li><li><b>Pinning advice to old versions.</b> Defaults change between releases; check the version you run.</li></ul></div>
     </div>
   </div>
 </section>
@@ -204,6 +204,9 @@
       <div class="paper-item"><a href="https://arxiv.org/abs/2309.06180" target="_blank" rel="noopener">Efficient Memory Management for Large Language Model Serving with PagedAttention</a>
         <div class="meta">Kwon et al. · SOSP 2023</div>
         <p>Stores the KV cache in fixed-size blocks mapped by a block table, like virtual memory pages, giving near-zero fragmentation and sharing with copy-on-write. The basis of vLLM.</p><div class="num">Remember: 2–4× throughput vs FasterTransformer and Orca at the same latency</div></div>
+      <div class="paper-item"><a href="https://github.com/vllm-project/vllm/releases/tag/v0.11.0" target="_blank" rel="noopener">vLLM v0.11.0 release notes</a>
+        <div class="meta">vLLM project · GitHub releases 2025</div>
+        <p>Completes the removal of the V0 engine (AsyncLLMEngine, LLMEngine, MQLLMEngine, V0 attention backends): V1 is the only engine in the codebase.</p></div>
       <div class="paper-item"><a href="https://blog.vllm.ai/2025/01/27/v1-alpha-release.html" target="_blank" rel="noopener">vLLM V1: A Major Upgrade to vLLM's Core Architecture</a>
         <div class="meta">vLLM Team · vLLM blog 2025</div>
         <p>The V1 re-architecture: an isolated EngineCore busy loop (scheduler + executor) in its own process, a unified token-budget scheduler, zero-overhead prefix caching, torch.compile and piecewise CUDA graphs.</p><div class="num">Remember: up to 1.7× higher throughput than V0</div></div>

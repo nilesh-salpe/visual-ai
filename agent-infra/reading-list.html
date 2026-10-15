@@ -11,7 +11,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="index.html">← Agent infrastructure</a>
-  <div class="label" style="margin-top:28px">Reading list · 17 papers and docs</div>
+  <div class="label" style="margin-top:28px">Reading list · 18 papers and docs</div>
   <h1>Agent infrastructure: key papers</h1>
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">
@@ -51,6 +51,9 @@
     <div class="paper-item"><a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization" target="_blank" rel="noopener">Model Context Protocol: Authorization (revision 2026-07-28)</a>
       <div class="meta">MCP specification · modelcontextprotocol.io 2026 · cited in <a href="03-access-control/index.html" style="font-weight:500;color:var(--a)">Identity and access control</a></div>
       <p>OAuth 2.1 for HTTP (Hypertext Transfer Protocol) transports: servers are resource servers publishing Protected Resource Metadata (RFC 9728); clients use PKCE (S256) and the resource parameter (RFC 8707); servers must validate the token audience and must not pass tokens through; 403 insufficient_scope triggers step-up authorization.</p></div>
+    <div class="paper-item"><a href="https://modelcontextprotocol.io/specification/2026-07-28/changelog" target="_blank" rel="noopener">MCP specification changelog (2026-07-28)</a>
+      <div class="meta">MCP maintainers · modelcontextprotocol.io 2026 · cited in <a href="03-access-control/index.html" style="font-weight:500;color:var(--a)">Identity and access control</a></div>
+      <p>Removes the initialize handshake and sessions, adds server/discover and subscriptions/listen, replaces server-initiated requests with multi round-trip requests (input_required).</p></div>
     <div class="paper-item"><a href="https://www.rfc-editor.org/rfc/rfc8693" target="_blank" rel="noopener">OAuth 2.0 Token Exchange (RFC 8693)</a>
       <div class="meta">Jones et al. · IETF (Internet Engineering Task Force) 2020 · cited in <a href="03-access-control/index.html" style="font-weight:500;color:var(--a)">Identity and access control</a></div>
       <p>Exchange a subject token (and optional actor token) for a new token; distinguishes impersonation from delegation ("A is an agent for B") and records the acting party in the act claim.</p></div>

@@ -40,6 +40,7 @@ traps:
 papers:
 - pytorch
 - pt_tensor_views
+status: {label: current, reviewed: 2026-10-15, note: "PyTorch 2.14.1 is still the latest release"}
 ---
 
 <!-- slide raw -->

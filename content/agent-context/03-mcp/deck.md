@@ -25,6 +25,7 @@ papers:
 - mcp_spec
 - mcp_changes
 - mcp_announce
+status: {label: current, reviewed: 2026-10-15, note: "Spec 2026-07-28 is still the latest; deprecations from its changelog added"}
 ---
 
 <!-- slide from="title" -->
@@ -117,12 +118,14 @@ steps:
 ::: table
 | Change in 2026-07-28 | Before (2025-11-25 and earlier) |
 |---|---|
-| stateless: version and capabilities on every request | initialize / notifications/initialized handshake, sessions |
+| stateless: version and capabilities on every request | initialize / notifications/initialized handshake, sessions (removed) [[legacy]] |
 | server/discover for up-front version selection | versions agreed during initialize |
 | multi round-trip requests (input_required) | server-initiated sampling/createMessage, elicitation/create, roots/list |
 | subscriptions/listen for change notifications | HTTP GET stream; resources/subscribe |
-| broken stream: client re-issues the request | SSE resumability with Last-Event-ID |
+| broken stream: client re-issues the request | SSE resumability with Last-Event-ID (removed) [[legacy]] |
 :::
+
+Also deprecated in 2026-07-28 (still functional, scheduled for removal after at least a 12-month window): the **Roots, Sampling and Logging** features; the old **HTTP+SSE transport**, replaced by Streamable HTTP in 2025-03-26; and **Dynamic Client Registration** in favour of Client ID Metadata Documents [[legacy]]. New implementations should not adopt them.
 
 <!-- slide id="s-trade" chapter="Trade-offs" tag="5 · Trade-offs" tagclass="b5" -->
 ## Trade-offs

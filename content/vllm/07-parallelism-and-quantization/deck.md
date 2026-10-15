@@ -42,6 +42,7 @@ papers:
 - awq
 - gptq
 - fp8
+status: {label: current, reviewed: 2026-10-15, note: "v0.31.0 is still the latest release"}
 ---
 
 <!-- slide raw -->

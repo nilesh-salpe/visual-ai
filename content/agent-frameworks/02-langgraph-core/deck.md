@@ -27,6 +27,7 @@ papers:
 - lg_overview
 - pregel
 - react
+status: {label: current, reviewed: 2026-10-15, note: "langgraph 1.2.15 still latest; APIs re-checked in source"}
 ---
 
 <!-- slide from="title" -->

@@ -40,6 +40,7 @@ papers:
 - leviathan
 - vllm_spec
 - vllm_release
+status: {label: current, reviewed: 2026-10-15, note: "v0.31.0 latest; v0.30-0.31 added more drafters on Model Runner V2"}
 ---
 
 <!-- slide raw -->

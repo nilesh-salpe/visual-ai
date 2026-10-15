@@ -2673,3 +2673,24 @@ pope_halluc:
   year: 2023
   url: https://arxiv.org/abs/2305.10355
   summary: Vision-language models hallucinate objects, especially ones frequent in visual instructions or co-occurring with real objects; POPE evaluates this with polling yes/no questions.
+lc_v1_migration:
+  title: LangChain v1 migration guide
+  authors: LangChain documentation
+  venue: docs.langchain.com
+  year: 2025
+  url: https://docs.langchain.com/oss/python/migrate/langchain-v1
+  summary: 'Agents are now built with langchain.agents.create_agent (previously langgraph.prebuilt.create_react_agent, deprecated since LangGraph 1.0); legacy chains, retrievers, the indexing API and hub moved to the langchain-classic package.'
+vllm_v011:
+  title: vLLM v0.11.0 release notes
+  authors: vLLM project
+  venue: GitHub releases
+  year: 2025
+  url: https://github.com/vllm-project/vllm/releases/tag/v0.11.0
+  summary: 'Completes the removal of the V0 engine (AsyncLLMEngine, LLMEngine, MQLLMEngine, V0 attention backends): V1 is the only engine in the codebase.'
+vllm_v029:
+  title: vLLM v0.29.0 release notes
+  authors: vLLM project
+  venue: GitHub releases
+  year: 2026
+  url: https://github.com/vllm-project/vllm/releases/tag/v0.29.0
+  summary: 'Model Runner V2 becomes the default for all models; Model Runner V1 is deprecated, with removal targeted for v0.32 (it remains a fallback for a few unsupported features).'

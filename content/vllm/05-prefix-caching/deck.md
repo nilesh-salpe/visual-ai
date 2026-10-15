@@ -40,6 +40,7 @@ papers:
 - vllm_apc
 - vllm_v1
 - sglang
+status: {label: current, reviewed: 2026-10-15, note: "v0.31.0 is still the latest release; prefix caching on by default"}
 ---
 
 <!-- slide raw -->

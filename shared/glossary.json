@@ -1305,6 +1305,11 @@
   "ScienceQA",
   "VQAv2",
   "WebSocket",
-  "WebSockets"
+  "WebSockets",
+  "LLMChain",
+  "FSDP1",
+  "FullyShardedDataParallel",
+  "AsyncLLMEngine",
+  "MQLLMEngine"
  ]
 }

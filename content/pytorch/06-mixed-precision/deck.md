@@ -41,6 +41,7 @@ papers:
 - pt_amp
 - mixedprec
 - bf16
+status: {label: current, reviewed: 2026-10-15, note: "PyTorch 2.14.1 is still the latest release"}
 ---
 
 <!-- slide raw -->

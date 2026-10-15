@@ -11,7 +11,7 @@
 
 <section class="slide title-slide" id="s-title" data-chapter="Start">
   <div class="inner">
-    <div class="kicker">Visual Agents · Context · 03</div>
+    <div class="kicker">Visual Agents · Context · 03</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-15</span><span class="status-note">Spec 2026-07-28 is still the latest; deprecations from its changelog added</span></div>
     <h1>Model Context Protocol (MCP)</h1>
     <p class="sub">The open standard for connecting AI (artificial intelligence) applications to tools and data: hosts, clients and servers over JSON-RPC (JSON = JavaScript Object Notation) 2.0, the three server features, transports, and what changed in the stateless 2026-07-28 revision.</p>
     <div class="ps">
@@ -76,7 +76,7 @@
 <tbody>
 <tr>
 <td>stateless: version and capabilities on every request</td>
-<td>initialize / notifications/initialized handshake, sessions</td>
+<td>initialize / notifications/initialized handshake, sessions (removed) <span class="lbl lbl-legacy" title="superseded; mostly found in older systems">Legacy</span></td>
 </tr>
 <tr>
 <td>server/discover for up-front version selection</td>
@@ -92,10 +92,11 @@
 </tr>
 <tr>
 <td>broken stream: client re-issues the request</td>
-<td>SSE (server-sent events) resumability with Last-Event-ID</td>
+<td>SSE (server-sent events) resumability with Last-Event-ID (removed) <span class="lbl lbl-legacy" title="superseded; mostly found in older systems">Legacy</span></td>
 </tr>
 </tbody>
 </table></div>
+<p>Also deprecated in 2026-07-28 (still functional, scheduled for removal after at least a 12-month window): the <strong>Roots, Sampling and Logging</strong> features; the old <strong>HTTP+SSE transport</strong>, replaced by Streamable HTTP in 2025-03-26; and <strong>Dynamic Client Registration</strong> in favour of Client ID (identifier) Metadata Documents <span class="lbl lbl-legacy" title="superseded; mostly found in older systems">Legacy</span>. New implementations should not adopt them.</p>
   </div>
 </section>
 

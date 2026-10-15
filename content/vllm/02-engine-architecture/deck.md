@@ -40,6 +40,8 @@ papers:
 - vllm_arch
 - vllm_v1
 - vllm_release
+- vllm_v029
+status: {label: current, reviewed: 2026-10-15, note: "v0.31.0 latest; Model Runner V2 default since v0.29, V1 deprecated"}
 ---
 
 <!-- slide raw -->
@@ -108,7 +110,7 @@ HTTP (OpenAI-compatible), input processing, detokenisation, streaming. Count def
 Busy loop: schedule → execute model → update outputs. Holds the scheduler and KV cache manager. One per DP rank.
 
 ### [b] GPU worker
-One per GPU: loads its shard of the model, holds its KV cache, runs forward passes (model runner, CUDA graphs).
+One per GPU: loads its shard of the model, holds its KV cache, runs forward passes (model runner, CUDA graphs). Model Runner V2 has been the default since v0.29 [[current]]; Model Runner V1 is deprecated, targeted for removal in v0.32 [[legacy]].
 :::
 
 {{glance}}

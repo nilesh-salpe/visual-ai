@@ -40,6 +40,7 @@ papers:
 - vllm_server
 - vllm_opt
 - vllm_release
+status: {label: current, reviewed: 2026-10-15, note: "v0.31.0 is still the latest release; flags unchanged"}
 ---
 
 <!-- slide raw -->
