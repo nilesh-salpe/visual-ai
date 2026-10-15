@@ -40,6 +40,9 @@ A huge batch maximizes tokens/s …
 ::: code [language]                    # a code sample, shown verbatim
 ::: colab <notebook path> [label]      # "Try it in Colab" banner; the body is the description
 <!-- slide from="title" -->             # the title slide, from the front-matter `intro` (kicker, h1, sub, problem, core, hint)
+
+A folder may also hold design.md: a long-form design document (front matter: title, back, back_label), rendered to
+<topic>/<slug>/design.html with the same styles; ::: diagram blocks work there too.
 {{glance}}                             # the at-a-glance diagram from front matter
 <!-- slide id="s-example" from="example" -->   # a slide generated from front-matter data (example, traps, papers)
 <!-- slide raw -->                     # a slide given as raw HTML, verbatim, up to the next marker
@@ -263,6 +266,48 @@ def build(folder):
     return expand_acronyms(page)[0]
 
 
+DOC_MD = markdown.Markdown(extensions=['attr_list', 'md_in_html', 'tables', 'fenced_code', 'toc'])
+
+
+def build_doc(folder):
+    """Render design.md (front matter + Markdown, with ::: diagram blocks) as a standalone page."""
+    CURRENT[0] = os.path.relpath(folder, os.path.join(REPO, 'content'))
+    diagram._count[0] = 0
+    _, front, body = open(os.path.join(folder, 'design.md')).read().split('---\n', 2)
+    fm = yaml.safe_load(front)
+    lines, out, i = body.split('\n'), [], 0
+    while i < len(lines):
+        m = re.match(r'^:::\s*diagram\s*(.*)$', lines[i])
+        if not m:
+            out.append(lines[i]); i += 1; continue
+        block = []; i += 1
+        while i < len(lines) and lines[i].strip() != ':::':
+            block.append(lines[i]); i += 1
+        i += 1
+        out.append('\n' + diagram.render(m.group(1).strip(), '\n'.join(block), where=CURRENT[0]) + '\n')
+    DOC_MD.reset()
+    html = DOC_MD.convert('\n'.join(out))
+    page = f'''<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{H.escape(fm["title"])}</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body class="doc-page">
+<article class="doc">
+  <a class="brand" href="{fm.get("back", "index.html")}">← {H.escape(fm.get("back_label", "Overview deck"))}</a>
+{html}
+</article>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>
+'''
+    return expand_acronyms(page)[0]
+
+
 if __name__ == '__main__':
     topics = sys.argv[1:] or sorted(d for d in os.listdir(os.path.join(REPO, 'content')) if os.path.isdir(os.path.join(REPO, 'content', d)))
     for t in topics:
@@ -273,3 +318,6 @@ if __name__ == '__main__':
                 os.makedirs(os.path.dirname(out), exist_ok=True)
                 open(out, 'w').write(build(folder))
                 print('built', t, slug)
+                if os.path.exists(os.path.join(folder, 'design.md')):
+                    open(os.path.join(os.path.dirname(out), 'design.html'), 'w').write(build_doc(folder))
+                    print('built', t, slug, 'design doc')

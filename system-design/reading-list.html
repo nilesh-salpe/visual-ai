@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System design case studies Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← System design case studies</a>
+  <div class="label" style="margin-top:28px">Reading list · 27 papers and docs</div>
+  <h1>System design case studies: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://arxiv.org/abs/2309.06180" target="_blank" rel="noopener">Efficient Memory Management for Large Language Model Serving with PagedAttention</a>
+      <div class="meta">Kwon et al. · SOSP 2023 · cited in <a href="01-chat-assistant/index.html" style="font-weight:500;color:var(--a)">Serving a chat assistant</a></div>
+      <p>Stores the KV cache in fixed-size blocks mapped by a block table, like virtual memory pages, giving near-zero fragmentation and sharing with copy-on-write. The basis of vLLM.</p><div class="num">Remember: 2–4× throughput vs FasterTransformer and Orca at the same latency</div></div>
+    <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/design/prefix_caching.html" target="_blank" rel="noopener">Automatic Prefix Caching (design)</a>
+      <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="01-chat-assistant/index.html" style="font-weight:500;color:var(--a)">Serving a chat assistant</a></div>
+      <p>Each KV block is hashed with its tokens and the prefix before it; blocks are reference-counted, freed blocks are evicted in LRU (least recently used) order, and cache hits skip prefill.</p></div>
+    <div class="paper-item"><a href="https://www.usenix.org/conference/osdi22/presentation/yu" target="_blank" rel="noopener">Orca: A Distributed Serving System for Transformer-Based Generative Models</a>
+      <div class="meta">Yu et al. · OSDI 2022 · cited in <a href="01-chat-assistant/index.html" style="font-weight:500;color:var(--a)">Serving a chat assistant</a></div>
+      <p>Iteration-level scheduling (requests join and leave the batch after every decode step) plus selective batching (batch the matmuls, run attention per request).</p><div class="num">Remember: 36.9× throughput over FasterTransformer at the same latency (GPT-3 175B)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2403.02310" target="_blank" rel="noopener">Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve</a>
+      <div class="meta">Agrawal et al. · OSDI 2024 · cited in <a href="01-chat-assistant/index.html" style="font-weight:500;color:var(--a)">Serving a chat assistant</a></div>
+      <p>Chunked prefills plus stall-free scheduling: new requests are added without pausing ongoing decodes, so throughput rises without TPOT (time per output token) spikes.</p><div class="num">Remember: 2.6× serving capacity (Mistral-7B, 1 A100) and up to 3.7× (Yi-34B, 2 A100s) vs vLLM; up to 5.6× with pipeline parallelism (Falcon-180B)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2401.09670" target="_blank" rel="noopener">DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving</a>
+      <div class="meta">Zhong et al. · OSDI 2024 · cited in <a href="01-chat-assistant/index.html" style="font-weight:500;color:var(--a)">Serving a chat assistant</a></div>
+      <p>Defines serving quality as goodput, the request rate served within both TTFT (time to first token) and TPOT targets, and runs prefill and decode on separate GPUs so they stop interfering.</p><div class="num">Remember: 7.4× more requests or 12.6× tighter SLO than colocated systems</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+      <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024 · cited in <a href="01-chat-assistant/index.html" style="font-weight:500;color:var(--a)">Serving a chat assistant</a>, <a href="04-pretraining-run/index.html" style="font-weight:500;color:var(--a)">Planning a pretraining run</a></div>
+      <p>Dense Transformer with GQA (8 KV heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/api/rate-limits" target="_blank" rel="noopener">Rate limits</a>
+      <div class="meta">Anthropic documentation · platform.claude.com 2026 · cited in <a href="01-chat-assistant/index.html" style="font-weight:500;color:var(--a)">Serving a chat assistant</a></div>
+      <p>Limits in requests, input tokens and output tokens per minute (RPM (requests per minute), ITPM (input tokens per minute), OTPM) per model class, enforced with a token bucket; 429 errors with retry-after; for most models cached input tokens do not count toward ITPM.</p><div class="num">Remember: 2M ITPM with an 80% cache hit rate ≈ 10M total input tokens per minute</div></div>
+    <div class="paper-item"><a href="https://www.anthropic.com/news/contextual-retrieval" target="_blank" rel="noopener">Introducing Contextual Retrieval</a>
+      <div class="meta">Anthropic · Anthropic News 2024 · cited in <a href="02-enterprise-rag/index.html" style="font-weight:500;color:var(--a)">Enterprise RAG assistant</a></div>
+      <p>Prepend 50-100 tokens of chunk-specific context (written by an LLM from the whole document) before embedding and BM25 indexing; retrieve top 150, rerank, keep 20. Knowledge bases under 200,000 tokens can go straight into the prompt.</p><div class="num">Remember: top-20 retrieval failures 5.7% → 3.7% (−35%), 2.9% with BM25 (−49%), 1.9% with reranking (−67%); $1.02 per million document tokens</div></div>
+    <div class="paper-item"><a href="https://cormack.uwaterloo.ca/cormacksigir09-rrf.pdf" target="_blank" rel="noopener">Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods</a>
+      <div class="meta">Cormack, Clarke & Büttcher · SIGIR 2009 · cited in <a href="02-enterprise-rag/index.html" style="font-weight:500;color:var(--a)">Enterprise RAG assistant</a></div>
+      <p>Fuse several rankings by score(d) = Σ 1/(k + rank_r(d)) with k = 60; simple, training-free and better than the individual rankings.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1901.04085" target="_blank" rel="noopener">Passage Re-ranking with BERT (Bidirectional Encoder Representations from Transformers)</a>
+      <div class="meta">Nogueira & Cho · arXiv 2019 · cited in <a href="02-enterprise-rag/index.html" style="font-weight:500;color:var(--a)">Enterprise RAG assistant</a></div>
+      <p>A BERT cross-encoder reads query and passage together and outputs a relevance score; used to rerank BM25 candidates.</p><div class="num">Remember: +27% relative MRR (mean reciprocal rank)@10 over the previous state of the art on MS MARCO</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1603.09320" target="_blank" rel="noopener">Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs</a>
+      <div class="meta">Malkov & Yashunin · IEEE TPAMI 2018 · cited in <a href="02-enterprise-rag/index.html" style="font-weight:500;color:var(--a)">Enterprise RAG assistant</a></div>
+      <p>A multi-layer proximity graph: each element's top layer is drawn from an exponentially decaying distribution (mL = 1/ln M), search descends greedily from the top layer, and layer 0 keeps up to 2M links per element; logarithmic complexity scaling.</p></div>
+    <div class="paper-item"><a href="https://proceedings.neurips.cc/paper/2019/hash/09853c7fb1d3f8ee67a61b6bf4a7f8e6-Abstract.html" target="_blank" rel="noopener">DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single Node</a>
+      <div class="meta">Subramanya et al. · NeurIPS 2019 · cited in <a href="02-enterprise-rag/index.html" style="font-weight:500;color:var(--a)">Enterprise RAG assistant</a></div>
+      <p>A graph index (Vamana) stored on SSD with compressed vectors in RAM serves a billion-point index from one workstation.</p><div class="num">Remember: 1B points, 64 GB RAM, >5,000 queries/s, <3 ms mean latency, 95%+ 1-recall@1 on 16 cores</div></div>
+    <div class="paper-item"><a href="https://genai.owasp.org/llmrisk/llm062025-excessive-agency/" target="_blank" rel="noopener">OWASP (Open Worldwide Application Security Project) Top 10 for LLM Applications 2025</a>
+      <div class="meta">OWASP GenAI Security Project · genai.owasp.org 2025 · cited in <a href="02-enterprise-rag/index.html" style="font-weight:500;color:var(--a)">Enterprise RAG assistant</a></div>
+      <p>LLM06:2025 Excessive Agency: root causes are excessive functionality, excessive permissions and excessive autonomy; mitigations include minimising extensions and their permissions, executing in the user's context, user approval and complete mediation.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2104.08663" target="_blank" rel="noopener">BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models</a>
+      <div class="meta">Thakur et al. · NeurIPS Datasets and Benchmarks 2021 · cited in <a href="02-enterprise-rag/index.html" style="font-weight:500;color:var(--a)">Enterprise RAG assistant</a></div>
+      <p>18 retrieval datasets for zero-shot evaluation; BM25 is a robust baseline, and re-ranking and late-interaction models score best on average at higher compute cost.</p></div>
+    <div class="paper-item"><a href="https://www.anthropic.com/engineering/claude-code-sandboxing" target="_blank" rel="noopener">Beyond permission prompts: making Claude Code more secure and autonomous</a>
+      <div class="meta">Anthropic · Anthropic Engineering 2025 · cited in <a href="03-coding-agent/index.html" style="font-weight:500;color:var(--a)">Autonomous coding agent</a></div>
+      <p>Filesystem and network isolation built on Linux bubblewrap and macOS Seatbelt; egress through a proxy outside the sandbox with allowed domains; in the cloud version credentials stay outside the sandbox and a git proxy attaches the real token.</p><div class="num">Remember: sandboxing cut permission prompts by 84% in internal use</div></div>
+    <div class="paper-item"><a href="https://www.usenix.org/conference/nsdi20/presentation/agache" target="_blank" rel="noopener">Firecracker: Lightweight Virtualization for Serverless Applications</a>
+      <div class="meta">Agache et al. · NSDI 2020 · cited in <a href="03-coding-agent/index.html" style="font-weight:500;color:var(--a)">Autonomous coding agent</a></div>
+      <p>A minimal KVM-based (KVM = Kernel-based Virtual Machine) virtual machine monitor for multi-tenant serverless workloads, used by AWS (Amazon Web Services) Lambda and Fargate.</p><div class="num">Remember: < 125 ms boot, < 5 MiB overhead per microVM, up to 150 microVMs per second per host (firecracker-microvm.github.io)</div></div>
+    <div class="paper-item"><a href="https://docs.temporal.io/workflows" target="_blank" rel="noopener">Temporal Workflows</a>
+      <div class="meta">Temporal documentation · docs.temporal.io 2026 · cited in <a href="03-coding-agent/index.html" style="font-weight:500;color:var(--a)">Autonomous coding agent</a></div>
+      <p>Workflow code is replayed against the recorded event history to rebuild state (no memory snapshots), so it must be deterministic; activities do the side effects and their results are recorded once and reused on replay.</p></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching" target="_blank" rel="noopener">Prompt caching</a>
+      <div class="meta">Anthropic documentation · platform.claude.com 2026 · cited in <a href="03-coding-agent/index.html" style="font-weight:500;color:var(--a)">Autonomous coding agent</a></div>
+      <p>Reuse of cached prompt prefixes: 5-minute cache writes cost 1.25× base input, 1-hour writes 2×, and reads 0.1× on most models (lower on some newer ones).</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2310.06770" target="_blank" rel="noopener">SWE-bench (SWE = software engineering): Can Language Models Resolve Real-World GitHub Issues?</a>
+      <div class="meta">Jimenez et al. · ICLR 2024 · cited in <a href="03-coding-agent/index.html" style="font-weight:500;color:var(--a)">Autonomous coding agent</a></div>
+      <p>Real GitHub issues: the model edits the repository and the project's own tests decide success.</p><div class="num">Remember: 2,294 issues; Claude 2 solved 1.96% at release</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2406.12045" target="_blank" rel="noopener">τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains</a>
+      <div class="meta">Yao et al. · arXiv 2024 · cited in <a href="03-coding-agent/index.html" style="font-weight:500;color:var(--a)">Autonomous coding agent</a></div>
+      <p>Simulated users, domain APIs (application programming interfaces) and policies; grades the final database state and introduces pass^k to measure consistency across trials.</p><div class="num">Remember: gpt-4o < 50% success; pass^8 < 25% in retail</div></div>
+    <div class="paper-item"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Building effective agents</a>
+      <div class="meta">Anthropic · Anthropic Engineering 2024 · cited in <a href="03-coding-agent/index.html" style="font-weight:500;color:var(--a)">Autonomous coding agent</a></div>
+      <p>Workflows (predefined code paths) vs agents (LLMs (large language models) directing their own process); patterns: prompt chaining, routing, parallelization, orchestrator-workers, evaluator-optimizer. Start with the simplest solution.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener">Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism</a>
+      <div class="meta">Shoeybi et al. · arXiv 2019 · cited in <a href="04-pretraining-run/index.html" style="font-weight:500;color:var(--a)">Planning a pretraining run</a></div>
+      <p>Intra-layer (tensor) model parallelism that splits each attention and MLP (multilayer perceptron) block across GPUs with only a few all-reduce operations, implemented in plain PyTorch.</p><div class="num">Remember: 2 all-reduces per transformer block in the forward pass; 76% scaling efficiency on 512 GPUs</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1910.02054" target="_blank" rel="noopener">ZeRO: Memory Optimizations Toward Training Trillion Parameter Models</a>
+      <div class="meta">Rajbhandari et al. · SC 2020 · cited in <a href="04-pretraining-run/index.html" style="font-weight:500;color:var(--a)">Planning a pretraining run</a></div>
+      <p>Partitions optimizer states, gradients and parameters across data-parallel workers instead of replicating them.</p><div class="num">Remember: 100B+ parameters on 400 GPUs at 15 PFLOP (quadrillion floating-point operations)/s; 8× larger models than prior state of the art</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2304.11277" target="_blank" rel="noopener">PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel</a>
+      <div class="meta">Zhao et al. · VLDB 2023 · cited in <a href="04-pretraining-run/index.html" style="font-weight:500;color:var(--a)">Planning a pretraining run</a></div>
+      <p>PyTorch's ZeRO-3-style fully sharded data parallelism, with flattened parameter units, prefetching and hybrid sharding.</p><div class="num">Remember: comparable to DDP (distributed data parallel) speed while supporting much larger models</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2406.17557" target="_blank" rel="noopener">The FineWeb Datasets: Decanting the Web for the Finest Text Data at Scale</a>
+      <div class="meta">Penedo et al. · NeurIPS Datasets and Benchmarks 2024 · cited in <a href="04-pretraining-run/index.html" style="font-weight:500;color:var(--a)">Planning a pretraining run</a></div>
+      <p>15T tokens from 96 Common Crawl snapshots with fully ablated choices: WARC (Web ARChive format) + trafilatura over WET (plain text extracted from Web ARChive records), per-snapshot (not global) MinHash dedup, selected C4 filters; FineWeb-Edu uses an LLM-annotated educational-quality classifier.</p><div class="num">Remember: 15T tokens; FineWeb-Edu 1.3T</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2504.11393" target="_blank" rel="noopener">DataDecide: How to Predict Best Pretraining Data with Small Experiments</a>
+      <div class="meta">Magnusson et al. · arXiv 2025 · cited in <a href="04-pretraining-run/index.html" style="font-weight:500;color:var(--a)">Planning a pretraining run</a></div>
+      <p>Controlled pretraining over 25 corpora, up to 100B tokens and 1B parameters, 3 seeds: rankings at a single small scale are a strong baseline; no scaling-law method among 8 baselines beats it for the same compute; continuous likelihood metrics make benchmarks highly predictable.</p><div class="num">Remember: 150M rankings predict ~80% of 1B comparisons; >80% predictable with 0.01% of the compute</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2402.15627" target="_blank" rel="noopener">MegaScale: Scaling Large Language Model Training to More Than 10,000 GPUs</a>
+      <div class="meta">Jiang et al. · NSDI 2024 · cited in <a href="04-pretraining-run/index.html" style="font-weight:500;color:var(--a)">Planning a pretraining run</a></div>
+      <p>Production training system at ByteDance: algorithm-system co-design plus diagnosis tools for stragglers and failures at 10,000+ GPU scale.</p><div class="num">Remember: 55.2% MFU on 12,288 GPUs (175B model), 1.34× Megatron-LM</div></div>
+  </div>
+</div>
+
+</body>
+</html>

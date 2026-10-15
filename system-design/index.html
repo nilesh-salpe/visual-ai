@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System design</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body { overflow-y: auto; }</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../index.html">← Visual AI</a>
+  <div class="label" style="margin-top:28px">Visual guide · 4 decks</div>
+  <h1>System design case studies</h1>
+  <p class="lede">End-to-end designs that combine the topics of both guides. Each case has an overview deck that walks the design the way you would present it (requirements, estimates, architecture, a walkthrough, a deep dive, scaling, failures, trade-offs) and a long-form design document with the full reasoning. Every number is either a stated assumption or a verified fact from the topic decks, and each case has a calculator for its estimates.</p>
+<!--x:map--><style>
+.bigmap { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding: 4px 2px 10px; }
+.bigmap .stage { flex: 1 1 0; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
+.bigmap .stage h4 { margin: 0 0 2px; font: 700 11.5px 'JetBrains Mono', monospace; letter-spacing: .05em; text-transform: uppercase; color: var(--a); }
+.bigmap .stage a { display: block; padding: 9px 11px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 14px; line-height: 1.3; }
+.bigmap .stage a:hover { border-color: var(--a); background: var(--a-soft); }
+.bigmap .stage a span { display: block; font: 600 11px 'JetBrains Mono', monospace; color: var(--faint); }
+.bigmap .arrow { align-self: center; color: var(--faint); font-size: 20px; }
+.hub-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+@media (max-width: 700px) { .bigmap { flex-direction: column; } .bigmap .arrow { transform: rotate(90deg); } }
+</style>
+  <div class="visual" style="margin-top:22px">
+    <h3 style="margin:0 0 10px">The big picture</h3>
+    <div class="bigmap"><div class="stage"><h4>Serving</h4><a href="01-chat-assistant/index.html"><span>01</span>Serving a chat assistant</a></div><div class="arrow">→</div><div class="stage"><h4>Agents</h4><a href="02-enterprise-rag/index.html"><span>02</span>Enterprise RAG (retrieval-augmented generation) assistant</a><a href="03-coding-agent/index.html"><span>03</span>Autonomous coding agent</a></div><div class="arrow">→</div><div class="stage"><h4>Training</h4><a href="04-pretraining-run/index.html"><span>04</span>Planning a pretraining run</a></div></div>
+    <div class="hub-links"><a class="btn" href="reading-list.html">📚 Reading list</a><a class="btn" href="../glossary/index.html">🔤 Glossary</a></div>
+  </div>
+<!--/x:map-->
+  <div class="hub-grid"><a class="hub-card" href="01-chat-assistant/index.html"><div class="n">01</div><h3>Serving a chat assistant</h3><p>1M daily users on a 70B model: KV-cache (KV = key-value) sizing, prefix caching, routing. <a href="01-chat-assistant/design.html">Design doc →</a></p></a><a class="hub-card" href="02-enterprise-rag/index.html"><div class="n">02</div><h3>Enterprise RAG assistant</h3><p>10M documents: permission-aware hybrid retrieval, reranking, citations. <a href="02-enterprise-rag/design.html">Design doc →</a></p></a><a class="hub-card" href="03-coding-agent/index.html"><div class="n">03</div><h3>Autonomous coding agent</h3><p>10K tasks a day: durable loop, microVM sandboxes, verification, review. <a href="03-coding-agent/design.html">Design doc →</a></p></a><a class="hub-card" href="04-pretraining-run/index.html"><div class="n">04</div><h3>Planning a pretraining run</h3><p>70B on 15T tokens: compute, 4D layout, checkpoints vs failures. <a href="04-pretraining-run/design.html">Design doc →</a></p></a></div>
+  <p class="cite" style="margin-top:26px">Sources: See each case's design document and Key papers slide.</p>
+</div>
+</body>
+</html>

@@ -232,3 +232,17 @@ p.readout { font-family: Inter, system-ui, sans-serif; font-weight: 500; font-si
 /* Widget layout (controls first, bar charts below) */
 .visual > .controls:first-child { margin-top: 0; }
 .visual .bars { margin-top: 12px; }
+
+/* Long-form design documents (design.md → design.html) */
+body.doc-page { overflow-y: auto; background: var(--bg); }
+.doc { max-width: 860px; margin: 0 auto; padding: 28px 16px 80px; font-size: 16px; line-height: 1.65; color: var(--ink); }
+.doc h1 { font-size: 34px; line-height: 1.15; margin: 22px 0 8px; }
+.doc h2 { font-size: 23px; margin: 36px 0 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.doc h3 { font-size: 18px; margin: 24px 0 6px; }
+.doc table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; display: block; overflow-x: auto; }
+.doc th { text-align: left; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--line); padding: 8px 10px; }
+.doc td { border-bottom: 1px solid var(--line); padding: 8px 10px; vertical-align: top; }
+.doc pre { background: var(--panel-2); padding: 14px 16px; border-radius: 10px; overflow-x: auto; font: 13px/1.55 'JetBrains Mono', monospace; }
+.doc code { font: 13px 'JetBrains Mono', monospace; }
+.doc blockquote { margin: 14px 0; padding: 10px 16px; border-left: 3px solid var(--a); background: var(--panel); border-radius: 0 10px 10px 0; }
+.doc .dgm { margin: 16px 0; }

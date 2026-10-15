@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Serving a Chat Assistant</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Serving a chat assistant" data-home="../index.html" data-home-label="System design">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual AI · System design · 01</div>
+    <h1>Serving a chat assistant to a million daily users</h1>
+    <p class="sub">A capacity-driven design for an LLM (large language model) chat product: requirements and service-level objectives, back-of-envelope sizing of GPUs (graphics processing units) and KV (key-value) cache, the serving architecture, and how it scales and fails.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Design the backend for a chat assistant used by 1 million people a day, answering with a 70B-class model, streaming responses with low latency, within a GPU budget.</div>
+      <div class="c"><b>Core idea</b>Size the fleet from <b>peak concurrency × KV cache per sequence</b> and from <b>output tokens per second</b>, whichever is larger. Serve with continuous batching, a paged KV cache and <b>prefix caching</b> for the shared system prompt, route with <b>cache affinity</b>, stream tokens, and protect the fleet with quotas, admission control and autoscaling.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint"><a href="design.html">Read the full design doc →</a> · Next: <a href="../02-enterprise-rag/index.html">Enterprise RAG assistant →</a> · <a href="../index.html">All case studies</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-req" data-chapter="Requirements">
+  <div class="inner">
+    <span class="qtag b1">1 · Requirements</span>
+    <h2>What the system must do</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Functional</h3><p>Multi-turn chat with history, streaming responses, a system prompt per product, per-user quotas, conversation storage.</p></div>
+      <div class="card a"><h3>Scale (assumption)</h3><p>1M daily active users × 20 requests each = 20M requests a day; peak traffic 3× the daily average.</p></div>
+      <div class="card c"><h3>Latency targets (assumption)</h3><p>Time to first token p95 under 1 s; steady streaming of about 40 tokens per second per user.</p></div>
+      <div class="card e"><h3>Constraints</h3><p>A 70B-class open model on 8-GPU H100 nodes; cost per request matters; safety checks on input and output.</p></div>
+    </div>
+<p>Prompt shape (assumption): about 1,500 input tokens (a 1,000-token shared system prompt plus history) and 300 output tokens per request.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-est" data-chapter="Estimates">
+  <div class="inner">
+    <span class="qtag b2">2 · Estimates</span>
+    <h2>Back-of-envelope sizing <span class="ill">calculator</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">daily users (×100k) <input type="range" id="cD" min="1" max="50" step="1" value="10"> <output id="cDo"></output></label><label class="ctl">requests / user / day <input type="range" id="cR" min="1" max="60" step="1" value="20"> <output id="cRo"></output></label><label class="ctl">peak factor <input type="range" id="cP" min="1" max="6" step="0.5" value="3"> <output id="cPo"></output></label><label class="ctl">input tokens <input type="range" id="cI" min="200" max="8000" step="100" value="1500"> <output id="cIo"></output></label><label class="ctl">output tokens <input type="range" id="cO" min="50" max="2000" step="50" value="300"> <output id="cOo"></output></label><label class="ctl">tokens/s per stream <input type="range" id="cS" min="10" max="100" step="5" value="40"> <output id="cSo"></output></label><label class="ctl">measured replica output tokens/s (K) <input type="range" id="cT" min="2" max="60" step="1" value="20"> <output id="cTo"></output></label></div><div class="bars"><div id="cBars"></div></div><p class="readout" id="cOut"></p></div>
+<div class="grid3">
+      <div class="card a"><h3>Little's law</h3><p>Concurrent sequences = arrival rate × time each spends generating.</p></div>
+      <div class="card c"><h3>KV per token</h3><p>2 × 80 layers × 8 KV heads × 128 × 2 bytes = 320 KB for a 70B-shaped model at 16-bit.</p></div>
+      <div class="card e"><h3>Take the max</h3><p>Replicas = max(memory-bound, throughput-bound); measure throughput at your latency target.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-arch" data-chapter="Architecture">
+  <div class="inner">
+    <span class="qtag b3">3 · Architecture</span>
+    <h2>Serving architecture</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Clients hold a streaming connection (server-sent events) to the API gateway.&quot;, &quot;The gateway authenticates, applies per-user quotas and rate limits, and assigns a request id.&quot;, &quot;The conversation service loads the history and assembles the prompt: shared system prompt first, then history, then the new message.&quot;, &quot;Input safety checks run before inference; output checks run on the stream.&quot;, &quot;A router picks the model tier and a replica, preferring the replica that already caches this conversation&#x27;s prefix.&quot;, &quot;Inference replicas run continuous batching with a paged KV cache and automatic prefix caching, streaming tokens back.&quot;, &quot;The autoscaler adds replicas on queue depth and KV-cache utilisation, ahead of the daily peak.&quot;, &quot;Telemetry records time to first token, inter-token latency, tokens and cost per request.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="1"><line x1="112.0" y1="148.0" x2="146.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="215.0" y1="178.0" x2="215.0" y2="226.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="4"><line x1="215.0" y1="118.0" x2="215.0" y2="70.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="282.0" y1="148.0" x2="316.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="452.0" y1="148.0" x2="486.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="7"><line x1="570.0" y1="238.0" x2="570.0" y2="210.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="8"><line x1="488.0" y1="199.9" x2="430.9" y2="236.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="100" height="56" rx="10"/><text class="dg-text" x="60.0" y="146.0" text-anchor="middle">Clients</text><text class="dg-sub" x="60.0" y="162.0" text-anchor="middle">web · mobile · API</text></g><g class="dg-node a" data-step="2"><rect x="150" y="120" width="130" height="56" rx="10"/><text class="dg-text" x="215.0" y="146.0" text-anchor="middle">API gateway</text><text class="dg-sub" x="215.0" y="162.0" text-anchor="middle">auth · quotas</text></g><g class="dg-node b" data-step="3"><rect x="150" y="230" width="130" height="56" rx="10"/><text class="dg-text" x="215.0" y="256.0" text-anchor="middle">Conversation svc</text><text class="dg-sub" x="215.0" y="272.0" text-anchor="middle">history store</text></g><g class="dg-node d" data-step="4"><rect x="150" y="10" width="130" height="56" rx="10"/><text class="dg-text" x="215.0" y="36.0" text-anchor="middle">Safety filters</text><text class="dg-sub" x="215.0" y="52.0" text-anchor="middle">input · output</text></g><g class="dg-node c" data-step="5"><rect x="320" y="120" width="130" height="56" rx="10"/><text class="dg-text" x="385.0" y="146.0" text-anchor="middle">Router + LB</text><text class="dg-sub" x="385.0" y="162.0" text-anchor="middle">tier · affinity</text></g><g class="dg-node e" data-step="6"><rect x="490" y="90" width="160" height="116" rx="10"/><text class="dg-text" x="570.0" y="146.0" text-anchor="middle">Inference fleet</text><text class="dg-sub" x="570.0" y="162.0" text-anchor="middle">vLLM replicas</text></g><g class="dg-node b" data-step="7"><rect x="490" y="240" width="160" height="50" rx="10"/><text class="dg-text" x="570.0" y="263.0" text-anchor="middle">Autoscaler</text><text class="dg-sub" x="570.0" y="279.0" text-anchor="middle">queue · KV use</text></g><g class="dg-node f" data-step="8"><rect x="320" y="240" width="130" height="50" rx="10"/><text class="dg-text" x="385.0" y="263.0" text-anchor="middle">Telemetry</text><text class="dg-sub" x="385.0" y="279.0" text-anchor="middle">tokens · latency</text></g><g data-step="1"><text class="dg-label" x="129.0" y="143.0" text-anchor="middle">stream</text></g><g data-step="5"><text class="dg-label" x="299.0" y="143.0" text-anchor="middle">prompt</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-flow" data-chapter="Walkthrough">
+  <div class="inner">
+    <span class="qtag b4">4 · Walkthrough</span>
+    <h2>Life of one message</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A message arrives with the conversation so far.&quot;, &quot;The engine matches the longest cached prefix (the shared system prompt and earlier turns on the same replica).&quot;, &quot;Only the uncached tokens are prefilled; long prompts are chunked so running decodes do not stall.&quot;, &quot;The request joins the running batch; each step generates one token for every active sequence.&quot;, &quot;Tokens stream to the client as they are produced.&quot;, &quot;Output safety checks run over the stream and can stop it.&quot;, &quot;The turn is stored and token usage is metered for quotas and cost.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 230" role="img" aria-label="diagram"><defs><marker id="dga2" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="162.0" y1="48.0" x2="186.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="342.0" y1="48.0" x2="366.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="4"><line x1="512.0" y1="48.0" x2="536.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="5"><line x1="595.0" y1="78.0" x2="595.0" y2="146.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="6"><line x1="538.0" y1="178.0" x2="514.0" y2="178.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="7"><line x1="298.0" y1="178.0" x2="274.0" y2="178.0" marker-end="url(#dga2)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="20" width="150" height="56" rx="10"/><text class="dg-text" x="85.0" y="46.0" text-anchor="middle">Arrive</text><text class="dg-sub" x="85.0" y="62.0" text-anchor="middle">request + history</text></g><g class="dg-node e" data-step="2"><rect x="190" y="20" width="150" height="56" rx="10"/><text class="dg-text" x="265.0" y="46.0" text-anchor="middle">Prefix match</text><text class="dg-sub" x="265.0" y="62.0" text-anchor="middle">system prompt cached</text></g><g class="dg-node a" data-step="3"><rect x="370" y="20" width="140" height="56" rx="10"/><text class="dg-text" x="440.0" y="46.0" text-anchor="middle">Prefill</text><text class="dg-sub" x="440.0" y="62.0" text-anchor="middle">uncached tokens</text></g><g class="dg-node b" data-step="4"><rect x="540" y="20" width="110" height="56" rx="10"/><text class="dg-text" x="595.0" y="46.0" text-anchor="middle">Decode</text><text class="dg-sub" x="595.0" y="62.0" text-anchor="middle">batched</text></g><g class="dg-node c" data-step="5"><rect x="540" y="150" width="110" height="56" rx="10"/><text class="dg-text" x="595.0" y="176.0" text-anchor="middle">Stream</text><text class="dg-sub" x="595.0" y="192.0" text-anchor="middle">token by token</text></g><g class="dg-node d" data-step="6"><rect x="300" y="150" width="210" height="56" rx="10"/><text class="dg-text" x="405.0" y="176.0" text-anchor="middle">Output checks</text><text class="dg-sub" x="405.0" y="192.0" text-anchor="middle">on the stream</text></g><g class="dg-node f" data-step="7"><rect x="10" y="150" width="260" height="56" rx="10"/><text class="dg-text" x="140.0" y="176.0" text-anchor="middle">Store + bill</text><text class="dg-sub" x="140.0" y="192.0" text-anchor="middle">append turn · tokens</text></g></svg><p class="readout dgcap"></p></div>
+<div class="grid3">
+      <div class="card e"><h3>Prefix caching</h3><p>The shared system prompt is computed once per replica and reused; vLLM v0.31.0 enables automatic prefix caching by default.</p></div>
+      <div class="card a"><h3>Continuous batching</h3><p>Requests join and leave the running batch at every step (Orca), keeping GPUs busy.</p></div>
+      <div class="card b"><h3>Chunked prefill</h3><p>Long prompts are split so they do not stall decodes (Sarathi-Serve).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-deep" data-chapter="Deep dive">
+  <div class="inner">
+    <span class="qtag b5">5 · Deep dive</span>
+    <h2>Deep dive: the KV cache is the budget</h2>
+    <hr>
+<div class="grid2">
+      <div class="card d"><h3>Memory, not FLOPs</h3><p>At the default assumptions about 5,000 sequences are active at peak, needing about 3 TB of KV cache: more than all the weights in the fleet.</p></div>
+      <div class="card a"><h3>Shared prefixes</h3><p>With prefix caching the 1,000-token system prompt is stored once per replica, not per sequence: unique KV per sequence drops from 1,800 to about 800 tokens.</p></div>
+      <div class="card c"><h3>Paged allocation</h3><p>PagedAttention allocates KV in fixed blocks (16 tokens by default in vLLM), so fragmentation stays small and memory can be shared.</p></div>
+      <div class="card e"><h3>Levers</h3><p>FP8 (8-bit floating point) KV halves memory; grouped-query attention (8 KV heads instead of 64) already cut it 8×; shorter retained history and summarisation cut it further.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-scale" data-chapter="Scaling">
+  <div class="inner">
+    <span class="qtag b6">6 · Scaling</span>
+    <h2>What breaks at 10×</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Bottleneck</th>
+<th>Symptom</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KV cache full</td>
+<td>requests queue or get preempted and recomputed</td>
+<td>more replicas, FP8 KV, shorter history, prefix-aware routing</td>
+</tr>
+<tr>
+<td>Prefill spikes</td>
+<td>time to first token jumps when long prompts arrive</td>
+<td>chunked prefill; separate prefill and decode pools (DistServe)</td>
+</tr>
+<tr>
+<td>Router hot spots</td>
+<td>affinity sends popular sessions to the same replica</td>
+<td>consistent hashing with spill-over to the least-loaded replica</td>
+</tr>
+<tr>
+<td>GPU supply</td>
+<td>cannot add replicas fast enough for the peak</td>
+<td>scheduled pre-scaling, a smaller model tier for overflow, quotas</td>
+</tr>
+<tr>
+<td>Conversation store</td>
+<td>history reads dominate latency</td>
+<td>cache recent turns next to the gateway</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failures">
+  <div class="inner">
+    <span class="qtag b7">7 · Failures and operations</span>
+    <h2>Failures and operations</h2>
+    <hr>
+<div class="grid2">
+      <div class="card d"><h3>Replica failure</h3><p>Health checks remove a replica; in-flight streams are retried on another replica from the stored history (the client sees a short pause).</p></div>
+      <div class="card b"><h3>Overload</h3><p>Admission control and per-user quotas; return 429 with retry-after rather than letting latency collapse for everyone.</p></div>
+      <div class="card c"><h3>Bad deploy</h3><p>Canary new model or prompt versions on a small share of traffic with automatic rollback on latency or quality regressions.</p></div>
+      <div class="card a"><h3>Observe</h3><p>Time to first token, inter-token latency, KV utilisation, preemptions, tokens and cost per request, safety-filter rates.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b8">8 · Trade-offs</span>
+    <h2>Trade-offs and alternatives</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Decision</th>
+<th>Chosen</th>
+<th>Alternative</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model</td>
+<td>one 70B-class model</td>
+<td>router across small and large models</td>
+<td>simpler first; add routing when cost matters more than consistency</td>
+</tr>
+<tr>
+<td>Serving</td>
+<td>self-hosted vLLM</td>
+<td>hosted model API (application programming interface)</td>
+<td>control and unit cost at high volume vs no operations at low volume</td>
+</tr>
+<tr>
+<td>Parallelism</td>
+<td>tensor parallel 8 per node</td>
+<td>TP (tensor parallelism) 4 with FP8 weights</td>
+<td>more KV memory per replica vs fewer GPUs per replica</td>
+</tr>
+<tr>
+<td>Prefill/decode</td>
+<td>colocated with chunked prefill</td>
+<td>disaggregated pools</td>
+<td>simpler; disaggregate when prefill and decode SLOs (service-level objectives) conflict</td>
+</tr>
+<tr>
+<td>Streaming</td>
+<td>server-sent events</td>
+<td>WebSockets</td>
+<td>one-way token streams need nothing more</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-sum" data-chapter="Summary">
+  <div class="inner">
+    <span class="qtag b9">9 · Summary</span>
+    <h2>Summary</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Size from KV and tokens/s</h3><p>Concurrency × KV per sequence, and output tokens per second: take the larger.</p></div>
+      <div class="card c"><h3>Cache the shared prefix</h3><p>Prefix caching plus cache-affinity routing makes the system prompt almost free.</p></div>
+      <div class="card b"><h3>Protect the fleet</h3><p>Quotas, admission control and pre-scaling keep latency stable at peak.</p></div>
+      <div class="card e"><h3>Read more</h3><p>Full design document: <a href="design.html">design.html</a>. Related decks: <a href="../../inference/02-kv-cache/index.html">KV cache</a>, <a href="../../vllm/04-scheduler/index.html">vLLM scheduler</a>, <a href="../../agent-infra/01-llm-gateway/index.html">LLM gateway</a>.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2309.06180" target="_blank" rel="noopener">Efficient Memory Management for Large Language Model Serving with PagedAttention</a>
+        <div class="meta">Kwon et al. · SOSP 2023</div>
+        <p>Stores the KV cache in fixed-size blocks mapped by a block table, like virtual memory pages, giving near-zero fragmentation and sharing with copy-on-write. The basis of vLLM.</p><div class="num">Remember: 2–4× throughput vs FasterTransformer and Orca at the same latency</div></div>
+      <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/design/prefix_caching.html" target="_blank" rel="noopener">Automatic Prefix Caching (design)</a>
+        <div class="meta">vLLM documentation · docs.vllm.ai 2026</div>
+        <p>Each KV block is hashed with its tokens and the prefix before it; blocks are reference-counted, freed blocks are evicted in LRU (least recently used) order, and cache hits skip prefill.</p></div>
+      <div class="paper-item"><a href="https://www.usenix.org/conference/osdi22/presentation/yu" target="_blank" rel="noopener">Orca: A Distributed Serving System for Transformer-Based Generative Models</a>
+        <div class="meta">Yu et al. · OSDI 2022</div>
+        <p>Iteration-level scheduling (requests join and leave the batch after every decode step) plus selective batching (batch the matmuls, run attention per request).</p><div class="num">Remember: 36.9× throughput over FasterTransformer at the same latency (GPT-3 175B)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2403.02310" target="_blank" rel="noopener">Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve</a>
+        <div class="meta">Agrawal et al. · OSDI 2024</div>
+        <p>Chunked prefills plus stall-free scheduling: new requests are added without pausing ongoing decodes, so throughput rises without TPOT (time per output token) spikes.</p><div class="num">Remember: 2.6× serving capacity (Mistral-7B, 1 A100) and up to 3.7× (Yi-34B, 2 A100s) vs vLLM; up to 5.6× with pipeline parallelism (Falcon-180B)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2401.09670" target="_blank" rel="noopener">DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving</a>
+        <div class="meta">Zhong et al. · OSDI 2024</div>
+        <p>Defines serving quality as goodput, the request rate served within both TTFT (time to first token) and TPOT targets, and runs prefill and decode on separate GPUs so they stop interfering.</p><div class="num">Remember: 7.4× more requests or 12.6× tighter SLO than colocated systems</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+      <div class="paper-item"><a href="https://platform.claude.com/docs/en/api/rate-limits" target="_blank" rel="noopener">Rate limits</a>
+        <div class="meta">Anthropic documentation · platform.claude.com 2026</div>
+        <p>Limits in requests, input tokens and output tokens per minute (RPM (requests per minute), ITPM (input tokens per minute), OTPM) per model class, enforced with a token bucket; 429 errors with retry-after; for most models cached input tokens do not count toward ITPM.</p><div class="num">Remember: 2M ITPM with an 80% cache hit rate ≈ 10M total input tokens per minute</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+<script>
+(() => {
+Deck.bind(['cD', 'cR', 'cP', 'cI', 'cO', 'cS', 'cT'], () => {
+  const dau = Deck.val('cD') * 1e5, rpu = Deck.val('cR'), pf = Deck.val('cP'), inp = Deck.val('cI'), outT = Deck.val('cO'), spd = Deck.val('cS'), thr = Deck.val('cT') * 1000;
+  Deck.out('cDo', (dau / 1e6).toFixed(1) + 'M'); Deck.out('cRo', rpu); Deck.out('cPo', pf + '×'); Deck.out('cIo', inp.toLocaleString()); Deck.out('cOo', outT); Deck.out('cSo', spd); Deck.out('cTo', (thr / 1000) + 'K');
+  const rps = dau * rpu / 86400 * pf, conc = rps * outT / spd, kvGB = conc * (inp + outT) * 320 / 1e6;
+  const perRep = 0.92 * 640 - 140, repMem = Math.ceil(kvGB / perRep), repThr = Math.ceil(rps * outT / thr), rep = Math.max(repMem, repThr);
+  Deck.hbars(document.getElementById('cBars'), [{ label: 'replicas for KV memory', value: repMem, color: 'var(--a)', text: repMem + ' × 8 GPUs' },
+    { label: 'replicas for output tokens/s', value: repThr, color: 'var(--c)', text: repThr + ' × 8 GPUs' }], { max: Math.max(repMem, repThr) * 1.1 + 1 });
+  document.getElementById('cOut').innerHTML = `Peak ${Math.round(rps).toLocaleString()} requests/s; at ${spd} tokens/s per stream each answer takes ${(outT / spd).toFixed(1)} s, so about <b>${Math.round(conc).toLocaleString()}</b> sequences run at once (Little's law). At 320 KB of KV per token (70B-shaped, 16-bit) that is <b>${(kvGB / 1000).toFixed(2)} TB</b> of KV cache. One 8 × 80 GB replica with 92% of memory usable and 140 GB of weights has about ${Math.round(perRep)} GB for KV. Fleet: <b>${rep} replicas (${rep * 8} GPUs)</b>, set by ${repMem >= repThr ? 'memory' : 'throughput'}. Replica throughput is an input you must measure.`;
+});
+})();
+</script>
+</body>
+</html>

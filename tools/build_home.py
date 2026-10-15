@@ -36,6 +36,9 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
         ('interpretability', 'Topic · 3 decks + 1 Colab notebook', 'Interpretability', 'Features and superposition, sparse autoencoders (Claude 3 Sonnet, GPT-4, Gemma Scope), and circuits, attribution graphs, probes and steering vectors.', ['superposition', 'SAEs', 'circuits', 'steering']),
         ('multimodal', 'Topic · 3 decks + 1 Colab notebook', 'Multimodal LLMs', 'ViT and CLIP, connecting a vision encoder to an LLM (LLaVA, Flamingo, BLIP-2, early fusion), and images as tokens in practice: cost, limits, evaluation and hallucination.', ['ViT', 'CLIP', 'LLaVA', 'visual tokens']),
     ]),
+    ('Case studies', [
+        ('system-design', 'Case studies · 4 decks + 4 design docs', 'System design case studies', 'End-to-end designs: serving a chat assistant, an enterprise RAG assistant, an autonomous coding agent, and planning a pretraining run.', ['capacity', 'KV cache', 'checkpoints', 'trade-offs']),
+    ]),
     ('Serving and evaluation', [
         ('inference', 'Topic · 10 decks + 12 Colab notebooks', 'LLM Inference and Serving', 'Prefill vs decode, KV cache, continuous batching, chunked prefill, PagedAttention, speculative decoding, quantization, tensor parallelism, disaggregation, with hands-on notebooks.', ['KV cache', 'vLLM', 'speculative', 'Colab']),
         ('evals', 'Topic · 8 decks + 5 Colab notebooks', 'Evaluating LLMs', 'What a score measures, benchmark failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases, arena ratings, and experiments in LLM training (seed noise, small-to-large decisions).', ['pass@k', 'error bars', 'LLM judge', 'Arena']),
@@ -53,6 +56,9 @@ AGENT_SECTIONS = [  # same shape as LLM_SECTIONS
         ('agent-infra', 'Topic · 4 decks', 'Agent infrastructure', 'The LLM gateway, model and agent routing, identity and access control, and sandboxing agent-run code.', ['LLM gateway', 'routing', 'RBAC', 'sandboxing']),
         ('agent-retrieval', 'Topic · 3 decks', 'Retrieval stack', 'Indexing pipelines, vector databases and ANN indexes, and rerankers.', ['chunking', 'HNSW', 'IVF-PQ', 'rerankers']),
         ('agent-models', 'Topic · 2 decks', 'Models for agents', 'Training LLMs for tool use and agency, and serving LLMs for agent workloads.', ['tool-use SFT', 'agentic RL', 'prefix reuse', 'constrained decoding']),
+    ]),
+    ('Case studies', [
+        ('system-design', 'Case studies · 4 decks + 4 design docs', 'System design case studies', 'End-to-end designs: serving a chat assistant, an enterprise RAG assistant, an autonomous coding agent, and planning a pretraining run.', ['RAG', 'sandboxes', 'durable execution', 'trade-offs']),
     ]),
     ('Running agents', [
         ('agent-operations', 'Topic · 4 decks', 'Agent operations', 'Evaluating agents (pass^k), safety and reliability, cost and latency, and online experimentation for LLM products.', ['evals', 'prompt injection', 'prompt caching', 'A/B tests']),

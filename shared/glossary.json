@@ -1303,6 +1303,8 @@
   "BLIP",
   "LLaVA",
   "ScienceQA",
-  "VQAv2"
+  "VQAv2",
+  "WebSocket",
+  "WebSockets"
  ]
 }

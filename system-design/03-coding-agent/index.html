@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autonomous Coding Agent</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Autonomous coding agent" data-home="../index.html" data-home-label="System design">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual AI · System design · 03</div>
+    <h1>An autonomous coding agent</h1>
+    <p class="sub">A platform that takes issues and returns tested pull requests: the agent loop, sandboxes, durable execution, cost of long contexts, verification and human review.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Design a service that takes 10,000 coding tasks a day (bug reports, small features), works on each in an isolated environment, and opens a pull request that passes the tests, safely and at a predictable cost.</div>
+      <div class="c"><b>Core idea</b>Run each task as a <b>durable workflow</b> around the agent loop; execute every tool call in a fresh <b>microVM sandbox</b> with <b>no secrets</b> and an <b>egress allowlist</b>; keep context cost in check with <b>prompt caching</b> and compaction; <b>verify</b> with the project's tests and pass^k evaluation; require <b>human review</b> before merge.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint"><a href="design.html">Read the full design doc →</a> · Previous: <a href="../02-enterprise-rag/index.html">Enterprise RAG assistant</a> · Next: <a href="../04-pretraining-run/index.html">Planning a pretraining run →</a> · <a href="../index.html">All case studies</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-req" data-chapter="Requirements">
+  <div class="inner">
+    <span class="qtag b1">1 · Requirements</span>
+    <h2>What the system must do</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Functional</h3><p>Accept a task and a repository; produce a branch and pull request with a description; report progress; allow cancellation.</p></div>
+      <div class="card d"><h3>Safety</h3><p>Agent-written code runs isolated; no credentials inside the environment; no unreviewed changes reach the main branch.</p></div>
+      <div class="card a"><h3>Scale (assumption)</h3><p>10,000 tasks a day, about 40 agent steps and 20 minutes each, peak 3× average.</p></div>
+      <div class="card e"><h3>Quality and cost</h3><p>Tests pass on every proposed change; cost per resolved task tracked and budgeted.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-est" data-chapter="Estimates">
+  <div class="inner">
+    <span class="qtag b2">2 · Estimates</span>
+    <h2>Tokens and sandboxes <span class="ill">calculator</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">tasks / day (K) <input type="range" id="kT" min="1" max="50" step="1" value="10"> <output id="kTo"></output></label><label class="ctl">steps / task <input type="range" id="kN" min="5" max="100" step="5" value="40"> <output id="kNo"></output></label><label class="ctl">prefix tokens (K) <input type="range" id="kP" min="2" max="60" step="1" value="20"> <output id="kPo"></output></label><label class="ctl">tokens added / step (×100) <input type="range" id="kS" min="5" max="100" step="5" value="20"> <output id="kSo"></output></label><label class="ctl">minutes / task <input type="range" id="kM" min="5" max="120" step="5" value="20"> <output id="kMo"></output></label><label class="ctl">peak factor <input type="range" id="kF" min="1" max="6" step="0.5" value="3"> <output id="kFo"></output></label></div><div class="bars"><div id="kBars"></div></div><p class="readout" id="kOut"></p></div>
+
+<p>Input tokens grow roughly with the square of the number of steps (nP + T·n(n−1)/2), because every step resends the growing history (Cost and latency deck).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-arch" data-chapter="Architecture">
+  <div class="inner">
+    <span class="qtag b3">3 · Architecture</span>
+    <h2>Architecture</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A task arrives: an issue to fix or a change request.&quot;, &quot;A durable workflow runs the agent loop; every model call and tool call is an activity whose result is recorded, so crashes resume without redoing work.&quot;, &quot;Each step calls the model through the gateway (budgets, retries, caching).&quot;, &quot;Tool calls (shell, file edits, tests) run in a fresh microVM sandbox holding a clone of the repository and no secrets.&quot;, &quot;All network traffic leaves through an egress proxy that allows package registries and nothing else by default.&quot;, &quot;Pushing goes through a git proxy that checks the branch and attaches the real credential outside the sandbox.&quot;, &quot;The result is checked: tests must pass, and a human reviews the diff.&quot;, &quot;Only then is a pull request opened or merged.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="122.0" y1="148.0" x2="156.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="240.0" y1="108.0" x2="240.0" y2="70.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="322.0" y1="148.0" x2="366.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="522.0" y1="119.1" x2="556.0" y2="106.4" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="522.0" y1="167.2" x2="556.0" y2="175.8" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="7"><line x1="240.0" y1="188.0" x2="240.0" y2="231.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="8"><line x1="322.0" y1="263.0" x2="366.0" y2="263.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="110" height="56" rx="10"/><text class="dg-text" x="65.0" y="146.0" text-anchor="middle">Issue</text><text class="dg-sub" x="65.0" y="162.0" text-anchor="middle">or task</text></g><g class="dg-node a" data-step="2"><rect x="160" y="110" width="160" height="76" rx="10"/><text class="dg-text" x="240.0" y="146.0" text-anchor="middle">Workflow engine</text><text class="dg-sub" x="240.0" y="162.0" text-anchor="middle">durable · per task</text></g><g class="dg-node b" data-step="3"><rect x="160" y="10" width="160" height="56" rx="10"/><text class="dg-text" x="240.0" y="36.0" text-anchor="middle">Model API</text><text class="dg-sub" x="240.0" y="52.0" text-anchor="middle">via gateway</text></g><g class="dg-node c" data-step="4"><rect x="370" y="110" width="150" height="76" rx="10"/><text class="dg-text" x="445.0" y="146.0" text-anchor="middle">Sandbox (microVM)</text><text class="dg-sub" x="445.0" y="162.0" text-anchor="middle">repo · tests</text></g><g class="dg-node d" data-step="5"><rect x="560" y="60" width="90" height="56" rx="10"/><text class="dg-text" x="605.0" y="86.0" text-anchor="middle">Egress proxy</text><text class="dg-sub" x="605.0" y="102.0" text-anchor="middle">allowlist</text></g><g class="dg-node d" data-step="6"><rect x="560" y="160" width="90" height="56" rx="10"/><text class="dg-text" x="605.0" y="186.0" text-anchor="middle">Git proxy</text><text class="dg-sub" x="605.0" y="202.0" text-anchor="middle">real token</text></g><g class="dg-node e" data-step="7"><rect x="160" y="235" width="160" height="56" rx="10"/><text class="dg-text" x="240.0" y="261.0" text-anchor="middle">Review</text><text class="dg-sub" x="240.0" y="277.0" text-anchor="middle">tests · human</text></g><g class="dg-node e" data-step="8"><rect x="370" y="235" width="150" height="56" rx="10"/><text class="dg-text" x="445.0" y="261.0" text-anchor="middle">Pull request</text><text class="dg-sub" x="445.0" y="277.0" text-anchor="middle">merge after review</text></g><g data-step="3"><text class="dg-label" x="240.0" y="84.0" text-anchor="middle">each step</text></g><g data-step="4"><text class="dg-label" x="344.0" y="143.0" text-anchor="middle">tool calls</text></g><g data-step="6"><text class="dg-label" x="539.0" y="166.5" text-anchor="middle">push</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-flow" data-chapter="Walkthrough">
+  <div class="inner">
+    <span class="qtag b4">4 · Walkthrough</span>
+    <h2>One task, step by step</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3><ol>
+<li>Set up</li>
+</ol></h3><p>Start a workflow; restore a warm microVM snapshot with the repository cloned and dependencies cached (Firecracker boots in under 125 ms).</p></div>
+      <div class="card a"><h3><ol>
+<li>Explore and plan</li>
+</ol></h3><p>Read the issue, search the code, run the failing test; the model plans in its reasoning.</p></div>
+      <div class="card c"><h3><ol>
+<li>Edit and test</li>
+</ol></h3><p>Loop: edit files, run tests, read results; each tool call is a recorded activity, so a crash resumes at the last step.</p></div>
+      <div class="card e"><h3><ol>
+<li>Verify and hand off</li>
+</ol></h3><p>Full test suite, lint, a short summary of the change; push through the git proxy; a human reviews the pull request.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-deep" data-chapter="Deep dive">
+  <div class="inner">
+    <span class="qtag b5">5 · Deep dive</span>
+    <h2>Deep dive: the sandbox boundary</h2>
+    <hr>
+<div class="grid2">
+      <div class="card d"><h3>Two boundaries</h3><p>Filesystem limited to the task's workspace; network only through a proxy with an allowlist (package registries). Anthropic's point: without both, a compromised agent can exfiltrate keys or escape.</p></div>
+      <div class="card b"><h3>No secrets inside</h3><p>The git proxy checks that a push targets the task's branch and attaches the real token outside the sandbox, as in Claude Code on the web.</p></div>
+      <div class="card c"><h3>Isolation strength</h3><p>Untrusted code from many customers calls for microVMs (Firecracker: under 5 MiB overhead, up to 150 microVMs per second per host) or gVisor, not plain containers.</p></div>
+      <div class="card e"><h3>Fresh per task</h3><p>A new sandbox for every task, destroyed afterwards; warm pools and snapshots hide start-up time.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-scale" data-chapter="Scaling">
+  <div class="inner">
+    <span class="qtag b6">6 · Scaling</span>
+    <h2>What breaks at 10×</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Bottleneck</th>
+<th>Symptom</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model rate limits</td>
+<td>429s during peaks; tasks stall</td>
+<td>gateway queues and backoff; spread across model deployments; prompt caching (cached reads do not count toward Anthropic's input limits)</td>
+</tr>
+<tr>
+<td>Context growth</td>
+<td>cost per task rises with steps</td>
+<td>compaction, concise tool outputs, subagents with separate contexts</td>
+</tr>
+<tr>
+<td>Sandbox capacity</td>
+<td>tasks wait for environments</td>
+<td>warm pools sized to peak, snapshot restore, per-tenant quotas</td>
+</tr>
+<tr>
+<td>Test time</td>
+<td>slow suites dominate wall-clock</td>
+<td>run the relevant tests first, full suite once at the end, test result caching</td>
+</tr>
+<tr>
+<td>Review queue</td>
+<td>pull requests pile up</td>
+<td>auto-approve only low-risk classes with strong tests; prioritise by confidence</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failures">
+  <div class="inner">
+    <span class="qtag b7">7 · Failures and operations</span>
+    <h2>Failures and operations</h2>
+    <hr>
+<div class="grid2">
+      <div class="card d"><h3>Agent stuck or looping</h3><p>Step, token and time budgets per task; repeated-action detection; the task ends with a report instead of burning budget.</p></div>
+      <div class="card b"><h3>Infrastructure failure</h3><p>Durable execution replays the recorded history on another worker and continues from the last completed step.</p></div>
+      <div class="card c"><h3>Wrong but passing</h3><p>Tests can be weak; review the diff, add hidden checks, and track post-merge reverts.</p></div>
+      <div class="card a"><h3>Measure</h3><p>Resolved rate, pass^k on a fixed task set (consistency, not one lucky run), cost and time per resolved task, revert rate.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b8">8 · Trade-offs</span>
+    <h2>Trade-offs and alternatives</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Decision</th>
+<th>Chosen</th>
+<th>Alternative</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Isolation</td>
+<td>microVM per task</td>
+<td>containers</td>
+<td>untrusted multi-tenant code; kernel exploits must not cross tasks</td>
+</tr>
+<tr>
+<td>Execution</td>
+<td>durable workflow engine</td>
+<td>in-process loop</td>
+<td>tasks run for many minutes; deploys and crashes must not lose work</td>
+</tr>
+<tr>
+<td>Autonomy</td>
+<td>human review before merge</td>
+<td>auto-merge on green tests</td>
+<td>tests miss intent; reversible but costly mistakes</td>
+</tr>
+<tr>
+<td>Agents</td>
+<td>single agent with tools</td>
+<td>multi-agent orchestration</td>
+<td>multi-agent costs about 15× chat tokens; use it for broad parallel research, not most fixes</td>
+</tr>
+<tr>
+<td>Evaluation</td>
+<td>tests + pass^k + review</td>
+<td>single-run success rate</td>
+<td>agents are stochastic; consistency matters for trust</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-sum" data-chapter="Summary">
+  <div class="inner">
+    <span class="qtag b9">9 · Summary</span>
+    <h2>Summary</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Durable loop</h3><p>Every model and tool call is a recorded step; failures resume, not restart.</p></div>
+      <div class="card d"><h3>Sandboxed, secret-free</h3><p>MicroVM per task, egress allowlist, credentials added by proxies outside.</p></div>
+      <div class="card c"><h3>Verified and reviewed</h3><p>Tests, pass^k and human review gate every change.</p></div>
+      <div class="card e"><h3>Read more</h3><p>Full design document: <a href="design.html">design.html</a>. Related decks: <a href="../../agent-infra/04-sandboxing/index.html">Sandboxing</a>, <a href="../../agent-systems/03-durable-workflows/index.html">Durable workflows</a>, <a href="../../agent-operations/03-cost-and-latency/index.html">Cost and latency</a>, <a href="../../agent-operations/01-evaluating-agents/index.html">Evaluating agents</a>.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://www.anthropic.com/engineering/claude-code-sandboxing" target="_blank" rel="noopener">Beyond permission prompts: making Claude Code more secure and autonomous</a>
+        <div class="meta">Anthropic · Anthropic Engineering 2025</div>
+        <p>Filesystem and network isolation built on Linux bubblewrap and macOS Seatbelt; egress through a proxy outside the sandbox with allowed domains; in the cloud version credentials stay outside the sandbox and a git proxy attaches the real token.</p><div class="num">Remember: sandboxing cut permission prompts by 84% in internal use</div></div>
+      <div class="paper-item"><a href="https://www.usenix.org/conference/nsdi20/presentation/agache" target="_blank" rel="noopener">Firecracker: Lightweight Virtualization for Serverless Applications</a>
+        <div class="meta">Agache et al. · NSDI 2020</div>
+        <p>A minimal KVM-based (KVM = Kernel-based Virtual Machine) virtual machine monitor for multi-tenant serverless workloads, used by AWS (Amazon Web Services) Lambda and Fargate.</p><div class="num">Remember: < 125 ms boot, < 5 MiB overhead per microVM, up to 150 microVMs per second per host (firecracker-microvm.github.io)</div></div>
+      <div class="paper-item"><a href="https://docs.temporal.io/workflows" target="_blank" rel="noopener">Temporal Workflows</a>
+        <div class="meta">Temporal documentation · docs.temporal.io 2026</div>
+        <p>Workflow code is replayed against the recorded event history to rebuild state (no memory snapshots), so it must be deterministic; activities do the side effects and their results are recorded once and reused on replay.</p></div>
+      <div class="paper-item"><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching" target="_blank" rel="noopener">Prompt caching</a>
+        <div class="meta">Anthropic documentation · platform.claude.com 2026</div>
+        <p>Reuse of cached prompt prefixes: 5-minute cache writes cost 1.25× base input, 1-hour writes 2×, and reads 0.1× on most models (lower on some newer ones).</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2310.06770" target="_blank" rel="noopener">SWE-bench (SWE = software engineering): Can Language Models Resolve Real-World GitHub Issues?</a>
+        <div class="meta">Jimenez et al. · ICLR 2024</div>
+        <p>Real GitHub issues: the model edits the repository and the project's own tests decide success.</p><div class="num">Remember: 2,294 issues; Claude 2 solved 1.96% at release</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2406.12045" target="_blank" rel="noopener">τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains</a>
+        <div class="meta">Yao et al. · arXiv 2024</div>
+        <p>Simulated users, domain APIs (application programming interfaces) and policies; grades the final database state and introduces pass^k to measure consistency across trials.</p><div class="num">Remember: gpt-4o < 50% success; pass^8 < 25% in retail</div></div>
+      <div class="paper-item"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Building effective agents</a>
+        <div class="meta">Anthropic · Anthropic Engineering 2024</div>
+        <p>Workflows (predefined code paths) vs agents (LLMs (large language models) directing their own process); patterns: prompt chaining, routing, parallelization, orchestrator-workers, evaluator-optimizer. Start with the simplest solution.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+<script>
+(() => {
+Deck.bind(['kT', 'kN', 'kP', 'kS', 'kM', 'kF'], () => {
+  const tasks = Deck.val('kT') * 1000, n = Deck.val('kN'), P = Deck.val('kP') * 1000, T = Deck.val('kS') * 100, mins = Deck.val('kM'), pf = Deck.val('kF');
+  Deck.out('kTo', (tasks / 1000) + 'K'); Deck.out('kNo', n); Deck.out('kPo', (P / 1000) + 'K'); Deck.out('kSo', T.toLocaleString()); Deck.out('kMo', mins); Deck.out('kFo', pf + '×');
+  let full = 0, cached = 0;
+  for (let i = 0; i < n; i++) { const ctx = P + i * T, prev = i ? P + (i - 1) * T : 0; full += ctx; cached += i === 0 ? 1.25 * ctx : 0.1 * prev + 1.25 * (ctx - prev); }
+  const sandboxes = Math.ceil(tasks / 1440 * mins * pf);
+  Deck.hbars(document.getElementById('kBars'), [{ label: 'input tokens per task (no cache)', value: full, color: 'var(--d)', text: (full / 1e6).toFixed(2) + 'M' },
+    { label: 'cost-equivalent with caching', value: cached, color: 'var(--e)', text: (cached / 1e6).toFixed(2) + 'M' }], { max: full * 1.08 });
+  document.getElementById('kOut').innerHTML = `${n} steps with a ${(P / 1000)}K-token prefix and ${T.toLocaleString()} tokens added per step: <b>${(full / 1e6).toFixed(2)}M</b> input tokens per task, <b>${(tasks * full / 1e9).toFixed(1)}B</b> a day. Prompt caching (writes 1.25×, reads 0.1×) brings that to about <b>${(100 * cached / full).toFixed(0)}%</b> of the cost. Sandboxes in use at peak: <b>${sandboxes.toLocaleString()}</b> (${mins} minutes per task).`;
+});
+})();
+</script>
+</body>
+</html>

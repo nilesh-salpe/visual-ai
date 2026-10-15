@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planning a Pretraining Run</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Planning a pretraining run" data-home="../index.html" data-home-label="System design">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual AI · System design · 04</div>
+    <h1>Planning a pretraining run</h1>
+    <p class="sub">Turning a training budget into a plan: compute and time estimates, the data pipeline, the parallelism layout, checkpointing against measured failure rates, cluster operations and the evaluations that decide what to change.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Plan the pretraining of a 70B-parameter model on 15 trillion tokens with 4,096 H100 GPUs (graphics processing units): how long will it take, how do you lay it out, and how do you keep it running?</div>
+      <div class="c"><b>Core idea</b>Estimate compute with <b>6 × parameters × tokens</b> and time with an assumed <b>MFU (model floating-point-operation utilization, the share of peak compute spent on the model's math)</b>; lay out <b>tensor parallelism inside nodes</b>, <b>pipeline parallelism across nodes</b> and <b>sharded data parallelism</b> for the rest; set the <b>checkpoint interval from the failure rate</b> (Young/Daly); automate <b>detect → drain → restart</b>; de-risk choices with <b>small-scale ablations</b> first.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint"><a href="design.html">Read the full design doc →</a> · Previous: <a href="../03-coding-agent/index.html">Autonomous coding agent</a> · <a href="../index.html">All case studies</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-req" data-chapter="Requirements">
+  <div class="inner">
+    <span class="qtag b1">1 · Requirements</span>
+    <h2>What the run must deliver</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Target (assumption)</h3><p>A 70B dense transformer trained on 15T tokens of a curated mixture, then handed to post-training.</p></div>
+      <div class="card a"><h3>Resources (assumption)</h3><p>4,096 H100 GPUs (512 nodes of 8) with a high-bandwidth network, a parallel file system for data and checkpoints.</p></div>
+      <div class="card c"><h3>Constraints</h3><p>A fixed calendar budget; failures are routine at this scale; every decision about data and architecture is hard to undo mid-run.</p></div>
+      <div class="card e"><h3>Success</h3><p>Hit the planned loss and evals on schedule, with fully reproducible data and code.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-est" data-chapter="Estimates">
+  <div class="inner">
+    <span class="qtag b2">2 · Estimates</span>
+    <h2>Compute, time and failures <span class="ill">calculator</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">parameters (B) <input type="range" id="tP" min="1" max="405" step="1" value="70"> <output id="tPo"></output></label><label class="ctl">tokens (T) <input type="range" id="tT" min="1" max="30" step="0.5" value="15"> <output id="tTo"></output></label><label class="ctl">GPUs <input type="range" id="tG" min="256" max="16384" step="256" value="4096"> <output id="tGo"></output></label><label class="ctl">MFU % <input type="range" id="tM" min="20" max="60" step="1" value="40"> <output id="tMo"></output></label><label class="ctl">checkpoint save (min) <input type="range" id="tC" min="1" max="30" step="1" value="5"> <output id="tCo"></output></label><label class="ctl">restart time (min) <input type="range" id="tR" min="1" max="60" step="1" value="15"> <output id="tRo"></output></label></div><div class="bars"><div id="tBars"></div></div><p class="readout" id="tOut"></p></div>
+
+<p>Sanity check from the Llama 3 report: 405B parameters on 15.6T tokens is about 3.8 × 10²⁵ FLOPs (floating-point operations); it ran on 16,384 H100s at about 41% utilisation.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-arch" data-chapter="Architecture">
+  <div class="inner">
+    <span class="qtag b3">3 · Architecture</span>
+    <h2>System overview</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Raw sources: web crawl, code, books and papers, licensed data.&quot;, &quot;The data pipeline extracts text, filters quality, removes duplicates and PII, and sets the mixture.&quot;, &quot;Tokenised shards are written once and versioned, so every run is reproducible.&quot;, &quot;A deterministic, resumable loader streams shards in a fixed order keyed by step.&quot;, &quot;The training job runs tensor parallelism within nodes, pipeline parallelism across nodes and sharded data parallelism across the rest.&quot;, &quot;Checkpoints are written asynchronously at the interval set by the failure rate.&quot;, &quot;The cluster scheduler holds a reservation, keeps hot spares and restarts the job from the latest checkpoint after failures.&quot;, &quot;Training loss, gradient norms and periodic low-noise evals are monitored for spikes and regressions.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="142.0" y1="48.0" x2="176.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="342.0" y1="48.0" x2="376.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="512.0" y1="48.0" x2="546.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="579.9" y1="78.0" x2="541.1" y2="136.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="378.0" y1="171.2" x2="344.0" y2="170.3" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="7"><line x1="142.0" y1="168.0" x2="176.0" y2="168.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="8"><line x1="515.0" y1="212.0" x2="515.0" y2="236.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="20" width="130" height="56" rx="10"/><text class="dg-text" x="75.0" y="46.0" text-anchor="middle">Raw data</text><text class="dg-sub" x="75.0" y="62.0" text-anchor="middle">crawl · code · books</text></g><g class="dg-node b" data-step="2"><rect x="180" y="20" width="160" height="56" rx="10"/><text class="dg-text" x="260.0" y="46.0" text-anchor="middle">Data pipeline</text><text class="dg-sub" x="260.0" y="62.0" text-anchor="middle">filter · dedup · mix</text></g><g class="dg-node e" data-step="3"><rect x="380" y="20" width="130" height="56" rx="10"/><text class="dg-text" x="445.0" y="46.0" text-anchor="middle">Tokenised shards</text><text class="dg-sub" x="445.0" y="62.0" text-anchor="middle">versioned</text></g><g class="dg-node c" data-step="4"><rect x="550" y="20" width="100" height="56" rx="10"/><text class="dg-text" x="600.0" y="46.0" text-anchor="middle">Loader</text><text class="dg-sub" x="600.0" y="62.0" text-anchor="middle">resumable</text></g><g class="dg-node a" data-step="5"><rect x="380" y="140" width="270" height="70" rx="10"/><text class="dg-text" x="515.0" y="173.0" text-anchor="middle">Training job</text><text class="dg-sub" x="515.0" y="189.0" text-anchor="middle">TP 8 · PP · DP/FSDP on 4,096 GPUs</text></g><g class="dg-node e" data-step="6"><rect x="180" y="140" width="160" height="56" rx="10"/><text class="dg-text" x="260.0" y="166.0" text-anchor="middle">Checkpoints</text><text class="dg-sub" x="260.0" y="182.0" text-anchor="middle">async to storage</text></g><g class="dg-node d" data-step="7"><rect x="10" y="140" width="130" height="56" rx="10"/><text class="dg-text" x="75.0" y="166.0" text-anchor="middle">Scheduler</text><text class="dg-sub" x="75.0" y="182.0" text-anchor="middle">reservation · spares</text></g><g class="dg-node c" data-step="8"><rect x="380" y="240" width="270" height="50" rx="10"/><text class="dg-text" x="515.0" y="263.0" text-anchor="middle">Evals and monitoring</text><text class="dg-sub" x="515.0" y="279.0" text-anchor="middle">loss · benchmarks · spikes</text></g><g data-step="6"><text class="dg-label" x="361.0" y="165.8" text-anchor="middle">every τ</text></g><g data-step="7"><text class="dg-label" x="159.0" y="163.0" text-anchor="middle">restart from</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-flow" data-chapter="Walkthrough">
+  <div class="inner">
+    <span class="qtag b4">4 · Walkthrough</span>
+    <h2>Laying out the model</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Tensor parallel 8, inside a node</h3><p>Splits each layer's matrices across the 8 GPUs joined by NVLink, where the frequent all-reduces are cheap.</p></div>
+      <div class="card a"><h3>Pipeline parallel, across nodes</h3><p>Splits layers into stages; micro-batches keep stages busy; interleaved schedules shrink the bubble.</p></div>
+      <div class="card c"><h3>Sharded data parallel for the rest</h3><p>FSDP (Fully Sharded Data Parallel) / ZeRO (Zero Redundancy Optimizer) shards parameters, gradients and optimizer state across data-parallel ranks: e.g. 4,096 / (8 × 4) = 128 replicas with 4 pipeline stages.</p></div>
+      <div class="card e"><h3>Context parallel for long context</h3><p>For long-sequence phases split the sequence across GPUs too; Llama 3 405B moved to context parallel 16 for its long-context stage.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-deep" data-chapter="Deep dive">
+  <div class="inner">
+    <span class="qtag b5">5 · Deep dive</span>
+    <h2>Deep dive: checkpointing against failures</h2>
+    <hr>
+<div class="grid2">
+      <div class="card d"><h3>Failures are the norm</h3><p>Llama 3 405B pretraining: 466 interruptions in 54 days, 419 unexpected; only 3 needed significant manual intervention because recovery was automated.</p></div>
+      <div class="card b"><h3>Interval from the failure rate</h3><p>Young/Daly: τ* ≈ √(2 δ M) for save time δ and mean time between failures M. At the Llama 3 rate a 4,096-GPU job fails about every 12 hours: with 5-minute saves, checkpoint roughly every 86 minutes.</p></div>
+      <div class="card c"><h3>Make saves cheap</h3><p>Asynchronous, sharded checkpoints written in the background shrink δ, which shortens the interval and the work lost.</p></div>
+      <div class="card e"><h3>Resume exactly</h3><p>Checkpoint the optimizer state, RNG (random number generator) state and data-loader position too, so a resumed run is the same run.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-scale" data-chapter="Scaling">
+  <div class="inner">
+    <span class="qtag b6">6 · Scaling</span>
+    <h2>What breaks at larger scale</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Bottleneck</th>
+<th>Symptom</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Failure rate</td>
+<td>more interruptions as GPUs grow</td>
+<td>automated detect → drain → requeue, hot spares, faster checkpoints</td>
+</tr>
+<tr>
+<td>Stragglers</td>
+<td>one slow GPU slows every synchronous step</td>
+<td>per-rank step-time monitoring, drain slow nodes</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>collectives dominate step time</td>
+<td>topology-aware placement, overlap communication with compute</td>
+</tr>
+<tr>
+<td>Storage</td>
+<td>checkpoint writes stall training</td>
+<td>asynchronous sharded writes, staged to local NVMe (Non-Volatile Memory Express, the fast interface for flash storage) first</td>
+</tr>
+<tr>
+<td>Loss spikes</td>
+<td>divergence late in the run</td>
+<td>monitor gradient norms; roll back and skip data; stability measures from the start</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failures">
+  <div class="inner">
+    <span class="qtag b7">7 · Failures and operations</span>
+    <h2>Failures and operations</h2>
+    <hr>
+<div class="grid2">
+      <div class="card d"><h3>Automated recovery</h3><p>Health checks and job watchdogs detect failures; the scheduler drains bad nodes, requeues the job and resumes from the latest checkpoint on spares.</p></div>
+      <div class="card b"><h3>Silent data corruption</h3><p>Bad numerics without a crash: compare loss and gradient statistics across ranks, test suspect GPUs (GPU failures deck).</p></div>
+      <div class="card c"><h3>Data problems</h3><p>A bad shard or mixture bug shows up as loss anomalies: versioned shards make rollback precise.</p></div>
+      <div class="card a"><h3>Observe</h3><p>Tokens per second, MFU, step time per rank, loss and gradient norm, interruptions by cause, time lost per interruption.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b8">8 · Trade-offs</span>
+    <h2>Trade-offs and alternatives</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Decision</th>
+<th>Chosen</th>
+<th>Alternative</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data decisions</td>
+<td>ablate at small scale first</td>
+<td>decide at full scale</td>
+<td>DataDecide: 150M-parameter rankings predicted ~80% of 1B comparisons, far cheaper</td>
+</tr>
+<tr>
+<td>Parallelism</td>
+<td>TP (tensor parallelism) 8 + PP (pipeline parallelism) + FSDP</td>
+<td>FSDP only</td>
+<td>a 70B model with long sequences needs model parallelism to fit and to scale</td>
+</tr>
+<tr>
+<td>Checkpoints</td>
+<td>asynchronous, sharded, every ~1.5 h</td>
+<td>synchronous, rare</td>
+<td>cheaper saves allow more frequent ones and lose less work</td>
+</tr>
+<tr>
+<td>Scheduling</td>
+<td>dedicated reservation with spares</td>
+<td>shared queue</td>
+<td>restarts must not wait behind other jobs</td>
+</tr>
+<tr>
+<td>Precision</td>
+<td>BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats) with selective FP8 (8-bit floating point)</td>
+<td>FP8 everywhere</td>
+<td>FP8 speeds GEMMs (general matrix multiplications) but adds stability risk; validate at small scale</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-sum" data-chapter="Summary">
+  <div class="inner">
+    <span class="qtag b9">9 · Summary</span>
+    <h2>Summary</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Estimate first</h3><p>6 × N × D FLOPs and an honest MFU give the calendar; add failure overhead explicitly.</p></div>
+      <div class="card c"><h3>Layout follows the network</h3><p>Tensor parallel inside NVLink domains, pipeline across nodes, sharded data parallel for the rest.</p></div>
+      <div class="card d"><h3>Plan for failure</h3><p>Checkpoint interval from the failure rate; automate detect, drain, restart.</p></div>
+      <div class="card e"><h3>Read more</h3><p>Full design document: <a href="design.html">design.html</a>. Related decks: <a href="../../distributed/10-putting-it-together/index.html">4D parallelism</a>, <a href="../../gpu/06-gpu-failures/index.html">GPU failures</a>, <a href="../../cluster-scheduling/04-operating-clusters/index.html">Operating a training cluster</a>, <a href="../../evals/08-training-experiments/index.html">Experiments in LLM (large language model) training</a>.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+        <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
+        <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener">Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism</a>
+        <div class="meta">Shoeybi et al. · arXiv 2019</div>
+        <p>Intra-layer (tensor) model parallelism that splits each attention and MLP (multilayer perceptron) block across GPUs with only a few all-reduce operations, implemented in plain PyTorch.</p><div class="num">Remember: 2 all-reduces per transformer block in the forward pass; 76% scaling efficiency on 512 GPUs</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1910.02054" target="_blank" rel="noopener">ZeRO: Memory Optimizations Toward Training Trillion Parameter Models</a>
+        <div class="meta">Rajbhandari et al. · SC 2020</div>
+        <p>Partitions optimizer states, gradients and parameters across data-parallel workers instead of replicating them.</p><div class="num">Remember: 100B+ parameters on 400 GPUs at 15 PFLOP (quadrillion floating-point operations)/s; 8× larger models than prior state of the art</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2304.11277" target="_blank" rel="noopener">PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel</a>
+        <div class="meta">Zhao et al. · VLDB 2023</div>
+        <p>PyTorch's ZeRO-3-style fully sharded data parallelism, with flattened parameter units, prefetching and hybrid sharding.</p><div class="num">Remember: comparable to DDP (distributed data parallel) speed while supporting much larger models</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2406.17557" target="_blank" rel="noopener">The FineWeb Datasets: Decanting the Web for the Finest Text Data at Scale</a>
+        <div class="meta">Penedo et al. · NeurIPS Datasets and Benchmarks 2024</div>
+        <p>15T tokens from 96 Common Crawl snapshots with fully ablated choices: WARC (Web ARChive format) + trafilatura over WET (plain text extracted from Web ARChive records), per-snapshot (not global) MinHash dedup, selected C4 filters; FineWeb-Edu uses an LLM-annotated educational-quality classifier.</p><div class="num">Remember: 15T tokens; FineWeb-Edu 1.3T</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2504.11393" target="_blank" rel="noopener">DataDecide: How to Predict Best Pretraining Data with Small Experiments</a>
+        <div class="meta">Magnusson et al. · arXiv 2025</div>
+        <p>Controlled pretraining over 25 corpora, up to 100B tokens and 1B parameters, 3 seeds: rankings at a single small scale are a strong baseline; no scaling-law method among 8 baselines beats it for the same compute; continuous likelihood metrics make benchmarks highly predictable.</p><div class="num">Remember: 150M rankings predict ~80% of 1B comparisons; >80% predictable with 0.01% of the compute</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2402.15627" target="_blank" rel="noopener">MegaScale: Scaling Large Language Model Training to More Than 10,000 GPUs</a>
+        <div class="meta">Jiang et al. · NSDI 2024</div>
+        <p>Production training system at ByteDance: algorithm-system co-design plus diagnosis tools for stragglers and failures at 10,000+ GPU scale.</p><div class="num">Remember: 55.2% MFU on 12,288 GPUs (175B model), 1.34× Megatron-LM</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+<script>
+(() => {
+Deck.bind(['tP', 'tT', 'tG', 'tM', 'tC', 'tR'], () => {
+  const P = Deck.val('tP') * 1e9, T = Deck.val('tT') * 1e12, G = Deck.val('tG'), mfu = Deck.val('tM') / 100, ck = Deck.val('tC'), rs = Deck.val('tR');
+  Deck.out('tPo', Deck.val('tP') + 'B'); Deck.out('tTo', Deck.val('tT') + 'T'); Deck.out('tGo', G.toLocaleString()); Deck.out('tMo', Math.round(mfu * 100) + '%'); Deck.out('tCo', ck + ' min'); Deck.out('tRo', rs + ' min');
+  const flops = 6 * P * T, days = flops / (G * 989e12 * mfu) / 86400;
+  const rate = 419 / (54 * 24 * 16384), mtbfMin = 60 / (rate * G), tau = Math.sqrt(2 * ck * mtbfMin);
+  const waste = ck / tau + (tau / 2 + rs) / mtbfMin, total = days / (1 - Math.min(waste, 0.9));
+  Deck.hbars(document.getElementById('tBars'), [{ label: 'ideal training time', value: days, color: 'var(--e)', text: days.toFixed(0) + ' days' },
+    { label: 'with checkpoints, failures, restarts', value: total, color: 'var(--d)', text: total.toFixed(0) + ' days' }], { max: total * 1.08 });
+  document.getElementById('tOut').innerHTML = `6 × ${(P / 1e9)}B × ${(T / 1e12)}T = <b>${flops.toExponential(1)} FLOPs</b>; at ${Math.round(mfu * 100)}% of 989 TFLOPS on ${G.toLocaleString()} H100s that is <b>${days.toFixed(0)} days</b>. At Llama 3's interruption rate (419 unexpected in 54 days on 16,384 GPUs) this job fails about every <b>${(mtbfMin / 60).toFixed(1)} h</b>; Young/Daly gives a checkpoint every <b>${tau.toFixed(0)} min</b>, and checkpoints, lost work and ${rs}-minute restarts cost about <b>${(100 * waste).toFixed(0)}%</b> of the time.`;
+});
+})();
+</script>
+</body>
+</html>

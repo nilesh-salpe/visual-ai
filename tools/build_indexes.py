@@ -472,6 +472,24 @@ def write_llm_hubs():
         _write(os.path.join(REPO, folder, 'index.html'), topic_hub(folder, title, title, lede, nb, blurb, cards, sources))
         print('wrote', folder + '/index.html')
 
+CASE_CARDS = [
+    ('01-chat-assistant', 'Serving a chat assistant', '1M daily users on a 70B model: KV-cache sizing, prefix caching, routing.'),
+    ('02-enterprise-rag', 'Enterprise RAG assistant', '10M documents: permission-aware hybrid retrieval, reranking, citations.'),
+    ('03-coding-agent', 'Autonomous coding agent', '10K tasks a day: durable loop, microVM sandboxes, verification, review.'),
+    ('04-pretraining-run', 'Planning a pretraining run', '70B on 15T tokens: compute, 4D layout, checkpoints vs failures.'),
+]
+
+
+def write_case_hub():
+    lede = ('End-to-end designs that combine the topics of both guides. Each case has an overview deck that walks the design the way you would present it '
+            '(requirements, estimates, architecture, a walkthrough, a deep dive, scaling, failures, trade-offs) and a long-form design document with the full reasoning. '
+            'Every number is either a stated assumption or a verified fact from the topic decks, and each case has a calculator for its estimates.')
+    cards = [(s, t, p + ' <a href="' + s + '/design.html">Design doc →</a>') for s, t, p in CASE_CARDS]
+    _write(os.path.join(REPO, 'system-design', 'index.html'), topic_hub(
+        'system-design', 'System design case studies', 'System design', lede, None, '', cards,
+        'See each case\'s design document and Key papers slide.', back='../index.html', back_label='Visual AI'))
+    print('wrote system-design/index.html')
+
 AGENT_HUBS = {
     'agent-foundations': ('Agent foundations', 'What an agent is, how models call tools, the ReAct loop, and planning: the building blocks every agent shares.', [
         ('01-what-is-an-agent', 'What an agent is', 'Workflows vs agents; the decide-act-observe loop.'),
@@ -512,6 +530,7 @@ AGENT_HUBS = {
 
 if __name__ == '__main__':
     write_cluster_hub()
+    write_case_hub()
     write_llm_hubs()
     for folder, (title, lede, cards) in AGENT_HUBS.items():
         _write(os.path.join(REPO, folder, 'index.html'), topic_hub(

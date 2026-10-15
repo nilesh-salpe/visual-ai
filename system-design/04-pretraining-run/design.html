@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planning a Pretraining Run: design document</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body class="doc-page">
+<article class="doc">
+  <a class="brand" href="index.html">← Overview deck</a>
+<h1 id="planning-a-pretraining-run">Planning a pretraining run</h1>
+<blockquote>
+<p><strong>Design question.</strong> Plan the pretraining of a 70B-parameter model on 15 trillion tokens with 4,096 H100 GPUs (graphics processing units): how long will it take, how do you lay it out, and how do you keep it running?</p>
+</blockquote>
+<h2 id="1-goals-and-non-goals">1. Goals and non-goals</h2>
+<p><strong>Goals:</strong> a base model that reaches the planned loss and benchmark targets on schedule; reproducible data and code; minimal time lost to failures.</p>
+<p><strong>Non-goals:</strong> post-training (SFT (supervised fine-tuning), RL (reinforcement learning)), serving, and choosing model size and token count from scaling laws (taken as given here).</p>
+<h2 id="2-requirements-and-assumptions">2. Requirements and assumptions</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Assumption</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model</td>
+<td>70B dense decoder-only transformer, GQA (grouped-query attention), RoPE (rotary position embedding)</td>
+</tr>
+<tr>
+<td>Data</td>
+<td>15T tokens of a curated mixture (web, code, multilingual, math, books)</td>
+</tr>
+<tr>
+<td>Hardware</td>
+<td>4,096 H100 80 GB (512 nodes × 8), NVLink within nodes, high-bandwidth fabric across nodes</td>
+</tr>
+<tr>
+<td>Throughput</td>
+<td>40% model FLOPs (floating-point operations) utilisation (MFU (model floating-point-operation utilization, the share of peak compute spent on the model's math)) at BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats) dense peak 989 TFLOPS (trillion floating-point operations per second)</td>
+</tr>
+<tr>
+<td>Checkpoint save</td>
+<td>5 minutes blocking time (assumption); restart 15 minutes</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-estimates">3. Estimates</h2>
+<ul>
+<li><strong>Compute:</strong> 6 × 70e9 × 15e12 = <strong>6.3 × 10²⁴ FLOPs</strong>.</li>
+<li><strong>Throughput:</strong> 4,096 × 989e12 × 0.40 ≈ 1.6 × 10¹⁸ FLOPs/s → <strong>≈ 3.9 × 10⁶ s ≈ 45 days</strong> of pure training.</li>
+<li><strong>Failure rate:</strong> Llama 3 405B saw 419 unexpected interruptions in 54 days on 16,384 GPUs ≈ 2 × 10⁻⁵ per GPU-hour. On 4,096 GPUs that is ≈ 0.08 per hour → <strong>mean time between failures ≈ 12 hours</strong>.</li>
+<li><strong>Checkpoint interval (Young/Daly):</strong> τ* ≈ √(2 δ M) = √(2 × 5 × 742) ≈ <strong>86 minutes</strong>.</li>
+<li><strong>Overhead:</strong> saves (δ/τ ≈ 6%) plus lost work and restarts ((τ/2 + R)/M ≈ 8%) ≈ <strong>14%</strong>, so plan for about <strong>52 days</strong>, before evaluation pauses and data issues. Faster asynchronous checkpoints reduce both terms.</li>
+</ul>
+<p>The overview deck's calculator recomputes these for other sizes.</p>
+<h2 id="4-system-overview">4. System overview</h2>
+<div class="visual dgm" data-steps="[&quot;Raw sources: web crawl, code, books and papers, licensed data.&quot;, &quot;The data pipeline extracts text, filters quality, removes duplicates and PII, and sets the mixture.&quot;, &quot;Tokenised shards are written once and versioned, so every run is reproducible.&quot;, &quot;A deterministic, resumable loader streams shards in a fixed order keyed by step.&quot;, &quot;The training job runs tensor parallelism within nodes, pipeline parallelism across nodes and sharded data parallelism across the rest.&quot;, &quot;Checkpoints are written asynchronously at the interval set by the failure rate.&quot;, &quot;The cluster scheduler holds a reservation, keeps hot spares and restarts the job from the latest checkpoint after failures.&quot;, &quot;Training loss, gradient norms and periodic low-noise evals are monitored for spikes and regressions.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="142.0" y1="48.0" x2="176.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="342.0" y1="48.0" x2="376.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="512.0" y1="48.0" x2="546.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="579.9" y1="78.0" x2="541.1" y2="136.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="378.0" y1="171.2" x2="344.0" y2="170.3" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="7"><line x1="142.0" y1="168.0" x2="176.0" y2="168.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="8"><line x1="515.0" y1="212.0" x2="515.0" y2="236.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="20" width="130" height="56" rx="10"/><text class="dg-text" x="75.0" y="46.0" text-anchor="middle">Raw data</text><text class="dg-sub" x="75.0" y="62.0" text-anchor="middle">crawl · code · books</text></g><g class="dg-node b" data-step="2"><rect x="180" y="20" width="160" height="56" rx="10"/><text class="dg-text" x="260.0" y="46.0" text-anchor="middle">Data pipeline</text><text class="dg-sub" x="260.0" y="62.0" text-anchor="middle">filter · dedup · mix</text></g><g class="dg-node e" data-step="3"><rect x="380" y="20" width="130" height="56" rx="10"/><text class="dg-text" x="445.0" y="46.0" text-anchor="middle">Tokenised shards</text><text class="dg-sub" x="445.0" y="62.0" text-anchor="middle">versioned</text></g><g class="dg-node c" data-step="4"><rect x="550" y="20" width="100" height="56" rx="10"/><text class="dg-text" x="600.0" y="46.0" text-anchor="middle">Loader</text><text class="dg-sub" x="600.0" y="62.0" text-anchor="middle">resumable</text></g><g class="dg-node a" data-step="5"><rect x="380" y="140" width="270" height="70" rx="10"/><text class="dg-text" x="515.0" y="173.0" text-anchor="middle">Training job</text><text class="dg-sub" x="515.0" y="189.0" text-anchor="middle">TP 8 · PP · DP/FSDP on 4,096 GPUs</text></g><g class="dg-node e" data-step="6"><rect x="180" y="140" width="160" height="56" rx="10"/><text class="dg-text" x="260.0" y="166.0" text-anchor="middle">Checkpoints</text><text class="dg-sub" x="260.0" y="182.0" text-anchor="middle">async to storage</text></g><g class="dg-node d" data-step="7"><rect x="10" y="140" width="130" height="56" rx="10"/><text class="dg-text" x="75.0" y="166.0" text-anchor="middle">Scheduler</text><text class="dg-sub" x="75.0" y="182.0" text-anchor="middle">reservation · spares</text></g><g class="dg-node c" data-step="8"><rect x="380" y="240" width="270" height="50" rx="10"/><text class="dg-text" x="515.0" y="263.0" text-anchor="middle">Evals and monitoring</text><text class="dg-sub" x="515.0" y="279.0" text-anchor="middle">loss · benchmarks · spikes</text></g><g data-step="6"><text class="dg-label" x="361.0" y="165.8" text-anchor="middle">every τ</text></g><g data-step="7"><text class="dg-label" x="159.0" y="163.0" text-anchor="middle">restart from</text></g></svg><p class="readout dgcap"></p></div>
+
+<h2 id="5-components">5. Components</h2>
+<h3 id="51-data-pipeline">5.1 Data pipeline</h3>
+<p>Extraction from raw sources (e.g. WARC (Web ARChive format) for web crawl), quality filtering (heuristics and classifiers), deduplication (exact and MinHash near-duplicate), PII (personally identifiable information) and safety filtering, and a mixture of domains set by small-scale ablations. Output: versioned, tokenised shards with manifests. See the web crawling and pretraining data decks.</p>
+<h3 id="52-data-loader">5.2 Data loader</h3>
+<p>Deterministic order keyed by global step and data-parallel rank, so a resumed run reads exactly the data it would have read; the loader position is part of every checkpoint.</p>
+<h3 id="53-parallelism-layout">5.3 Parallelism layout</h3>
+<p>Tensor parallelism 8 inside each node (NVLink), pipeline parallelism across nodes (e.g. 4 stages, interleaved schedule), and sharded data parallelism (FSDP (Fully Sharded Data Parallel)/ZeRO (Zero Redundancy Optimizer)) across the remaining 128 data-parallel groups. Context parallelism for long-context phases. For reference, Llama 3 405B used tensor 8, pipeline 16 and data 128 on 16,384 H100s, and context parallel 16 for long context.</p>
+<h3 id="54-checkpointing">5.4 Checkpointing</h3>
+<p>Sharded, asynchronous checkpoints: each rank writes its shard to local NVMe (Non-Volatile Memory Express, the fast interface for flash storage), then to the parallel file system in the background; checkpoint parameters, optimizer state, RNG (random number generator) states and loader position. Keep the last few and periodic milestones.</p>
+<h3 id="55-cluster-operations">5.5 Cluster operations</h3>
+<p>A dedicated reservation on the scheduler (e.g. Slurm) with hot spare nodes. Health checks and a job watchdog detect failures; the scheduler drains bad nodes and requeues the job, which resumes from the latest checkpoint on spares. Llama 3 reports that of 466 interruptions only 3 needed significant manual intervention.</p>
+<h3 id="56-monitoring-and-evaluation">5.6 Monitoring and evaluation</h3>
+<p>Per-rank step time (stragglers), MFU, loss and gradient-norm monitoring with spike alerts; periodic evaluation with low-noise metrics (cloze formats, likelihoods) on held-out sets and benchmarks; decisions about data and recipes made with small-scale ablations before and during the run.</p>
+<h2 id="6-reliability">6. Reliability</h2>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Detection</th>
+<th>Handling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU / node failure</td>
+<td>health checks, NCCL (NVIDIA Collective Communications Library) errors, watchdog</td>
+<td>drain node, requeue, resume from checkpoint on spares</td>
+</tr>
+<tr>
+<td>Straggler</td>
+<td>per-rank step time</td>
+<td>drain and replace the slow node</td>
+</tr>
+<tr>
+<td>Silent data corruption</td>
+<td>cross-rank loss/gradient checks</td>
+<td>isolate and test suspect GPUs; roll back if corrupted</td>
+</tr>
+<tr>
+<td>Loss spike</td>
+<td>gradient norm, loss</td>
+<td>roll back to a checkpoint before the spike; skip the offending data</td>
+</tr>
+<tr>
+<td>Storage stall</td>
+<td>checkpoint write time</td>
+<td>asynchronous writes; local staging</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-risks-and-de-risking">7. Risks and de-risking</h2>
+<ul>
+<li><strong>Data mixture wrong:</strong> run small-scale ablations with several seeds and low-noise metrics; DataDecide found 150M-parameter rankings predicted about 80% of 1B comparisons.</li>
+<li><strong>Instability at scale:</strong> use proven stability measures from the start; test FP8 (8-bit floating point) at small scale before using it.</li>
+<li><strong>Throughput below plan:</strong> profile a short full-scale run first (communication overlap, pipeline bubble, data loading) and fix before the long run.</li>
+</ul>
+<h2 id="8-alternatives-considered">8. Alternatives considered</h2>
+<ul>
+<li><strong>FSDP only:</strong> simpler, but a 70B model with long sequences needs model parallelism for memory and scaling efficiency.</li>
+<li><strong>Synchronous rare checkpoints:</strong> lower overhead per save but much more lost work per failure.</li>
+<li><strong>Shared scheduler queue:</strong> cheaper utilisation, but restarts would wait behind other jobs.</li>
+</ul>
+<h2 id="references">References</h2>
+<p>Llama Team 2024 (The Llama 3 Herd of Models: compute, parallelism, interruptions); Shoeybi et al. / Narayanan et al. (Megatron-LM tensor and pipeline parallelism); Rajbhandari et al. 2020 (ZeRO); Zhao et al. 2023 (PyTorch FSDP); Penedo et al. 2024 (FineWeb); Magnusson et al. 2025 (DataDecide); Jiang et al. 2024 (MegaScale). Related decks: distributed training, GPU failures, cluster scheduling, pretraining data, experiments in LLM (large language model) training.</p>
+</article>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>

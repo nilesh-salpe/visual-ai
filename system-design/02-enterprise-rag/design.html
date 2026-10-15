@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enterprise RAG Assistant: design document</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body class="doc-page">
+<article class="doc">
+  <a class="brand" href="index.html">← Overview deck</a>
+<h1 id="an-enterprise-rag-assistant">An enterprise RAG assistant</h1>
+<blockquote>
+<p><strong>Design question.</strong> Build an assistant that answers employees' questions from 10 million internal documents, never reveals a document a user cannot open, cites its sources and stays fresh as documents change.</p>
+</blockquote>
+<h2 id="1-goals-and-non-goals">1. Goals and non-goals</h2>
+<p><strong>Goals:</strong> grounded answers with citations; strict permission enforcement; freshness within minutes; measurable retrieval quality.</p>
+<p><strong>Non-goals:</strong> writing back to source systems; answering from the public web; agentic multi-step research (a later phase).</p>
+<h2 id="2-requirements">2. Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Functional</td>
+<td>ask and follow up; answers cite passages; "not found" when sources do not answer; feedback on answers</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>a user only ever sees content they can open in the source system</td>
+</tr>
+<tr>
+<td>Scale (assumption)</td>
+<td>10M documents × ~2,000 tokens; 50,000 employees × 10 questions/day; peak 3×</td>
+</tr>
+<tr>
+<td>Freshness (target)</td>
+<td>edits searchable in 15 min; revocations enforced in 5 min</td>
+</tr>
+<tr>
+<td>Latency (target)</td>
+<td>first answer token p95 &lt; 3 s</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-estimates">3. Estimates</h2>
+<ul>
+<li><strong>Corpus:</strong> 10M × 2,000 = <strong>20B tokens</strong> → at 400-token chunks, <strong>50M chunks</strong>.</li>
+<li><strong>Vectors:</strong> 1,024 dimensions × 4 bytes = 4 KB per chunk → <strong>205 GB</strong> raw. HNSW (hierarchical navigable small world) with M = 16 adds up to 32 neighbour ids × 4 bytes = 128 bytes per vector (+6.4 GB). Product quantization at 64 bytes plus an 8-byte id is <strong>3.6 GB</strong>, with re-scoring of top candidates on full vectors.</li>
+<li><strong>Contextual chunks:</strong> Anthropic estimates <strong>$1.02 per million document tokens</strong> (with their assumptions of 8K-token documents and 800-token chunks) → about <strong>$20,000 one-time</strong> for 20B tokens, plus the cost of changed documents.</li>
+<li><strong>Queries:</strong> 500K/day → ~5.8 per second average, ~17 at peak.</li>
+</ul>
+<h2 id="4-architecture">4. Architecture</h2>
+<div class="visual dgm" data-steps="[&quot;Connectors pull documents and their permissions from each source and emit change events.&quot;, &quot;Ingestion parses, chunks, adds chunk context and metadata, and embeds.&quot;, &quot;Each chunk lands in a vector index and a lexical (BM25) index, tagged with its access list.&quot;, &quot;Permission changes are synced into the index so revoked access takes effect quickly.&quot;, &quot;An employee asks; the query service rewrites the question and searches both indexes with a filter on the user&#x27;s groups.&quot;, &quot;Fused candidates (about 150) are reranked to the best 20.&quot;, &quot;The LLM answers from those passages only and cites them.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 270" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="142.0" y1="48.0" x2="176.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="332.0" y1="48.0" x2="366.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="4"><line x1="548.0" y1="48.0" x2="514.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="142.0" y1="208.0" x2="176.0" y2="208.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="289.7" y1="178.0" x2="403.0" y2="80.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="332.0" y1="208.0" x2="366.0" y2="208.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="7"><line x1="512.0" y1="208.0" x2="546.0" y2="208.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="20" width="130" height="56" rx="10"/><text class="dg-text" x="75.0" y="46.0" text-anchor="middle">Sources</text><text class="dg-sub" x="75.0" y="62.0" text-anchor="middle">wiki · drive · tickets</text></g><g class="dg-node b" data-step="2"><rect x="180" y="20" width="150" height="56" rx="10"/><text class="dg-text" x="255.0" y="46.0" text-anchor="middle">Ingestion</text><text class="dg-sub" x="255.0" y="62.0" text-anchor="middle">parse · chunk · context</text></g><g class="dg-node e" data-step="3"><rect x="370" y="20" width="140" height="56" rx="10"/><text class="dg-text" x="440.0" y="46.0" text-anchor="middle">Indexes</text><text class="dg-sub" x="440.0" y="62.0" text-anchor="middle">vectors + BM25</text></g><g class="dg-node d" data-step="4"><rect x="550" y="20" width="100" height="56" rx="10"/><text class="dg-text" x="600.0" y="46.0" text-anchor="middle">ACL sync</text><text class="dg-sub" x="600.0" y="62.0" text-anchor="middle">groups</text></g><g class="dg-node f" data-step="5"><rect x="10" y="180" width="130" height="56" rx="10"/><text class="dg-text" x="75.0" y="206.0" text-anchor="middle">Employee</text><text class="dg-sub" x="75.0" y="222.0" text-anchor="middle">question</text></g><g class="dg-node a" data-step="5"><rect x="180" y="180" width="150" height="56" rx="10"/><text class="dg-text" x="255.0" y="206.0" text-anchor="middle">Query service</text><text class="dg-sub" x="255.0" y="222.0" text-anchor="middle">rewrite · retrieve</text></g><g class="dg-node c" data-step="6"><rect x="370" y="180" width="140" height="56" rx="10"/><text class="dg-text" x="440.0" y="206.0" text-anchor="middle">Reranker</text><text class="dg-sub" x="440.0" y="222.0" text-anchor="middle">150 → 20</text></g><g class="dg-node a" data-step="7"><rect x="550" y="180" width="100" height="56" rx="10"/><text class="dg-text" x="600.0" y="206.0" text-anchor="middle">LLM</text><text class="dg-sub" x="600.0" y="222.0" text-anchor="middle">answer + cite</text></g><g data-step="4"><text class="dg-label" x="531.0" y="43.0" text-anchor="middle">permissions</text></g><g data-step="5"><text class="dg-label" x="346.3" y="124.0" text-anchor="middle">filtered search</text></g></svg><p class="readout dgcap"></p></div>
+
+<h2 id="5-components">5. Components</h2>
+<h3 id="51-connectors-and-change-feed">5.1 Connectors and change feed</h3>
+<p>One connector per source (wiki, drive, ticketing, code). Each emits create, update, delete and permission-change events with document version, content hash and access list.</p>
+<h3 id="52-ingestion-pipeline">5.2 Ingestion pipeline</h3>
+<p>Layout-aware parsing (tables kept whole), structure-aware chunking (a few hundred tokens), an LLM-written (LLM = large language model) context sentence per chunk (Contextual Retrieval), metadata (source, title, section, timestamps, access list), embeddings with a pinned model version, and BM25 (Okapi Best Matching 25 ranking function) terms. Unchanged chunks are skipped by content hash.</p>
+<h3 id="53-indexes">5.3 Indexes</h3>
+<p>A vector index (HNSW, quantized when memory requires) and a lexical index, both supporting filters on access-list metadata. Indexes are versioned; a new embedding model means building a new index and switching an alias after evaluation.</p>
+<h3 id="54-query-service">5.4 Query service</h3>
+<p>Rewrites follow-ups into standalone queries, runs BM25 (top 100) and dense search (top 100) in parallel with the user's group filter, fuses with reciprocal rank fusion (k = 60), and reranks about 150 candidates to 20 with a cross-encoder (Anthropic found retrieving 150 and keeping 20 best among the options they tried).</p>
+<h3 id="55-answer-generation">5.5 Answer generation</h3>
+<p>The model answers only from the 20 passages, cites passage ids, and returns "not found" when they do not contain the answer. Citations are rendered from the source system after a read-time permission check.</p>
+<h2 id="6-data-model">6. Data model</h2>
+<pre><code>chunk(id, doc_id, doc_version, text, context, embedding_v3, bm25_terms,
+      acl_groups[], source, title, section, updated_at, content_hash)
+</code></pre>
+<h2 id="7-scaling-plan">7. Scaling plan</h2>
+<p>Quantize or move to SSD-resident (SSD = solid-state drive) graphs as the corpus grows; shard by source with a query router; priority queues so deletes and permission changes overtake bulk imports; scheduled re-embedding backfills.</p>
+<h2 id="8-reliability-and-security">8. Reliability and security</h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Control</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Leaking restricted content</td>
+<td>pre-filter by access list inside the index; read-time permission check; audit log of every answer's sources</td>
+</tr>
+<tr>
+<td>Stale permissions</td>
+<td>event-driven sync, nightly reconciliation, alert on sync lag</td>
+</tr>
+<tr>
+<td>Prompt injection in documents</td>
+<td>retrieved text treated as data; no write tools; output filters</td>
+</tr>
+<tr>
+<td>Deleted documents still retrievable</td>
+<td>deletes from the change feed; reconciliation; tombstones compacted</td>
+</tr>
+</tbody>
+</table>
+<h2 id="9-evaluation">9. Evaluation</h2>
+<p>A labelled set of real questions with known supporting documents: <strong>recall@20</strong> (Anthropic reports 1 − recall@20 as the retrieval failure rate), nDCG@10 after reranking, groundedness (every claim supported by a cited passage, checked by a judge and sampled human review), and "not found" accuracy. Online: answer ratings and citation clicks, analysed with A/B tests for changes.</p>
+<h2 id="10-alternatives-considered">10. Alternatives considered</h2>
+<ul>
+<li><strong>Dense-only retrieval:</strong> simpler, but misses exact identifiers; BEIR found BM25 a robust zero-shot baseline.</li>
+<li><strong>Post-filtering by permission:</strong> leaks text into the pipeline and returns too few results.</li>
+<li><strong>Long-context only:</strong> if a team's corpus is under about 200,000 tokens, put it in the prompt with prompt caching instead.</li>
+</ul>
+<h2 id="references">References</h2>
+<p>Anthropic, Introducing Contextual Retrieval (2024); Cormack et al. 2009 (RRF (reciprocal rank fusion)); Nogueira &amp; Cho 2019 (cross-encoder reranking); Malkov &amp; Yashunin (HNSW); Subramanya et al. 2019 (DiskANN); Thakur et al. 2021 (BEIR); OWASP (Open Worldwide Application Security Project) Top 10 for LLM Applications 2025. Related decks: indexing pipelines, vector databases, rerankers, identity and access control, agentic RAG (retrieval-augmented generation).</p>
+</article>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>

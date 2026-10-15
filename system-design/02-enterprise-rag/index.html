@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enterprise RAG Assistant</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Enterprise RAG assistant" data-home="../index.html" data-home-label="System design">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual AI · System design · 02</div>
+    <h1>An enterprise RAG assistant</h1>
+    <p class="sub">A question-answering assistant over a company's documents: indexing at scale, permission-aware retrieval, hybrid search and reranking, grounded answers with citations, freshness and evaluation.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Design an assistant that answers employees' questions from 10 million internal documents, never reveals a document a user cannot open, cites its sources and stays fresh as documents change.</div>
+      <div class="c"><b>Core idea</b>An offline <b>indexing pipeline</b> (parse, chunk, add context, embed, BM25 (Okapi Best Matching 25 ranking function)) keyed by content hash, with <b>access lists on every chunk</b>; an online path that rewrites the query, runs <b>hybrid search filtered by the user's groups</b>, fuses with RRF (reciprocal rank fusion), <b>reranks</b> about 150 candidates to 20, and has the model <b>answer with citations</b>. Measure retrieval recall and groundedness continuously.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint"><a href="design.html">Read the full design doc →</a> · Previous: <a href="../01-chat-assistant/index.html">Serving a chat assistant</a> · Next: <a href="../03-coding-agent/index.html">Autonomous coding agent →</a> · <a href="../index.html">All case studies</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-req" data-chapter="Requirements">
+  <div class="inner">
+    <span class="qtag b1">1 · Requirements</span>
+    <h2>What the system must do</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Functional</h3><p>Answer questions from internal documents with citations; say "not found" when the documents do not answer; multi-turn follow-ups.</p></div>
+      <div class="card d"><h3>Hard requirement</h3><p>Never show or use a document the asking user cannot open in the source system.</p></div>
+      <div class="card a"><h3>Scale (assumption)</h3><p>10M documents averaging 2,000 tokens; 50,000 employees asking 10 questions a day; peak 3× average.</p></div>
+      <div class="card e"><h3>Freshness and latency (target)</h3><p>Edits searchable within 15 minutes; permission revocations within 5; first answer token p95 under 3 s.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-est" data-chapter="Estimates">
+  <div class="inner">
+    <span class="qtag b2">2 · Estimates</span>
+    <h2>Index size and cost <span class="ill">calculator</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">documents (M) <input type="range" id="rD" min="1" max="100" step="1" value="10"> <output id="rDo"></output></label><label class="ctl">tokens / document <input type="range" id="rT" min="200" max="10000" step="100" value="2000"> <output id="rTo"></output></label><label class="ctl">chunk tokens <input type="range" id="rC" min="100" max="1000" step="50" value="400"> <output id="rCo"></output></label><label class="ctl">embedding dims <input type="range" id="rM" min="256" max="3072" step="128" value="1024"> <output id="rMo"></output></label><label class="ctl">bytes / dim <input type="range" id="rB" min="1" max="4" step="1" value="4"> <output id="rBo"></output></label></div><div class="bars"><div id="rBars"></div></div><p class="readout" id="rOut"></p></div>
+
+<p>Query load: 50,000 × 10 = 500K questions a day ≈ 5.8 per second on average, about 17 at peak: retrieval capacity is easy; ingestion volume, permissions and quality are the hard parts.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-arch" data-chapter="Architecture">
+  <div class="inner">
+    <span class="qtag b3">3 · Architecture</span>
+    <h2>Architecture</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Connectors pull documents and their permissions from each source and emit change events.&quot;, &quot;Ingestion parses, chunks, adds chunk context and metadata, and embeds.&quot;, &quot;Each chunk lands in a vector index and a lexical (BM25) index, tagged with its access list.&quot;, &quot;Permission changes are synced into the index so revoked access takes effect quickly.&quot;, &quot;An employee asks; the query service rewrites the question and searches both indexes with a filter on the user&#x27;s groups.&quot;, &quot;Fused candidates (about 150) are reranked to the best 20.&quot;, &quot;The LLM answers from those passages only and cites them.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 270" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="142.0" y1="48.0" x2="176.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="332.0" y1="48.0" x2="366.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="4"><line x1="548.0" y1="48.0" x2="514.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="142.0" y1="208.0" x2="176.0" y2="208.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="289.7" y1="178.0" x2="403.0" y2="80.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="332.0" y1="208.0" x2="366.0" y2="208.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="7"><line x1="512.0" y1="208.0" x2="546.0" y2="208.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="20" width="130" height="56" rx="10"/><text class="dg-text" x="75.0" y="46.0" text-anchor="middle">Sources</text><text class="dg-sub" x="75.0" y="62.0" text-anchor="middle">wiki · drive · tickets</text></g><g class="dg-node b" data-step="2"><rect x="180" y="20" width="150" height="56" rx="10"/><text class="dg-text" x="255.0" y="46.0" text-anchor="middle">Ingestion</text><text class="dg-sub" x="255.0" y="62.0" text-anchor="middle">parse · chunk · context</text></g><g class="dg-node e" data-step="3"><rect x="370" y="20" width="140" height="56" rx="10"/><text class="dg-text" x="440.0" y="46.0" text-anchor="middle">Indexes</text><text class="dg-sub" x="440.0" y="62.0" text-anchor="middle">vectors + BM25</text></g><g class="dg-node d" data-step="4"><rect x="550" y="20" width="100" height="56" rx="10"/><text class="dg-text" x="600.0" y="46.0" text-anchor="middle">ACL sync</text><text class="dg-sub" x="600.0" y="62.0" text-anchor="middle">groups</text></g><g class="dg-node f" data-step="5"><rect x="10" y="180" width="130" height="56" rx="10"/><text class="dg-text" x="75.0" y="206.0" text-anchor="middle">Employee</text><text class="dg-sub" x="75.0" y="222.0" text-anchor="middle">question</text></g><g class="dg-node a" data-step="5"><rect x="180" y="180" width="150" height="56" rx="10"/><text class="dg-text" x="255.0" y="206.0" text-anchor="middle">Query service</text><text class="dg-sub" x="255.0" y="222.0" text-anchor="middle">rewrite · retrieve</text></g><g class="dg-node c" data-step="6"><rect x="370" y="180" width="140" height="56" rx="10"/><text class="dg-text" x="440.0" y="206.0" text-anchor="middle">Reranker</text><text class="dg-sub" x="440.0" y="222.0" text-anchor="middle">150 → 20</text></g><g class="dg-node a" data-step="7"><rect x="550" y="180" width="100" height="56" rx="10"/><text class="dg-text" x="600.0" y="206.0" text-anchor="middle">LLM</text><text class="dg-sub" x="600.0" y="222.0" text-anchor="middle">answer + cite</text></g><g data-step="4"><text class="dg-label" x="531.0" y="43.0" text-anchor="middle">permissions</text></g><g data-step="5"><text class="dg-label" x="346.3" y="124.0" text-anchor="middle">filtered search</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-flow" data-chapter="Walkthrough">
+  <div class="inner">
+    <span class="qtag b4">4 · Walkthrough</span>
+    <h2>Answering one question</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A question arrives, possibly mid-conversation.&quot;, &quot;An LLM rewrites it into a standalone search query using the conversation.&quot;, &quot;Lexical and dense retrieval run in parallel, both filtered by the user&#x27;s access groups.&quot;, &quot;Dense search uses the same filter inside the ANN index.&quot;, &quot;Reciprocal rank fusion (k = 60) merges the two lists.&quot;, &quot;A cross-encoder reranks about 150 candidates and keeps 20.&quot;, &quot;The model answers only from those passages, cites them, and says when the answer is not in them.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 270" role="img" aria-label="diagram"><defs><marker id="dga2" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="132.0" y1="48.0" x2="156.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="302.0" y1="48.0" x2="326.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="276.4" y1="78.0" x2="350.5" y2="126.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="4"><line x1="472.0" y1="68.6" x2="496.0" y2="75.4" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="4"><line x1="472.0" y1="133.3" x2="496.0" y2="125.1" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="5"><line x1="575.0" y1="128.0" x2="575.0" y2="196.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="6"><line x1="498.0" y1="228.0" x2="464.0" y2="228.0" marker-end="url(#dga2)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="20" width="120" height="56" rx="10"/><text class="dg-text" x="70.0" y="53.0" text-anchor="middle">Question</text></g><g class="dg-node a" data-step="2"><rect x="160" y="20" width="140" height="56" rx="10"/><text class="dg-text" x="230.0" y="46.0" text-anchor="middle">Rewrite</text><text class="dg-sub" x="230.0" y="62.0" text-anchor="middle">standalone query</text></g><g class="dg-node b" data-step="3"><rect x="330" y="20" width="140" height="56" rx="10"/><text class="dg-text" x="400.0" y="46.0" text-anchor="middle">BM25</text><text class="dg-sub" x="400.0" y="62.0" text-anchor="middle">top 100</text></g><g class="dg-node b" data-step="3"><rect x="330" y="130" width="140" height="56" rx="10"/><text class="dg-text" x="400.0" y="156.0" text-anchor="middle">Dense ANN</text><text class="dg-sub" x="400.0" y="172.0" text-anchor="middle">top 100</text></g><g class="dg-node c" data-step="4"><rect x="500" y="70" width="150" height="56" rx="10"/><text class="dg-text" x="575.0" y="96.0" text-anchor="middle">Fuse (RRF)</text><text class="dg-sub" x="575.0" y="112.0" text-anchor="middle">~150 candidates</text></g><g class="dg-node c" data-step="5"><rect x="500" y="200" width="150" height="56" rx="10"/><text class="dg-text" x="575.0" y="226.0" text-anchor="middle">Rerank</text><text class="dg-sub" x="575.0" y="242.0" text-anchor="middle">keep 20</text></g><g class="dg-node e" data-step="6"><rect x="160" y="200" width="300" height="56" rx="10"/><text class="dg-text" x="310.0" y="226.0" text-anchor="middle">Answer with citations</text><text class="dg-sub" x="310.0" y="242.0" text-anchor="middle">or &quot;not found&quot;</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-deep" data-chapter="Deep dive">
+  <div class="inner">
+    <span class="qtag b5">5 · Deep dive</span>
+    <h2>Deep dive: permissions inside retrieval</h2>
+    <hr>
+<div class="grid2">
+      <div class="card d"><h3>Filter before ranking</h3><p>Every chunk carries its document's access list; the search filters by the user's groups inside the index, so unauthorised text never reaches the reranker or the model.</p></div>
+      <div class="card b"><h3>Sync permissions fast</h3><p>Permission changes come from the identity system and source connectors as events; revocations update chunk metadata within minutes, with a nightly reconciliation.</p></div>
+      <div class="card c"><h3>Re-check at read time</h3><p>Before showing a citation, check the document's current permission with the source system: a stale index must not leak.</p></div>
+      <div class="card a"><h3>Restrictive filters</h3><p>Very selective filters can starve approximate search of candidates: partition indexes by large groups, or fall back to exact search on small filtered sets.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-scale" data-chapter="Scaling">
+  <div class="inner">
+    <span class="qtag b6">6 · Scaling</span>
+    <h2>What breaks at 10×</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Bottleneck</th>
+<th>Symptom</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Index memory</td>
+<td>HNSW (hierarchical navigable small world) over RAM (random-access memory)</td>
+<td>product quantization, DiskANN-style SSD (solid-state drive) graphs, sharding by source</td>
+</tr>
+<tr>
+<td>Re-embedding</td>
+<td>a model upgrade means re-embedding billions of tokens</td>
+<td>versioned indexes, blue/green swap, scheduled backfills</td>
+</tr>
+<tr>
+<td>Ingestion bursts</td>
+<td>freshness lags after bulk imports</td>
+<td>priority queues for edits and deletes, autoscaled workers</td>
+</tr>
+<tr>
+<td>Reranker latency</td>
+<td>p99 grows with candidate count</td>
+<td>cap candidates, GPU (graphics processing unit) batching, time out to fused order</td>
+</tr>
+<tr>
+<td>Long documents</td>
+<td>answer split across chunks</td>
+<td>structure-aware chunking, neighbouring-chunk expansion</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failures">
+  <div class="inner">
+    <span class="qtag b7">7 · Failures and operations</span>
+    <h2>Failures and operations</h2>
+    <hr>
+<div class="grid2">
+      <div class="card d"><h3>Leaked document</h3><p>Treat as a security incident: audit logs of query, user, chunks and citations make it traceable.</p></div>
+      <div class="card b"><h3>Stale or deleted content</h3><p>Deletes processed from the change feed; reconciliation catches missed events.</p></div>
+      <div class="card c"><h3>Retrieval regressions</h3><p>A labelled query set (recall@20) and groundedness checks run on every index or model change.</p></div>
+      <div class="card a"><h3>Prompt injection in documents</h3><p>Retrieved text is data: instructions inside documents are ignored, and the assistant has no write tools.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b8">8 · Trade-offs</span>
+    <h2>Trade-offs and alternatives</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Decision</th>
+<th>Chosen</th>
+<th>Alternative</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Retrieval</td>
+<td>hybrid BM25 + dense, RRF, rerank</td>
+<td>dense only</td>
+<td>exact identifiers and rare terms need lexical match</td>
+</tr>
+<tr>
+<td>Chunks</td>
+<td>contextual chunks (LLM-written (LLM = large language model) context)</td>
+<td>plain chunks or late chunking</td>
+<td>Anthropic: failures −49% with BM25, −67% with reranking</td>
+</tr>
+<tr>
+<td>Permissions</td>
+<td>pre-filter in the index + read-time check</td>
+<td>filter after retrieval</td>
+<td>post-filtering exposes text to the pipeline and returns fewer results</td>
+</tr>
+<tr>
+<td>Index</td>
+<td>HNSW with quantization</td>
+<td>flat search</td>
+<td>flat is exact but too slow and memory-hungry at 50M chunks</td>
+</tr>
+<tr>
+<td>Small corpora</td>
+<td>retrieval</td>
+<td>put everything in the prompt</td>
+<td>under ~200K tokens, skip retrieval and use prompt caching</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-sum" data-chapter="Summary">
+  <div class="inner">
+    <span class="qtag b9">9 · Summary</span>
+    <h2>Summary</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Quality is decided at indexing</h3><p>Parse well, chunk with context, keep metadata and access lists.</p></div>
+      <div class="card d"><h3>Permissions inside retrieval</h3><p>Filter in the index and re-check at read time; never after generation.</p></div>
+      <div class="card c"><h3>Hybrid, fused, reranked</h3><p>BM25 + dense, RRF, rerank 150 → 20, answer with citations.</p></div>
+      <div class="card e"><h3>Read more</h3><p>Full design document: <a href="design.html">design.html</a>. Related decks: <a href="../../agent-retrieval/01-indexing/index.html">Indexing</a>, <a href="../../agent-retrieval/02-vector-databases/index.html">Vector databases</a>, <a href="../../agent-retrieval/03-rerankers/index.html">Rerankers</a>, <a href="../../agent-infra/03-access-control/index.html">Access control</a>.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://www.anthropic.com/news/contextual-retrieval" target="_blank" rel="noopener">Introducing Contextual Retrieval</a>
+        <div class="meta">Anthropic · Anthropic News 2024</div>
+        <p>Prepend 50-100 tokens of chunk-specific context (written by an LLM from the whole document) before embedding and BM25 indexing; retrieve top 150, rerank, keep 20. Knowledge bases under 200,000 tokens can go straight into the prompt.</p><div class="num">Remember: top-20 retrieval failures 5.7% → 3.7% (−35%), 2.9% with BM25 (−49%), 1.9% with reranking (−67%); $1.02 per million document tokens</div></div>
+      <div class="paper-item"><a href="https://cormack.uwaterloo.ca/cormacksigir09-rrf.pdf" target="_blank" rel="noopener">Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods</a>
+        <div class="meta">Cormack, Clarke & Büttcher · SIGIR 2009</div>
+        <p>Fuse several rankings by score(d) = Σ 1/(k + rank_r(d)) with k = 60; simple, training-free and better than the individual rankings.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1901.04085" target="_blank" rel="noopener">Passage Re-ranking with BERT (Bidirectional Encoder Representations from Transformers)</a>
+        <div class="meta">Nogueira & Cho · arXiv 2019</div>
+        <p>A BERT cross-encoder reads query and passage together and outputs a relevance score; used to rerank BM25 candidates.</p><div class="num">Remember: +27% relative MRR (mean reciprocal rank)@10 over the previous state of the art on MS MARCO</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1603.09320" target="_blank" rel="noopener">Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs</a>
+        <div class="meta">Malkov & Yashunin · IEEE TPAMI 2018</div>
+        <p>A multi-layer proximity graph: each element's top layer is drawn from an exponentially decaying distribution (mL = 1/ln M), search descends greedily from the top layer, and layer 0 keeps up to 2M links per element; logarithmic complexity scaling.</p></div>
+      <div class="paper-item"><a href="https://proceedings.neurips.cc/paper/2019/hash/09853c7fb1d3f8ee67a61b6bf4a7f8e6-Abstract.html" target="_blank" rel="noopener">DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single Node</a>
+        <div class="meta">Subramanya et al. · NeurIPS 2019</div>
+        <p>A graph index (Vamana) stored on SSD with compressed vectors in RAM serves a billion-point index from one workstation.</p><div class="num">Remember: 1B points, 64 GB RAM, >5,000 queries/s, <3 ms mean latency, 95%+ 1-recall@1 on 16 cores</div></div>
+      <div class="paper-item"><a href="https://genai.owasp.org/llmrisk/llm062025-excessive-agency/" target="_blank" rel="noopener">OWASP (Open Worldwide Application Security Project) Top 10 for LLM Applications 2025</a>
+        <div class="meta">OWASP GenAI Security Project · genai.owasp.org 2025</div>
+        <p>LLM06:2025 Excessive Agency: root causes are excessive functionality, excessive permissions and excessive autonomy; mitigations include minimising extensions and their permissions, executing in the user's context, user approval and complete mediation.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2104.08663" target="_blank" rel="noopener">BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models</a>
+        <div class="meta">Thakur et al. · NeurIPS Datasets and Benchmarks 2021</div>
+        <p>18 retrieval datasets for zero-shot evaluation; BM25 is a robust baseline, and re-ranking and late-interaction models score best on average at higher compute cost.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+<script>
+(() => {
+Deck.bind(['rD', 'rT', 'rC', 'rM', 'rB'], () => {
+  const docs = Deck.val('rD') * 1e6, tpd = Deck.val('rT'), ch = Deck.val('rC'), dim = Deck.val('rM'), bpd = Deck.val('rB');
+  Deck.out('rDo', (docs / 1e6) + 'M'); Deck.out('rTo', tpd.toLocaleString()); Deck.out('rCo', ch); Deck.out('rMo', dim); Deck.out('rBo', bpd);
+  const tokens = docs * tpd, chunks = tokens / ch, raw = chunks * dim * bpd / 1e9, hnsw = raw + chunks * 32 * 4 / 1e9, pq = chunks * 72 / 1e9, ctx = tokens / 1e6 * 1.02;
+  Deck.hbars(document.getElementById('rBars'), [{ label: 'vectors (raw)', value: raw, color: 'var(--d)', text: raw.toFixed(0) + ' GB' },
+    { label: 'HNSW (raw + M=16 links)', value: hnsw, color: 'var(--a)', text: hnsw.toFixed(0) + ' GB' },
+    { label: 'IVF-PQ (64 B codes + id)', value: pq, color: 'var(--e)', text: pq.toFixed(1) + ' GB' }], { max: hnsw * 1.08 });
+  document.getElementById('rOut').innerHTML = `${(docs / 1e6)}M documents × ${tpd.toLocaleString()} tokens = ${(tokens / 1e9).toFixed(0)}B tokens → <b>${(chunks / 1e6).toFixed(0)}M chunks</b> of ${ch} tokens. One-time contextual-chunk cost at Anthropic\'s estimate of $1.02 per million document tokens: <b>$${Math.round(ctx).toLocaleString()}</b> (their assumptions: 8K-token documents, 800-token chunks).`;
+});
+})();
+</script>
+</body>
+</html>

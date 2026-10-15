@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autonomous Coding Agent: design document</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body class="doc-page">
+<article class="doc">
+  <a class="brand" href="index.html">← Overview deck</a>
+<h1 id="an-autonomous-coding-agent">An autonomous coding agent</h1>
+<blockquote>
+<p><strong>Design question.</strong> Build a service that takes 10,000 coding tasks a day, works on each in an isolated environment, and opens a pull request that passes the tests, safely and at a predictable cost.</p>
+</blockquote>
+<h2 id="1-goals-and-non-goals">1. Goals and non-goals</h2>
+<p><strong>Goals:</strong> resolve well-scoped issues end to end; strong isolation of agent-run code; no credentials exposed to the agent; resumable long tasks; measurable quality and cost.</p>
+<p><strong>Non-goals:</strong> merging without review; tasks that need production access; large refactors spanning many repositories.</p>
+<h2 id="2-requirements">2. Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Functional</td>
+<td>submit task + repository; progress updates; cancel; branch and pull request with summary</td>
+</tr>
+<tr>
+<td>Safety</td>
+<td>isolated execution; no secrets in the environment; egress allowlist; human review before merge</td>
+</tr>
+<tr>
+<td>Scale (assumption)</td>
+<td>10,000 tasks/day, ~40 steps and ~20 minutes per task, peak 3×</td>
+</tr>
+<tr>
+<td>Reliability</td>
+<td>a crash or deploy never restarts a task from scratch</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>budget per task (steps, tokens, wall-clock)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-estimates">3. Estimates</h2>
+<ul>
+<li><strong>Context growth:</strong> with a 20K-token prefix (system prompt, tools, issue, key files) and 2K tokens added per step, a 40-step task sends nP + T·n(n−1)/2 = 40 × 20K + 2K × 780 = <strong>2.36M input tokens</strong>.</li>
+<li><strong>Caching:</strong> with prompt caching (5-minute writes at 1.25× base input price, reads at 0.1× on most Claude models) the same task costs about 15% of that in input-token terms, if every step hits the cache.</li>
+<li><strong>Daily volume:</strong> 10,000 × 2.36M ≈ <strong>23.6B input tokens/day</strong> before caching.</li>
+<li><strong>Sandboxes:</strong> 10,000 tasks / 1,440 minutes × 20 minutes ≈ 139 busy on average, <strong>~420 at a 3× peak</strong>.</li>
+</ul>
+<h2 id="4-architecture">4. Architecture</h2>
+<div class="visual dgm" data-steps="[&quot;A task arrives: an issue to fix or a change request.&quot;, &quot;A durable workflow runs the agent loop; every model call and tool call is an activity whose result is recorded, so crashes resume without redoing work.&quot;, &quot;Each step calls the model through the gateway (budgets, retries, caching).&quot;, &quot;Tool calls (shell, file edits, tests) run in a fresh microVM sandbox holding a clone of the repository and no secrets.&quot;, &quot;All network traffic leaves through an egress proxy that allows package registries and nothing else by default.&quot;, &quot;Pushing goes through a git proxy that checks the branch and attaches the real credential outside the sandbox.&quot;, &quot;The result is checked: tests must pass, and a human reviews the diff.&quot;, &quot;Only then is a pull request opened or merged.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="122.0" y1="148.0" x2="156.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="240.0" y1="108.0" x2="240.0" y2="70.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="322.0" y1="148.0" x2="366.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="522.0" y1="119.1" x2="556.0" y2="106.4" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="522.0" y1="167.2" x2="556.0" y2="175.8" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="7"><line x1="240.0" y1="188.0" x2="240.0" y2="231.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="8"><line x1="322.0" y1="263.0" x2="366.0" y2="263.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="110" height="56" rx="10"/><text class="dg-text" x="65.0" y="146.0" text-anchor="middle">Issue</text><text class="dg-sub" x="65.0" y="162.0" text-anchor="middle">or task</text></g><g class="dg-node a" data-step="2"><rect x="160" y="110" width="160" height="76" rx="10"/><text class="dg-text" x="240.0" y="146.0" text-anchor="middle">Workflow engine</text><text class="dg-sub" x="240.0" y="162.0" text-anchor="middle">durable · per task</text></g><g class="dg-node b" data-step="3"><rect x="160" y="10" width="160" height="56" rx="10"/><text class="dg-text" x="240.0" y="36.0" text-anchor="middle">Model API</text><text class="dg-sub" x="240.0" y="52.0" text-anchor="middle">via gateway</text></g><g class="dg-node c" data-step="4"><rect x="370" y="110" width="150" height="76" rx="10"/><text class="dg-text" x="445.0" y="146.0" text-anchor="middle">Sandbox (microVM)</text><text class="dg-sub" x="445.0" y="162.0" text-anchor="middle">repo · tests</text></g><g class="dg-node d" data-step="5"><rect x="560" y="60" width="90" height="56" rx="10"/><text class="dg-text" x="605.0" y="86.0" text-anchor="middle">Egress proxy</text><text class="dg-sub" x="605.0" y="102.0" text-anchor="middle">allowlist</text></g><g class="dg-node d" data-step="6"><rect x="560" y="160" width="90" height="56" rx="10"/><text class="dg-text" x="605.0" y="186.0" text-anchor="middle">Git proxy</text><text class="dg-sub" x="605.0" y="202.0" text-anchor="middle">real token</text></g><g class="dg-node e" data-step="7"><rect x="160" y="235" width="160" height="56" rx="10"/><text class="dg-text" x="240.0" y="261.0" text-anchor="middle">Review</text><text class="dg-sub" x="240.0" y="277.0" text-anchor="middle">tests · human</text></g><g class="dg-node e" data-step="8"><rect x="370" y="235" width="150" height="56" rx="10"/><text class="dg-text" x="445.0" y="261.0" text-anchor="middle">Pull request</text><text class="dg-sub" x="445.0" y="277.0" text-anchor="middle">merge after review</text></g><g data-step="3"><text class="dg-label" x="240.0" y="84.0" text-anchor="middle">each step</text></g><g data-step="4"><text class="dg-label" x="344.0" y="143.0" text-anchor="middle">tool calls</text></g><g data-step="6"><text class="dg-label" x="539.0" y="166.5" text-anchor="middle">push</text></g></svg><p class="readout dgcap"></p></div>
+
+<h2 id="5-components">5. Components</h2>
+<h3 id="51-task-service-and-workflow-engine">5.1 Task service and workflow engine</h3>
+<p>Each task is a durable workflow (e.g. Temporal): model calls and tool calls are activities with timeouts and retry policies; the event history lets any worker resume a task after a crash. Workflow code stays deterministic; LLM (large language model) outputs are recorded results.</p>
+<h3 id="52-agent-loop">5.2 Agent loop</h3>
+<p>A single agent with tools: search code, read and edit files, run commands and tests. Budgets cap steps, tokens and wall-clock time. Tool outputs are truncated and summarised to keep the context lean; the history is compacted near the context limit.</p>
+<h3 id="53-sandboxes">5.3 Sandboxes</h3>
+<p>A fresh microVM per task (Firecracker boots in under 125 ms with under 5 MiB overhead), restored from a snapshot with the repository and dependency caches. The filesystem is limited to the workspace; all traffic goes through an egress proxy with an allowlist; CPU (central processing unit), memory, disk and time limits apply.</p>
+<h3 id="54-credential-and-git-proxies">5.4 Credential and git proxies</h3>
+<p>The sandbox holds only a scoped, task-bound credential. A git proxy verifies that pushes target the task's branch and attaches the real token outside the sandbox (the pattern Anthropic describes for Claude Code on the web). No other secrets enter the sandbox.</p>
+<h3 id="55-model-access">5.5 Model access</h3>
+<p>Through the LLM gateway: per-tenant budgets, retries with backoff, prompt caching with stable prefixes (tool definitions and system prompt fixed and first).</p>
+<h3 id="56-verification-and-review">5.6 Verification and review</h3>
+<p>Run the relevant tests during the loop and the full suite at the end; lint and type checks; a generated summary; a human approves the pull request.</p>
+<h2 id="6-reliability">6. Reliability</h2>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Handling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Worker crash or deploy</td>
+<td>workflow replays its history on another worker; completed steps are not repeated</td>
+</tr>
+<tr>
+<td>Model 429 / 5xx</td>
+<td>gateway retries with backoff, honours retry-after; workflow activity retries</td>
+</tr>
+<tr>
+<td>Agent loops or stalls</td>
+<td>step and token budgets; repeated-action detection; end with a report</td>
+</tr>
+<tr>
+<td>Sandbox failure</td>
+<td>recreate from snapshot and replay file changes recorded in the history</td>
+</tr>
+<tr>
+<td>Weak tests</td>
+<td>human review; track revert rate; add hidden checks for common failure classes</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-security">7. Security</h2>
+<p>Threat model: prompt injection from issues, code comments or fetched pages; malicious dependencies; data exfiltration. Controls: microVM isolation, egress allowlist, no secrets in the sandbox, least-privilege git scope, audit log of commands and network requests, human approval for merges.</p>
+<h2 id="8-evaluation-and-metrics">8. Evaluation and metrics</h2>
+<p>Offline: a fixed task set (in the style of SWE-bench (SWE = software engineering) Verified, where the project's own tests decide success), measured with pass^k so that consistency, not one lucky run, is rewarded. Online: resolved rate, pull-request acceptance, revert rate, time and cost per resolved task, budget overruns.</p>
+<h2 id="9-alternatives-considered">9. Alternatives considered</h2>
+<ul>
+<li><strong>Containers instead of microVMs:</strong> cheaper and faster but share the host kernel; acceptable only for trusted single-tenant code.</li>
+<li><strong>Multi-agent orchestration:</strong> useful for broad parallel exploration; Anthropic reports multi-agent systems use about 15× the tokens of chat, too costly for most fixes.</li>
+<li><strong>Auto-merge on green tests:</strong> faster, but tests often miss intent; consider only for narrow, well-tested change classes.</li>
+</ul>
+<h2 id="references">References</h2>
+<p>Anthropic, Beyond permission prompts (Claude Code sandboxing, 2025); Agache et al. 2020 (Firecracker); Temporal documentation (workflows, retries); Anthropic prompt caching documentation; Jimenez et al. 2024 (SWE-bench); Yao et al. (τ-bench, pass^k); Anthropic, Building effective agents. Related decks: sandboxing, durable workflows, tool calling, cost and latency, evaluating agents, safety and reliability.</p>
+</article>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>

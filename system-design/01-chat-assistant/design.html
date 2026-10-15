@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Serving a Chat Assistant: design document</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body class="doc-page">
+<article class="doc">
+  <a class="brand" href="index.html">← Overview deck</a>
+<h1 id="serving-a-chat-assistant-to-a-million-daily-users">Serving a chat assistant to a million daily users</h1>
+<blockquote>
+<p><strong>Design question.</strong> Build the backend for a chat assistant used by 1 million people a day, answering with a 70B-class open model, streaming responses with low latency, within a GPU (graphics processing unit) budget.</p>
+</blockquote>
+<h2 id="1-goals-and-non-goals">1. Goals and non-goals</h2>
+<p><strong>Goals:</strong> multi-turn chat with stored history; streaming answers; predictable latency at the daily peak; cost per request low enough to offer a free tier; input and output safety checks.</p>
+<p><strong>Non-goals (for this version):</strong> fine-tuning per customer, image input, tool use and agents (see the coding-agent case), multi-region active-active.</p>
+<h2 id="2-requirements">2. Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Functional</td>
+<td>create and continue conversations; stream tokens; per-product system prompts; per-user quotas; delete conversations</td>
+</tr>
+<tr>
+<td>Scale (assumption)</td>
+<td>1M daily active users, 20 requests per user per day, peak 3× the daily average</td>
+</tr>
+<tr>
+<td>Latency (target)</td>
+<td>time to first token p95 &lt; 1 s; about 40 tokens/s per stream</td>
+</tr>
+<tr>
+<td>Availability (target)</td>
+<td>99.9% monthly for the chat API (application programming interface)</td>
+</tr>
+<tr>
+<td>Prompt shape (assumption)</td>
+<td>~1,500 input tokens (1,000-token shared system prompt + history), ~300 output tokens</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-estimates">3. Estimates</h2>
+<ul>
+<li><strong>Requests:</strong> 1M × 20 = 20M per day → 20M / 86,400 ≈ 231 requests/s on average → <strong>≈ 694 requests/s at peak</strong>.</li>
+<li><strong>Output tokens:</strong> 694 × 300 ≈ <strong>208K tokens/s at peak</strong>.</li>
+<li><strong>Prefill tokens:</strong> 694 × 1,500 ≈ 1.04M tokens/s at peak; with the 1,000-token system prompt served from the prefix cache, about <strong>350K uncached tokens/s</strong>.</li>
+<li><strong>Concurrency (Little's law):</strong> each answer streams for 300 / 40 = 7.5 s → 694 × 7.5 ≈ <strong>5,200 sequences in flight</strong>.</li>
+<li><strong>KV (key-value) cache:</strong> a 70B-shaped model (80 layers, 8 KV heads, head dimension 128, 16-bit) needs 2 × 80 × 8 × 128 × 2 bytes = <strong>320 KB per token</strong>. At 1,800 tokens per sequence: 576 MB per sequence → ≈ <strong>3.0 TB</strong> at peak without prefix sharing, ≈ <strong>1.3 TB</strong> if the system prompt is shared (800 unique tokens per sequence).</li>
+<li><strong>Per replica:</strong> 8 × H100 80 GB = 640 GB; with vLLM's default 92% memory utilisation and 140 GB of 16-bit weights, about 449 GB is left for KV and activations.</li>
+<li><strong>Fleet:</strong> memory-bound ≈ 1.3 TB / 449 GB ≈ 3 replicas with prefix sharing (7 without). Throughput-bound = 208K tokens/s ÷ the replica's <strong>measured</strong> output tokens/s at the latency target. Provision the larger of the two, plus headroom (N+2) for failures and deploys.</li>
+</ul>
+<p>The overview deck has a calculator for these formulas. Replica throughput is the one number that must come from a load test of your model, hardware and prompt mix.</p>
+<h2 id="4-architecture">4. Architecture</h2>
+<div class="visual dgm" data-steps="[&quot;Clients hold a streaming connection (server-sent events) to the API gateway.&quot;, &quot;The gateway authenticates, applies per-user quotas and rate limits, and assigns a request id.&quot;, &quot;The conversation service loads the history and assembles the prompt: shared system prompt first, then history, then the new message.&quot;, &quot;Input safety checks run before inference; output checks run on the stream.&quot;, &quot;A router picks the model tier and a replica, preferring the replica that already caches this conversation&#x27;s prefix.&quot;, &quot;Inference replicas run continuous batching with a paged KV cache and automatic prefix caching, streaming tokens back.&quot;, &quot;The autoscaler adds replicas on queue depth and KV-cache utilisation, ahead of the daily peak.&quot;, &quot;Telemetry records time to first token, inter-token latency, tokens and cost per request.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="1"><line x1="112.0" y1="148.0" x2="146.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="215.0" y1="178.0" x2="215.0" y2="226.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="4"><line x1="215.0" y1="118.0" x2="215.0" y2="70.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="282.0" y1="148.0" x2="316.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="452.0" y1="148.0" x2="486.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="7"><line x1="570.0" y1="238.0" x2="570.0" y2="210.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="8"><line x1="488.0" y1="199.9" x2="430.9" y2="236.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="100" height="56" rx="10"/><text class="dg-text" x="60.0" y="146.0" text-anchor="middle">Clients</text><text class="dg-sub" x="60.0" y="162.0" text-anchor="middle">web · mobile · API</text></g><g class="dg-node a" data-step="2"><rect x="150" y="120" width="130" height="56" rx="10"/><text class="dg-text" x="215.0" y="146.0" text-anchor="middle">API gateway</text><text class="dg-sub" x="215.0" y="162.0" text-anchor="middle">auth · quotas</text></g><g class="dg-node b" data-step="3"><rect x="150" y="230" width="130" height="56" rx="10"/><text class="dg-text" x="215.0" y="256.0" text-anchor="middle">Conversation svc</text><text class="dg-sub" x="215.0" y="272.0" text-anchor="middle">history store</text></g><g class="dg-node d" data-step="4"><rect x="150" y="10" width="130" height="56" rx="10"/><text class="dg-text" x="215.0" y="36.0" text-anchor="middle">Safety filters</text><text class="dg-sub" x="215.0" y="52.0" text-anchor="middle">input · output</text></g><g class="dg-node c" data-step="5"><rect x="320" y="120" width="130" height="56" rx="10"/><text class="dg-text" x="385.0" y="146.0" text-anchor="middle">Router + LB</text><text class="dg-sub" x="385.0" y="162.0" text-anchor="middle">tier · affinity</text></g><g class="dg-node e" data-step="6"><rect x="490" y="90" width="160" height="116" rx="10"/><text class="dg-text" x="570.0" y="146.0" text-anchor="middle">Inference fleet</text><text class="dg-sub" x="570.0" y="162.0" text-anchor="middle">vLLM replicas</text></g><g class="dg-node b" data-step="7"><rect x="490" y="240" width="160" height="50" rx="10"/><text class="dg-text" x="570.0" y="263.0" text-anchor="middle">Autoscaler</text><text class="dg-sub" x="570.0" y="279.0" text-anchor="middle">queue · KV use</text></g><g class="dg-node f" data-step="8"><rect x="320" y="240" width="130" height="50" rx="10"/><text class="dg-text" x="385.0" y="263.0" text-anchor="middle">Telemetry</text><text class="dg-sub" x="385.0" y="279.0" text-anchor="middle">tokens · latency</text></g><g data-step="1"><text class="dg-label" x="129.0" y="143.0" text-anchor="middle">stream</text></g><g data-step="5"><text class="dg-label" x="299.0" y="143.0" text-anchor="middle">prompt</text></g></svg><p class="readout dgcap"></p></div>
+
+<h2 id="5-components">5. Components</h2>
+<h3 id="51-api-gateway">5.1 API gateway</h3>
+<p>Terminates TLS (Transport Layer Security), authenticates users, enforces per-user and per-organisation quotas with token buckets, assigns request ids and holds the server-sent-events stream. Returns 429 with <code>retry-after</code> when a quota or global admission limit is hit.</p>
+<h3 id="52-conversation-service">5.2 Conversation service</h3>
+<p>Stores conversations (relational or key-value store) and assembles prompts in a fixed order: <strong>system prompt, then history, then the new message</strong>, so the prefix is byte-identical across turns and the prefix cache hits. Truncates or summarises old turns beyond a history budget.</p>
+<h3 id="53-safety-filters">5.3 Safety filters</h3>
+<p>A fast classifier on input before inference and on the output stream, able to stop generation mid-stream. Decisions are logged for review.</p>
+<h3 id="54-router-and-load-balancer">5.4 Router and load balancer</h3>
+<p>Chooses the model tier and a replica. Uses <strong>session affinity</strong> (consistent hashing on conversation id) so a conversation returns to the replica holding its KV prefix, with spill-over to the least-loaded replica when the preferred one is saturated.</p>
+<h3 id="55-inference-replicas">5.5 Inference replicas</h3>
+<p>vLLM replicas with tensor parallelism 8 within a node: continuous batching, PagedAttention (16-token blocks), automatic prefix caching (on by default in v0.31.0) and chunked prefill so long prompts do not stall decoding. Each exposes queue depth and KV utilisation.</p>
+<h3 id="56-autoscaler">5.6 Autoscaler</h3>
+<p>Scales on queue depth and KV-cache utilisation, with scheduled pre-scaling ahead of the known daily peak because GPU replicas take minutes to load weights.</p>
+<h2 id="6-api-sketch">6. API sketch</h2>
+<pre><code>POST /v1/conversations/{id}/messages     {&quot;text&quot;: &quot;...&quot;}
+→ 200 text/event-stream: token events ..., then {&quot;usage&quot;: {&quot;input&quot;: 1532, &quot;cached&quot;: 1000, &quot;output&quot;: 287}}
+</code></pre>
+<h2 id="7-scaling-plan">7. Scaling plan</h2>
+<ul>
+<li><strong>Memory first:</strong> FP8 (8-bit floating point) KV cache halves KV memory; shorter retained history and summarisation reduce tokens per sequence.</li>
+<li><strong>Prefill vs decode:</strong> if long prompts make time to first token unstable, split into prefill and decode pools (disaggregation) and transfer KV between them.</li>
+<li><strong>Model tiers:</strong> route simple requests to a smaller model when cost per request matters more than consistency.</li>
+<li><strong>Regions:</strong> add regions for latency and resilience once single-region capacity is understood.</li>
+</ul>
+<h2 id="8-reliability">8. Reliability</h2>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Detection</th>
+<th>Handling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU or replica failure</td>
+<td>health checks, error rates</td>
+<td>remove from pool; retry in-flight requests from stored history on another replica</td>
+</tr>
+<tr>
+<td>Overload at peak</td>
+<td>queue depth, KV utilisation</td>
+<td>admission control, quotas, 429 with retry-after, pre-scaling</td>
+</tr>
+<tr>
+<td>Bad model or prompt deploy</td>
+<td>canary metrics (latency, refusals, ratings)</td>
+<td>automatic rollback</td>
+</tr>
+<tr>
+<td>Preemption storms</td>
+<td>vLLM preemption counters</td>
+<td>lower max concurrent sequences per replica; add capacity</td>
+</tr>
+</tbody>
+</table>
+<h2 id="9-security-and-privacy">9. Security and privacy</h2>
+<p>Per-user isolation of conversation data; conversation ids never used as cache keys across users (the prefix cache is shared only for the common system prompt); retention limits and deletion; prompts and outputs in logs redacted or sampled.</p>
+<h2 id="10-observability-and-evaluation">10. Observability and evaluation</h2>
+<p>Track time to first token, inter-token latency, tokens per request (input, cached, output), cost per request, KV utilisation, preemptions and safety-filter rates. Quality: offline eval suites before each model or prompt change, then an online A/B test with guardrails (see the experimentation deck).</p>
+<h2 id="11-alternatives-considered">11. Alternatives considered</h2>
+<ul>
+<li><strong>Hosted model API instead of self-hosting:</strong> no GPU operations and fast start; higher unit cost at this volume and less control over latency.</li>
+<li><strong>WebSockets instead of server-sent events:</strong> unnecessary for one-way token streams.</li>
+<li><strong>Smaller model only:</strong> cheaper but lower answer quality; better as an overflow or routing tier.</li>
+</ul>
+<h2 id="12-rollout">12. Rollout</h2>
+<p>Load-test a single replica to measure throughput at the latency target; launch to internal users; ramp external traffic 1% → 10% → 50% → 100% with canaries; add the routing tier and disaggregation only when metrics show the need.</p>
+<h2 id="references">References</h2>
+<p>Kwon et al. 2023 (PagedAttention / vLLM); vLLM automatic prefix caching design; Yu et al. 2022 (Orca); Agrawal et al. 2024 (Sarathi-Serve); Zhong et al. 2024 (DistServe); Llama 3 model card shapes via the Llama 3 report; Anthropic rate-limit documentation (token buckets, 429 and retry-after). Related decks: KV cache, continuous batching, vLLM scheduler and prefix caching, LLM (large language model) gateway.</p>
+</article>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>
