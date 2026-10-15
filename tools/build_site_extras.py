@@ -20,6 +20,7 @@ TOPICS = {  # folder: (title, [(stage, [slug, ...]), ...])
     'agent-context': ('Agent context', [('Memory', ['01-memory']), ('Knowledge and tools', ['02-agentic-rag', '03-mcp'])]),
     'agent-systems': ('Agent systems', [('Architectures', ['01-multi-agent', '02-computer-use'])]),
     'agent-operations': ('Agent operations', [('Quality', ['01-evaluating-agents']), ('Risk and cost', ['02-safety-and-reliability', '03-cost-and-latency'])]),
+    'agent-frameworks': ('Agent frameworks', [('LangChain', ['01-langchain-basics']), ('LangGraph', ['02-langgraph-core', '03-langgraph-production'])]),
     'agent-infra': ('Agent infrastructure', [('Traffic', ['01-llm-gateway', '02-model-router']), ('Security', ['03-access-control'])]),
     'agent-retrieval': ('Retrieval stack', [('Building the index', ['01-indexing']), ('Searching', ['02-vector-databases', '03-rerankers'])]),
     'agent-models': ('Models for agents', [('Training', ['01-training-for-agents']), ('Serving', ['02-serving-for-agents'])]),

@@ -41,6 +41,7 @@ AGENT_SECTIONS = [  # same shape as LLM_SECTIONS
         ('agent-foundations', 'Topic · 4 decks', 'Agent foundations', 'What an agent is, tool calling, the ReAct loop, and planning and task decomposition.', ['agent loop', 'tool calling', 'ReAct', 'planning']),
         ('agent-context', 'Topic · 3 decks', 'Agent context', 'Memory and context management, agentic retrieval, and the Model Context Protocol (revision 2026-07-28).', ['memory', 'agentic RAG', 'MCP']),
         ('agent-systems', 'Topic · 2 decks', 'Agent systems', 'Multi-agent orchestrator-workers designs, and computer and browser use.', ['multi-agent', 'computer use']),
+        ('agent-frameworks', 'Topic · 3 decks + 3 notebooks', 'Agent frameworks', 'LangChain basics, LangGraph core and LangGraph in production (checkpoints, interrupts, resuming), with Colab notebooks.', ['LangChain', 'LangGraph', 'checkpoints', 'interrupts']),
     ]),
     ('Platform', [
         ('agent-infra', 'Topic · 3 decks', 'Agent infrastructure', 'The LLM gateway, model and agent routing, and identity and access control for agents.', ['LLM gateway', 'routing', 'RBAC', 'OAuth']),

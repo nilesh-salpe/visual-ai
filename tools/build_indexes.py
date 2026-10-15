@@ -18,6 +18,7 @@ PHASES = [  # (heading, notebook folder, index json)
     ('Phase 6 · Web crawling & pretraining data', 'pretraining-data', 'index_data.json'),
     ('Frameworks · PyTorch for LLMs', 'pytorch', 'index_torch.json'),
     ('Frameworks · vLLM internals', 'vllm', 'index_vllm.json'),
+    ('Agents · LangChain and LangGraph', 'agent-frameworks', 'index_agent_frameworks.json'),
 ]
 
 
@@ -438,6 +439,10 @@ AGENT_HUBS = {
         ('01-evaluating-agents', 'Evaluating agents', 'End-state grading, pass^k, harnesses, benchmarks.'),
         ('02-safety-and-reliability', 'Safety and reliability', 'Prompt injection, least privilege, approvals, idempotency.'),
         ('03-cost-and-latency', 'Cost and latency', 'Quadratic context growth, prompt caching, routing, budgets.')]),
+    'agent-frameworks': ('Agent frameworks', 'The agent loop and graph runtime in a widely used framework: LangChain\'s building blocks and create_agent, LangGraph\'s state graphs, and the persistence layer behind memory, approvals and recovery. Pinned to LangChain 1.4.6 and LangGraph 1.2.15.', [
+        ('01-langchain-basics', 'LangChain basics', 'Chat models, messages, tools, create_agent, middleware.'),
+        ('02-langgraph-core', 'LangGraph core', 'State, reducers, nodes, edges, super-steps.'),
+        ('03-langgraph-production', 'LangGraph in production', 'Checkpoints, threads, interrupts, retries, resuming.')]),
     'agent-infra': ('Agent infrastructure', 'The platform under agents: one gateway for all model traffic, routing each request to the right model or agent, and making agents act with the user\'s permissions and no more.', [
         ('01-llm-gateway', 'LLM gateway', 'Virtual keys, limits, retries, fallbacks, metering.'),
         ('02-model-router', 'Model and agent routing', 'Intent routing, learned routers, cascades.'),
@@ -455,5 +460,6 @@ if __name__ == '__main__':
     for folder, (title, lede, cards) in AGENT_HUBS.items():
         _write(os.path.join(REPO, folder, 'index.html'), topic_hub(
             folder, title, title, lede + ' Each deck follows the agent template: problem, core idea, high-level design, low-level design, trade-offs, failure modes and challenges in production, with steppable diagrams and sources checked against the primary papers, specifications and documentation.',
-            None, '', cards, 'See each deck\'s Key papers slide and this topic\'s reading list.', back='../agents/index.html', back_label='Visual Agents'))
+            *(('index_agent_frameworks.json', 'Build a tool and its schema, the agent loop by hand, a ReAct graph, per-thread memory, an approval step with interrupt() and crash recovery. A scripted fake model means no API key is needed.') if folder == 'agent-frameworks' else (None, '')),
+            cards, 'See each deck\'s Key papers slide and this topic\'s reading list.', back='../agents/index.html', back_label='Visual Agents'))
         print('wrote', folder + '/index.html')

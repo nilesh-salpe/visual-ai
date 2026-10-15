@@ -1,0 +1,26 @@
+[
+ {
+  "slug": "01_langchain_basics",
+  "title": "01 \u00b7 LangChain basics: tools, tool calls and the agent loop",
+  "path": "build-it/agent-frameworks/01_langchain_basics.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/agent-frameworks/01_langchain_basics.ipynb",
+  "deck": "agent-frameworks/01-langchain-basics/",
+  "minutes": 30
+ },
+ {
+  "slug": "02_langgraph_core",
+  "title": "02 \u00b7 LangGraph core: state, reducers, edges and a ReAct graph",
+  "path": "build-it/agent-frameworks/02_langgraph_core.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/agent-frameworks/02_langgraph_core.ipynb",
+  "deck": "agent-frameworks/02-langgraph-core/",
+  "minutes": 35
+ },
+ {
+  "slug": "03_langgraph_production",
+  "title": "03 \u00b7 LangGraph in production: checkpoints, threads, interrupts and resuming",
+  "path": "build-it/agent-frameworks/03_langgraph_production.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/agent-frameworks/03_langgraph_production.ipynb",
+  "deck": "agent-frameworks/03-langgraph-production/",
+  "minutes": 35
+ }
+]

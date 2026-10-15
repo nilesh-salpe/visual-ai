@@ -146,3 +146,13 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/pytorch/
 | [05 · N-gram speculative decoding](vllm/05_ngram_speculation.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/05_ngram_speculation.ipynb) |
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/vllm/
+
+## Agents · LangChain and LangGraph
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · LangChain basics: tools, tool calls and the agent loop](agent-frameworks/01_langchain_basics.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/agent-frameworks/01_langchain_basics.ipynb) |
+| [02 · LangGraph core: state, reducers, edges and a ReAct graph](agent-frameworks/02_langgraph_core.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/agent-frameworks/02_langgraph_core.ipynb) |
+| [03 · LangGraph in production: checkpoints, threads, interrupts and resuming](agent-frameworks/03_langgraph_production.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/agent-frameworks/03_langgraph_production.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/agent-frameworks/

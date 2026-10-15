@@ -56,8 +56,10 @@ def build(nb, folder):
         2. For each task, fill in the `TODO` in the code cell, then run the **Tests** cell under it. You'll see ⏳ (not done yet), ✅ (passed) or ❌ (failed, with the reason).
         3. Stuck? The **Reference solutions** at the bottom are collapsed. Try first.
 
-        Everything runs on CPU with NumPy, so no GPU is needed.
+        {nb.get("runtime", "Everything runs on CPU with NumPy, so no GPU is needed.")}
         ''')]
+    if nb.get('install'):
+        cells.append(code(nb['install'], title='Install pinned packages'))
     cells.append(code(CHECK + '\n' + textwrap.dedent(nb.get('setup', '')), title='Setup: run this first'))
     for i, t in enumerate(nb['tasks'], 1):
         cells.append(md(f'## Task {i}: {t["title"]}\n\n' + textwrap.dedent(t['md']).strip()))
@@ -82,6 +84,8 @@ def validate(doc, tasks):
         if c['cell_type'] != 'code':
             continue
         src = ''.join(c['source'])
+        if any(l.lstrip().startswith(('%', '!')) for l in src.split('\n')):
+            continue                                    # install cells: the validating environment is prepared beforehand
         with contextlib.redirect_stdout(out):
             exec(compile(src, '<cell>', 'exec'), ns)
     log = out.getvalue()

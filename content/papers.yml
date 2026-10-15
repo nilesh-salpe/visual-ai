@@ -2031,3 +2031,87 @@ parrot:
   url: https://arxiv.org/abs/2405.19888
   summary: Semantic Variables expose the data flow between an application's LLM requests so the service can schedule and share prefixes across them.
   number: up to an order-of-magnitude end-to-end improvement
+lc_agents:
+  title: Agents (LangChain)
+  authors: LangChain documentation
+  venue: docs.langchain.com
+  year: 2026
+  url: https://docs.langchain.com/oss/python/langchain/agents
+  summary: 'create_agent: a model calling tools in a loop until the task is complete; models as "provider:model" strings or objects, tools as callables or LangChain tools, system_prompt, response_format, middleware, and memory via a checkpointer and thread_id.'
+lc_tools:
+  title: Tools (LangChain)
+  authors: LangChain documentation
+  venue: docs.langchain.com
+  year: 2026
+  url: https://docs.langchain.com/oss/python/langchain/tools
+  summary: The @tool decorator turns a function into a tool whose name, description (docstring) and argument schema (type hints) are sent to the model.
+lc_middleware:
+  title: Middleware (LangChain)
+  authors: LangChain documentation
+  venue: docs.langchain.com
+  year: 2026
+  url: https://docs.langchain.com/oss/python/langchain/middleware
+  summary: 'Hooks around the agent loop (before/after agent and model calls, wrappers around model and tool calls) and prebuilt middleware such as summarization, human-in-the-loop approval, call limits, retries, model fallback and PII handling.'
+lc_pypi:
+  title: langchain 1.4.6 and langgraph 1.2.15 (release pins)
+  authors: PyPI
+  venue: pypi.org
+  year: 2026
+  url: https://pypi.org/project/langgraph/1.2.15/
+  summary: 'The versions these decks and notebooks are verified against: langchain 1.4.6, langchain-core 1.6.10, langgraph 1.2.15, langgraph-checkpoint 4.3.0.'
+lg_overview:
+  title: LangGraph overview
+  authors: LangChain documentation
+  venue: docs.langchain.com
+  year: 2026
+  url: https://docs.langchain.com/oss/python/langgraph/overview
+  summary: A low-level orchestration runtime for long-running, stateful agents, with durable execution, human-in-the-loop, memory and streaming.
+lg_graph_api:
+  title: Graph API (LangGraph)
+  authors: LangChain documentation
+  venue: docs.langchain.com
+  year: 2026
+  url: https://docs.langchain.com/oss/python/langgraph/graph-api
+  summary: 'State schemas and reducers (the default overwrites), MessagesState and add_messages, nodes, edges and conditional edges, Send and Command; execution in Pregel-style super-steps that ends when all nodes are inactive.'
+pregel:
+  title: 'Pregel: A System for Large-Scale Graph Processing'
+  authors: Malewicz et al.
+  venue: SIGMOD
+  year: 2010
+  url: https://research.google/pubs/pregel-a-system-for-large-scale-graph-processing/
+  summary: 'Vertex-centric computation in synchronous super-steps of message passing; the computation halts when every vertex has voted to halt and no messages are in transit. LangGraph''s runtime is modelled on it.'
+lg_persistence:
+  title: Persistence (LangGraph)
+  authors: LangChain documentation
+  venue: docs.langchain.com
+  year: 2026
+  url: https://docs.langchain.com/oss/python/langgraph/persistence
+  summary: Checkpointers save thread-scoped graph state for conversation continuity, human-in-the-loop, time travel and fault tolerance; stores keep application data across threads.
+lg_interrupts:
+  title: Interrupts (LangGraph)
+  authors: LangChain documentation
+  venue: docs.langchain.com
+  year: 2026
+  url: https://docs.langchain.com/oss/python/langgraph/interrupts
+  summary: 'interrupt() pauses a run (needs a checkpointer and thread_id); Command(resume=value) continues and the node restarts from the beginning, so code before the interrupt re-runs; no bare try/except around it; keep interrupt order stable.'
+lg_streaming:
+  title: Streaming (LangGraph)
+  authors: LangChain documentation
+  venue: docs.langchain.com
+  year: 2026
+  url: https://docs.langchain.com/oss/python/langgraph/streaming
+  summary: 'Stream modes for progress and output: values, updates, messages (tokens), custom, checkpoints, tasks and debug.'
+oai_agents_sdk:
+  title: OpenAI Agents SDK
+  authors: OpenAI documentation
+  venue: openai.github.io
+  year: 2026
+  url: https://openai.github.io/openai-agents-python/
+  summary: 'Primitives: agents (LLMs with instructions and tools), handoffs and agents-as-tools for delegation, guardrails for input and output validation; plus sessions and built-in tracing.'
+claude_agent_sdk:
+  title: Agent SDK overview
+  authors: Anthropic documentation
+  venue: code.claude.com
+  year: 2026
+  url: https://code.claude.com/docs/en/agent-sdk/overview
+  summary: 'Claude Code as a library: the same tools, agent loop and context management, with hooks, subagents, MCP, permissions and sessions, in Python and TypeScript.'

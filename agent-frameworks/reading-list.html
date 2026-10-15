@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent frameworks Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Agent frameworks</a>
+  <div class="label" style="margin-top:28px">Reading list · 14 papers and docs</div>
+  <h1>Agent frameworks: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Building effective agents</a>
+      <div class="meta">Anthropic · Anthropic Engineering 2024 · cited in <a href="01-langchain-basics/index.html" style="font-weight:500;color:var(--a)">LangChain basics</a></div>
+      <p>Workflows (predefined code paths) vs agents (LLMs (large language models) directing their own process); patterns: prompt chaining, routing, parallelization, orchestrator-workers, evaluator-optimizer. Start with the simplest solution.</p></div>
+    <div class="paper-item"><a href="https://docs.langchain.com/oss/python/langchain/agents" target="_blank" rel="noopener">Agents (LangChain)</a>
+      <div class="meta">LangChain documentation · docs.langchain.com 2026 · cited in <a href="01-langchain-basics/index.html" style="font-weight:500;color:var(--a)">LangChain basics</a></div>
+      <p>create_agent: a model calling tools in a loop until the task is complete; models as "provider:model" strings or objects, tools as callables or LangChain tools, system_prompt, response_format, middleware, and memory via a checkpointer and thread_id.</p></div>
+    <div class="paper-item"><a href="https://docs.langchain.com/oss/python/langchain/tools" target="_blank" rel="noopener">Tools (LangChain)</a>
+      <div class="meta">LangChain documentation · docs.langchain.com 2026 · cited in <a href="01-langchain-basics/index.html" style="font-weight:500;color:var(--a)">LangChain basics</a></div>
+      <p>The @tool decorator turns a function into a tool whose name, description (docstring) and argument schema (type hints) are sent to the model.</p></div>
+    <div class="paper-item"><a href="https://docs.langchain.com/oss/python/langchain/middleware" target="_blank" rel="noopener">Middleware (LangChain)</a>
+      <div class="meta">LangChain documentation · docs.langchain.com 2026 · cited in <a href="01-langchain-basics/index.html" style="font-weight:500;color:var(--a)">LangChain basics</a>, <a href="03-langgraph-production/index.html" style="font-weight:500;color:var(--a)">LangGraph in production</a></div>
+      <p>Hooks around the agent loop (before/after agent and model calls, wrappers around model and tool calls) and prebuilt middleware such as summarization, human-in-the-loop approval, call limits, retries, model fallback and PII (personally identifiable information) handling.</p></div>
+    <div class="paper-item"><a href="https://openai.github.io/openai-agents-python/" target="_blank" rel="noopener">OpenAI Agents SDK</a>
+      <div class="meta">OpenAI documentation · openai.github.io 2026 · cited in <a href="01-langchain-basics/index.html" style="font-weight:500;color:var(--a)">LangChain basics</a></div>
+      <p>Primitives: agents (LLMs with instructions and tools), handoffs and agents-as-tools for delegation, guardrails for input and output validation; plus sessions and built-in tracing.</p></div>
+    <div class="paper-item"><a href="https://code.claude.com/docs/en/agent-sdk/overview" target="_blank" rel="noopener">Agent SDK overview</a>
+      <div class="meta">Anthropic documentation · code.claude.com 2026 · cited in <a href="01-langchain-basics/index.html" style="font-weight:500;color:var(--a)">LangChain basics</a></div>
+      <p>Claude Code as a library: the same tools, agent loop and context management, with hooks, subagents, MCP (Model Context Protocol), permissions and sessions, in Python and TypeScript.</p></div>
+    <div class="paper-item"><a href="https://pypi.org/project/langgraph/1.2.15/" target="_blank" rel="noopener">langchain 1.4.6 and langgraph 1.2.15 (release pins)</a>
+      <div class="meta">PyPI · pypi.org 2026 · cited in <a href="01-langchain-basics/index.html" style="font-weight:500;color:var(--a)">LangChain basics</a></div>
+      <p>The versions these decks and notebooks are verified against: langchain 1.4.6, langchain-core 1.6.10, langgraph 1.2.15, langgraph-checkpoint 4.3.0.</p></div>
+    <div class="paper-item"><a href="https://docs.langchain.com/oss/python/langgraph/graph-api" target="_blank" rel="noopener">Graph API (LangGraph)</a>
+      <div class="meta">LangChain documentation · docs.langchain.com 2026 · cited in <a href="02-langgraph-core/index.html" style="font-weight:500;color:var(--a)">LangGraph core</a></div>
+      <p>State schemas and reducers (the default overwrites), MessagesState and add_messages, nodes, edges and conditional edges, Send and Command; execution in Pregel-style super-steps that ends when all nodes are inactive.</p></div>
+    <div class="paper-item"><a href="https://docs.langchain.com/oss/python/langgraph/overview" target="_blank" rel="noopener">LangGraph overview</a>
+      <div class="meta">LangChain documentation · docs.langchain.com 2026 · cited in <a href="02-langgraph-core/index.html" style="font-weight:500;color:var(--a)">LangGraph core</a></div>
+      <p>A low-level orchestration runtime for long-running, stateful agents, with durable execution, human-in-the-loop, memory and streaming.</p></div>
+    <div class="paper-item"><a href="https://research.google/pubs/pregel-a-system-for-large-scale-graph-processing/" target="_blank" rel="noopener">Pregel: A System for Large-Scale Graph Processing</a>
+      <div class="meta">Malewicz et al. · SIGMOD 2010 · cited in <a href="02-langgraph-core/index.html" style="font-weight:500;color:var(--a)">LangGraph core</a></div>
+      <p>Vertex-centric computation in synchronous super-steps of message passing; the computation halts when every vertex has voted to halt and no messages are in transit. LangGraph's runtime is modelled on it.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2210.03629" target="_blank" rel="noopener">ReAct: Synergizing Reasoning and Acting in Language Models</a>
+      <div class="meta">Yao et al. · ICLR 2023 · cited in <a href="02-langgraph-core/index.html" style="font-weight:500;color:var(--a)">LangGraph core</a></div>
+      <p>Interleaves reasoning traces with actions and observations, so reasoning guides tool use and observations ground reasoning.</p><div class="num">Remember: +34 and +10 points absolute success on ALFWorld and WebShop</div></div>
+    <div class="paper-item"><a href="https://docs.langchain.com/oss/python/langgraph/persistence" target="_blank" rel="noopener">Persistence (LangGraph)</a>
+      <div class="meta">LangChain documentation · docs.langchain.com 2026 · cited in <a href="03-langgraph-production/index.html" style="font-weight:500;color:var(--a)">LangGraph in production</a></div>
+      <p>Checkpointers save thread-scoped graph state for conversation continuity, human-in-the-loop, time travel and fault tolerance; stores keep application data across threads.</p></div>
+    <div class="paper-item"><a href="https://docs.langchain.com/oss/python/langgraph/interrupts" target="_blank" rel="noopener">Interrupts (LangGraph)</a>
+      <div class="meta">LangChain documentation · docs.langchain.com 2026 · cited in <a href="03-langgraph-production/index.html" style="font-weight:500;color:var(--a)">LangGraph in production</a></div>
+      <p>interrupt() pauses a run (needs a checkpointer and thread_id); Command(resume=value) continues and the node restarts from the beginning, so code before the interrupt re-runs; no bare try/except around it; keep interrupt order stable.</p></div>
+    <div class="paper-item"><a href="https://docs.langchain.com/oss/python/langgraph/streaming" target="_blank" rel="noopener">Streaming (LangGraph)</a>
+      <div class="meta">LangChain documentation · docs.langchain.com 2026 · cited in <a href="03-langgraph-production/index.html" style="font-weight:500;color:var(--a)">LangGraph in production</a></div>
+      <p>Stream modes for progress and output: values, updates, messages (tokens), custom, checkpoints, tasks and debug.</p></div>
+  </div>
+</div>
+
+</body>
+</html>
