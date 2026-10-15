@@ -731,6 +731,72 @@
   },
   "ZMQ": {
    "exp": "ZeroMQ, a messaging library"
+  },
+  "ITPM": {
+   "exp": "input tokens per minute"
+  },
+  "OTPM": {
+   "exp": "output tokens per minute"
+  },
+  "RPM": {
+   "exp": "requests per minute"
+  },
+  "SDK": {
+   "exp": "software development kit"
+  },
+  "OWASP": {
+   "exp": "Open Worldwide Application Security Project"
+  },
+  "RBAC": {
+   "exp": "role-based access control"
+  },
+  "ABAC": {
+   "exp": "attribute-based access control"
+  },
+  "ReBAC": {
+   "exp": "relationship-based access control"
+  },
+  "ANN": {
+   "exp": "approximate nearest neighbour"
+  },
+  "ANSI": {
+   "exp": "American National Standards Institute"
+  },
+  "INCITS": {
+   "exp": "International Committee for Information Technology Standards"
+  },
+  "NIST": {
+   "exp": "National Institute of Standards and Technology"
+  },
+  "PKCE": {
+   "exp": "Proof Key for Code Exchange"
+  },
+  "HNSW": {
+   "exp": "hierarchical navigable small world"
+  },
+  "IVF": {
+   "exp": "inverted file index"
+  },
+  "PQ": {
+   "exp": "product quantization"
+  },
+  "MRR": {
+   "exp": "mean reciprocal rank"
+  },
+  "PDF": {
+   "exp": "Portable Document Format"
+  },
+  "REST": {
+   "exp": "representational state transfer"
+  },
+  "YAML": {
+   "exp": "YAML Ain't Markup Language"
+  },
+  "BM25": {
+   "exp": "Okapi Best Matching 25 ranking function"
+  },
+  "RRF": {
+   "exp": "reciprocal rank fusion"
   }
  },
  "exempt": [
@@ -998,6 +1064,34 @@
   "BrowseComp",
   "HumanEval",
   "SWE",
-  "Reflexion"
+  "Reflexion",
+  "GenAI",
+  "LLM06",
+  "LLM08",
+  "LLM10",
+  "LiteLLM",
+  "FrugalGPT",
+  "RouteLLM",
+  "ATC",
+  "USENIX",
+  "BEIR",
+  "EACL",
+  "MTEB",
+  "DiskANN",
+  "IVFADC",
+  "ScaNN",
+  "TPAMI",
+  "ColBERT",
+  "MARCO",
+  "MS",
+  "MaxSim",
+  "RankGPT",
+  "SBERT",
+  "SIGIR",
+  "APIBench",
+  "ToolBench",
+  "ToolLLM",
+  "ToolLLaMA",
+  "XGrammar"
  ]
 }

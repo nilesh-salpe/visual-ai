@@ -1755,3 +1755,279 @@ ant_caching:
   year: 2026
   url: https://platform.claude.com/docs/en/build-with-claude/prompt-caching
   summary: 'Reuse of cached prompt prefixes: 5-minute cache writes cost 1.25× base input, 1-hour writes 2×, and reads 0.1× on most models (lower on some newer ones).'
+litellm_routing:
+  title: Router - load balancing, fallbacks and retries
+  authors: LiteLLM documentation
+  venue: docs.litellm.ai
+  year: 2026
+  url: https://docs.litellm.ai/docs/routing
+  summary: 'An open-source gateway router: routing strategies (default simple-shuffle; latency-, cost-, usage-based, least-busy), num_retries with backoff on rate limits, fallbacks to other model groups, and cooldowns (allowed_fails 3, cooldown_time 5 s).'
+cf_gateway:
+  title: AI Gateway
+  authors: Cloudflare documentation
+  venue: developers.cloudflare.com
+  year: 2026
+  url: https://developers.cloudflare.com/ai-gateway/
+  summary: 'A managed gateway in front of model providers: analytics, logging, caching, rate limiting, request retry and model fallback.'
+ant_ratelimits:
+  title: Rate limits
+  authors: Anthropic documentation
+  venue: platform.claude.com
+  year: 2026
+  url: https://platform.claude.com/docs/en/api/rate-limits
+  summary: 'Limits in requests, input tokens and output tokens per minute (RPM, ITPM, OTPM) per model class, enforced with a token bucket; 429 errors with retry-after; for most models cached input tokens do not count toward ITPM.'
+  number: 2M ITPM with an 80% cache hit rate ≈ 10M total input tokens per minute
+owasp_llm:
+  title: OWASP Top 10 for LLM Applications 2025
+  authors: OWASP GenAI Security Project
+  venue: genai.owasp.org
+  year: 2025
+  url: https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
+  summary: 'LLM06:2025 Excessive Agency: root causes are excessive functionality, excessive permissions and excessive autonomy; mitigations include minimising extensions and their permissions, executing in the user''s context, user approval and complete mediation.'
+routellm:
+  title: 'RouteLLM: Learning to Route LLMs with Preference Data'
+  authors: Ong et al.
+  venue: ICLR
+  year: 2025
+  url: https://arxiv.org/abs/2406.18665
+  summary: Routers trained on human preference data (with augmentation) choose between a strong and a weak model per query; they transfer when the model pair changes.
+  number: costs cut by over 2× in some cases without lowering response quality
+frugalgpt:
+  title: 'FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance'
+  authors: Chen, Zaharia & Zou
+  venue: TMLR
+  year: 2024
+  url: https://arxiv.org/abs/2305.05176
+  summary: 'Three cost levers (prompt adaptation, LLM approximation, LLM cascade); FrugalGPT learns a cascade that queries cheaper models first and stops when a scorer accepts the answer.'
+  number: matches GPT-4 with up to 98% lower cost, or +4% accuracy at the same cost
+hybridllm:
+  title: 'Hybrid LLM: Cost-Efficient and Quality-Aware Query Routing'
+  authors: Ding et al.
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2404.14618
+  summary: A router sends each query to a small or large model from its predicted difficulty; the quality level is tunable at test time.
+  number: up to 40% fewer calls to the large model with no drop in response quality
+mcp_auth:
+  title: 'Model Context Protocol: Authorization (revision 2026-07-28)'
+  authors: MCP specification
+  venue: modelcontextprotocol.io
+  year: 2026
+  url: https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+  summary: 'OAuth 2.1 for HTTP transports: servers are resource servers publishing Protected Resource Metadata (RFC 9728); clients use PKCE (S256) and the resource parameter (RFC 8707); servers must validate the token audience and must not pass tokens through; 403 insufficient_scope triggers step-up authorization.'
+rfc8693:
+  title: OAuth 2.0 Token Exchange (RFC 8693)
+  authors: Jones et al.
+  venue: IETF
+  year: 2020
+  url: https://www.rfc-editor.org/rfc/rfc8693
+  summary: 'Exchange a subject token (and optional actor token) for a new token; distinguishes impersonation from delegation ("A is an agent for B") and records the acting party in the act claim.'
+nist_rbac:
+  title: Role Based Access Control
+  authors: NIST Computer Security Resource Center
+  venue: csrc.nist.gov
+  year: 2024
+  url: https://csrc.nist.gov/projects/role-based-access-control
+  summary: RBAC was formalised by Ferraiolo and Kuhn in 1992; the NIST model became the ANSI/INCITS 359-2004 standard (revised 2012). Users get roles, roles carry permissions.
+nist_abac:
+  title: Guide to Attribute Based Access Control (ABAC) Definition and Considerations
+  authors: Hu et al. (NIST)
+  venue: NIST Special Publication 800-162
+  year: 2014
+  url: https://csrc.nist.gov/pubs/sp/800/162/upd2/final
+  summary: Access decisions computed from attributes of the subject, the object, the requested operation and the environment, evaluated against policy.
+zanzibar:
+  title: "Zanzibar: Google's Consistent, Global Authorization System"
+  authors: Pang et al.
+  venue: USENIX ATC
+  year: 2019
+  url: https://www.usenix.org/conference/atc19/presentation/pang
+  summary: Relationship-based access control as a service; ACLs stored as relation tuples, checked consistently at global scale.
+  number: trillions of ACLs, millions of checks per second, p95 under 10 ms, over 99.999% availability for 3 years
+contextual_retrieval:
+  title: Introducing Contextual Retrieval
+  authors: Anthropic
+  venue: Anthropic News
+  year: 2024
+  url: https://www.anthropic.com/news/contextual-retrieval
+  summary: 'Prepend 50-100 tokens of chunk-specific context (written by an LLM from the whole document) before embedding and BM25 indexing; retrieve top 150, rerank, keep 20. Knowledge bases under 200,000 tokens can go straight into the prompt.'
+  number: 'top-20 retrieval failures 5.7% → 3.7% (−35%), 2.9% with BM25 (−49%), 1.9% with reranking (−67%); $1.02 per million document tokens'
+late_chunking:
+  title: 'Late Chunking: Contextual Chunk Embeddings Using Long-Context Embedding Models'
+  authors: Günther et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2409.04701
+  summary: Embed the whole long text first and pool token embeddings per chunk afterwards, so each chunk embedding carries the surrounding context; no extra training needed.
+beir:
+  title: 'BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models'
+  authors: Thakur et al.
+  venue: NeurIPS Datasets and Benchmarks
+  year: 2021
+  url: https://arxiv.org/abs/2104.08663
+  summary: 18 retrieval datasets for zero-shot evaluation; BM25 is a robust baseline, and re-ranking and late-interaction models score best on average at higher compute cost.
+mteb:
+  title: 'MTEB: Massive Text Embedding Benchmark'
+  authors: Muennighoff et al.
+  venue: EACL
+  year: 2023
+  url: https://arxiv.org/abs/2210.07316
+  summary: 8 embedding tasks, 58 datasets, 112 languages; no single embedding method dominates across all tasks.
+dpr:
+  title: Dense Passage Retrieval for Open-Domain Question Answering
+  authors: Karpukhin et al.
+  venue: EMNLP
+  year: 2020
+  url: https://arxiv.org/abs/2004.04906
+  summary: A dual encoder (separate query and passage encoders) trained on question-passage pairs; retrieval by inner product.
+  number: +9 to 19 points top-20 accuracy over Lucene BM25
+hnsw:
+  title: Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs
+  authors: Malkov & Yashunin
+  venue: IEEE TPAMI
+  year: 2018
+  url: https://arxiv.org/abs/1603.09320
+  summary: 'A multi-layer proximity graph: each element''s top layer is drawn from an exponentially decaying distribution (mL = 1/ln M), search descends greedily from the top layer, and layer 0 keeps up to 2M links per element; logarithmic complexity scaling.'
+pq:
+  title: Product Quantization for Nearest Neighbor Search
+  authors: Jégou, Douze & Schmid
+  venue: IEEE TPAMI
+  year: 2011
+  url: https://inria.hal.science/inria-00514462
+  summary: Split each vector into m subvectors and quantize each with its own small codebook, so a vector is stored as m short codes; distances are estimated from per-query lookup tables (asymmetric distance computation), combined with an inverted file (IVFADC).
+diskann:
+  title: 'DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single Node'
+  authors: Subramanya et al.
+  venue: NeurIPS
+  year: 2019
+  url: https://proceedings.neurips.cc/paper/2019/hash/09853c7fb1d3f8ee67a61b6bf4a7f8e6-Abstract.html
+  summary: A graph index (Vamana) stored on SSD with compressed vectors in RAM serves a billion-point index from one workstation.
+  number: 1B points, 64 GB RAM, >5,000 queries/s, <3 ms mean latency, 95%+ 1-recall@1 on 16 cores
+faiss:
+  title: The Faiss library
+  authors: Douze et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2401.08281
+  summary: 'The vector-search toolkit behind many vector databases: flat, IVF, PQ and graph indexes, and the trade-off space between accuracy, speed, memory and build time.'
+scann:
+  title: Accelerating Large-Scale Inference with Anisotropic Vector Quantization
+  authors: Guo et al.
+  venue: ICML
+  year: 2020
+  url: https://arxiv.org/abs/1908.10396
+  summary: 'ScaNN: a quantization loss that penalises the error parallel to the data point more than the orthogonal error, which suits maximum inner product search.'
+monobert:
+  title: Passage Re-ranking with BERT
+  authors: Nogueira & Cho
+  venue: arXiv
+  year: 2019
+  url: https://arxiv.org/abs/1901.04085
+  summary: A BERT cross-encoder reads query and passage together and outputs a relevance score; used to rerank BM25 candidates.
+  number: +27% relative MRR@10 over the previous state of the art on MS MARCO
+colbert:
+  title: 'ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT'
+  authors: Khattab & Zaharia
+  venue: SIGIR
+  year: 2020
+  url: https://arxiv.org/abs/2004.12832
+  summary: 'Late interaction: query and document are encoded separately into token embeddings (documents offline), then scored by summing each query token''s maximum similarity (MaxSim).'
+  number: competitive with BERT rerankers, two orders of magnitude faster, four orders fewer FLOPs per query
+rankgpt:
+  title: 'Is ChatGPT Good at Search? Investigating Large Language Models as Re-Ranking Agents'
+  authors: Sun et al.
+  venue: EMNLP
+  year: 2023
+  url: https://arxiv.org/abs/2304.09542
+  summary: Listwise reranking by an instructed LLM that outputs a permutation, applied with a sliding window over BM25's top 100; the ranking ability distils into small models.
+  number: a distilled 440M model beats a 3B supervised reranker on BEIR
+sbert:
+  title: 'Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks'
+  authors: Reimers & Gurevych
+  venue: EMNLP
+  year: 2019
+  url: https://arxiv.org/abs/1908.10084
+  summary: A bi-encoder producing one embedding per sentence, compared by cosine similarity.
+  number: most similar pair among 10,000 sentences takes ~65 h with a BERT cross-encoder vs ~5 s with SBERT
+rrf:
+  title: Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods
+  authors: Cormack, Clarke & Büttcher
+  venue: SIGIR
+  year: 2009
+  url: https://cormack.uwaterloo.ca/cormacksigir09-rrf.pdf
+  summary: 'Fuse several rankings by score(d) = Σ 1/(k + rank_r(d)) with k = 60; simple, training-free and better than the individual rankings.'
+cohere_rerank:
+  title: Rerank overview
+  authors: Cohere documentation
+  venue: docs.cohere.com
+  year: 2026
+  url: https://docs.cohere.com/docs/rerank-overview
+  summary: A hosted reranker API that orders documents by relevance to a query and returns a relevance score per document; structured documents are best passed as YAML strings.
+gorilla:
+  title: 'Gorilla: Large Language Model Connected with Massive APIs'
+  authors: Patil et al.
+  venue: NeurIPS
+  year: 2024
+  url: https://arxiv.org/abs/2305.15334
+  summary: A LLaMA model fine-tuned to write API calls, trained with retrieved API documentation so it adapts to documentation changes at test time; APIBench evaluation.
+toolllm:
+  title: 'ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs'
+  authors: Qin et al.
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2307.16789
+  summary: 'ToolBench: 16,464 real REST APIs in 49 categories, instructions and solution paths generated by ChatGPT with a depth-first decision-tree search; ToolLLaMA generalises to unseen APIs.'
+swe_rl:
+  title: 'SWE-RL: Advancing LLM Reasoning via Reinforcement Learning on Open Software Evolution'
+  authors: Wei et al.
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2502.18449
+  summary: RL on software-evolution data (issues, pull requests, code changes) with a rule-based reward (similarity to the real patch); RL improved out-of-domain skills where an SFT baseline degraded them.
+  number: Llama3-SWE-RL-70B solves 41.0% of SWE-bench Verified
+kimi_k2:
+  title: 'Kimi K2: Open Agentic Intelligence'
+  authors: Kimi Team
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2507.20534
+  summary: 'Agentic post-training: a synthesis pipeline (tool specs → agents and rubric-graded tasks → multi-turn trajectories filtered by a judge, plus real sandboxes for code) and joint RL with verifiable rewards and a self-critique rubric reward.'
+  number: 3,000+ real MCP tools and 20,000+ synthetic tools; 65.8 on SWE-bench Verified, 66.1 on Tau2-Bench
+xgrammar:
+  title: 'XGrammar: Flexible and Efficient Structured Generation Engine for Large Language Models'
+  authors: Dong et al.
+  venue: MLSys
+  year: 2025
+  url: https://arxiv.org/abs/2411.15100
+  summary: 'Constrained decoding with context-free grammars: context-independent tokens are prechecked into masks, only context-dependent tokens are checked at runtime with a persistent stack, and mask computation overlaps GPU work.'
+  number: up to 100× faster grammar execution; near-zero overhead end to end
+outlines:
+  title: Efficient Guided Generation for Large Language Models
+  authors: Willard & Louf
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2307.09702
+  summary: Guided generation as finite-state-machine transitions with an index over the vocabulary, enforcing regular expressions and grammars (the Outlines library).
+format_freely:
+  title: Let Me Speak Freely? A Study on the Impact of Format Restrictions on Performance of Large Language Models
+  authors: Tam et al.
+  venue: EMNLP Industry
+  year: 2024
+  url: https://arxiv.org/abs/2408.02442
+  summary: Format restrictions such as forced JSON can significantly reduce reasoning performance, and stricter constraints degrade it more.
+autellix:
+  title: 'Autellix: An Efficient Serving Engine for LLM Agents as General Programs'
+  authors: Luo et al.
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2502.13965
+  summary: Treats agent programs as first-class units; schedulers preempt and prioritise calls using each program's completed calls to avoid head-of-line blocking.
+  number: 4-15× higher program throughput at the same latency vs vLLM
+parrot:
+  title: 'Parrot: Efficient Serving of LLM-based Applications with Semantic Variable'
+  authors: Lin et al.
+  venue: OSDI
+  year: 2024
+  url: https://arxiv.org/abs/2405.19888
+  summary: Semantic Variables expose the data flow between an application's LLM requests so the service can schedule and share prefixes across them.
+  number: up to an order-of-magnitude end-to-end improvement

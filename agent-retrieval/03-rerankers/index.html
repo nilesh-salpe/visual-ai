@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rerankers</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Rerankers" data-home="../index.html" data-home-label="Retrieval">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual Agents · Retrieval · 03</div>
+    <h1>Rerankers</h1>
+    <p class="sub">The second stage of retrieval: a slower, more accurate model rereads the query together with each candidate and reorders a short list. Cross-encoders, late interaction (ColBERT) and LLM (large language model) rerankers.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>First-stage retrieval (BM25 (Okapi Best Matching 25 ranking function) or a bi-encoder) scores query and document <b>independently</b>, so it is fast but misses fine-grained relevance. The top 20 chunks you hand the LLM often contain near-misses while the best passage sits at rank 60.</div>
+      <div class="c"><b>Core idea</b><b>Retrieve many cheaply, rerank few carefully.</b> Fetch around 100-150 candidates, score each with a model that reads query and document <b>together</b> (a cross-encoder), keep the best 20. Anthropic's tests: top-20 failures fell from 2.9% to 1.9% when reranking was added to contextual hybrid search. Variants trade accuracy for speed: late interaction (ColBERT) and listwise LLM reranking (RankGPT).</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Previous: <a href="../02-vector-databases/index.html">Vector databases</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Independent scoring misses relevance</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>One vector per text</h3><p>A bi-encoder squeezes a passage into one vector before it has seen the query.</p></div>
+      <div class="card b"><h3>Lexical blind spots</h3><p>BM25 matches words, not meaning; dense search matches meaning, not exact terms.</p></div>
+      <div class="card c"><h3>Recall vs precision</h3><p>Wide top-k improves recall but floods the LLM context with noise and cost.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Two stages: wide recall, then precision</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Why not cross-encode everything</h3><p>Sentence-BERT's example: finding the most similar pair among 10,000 sentences takes ~65 hours with a BERT (Bidirectional Encoder Representations from Transformers) cross-encoder, ~5 seconds with a bi-encoder.</p></div>
+      <div class="card a"><h3>Cross-encoder</h3><p>monoBERT feeds [query; passage] to BERT and outputs a relevance score: +27% relative MRR (mean reciprocal rank)@10 on MS MARCO (Microsoft Machine Reading Comprehension) when it was published.</p></div>
+      <div class="card c"><h3>Late interaction</h3><p>ColBERT keeps one embedding per token, precomputes documents and scores with MaxSim: competitive with BERT rerankers, two orders of magnitude faster.</p></div>
+      <div class="card e"><h3>LLM reranking</h3><p>RankGPT asks an LLM for a permutation of passages with a sliding window over BM25's top 100; distilled into a 440M model it beats a 3B supervised reranker on BEIR.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>A two-stage retrieval service</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;The query (often rewritten by the agent) enters retrieval.&quot;, &quot;Lexical and dense retrieval run in parallel, each returning about a hundred candidates.&quot;, &quot;Reciprocal rank fusion merges the lists: score(d) = \u03a3 1/(60 + rank) over the lists; no score calibration needed.&quot;, &quot;The reranker reads the query with each candidate and scores it. Anthropic retrieved the top 150 and reranked them.&quot;, &quot;Only the best 20 go into the model&#x27;s context; Anthropic found 20 better than 5 or 10.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 290" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah11" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="112.0" y1="119.6" x2="166.3" y2="90.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="2"><line x1="112.0" y1="176.4" x2="166.3" y2="206.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="3"><line x1="286.7" y1="88.0" x2="344.2" y2="116.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="3"><line x1="286.7" y1="208.0" x2="344.2" y2="180.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="4"><line x1="468.3" y1="118.0" x2="522.8" y2="90.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="5"><line x1="585.0" y1="88.0" x2="585.0" y2="206.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah11)"/></g><g data-step="1"><rect x="10" y="120" width="100" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="60.0" y="153.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Query</text></g><g data-step="2"><rect x="150" y="30" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="225.0" y="56.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">BM25</text><text x="225.0" y="72.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">top 100</text></g><g data-step="2"><rect x="150" y="210" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="225.0" y="236.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Dense ANN</text><text x="225.0" y="252.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">top 100</text></g><g data-step="3"><rect x="340" y="120" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="410.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Fuse</text><text x="410.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">RRF → ~150</text></g><g data-step="4"><rect x="520" y="30" width="130" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="585.0" y="56.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Reranker</text><text x="585.0" y="72.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">cross-encoder</text></g><g data-step="5"><rect x="520" y="210" width="130" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="585.0" y="236.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Top 20</text><text x="585.0" y="252.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">to the LLM</text></g><g data-step="4"><text x="495.6" y="99.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">candidates</text></g><g data-step="5"><text x="585.0" y="142.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">reorder, cut</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>Three ways to score</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Bi-encoder (first stage): query and document are encoded separately; documents once, offline, so search is a vector lookup (DPR, Sentence-BERT).&quot;, &quot;Cross-encoder (reranker): query and document share one input, so attention compares every query token with every document token. Accurate, but a full model call per pair at query time.&quot;, &quot;Late interaction (ColBERT): token-level embeddings for both, documents precomputed; each query token takes its best-matching document token, and the scores are summed.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 290" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah12" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="1"><line x1="110.0" y1="72.0" x2="110.0" y2="111.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah12)"/></g><g data-step="1"><line x1="110.0" y1="173.0" x2="110.0" y2="216.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah12)"/></g><g data-step="2"><line x1="330.0" y1="72.0" x2="330.0" y2="111.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah12)"/></g><g data-step="2"><line x1="330.0" y1="173.0" x2="330.0" y2="216.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah12)"/></g><g data-step="3"><line x1="550.0" y1="72.0" x2="550.0" y2="111.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah12)"/></g><g data-step="3"><line x1="550.0" y1="173.0" x2="550.0" y2="216.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah12)"/></g><g data-step="1"><rect x="10" y="20" width="200" height="50" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="110.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">q and d apart</text><text x="110.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">bi-encoder</text></g><g data-step="1"><rect x="10" y="115" width="200" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="110.0" y="141.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Two encodings</text><text x="110.0" y="157.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">docs precomputed</text></g><g data-step="1"><rect x="10" y="220" width="200" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="110.0" y="246.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">cosine / dot</text><text x="110.0" y="262.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">one vector each</text></g><g data-step="2"><rect x="230" y="20" width="200" height="50" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="330.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">[q ; d] together</text><text x="330.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">cross-encoder</text></g><g data-step="2"><rect x="230" y="115" width="200" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="330.0" y="141.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Full attention</text><text x="330.0" y="157.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">every pair at query time</text></g><g data-step="2"><rect x="230" y="220" width="200" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="330.0" y="246.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">relevance score</text><text x="330.0" y="262.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">most accurate</text></g><g data-step="3"><rect x="450" y="20" width="200" height="50" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="550.0" y="43.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">q tokens · d tokens</text><text x="550.0" y="59.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">late interaction</text></g><g data-step="3"><rect x="450" y="115" width="200" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="550.0" y="141.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Token embeddings</text><text x="550.0" y="157.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">docs precomputed</text></g><g data-step="3"><rect x="450" y="220" width="200" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="550.0" y="246.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Σ MaxSim</text><text x="550.0" y="262.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">per query token</text></g></svg><p class="readout dgcap"></p></div>
+
+<div class="visual scroll-x"><table class="tbl"><tr><th>Reranker</th><th>Input per call</th><th>Calls per query</th></tr><tr><td>Cross-encoder (pointwise)</td><td>one query-passage pair</td><td>one per candidate (batched)</td></tr><tr><td>LLM listwise (RankGPT)</td><td>a window of passages</td><td>windows slide from the back of the list to the front</td></tr><tr><td>Hosted API (e.g. Cohere Rerank)</td><td>query + list of documents</td><td>one request; scores per document</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl"><tr><th>Option</th><th>Benefit</th><th>Cost</th></tr><tr><td>No reranker</td><td>lowest latency</td><td>precision limited by the first stage</td></tr><tr><td>Cross-encoder</td><td>large precision gain for a short list</td><td>latency grows with candidates × length</td></tr><tr><td>ColBERT</td><td>near cross-encoder quality at lower query cost</td><td>stores an embedding per token: much larger index</td></tr><tr><td>LLM listwise</td><td>strong zero-shot, follows instructions</td><td>expensive and slow; position bias</td></tr><tr><td>Deeper candidate list</td><td>higher recall going in</td><td>more reranker compute per query</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Recall ceiling</td><td>the right passage was never retrieved</td><td>reranking only reorders: fix the first stage (hybrid, contextual chunks)</td></tr><tr><td>Truncation</td><td>long chunks cut at the model's input limit, answer lost</td><td>chunk to fit the reranker; check its maximum length</td></tr><tr><td>Uncalibrated scores</td><td>a fixed score threshold drops good results on some queries</td><td>cut by rank, or calibrate per domain</td></tr><tr><td>Latency spikes</td><td>p99 grows with candidate count</td><td>cap candidates, batch on GPU (graphics processing unit), time-out to first-stage order</td></tr><tr><td>Domain shift</td><td>web-trained reranker misjudges code or legal text</td><td>evaluate on your data; fine-tune or distil</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Measure both stages</h3><p>Track recall@150 for the first stage and nDCG@10 (normalised discounted cumulative gain) after reranking.</p></div>
+      <div class="card c"><h3>Latency budget</h3><p>An agent may search several times per task; budget the reranker per call.</p></div>
+      <div class="card b"><h3>Distil</h3><p>Use an LLM reranker offline to label data, then train a small cross-encoder for serving, as RankGPT did.</p></div>
+      <div class="card e"><h3>Structured documents</h3><p>Format semi-structured records consistently (Cohere recommends YAML (YAML Ain't Markup Language) strings) so the reranker sees the fields.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1908.10084" target="_blank" rel="noopener">Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks</a>
+        <div class="meta">Reimers & Gurevych · EMNLP 2019</div>
+        <p>A bi-encoder producing one embedding per sentence, compared by cosine similarity.</p><div class="num">Remember: most similar pair among 10,000 sentences takes ~65 h with a BERT cross-encoder vs ~5 s with SBERT</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1901.04085" target="_blank" rel="noopener">Passage Re-ranking with BERT</a>
+        <div class="meta">Nogueira & Cho · arXiv 2019</div>
+        <p>A BERT cross-encoder reads query and passage together and outputs a relevance score; used to rerank BM25 candidates.</p><div class="num">Remember: +27% relative MRR@10 over the previous state of the art on MS MARCO</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2004.12832" target="_blank" rel="noopener">ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT</a>
+        <div class="meta">Khattab & Zaharia · SIGIR 2020</div>
+        <p>Late interaction: query and document are encoded separately into token embeddings (documents offline), then scored by summing each query token's maximum similarity (MaxSim).</p><div class="num">Remember: competitive with BERT rerankers, two orders of magnitude faster, four orders fewer FLOPs (floating-point operations) per query</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2304.09542" target="_blank" rel="noopener">Is ChatGPT Good at Search? Investigating Large Language Models as Re-Ranking Agents</a>
+        <div class="meta">Sun et al. · EMNLP 2023</div>
+        <p>Listwise reranking by an instructed LLM that outputs a permutation, applied with a sliding window over BM25's top 100; the ranking ability distils into small models.</p><div class="num">Remember: a distilled 440M model beats a 3B supervised reranker on BEIR</div></div>
+      <div class="paper-item"><a href="https://cormack.uwaterloo.ca/cormacksigir09-rrf.pdf" target="_blank" rel="noopener">Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods</a>
+        <div class="meta">Cormack, Clarke & Büttcher · SIGIR 2009</div>
+        <p>Fuse several rankings by score(d) = Σ 1/(k + rank_r(d)) with k = 60; simple, training-free and better than the individual rankings.</p></div>
+      <div class="paper-item"><a href="https://www.anthropic.com/news/contextual-retrieval" target="_blank" rel="noopener">Introducing Contextual Retrieval</a>
+        <div class="meta">Anthropic · Anthropic News 2024</div>
+        <p>Prepend 50-100 tokens of chunk-specific context (written by an LLM from the whole document) before embedding and BM25 indexing; retrieve top 150, rerank, keep 20. Knowledge bases under 200,000 tokens can go straight into the prompt.</p><div class="num">Remember: top-20 retrieval failures 5.7% → 3.7% (−35%), 2.9% with BM25 (−49%), 1.9% with reranking (−67%); $1.02 per million document tokens</div></div>
+      <div class="paper-item"><a href="https://docs.cohere.com/docs/rerank-overview" target="_blank" rel="noopener">Rerank overview</a>
+        <div class="meta">Cohere documentation · docs.cohere.com 2026</div>
+        <p>A hosted reranker API that orders documents by relevance to a query and returns a relevance score per document; structured documents are best passed as YAML strings.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+  document.querySelectorAll('.dgm').forEach(box => {
+    const caps = JSON.parse(box.dataset.steps), els = [...box.querySelectorAll('[data-step]')], max = Math.max(0, ...els.map(e => +e.dataset.step)), cap = box.querySelector('.dgcap');
+    let k = max, full = true;
+    const show = () => {
+      els.forEach(e => { const s = +e.dataset.step; e.style.opacity = s <= k ? 1 : 0.08; e.style.transition = 'opacity .25s'; e.querySelectorAll('rect').forEach(r => r.style.strokeWidth = s === k && k ? 3.5 : 2); });
+      cap.innerHTML = k === 0 ? 'Press <b>next step</b> to walk through the design.' : k === max && full ? 'Full design shown. Press <b>reset</b>, then <b>next step</b>, to walk through it one step at a time.' : `<b>Step ${k} of ${max}.</b> ${caps[k - 1] || ''}`;
+      full = false;
+    };
+    box.querySelector('[data-dg=next]').addEventListener('click', () => { k = Math.min(max, k + 1); show(); });
+    box.querySelector('[data-dg=all]').addEventListener('click', () => { k = max; full = false; show(); cap.innerHTML = '<b>Full design.</b> ' + caps.map((c, i) => `${i + 1}. ${c}`).join(' '); });
+    box.querySelector('[data-dg=reset]').addEventListener('click', () => { k = 0; show(); });
+    show();
+  });
+
+})();
+</script>
+</body>
+</html>

@@ -37,10 +37,17 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
 ]
 
 AGENT_SECTIONS = [  # same shape as LLM_SECTIONS
-    ('Topics', [
+    ('Building agents', [
         ('agent-foundations', 'Topic · 4 decks', 'Agent foundations', 'What an agent is, tool calling, the ReAct loop, and planning and task decomposition.', ['agent loop', 'tool calling', 'ReAct', 'planning']),
         ('agent-context', 'Topic · 3 decks', 'Agent context', 'Memory and context management, agentic retrieval, and the Model Context Protocol (revision 2026-07-28).', ['memory', 'agentic RAG', 'MCP']),
         ('agent-systems', 'Topic · 2 decks', 'Agent systems', 'Multi-agent orchestrator-workers designs, and computer and browser use.', ['multi-agent', 'computer use']),
+    ]),
+    ('Platform', [
+        ('agent-infra', 'Topic · 3 decks', 'Agent infrastructure', 'The LLM gateway, model and agent routing, and identity and access control for agents.', ['LLM gateway', 'routing', 'RBAC', 'OAuth']),
+        ('agent-retrieval', 'Topic · 3 decks', 'Retrieval stack', 'Indexing pipelines, vector databases and ANN indexes, and rerankers.', ['chunking', 'HNSW', 'IVF-PQ', 'rerankers']),
+        ('agent-models', 'Topic · 2 decks', 'Models for agents', 'Training LLMs for tool use and agency, and serving LLMs for agent workloads.', ['tool-use SFT', 'agentic RL', 'prefix reuse', 'constrained decoding']),
+    ]),
+    ('Running agents', [
         ('agent-operations', 'Topic · 3 decks', 'Agent operations', 'Evaluating agents (pass^k), safety and reliability, and cost and latency.', ['evals', 'prompt injection', 'prompt caching']),
     ]),
 ]

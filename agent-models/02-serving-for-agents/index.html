@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Serving LLMs for Agent Workloads</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Serving LLMs for agent workloads" data-home="../index.html" data-home-label="Models">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual Agents · Models · 02</div>
+    <h1>Serving LLMs for agent workloads</h1>
+    <p class="sub">Why agent traffic stresses inference servers differently from chat, and the server-side techniques that help: prefix reuse across turns, constrained decoding for tool calls, program-aware scheduling, and smaller models.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>An agent task is a <b>program</b> of many dependent calls sharing a long, growing prefix, separated by tool executions, each ending in strict JSON (JavaScript Object Notation). Request-level schedulers see unrelated requests: they recompute shared prefixes, let one long program block others (head-of-line blocking) and optimise per-request latency when the user waits for the whole task.</div>
+      <div class="c"><b>Core idea</b>Serve the program, not the request: <b>reuse KV (key-value) cache across turns</b> (SGLang's RadixAttention, up to 6.4× throughput), <b>constrain decoding</b> to the tool schema cheaply (XGrammar, near-zero overhead), <b>schedule with program context</b> (Autellix, 4-15× program throughput vs vLLM at the same latency), and use <b>smaller or distilled models</b> and speculative decoding where steps are easy.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Previous: <a href="../01-training-for-agents/index.html">Training LLMs for agents</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Agent traffic is not chat traffic</h2>
+    <hr>
+<div class="grid2">
+      <div class="card d"><h3>Repeated prefixes</h3><p>Every turn resends system prompt, tools and history; without reuse the server prefills them again.</p></div>
+      <div class="card b"><h3>Strict outputs</h3><p>Tool calls must parse; one malformed argument costs a full extra turn.</p></div>
+      <div class="card c"><h3>Dependent calls</h3><p>Call n+1 waits for call n and a tool run; latency adds up across the program.</p></div>
+      <div class="card a"><h3>Head-of-line blocking</h3><p>Autellix found programs suffer long cumulative waits, blocked at both the request and the program level.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Make the server program-aware</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Prefix reuse</h3><p>Keep KV blocks of earlier turns and match the longest cached prefix (vLLM automatic prefix caching; SGLang's radix tree).</p></div>
+      <div class="card a"><h3>Constrained decoding</h3><p>Mask tokens that would break the JSON schema or grammar. XGrammar prechecks context-independent tokens and checks the rest with a persistent stack: up to 100× faster than earlier engines.</p></div>
+      <div class="card c"><h3>Program-level scheduling</h3><p>Autellix prioritises calls using each program's completed calls; Parrot's Semantic Variables expose data flow between requests.</p></div>
+      <div class="card e"><h3>Right-sized models</h3><p>Distilled or small models for sub-agents and easy steps; speculative decoding for latency at low batch sizes.</p></div>
+    </div>
+<p>The client side of the same problem (prompt caching prices, compaction, budgets) is in the <a href="../../agent-operations/03-cost-and-latency/index.html">cost and latency</a> deck.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>An agent-aware serving stack</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Many agent programs submit calls; each call belongs to a program with history.&quot;, &quot;The scheduler orders calls using program-level information, e.g. how much service each program has received, to avoid head-of-line blocking.&quot;, &quot;The engine batches calls continuously; the prefix cache supplies KV for the shared history so only new tokens are prefilled.&quot;, &quot;During decoding a grammar mask allows only tokens that keep the tool call valid.&quot;, &quot;A small draft model can propose tokens the large model verifies, cutting latency when the batch is small.&quot;, &quot;The tool call leaves the server; the program&#x27;s KV waits in cache (or is offloaded) until the next turn.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah15" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="152.0" y1="148.0" x2="186.0" y2="148.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah15)"/></g><g data-step="3"><line x1="332.0" y1="148.0" x2="366.0" y2="148.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah15)"/></g><g data-step="3"><line x1="512.0" y1="148.0" x2="546.0" y2="148.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah15)"/></g><g data-step="3"><line x1="440.0" y1="78.0" x2="440.0" y2="116.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah15)"/></g><g data-step="4"><line x1="440.0" y1="223.0" x2="440.0" y2="180.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah15)"/></g><g data-step="5"><line x1="552.0" y1="78.0" x2="491.2" y2="116.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah15)"/></g><g data-step="6"><line x1="485.7" y1="178.0" x2="551.2" y2="221.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah15)"/></g><g data-step="1"><rect x="10" y="120" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="80.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Agent programs</text><text x="80.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">many calls each</text></g><g data-step="2"><rect x="190" y="120" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="260.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Scheduler</text><text x="260.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">program-aware</text></g><g data-step="3"><rect x="370" y="120" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="440.0" y="146.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Engine</text><text x="440.0" y="162.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">continuous batching</text></g><g data-step="3"><rect x="370" y="20" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="440.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Prefix cache</text><text x="440.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">radix tree of KV</text></g><g data-step="4"><rect x="370" y="225" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="440.0" y="251.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Grammar mask</text><text x="440.0" y="267.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">tool JSON schema</text></g><g data-step="3"><rect x="550" y="120" width="100" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="600.0" y="153.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">GPUs</text></g><g data-step="5"><rect x="550" y="20" width="100" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="600.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Draft model</text><text x="600.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">speculation</text></g><g data-step="6"><rect x="550" y="225" width="100" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="600.0" y="251.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Tools</text><text x="600.0" y="267.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">run outside</text></g><g data-step="3"><text x="440.0" y="92.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">reuse</text></g><g data-step="4"><text x="440.0" y="196.5" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">allowed tokens</text></g><g data-step="6"><text x="518.5" y="194.5" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">tool call</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>One agent turn on the server</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A new turn arrives: the previous turns plus the latest tool result.&quot;, &quot;The engine finds the longest prefix whose KV blocks are still cached.&quot;, &quot;Only the uncached suffix (the new tool result and any changed text) is prefilled.&quot;, &quot;Decoding applies the grammar mask so the output follows the tool schema.&quot;, &quot;The result is a valid tool call by construction, though not necessarily a correct one.&quot;, &quot;While the tool runs, the program&#x27;s KV must survive: kept in GPU memory, given a time-to-live, or offloaded to CPU memory.&quot;, &quot;If it survived, the next turn starts with almost everything cached; if it was evicted, the whole history is prefilled again.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 240" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah16" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="162.0" y1="48.0" x2="186.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah16)"/></g><g data-step="3"><line x1="342.0" y1="48.0" x2="366.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah16)"/></g><g data-step="4"><line x1="512.0" y1="48.0" x2="536.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah16)"/></g><g data-step="5"><line x1="595.0" y1="78.0" x2="595.0" y2="156.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah16)"/></g><g data-step="6"><line x1="538.0" y1="188.0" x2="514.0" y2="188.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah16)"/></g><g data-step="7"><line x1="298.0" y1="188.0" x2="214.0" y2="188.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah16)"/></g><g data-step="1"><rect x="10" y="20" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="85.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Turn n arrives</text><text x="85.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">history + new tokens</text></g><g data-step="2"><rect x="190" y="20" width="150" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="265.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Prefix match</text><text x="265.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">longest cached prefix</text></g><g data-step="3"><rect x="370" y="20" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="440.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Prefill</text><text x="440.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">new tokens only</text></g><g data-step="4"><rect x="540" y="20" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="595.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Decode</text><text x="595.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">masked by grammar</text></g><g data-step="5"><rect x="540" y="160" width="110" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="595.0" y="186.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Tool call</text><text x="595.0" y="202.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">valid JSON</text></g><g data-step="6"><rect x="300" y="160" width="210" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="405.0" y="186.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Keep KV while tool runs</text><text x="405.0" y="202.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">pin, TTL or offload to CPU</text></g><g data-step="7"><rect x="10" y="160" width="200" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="110.0" y="186.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Turn n+1</text><text x="110.0" y="202.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">hits the cache</text></g></svg><p class="readout dgcap"></p></div>
+
+<div class="visual scroll-x"><table class="tbl"><tr><th>Concern</th><th>Chat-style serving</th><th>Agent-aware serving</th></tr><tr><td>Unit of scheduling</td><td>request</td><td>program (task)</td></tr><tr><td>Latency metric</td><td>time to first token per request</td><td>end-to-end task completion time</td></tr><tr><td>KV eviction</td><td>least recently used</td><td>aware that a program will return after its tool call</td></tr><tr><td>Output format</td><td>free text, validated after</td><td>grammar-constrained at decode time</td></tr><tr><td>Load balancing</td><td>least loaded replica</td><td>session or prefix affinity, so the cache is on that replica</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl"><tr><th>Choice</th><th>Benefit</th><th>Cost</th></tr><tr><td>Keep KV during tool calls</td><td>next turn is nearly free to prefill</td><td>GPU (graphics processing unit) memory held by idle programs</td></tr><tr><td>Evict or offload KV</td><td>room for more active requests</td><td>recompute or transfer when the program returns</td></tr><tr><td>Constrained decoding</td><td>tool calls always parse</td><td>Let Me Speak Freely?: strict format restrictions can degrade reasoning; let the model think before the constrained part</td></tr><tr><td>Prefix-affinity routing</td><td>high cache hit rates</td><td>uneven load across replicas</td></tr><tr><td>Speculative decoding</td><td>lower latency at small batch</td><td>less benefit at high batch; draft model memory</td></tr><tr><td>Smaller models for sub-agents</td><td>cheaper, faster steps</td><td>quality risk on hard steps (route them up)</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Cache thrash</td><td>hit rate collapses as concurrent agents exceed KV capacity</td><td>admission control, offload tiers, affinity routing</td></tr><tr><td>Prefix changes</td><td>a timestamp or reordered tools at the top kills reuse</td><td>stable prefixes; dynamic content at the end</td></tr><tr><td>Grammar compile stalls</td><td>first request with a new schema is slow</td><td>cache compiled grammars; precompile known tool schemas</td></tr><tr><td>Valid but wrong arguments</td><td>JSON parses, values are nonsense</td><td>schema enums and validation in the tool layer; constrained decoding only fixes syntax</td></tr><tr><td>Long programs starve short ones</td><td>quick tasks wait behind huge ones</td><td>program-aware fair scheduling (Autellix)</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Measure per task</h3><p>Report task latency, tokens per task and prefix-cache hit rate, not just tokens per second.</p></div>
+      <div class="card c"><h3>Affinity</h3><p>Route a session to the replica that holds its cache, with spillover when it is overloaded.</p></div>
+      <div class="card b"><h3>Capacity for idle KV</h3><p>Size memory for programs waiting on tools, not only for active decoding.</p></div>
+      <div class="card e"><h3>Same engine features as hosted APIs</h3><p>Self-hosting means owning prefix caching, structured outputs and tool parsing yourself (see the vLLM decks).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2312.07104" target="_blank" rel="noopener">SGLang: Efficient Execution of Structured Language Model Programs</a>
+        <div class="meta">Zheng et al. · NeurIPS 2024</div>
+        <p>A runtime and frontend for multi-call LLM (large language model) programs; RadixAttention keeps KV caches in a radix tree so shared prefixes are reused across requests automatically.</p><div class="num">Remember: up to 6.4× higher throughput</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2411.15100" target="_blank" rel="noopener">XGrammar: Flexible and Efficient Structured Generation Engine for Large Language Models</a>
+        <div class="meta">Dong et al. · MLSys 2025</div>
+        <p>Constrained decoding with context-free grammars: context-independent tokens are prechecked into masks, only context-dependent tokens are checked at runtime with a persistent stack, and mask computation overlaps GPU work.</p><div class="num">Remember: up to 100× faster grammar execution; near-zero overhead end to end</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2307.09702" target="_blank" rel="noopener">Efficient Guided Generation for Large Language Models</a>
+        <div class="meta">Willard & Louf · arXiv 2023</div>
+        <p>Guided generation as finite-state-machine transitions with an index over the vocabulary, enforcing regular expressions and grammars (the Outlines library).</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2408.02442" target="_blank" rel="noopener">Let Me Speak Freely? A Study on the Impact of Format Restrictions on Performance of Large Language Models</a>
+        <div class="meta">Tam et al. · EMNLP Industry 2024</div>
+        <p>Format restrictions such as forced JSON can significantly reduce reasoning performance, and stricter constraints degrade it more.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2502.13965" target="_blank" rel="noopener">Autellix: An Efficient Serving Engine for LLM Agents as General Programs</a>
+        <div class="meta">Luo et al. · arXiv 2025</div>
+        <p>Treats agent programs as first-class units; schedulers preempt and prioritise calls using each program's completed calls to avoid head-of-line blocking.</p><div class="num">Remember: 4-15× higher program throughput at the same latency vs vLLM</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2405.19888" target="_blank" rel="noopener">Parrot: Efficient Serving of LLM-based Applications with Semantic Variable</a>
+        <div class="meta">Lin et al. · OSDI 2024</div>
+        <p>Semantic Variables expose the data flow between an application's LLM requests so the service can schedule and share prefixes across them.</p><div class="num">Remember: up to an order-of-magnitude end-to-end improvement</div></div>
+      <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/design/prefix_caching.html" target="_blank" rel="noopener">Automatic Prefix Caching (design)</a>
+        <div class="meta">vLLM documentation · docs.vllm.ai 2026</div>
+        <p>Each KV block is hashed with its tokens and the prefix before it; blocks are reference-counted, freed blocks are evicted in LRU (least recently used) order, and cache hits skip prefill.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+  document.querySelectorAll('.dgm').forEach(box => {
+    const caps = JSON.parse(box.dataset.steps), els = [...box.querySelectorAll('[data-step]')], max = Math.max(0, ...els.map(e => +e.dataset.step)), cap = box.querySelector('.dgcap');
+    let k = max, full = true;
+    const show = () => {
+      els.forEach(e => { const s = +e.dataset.step; e.style.opacity = s <= k ? 1 : 0.08; e.style.transition = 'opacity .25s'; e.querySelectorAll('rect').forEach(r => r.style.strokeWidth = s === k && k ? 3.5 : 2); });
+      cap.innerHTML = k === 0 ? 'Press <b>next step</b> to walk through the design.' : k === max && full ? 'Full design shown. Press <b>reset</b>, then <b>next step</b>, to walk through it one step at a time.' : `<b>Step ${k} of ${max}.</b> ${caps[k - 1] || ''}`;
+      full = false;
+    };
+    box.querySelector('[data-dg=next]').addEventListener('click', () => { k = Math.min(max, k + 1); show(); });
+    box.querySelector('[data-dg=all]').addEventListener('click', () => { k = max; full = false; show(); cap.innerHTML = '<b>Full design.</b> ' + caps.map((c, i) => `${i + 1}. ${c}`).join(' '); });
+    box.querySelector('[data-dg=reset]').addEventListener('click', () => { k = 0; show(); });
+    show();
+  });
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent infrastructure Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Agent infrastructure</a>
+  <div class="label" style="margin-top:28px">Reading list · 13 papers and docs</div>
+  <h1>Agent infrastructure: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://docs.litellm.ai/docs/routing" target="_blank" rel="noopener">Router - load balancing, fallbacks and retries</a>
+      <div class="meta">LiteLLM documentation · docs.litellm.ai 2026 · cited in <a href="01-llm-gateway/index.html" style="font-weight:500;color:var(--a)">LLM gateway</a></div>
+      <p>An open-source gateway router: routing strategies (default simple-shuffle; latency-, cost-, usage-based, least-busy), num_retries with backoff on rate limits, fallbacks to other model groups, and cooldowns (allowed_fails 3, cooldown_time 5 s).</p></div>
+    <div class="paper-item"><a href="https://developers.cloudflare.com/ai-gateway/" target="_blank" rel="noopener">AI Gateway</a>
+      <div class="meta">Cloudflare documentation · developers.cloudflare.com 2026 · cited in <a href="01-llm-gateway/index.html" style="font-weight:500;color:var(--a)">LLM gateway</a></div>
+      <p>A managed gateway in front of model providers: analytics, logging, caching, rate limiting, request retry and model fallback.</p></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/api/rate-limits" target="_blank" rel="noopener">Rate limits</a>
+      <div class="meta">Anthropic documentation · platform.claude.com 2026 · cited in <a href="01-llm-gateway/index.html" style="font-weight:500;color:var(--a)">LLM gateway</a></div>
+      <p>Limits in requests, input tokens and output tokens per minute (RPM, ITPM, OTPM) per model class, enforced with a token bucket; 429 errors with retry-after; for most models cached input tokens do not count toward ITPM.</p><div class="num">Remember: 2M ITPM with an 80% cache hit rate ≈ 10M total input tokens per minute</div></div>
+    <div class="paper-item"><a href="https://genai.owasp.org/llmrisk/llm062025-excessive-agency/" target="_blank" rel="noopener">OWASP Top 10 for LLM Applications 2025</a>
+      <div class="meta">OWASP GenAI Security Project · genai.owasp.org 2025 · cited in <a href="01-llm-gateway/index.html" style="font-weight:500;color:var(--a)">LLM gateway</a>, <a href="03-access-control/index.html" style="font-weight:500;color:var(--a)">Identity and access control</a></div>
+      <p>LLM06:2025 Excessive Agency: root causes are excessive functionality, excessive permissions and excessive autonomy; mitigations include minimising extensions and their permissions, executing in the user's context, user approval and complete mediation.</p></div>
+    <div class="paper-item"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Building effective agents</a>
+      <div class="meta">Anthropic · Anthropic Engineering 2024 · cited in <a href="02-model-router/index.html" style="font-weight:500;color:var(--a)">Model and agent routing</a></div>
+      <p>Workflows (predefined code paths) vs agents (LLMs directing their own process); patterns: prompt chaining, routing, parallelization, orchestrator-workers, evaluator-optimizer. Start with the simplest solution.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2406.18665" target="_blank" rel="noopener">RouteLLM: Learning to Route LLMs with Preference Data</a>
+      <div class="meta">Ong et al. · ICLR 2025 · cited in <a href="02-model-router/index.html" style="font-weight:500;color:var(--a)">Model and agent routing</a></div>
+      <p>Routers trained on human preference data (with augmentation) choose between a strong and a weak model per query; they transfer when the model pair changes.</p><div class="num">Remember: costs cut by over 2× in some cases without lowering response quality</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2404.14618" target="_blank" rel="noopener">Hybrid LLM: Cost-Efficient and Quality-Aware Query Routing</a>
+      <div class="meta">Ding et al. · ICLR 2024 · cited in <a href="02-model-router/index.html" style="font-weight:500;color:var(--a)">Model and agent routing</a></div>
+      <p>A router sends each query to a small or large model from its predicted difficulty; the quality level is tunable at test time.</p><div class="num">Remember: up to 40% fewer calls to the large model with no drop in response quality</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.05176" target="_blank" rel="noopener">FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance</a>
+      <div class="meta">Chen, Zaharia & Zou · TMLR 2024 · cited in <a href="02-model-router/index.html" style="font-weight:500;color:var(--a)">Model and agent routing</a></div>
+      <p>Three cost levers (prompt adaptation, LLM approximation, LLM cascade); FrugalGPT learns a cascade that queries cheaper models first and stops when a scorer accepts the answer.</p><div class="num">Remember: matches GPT-4 with up to 98% lower cost, or +4% accuracy at the same cost</div></div>
+    <div class="paper-item"><a href="https://csrc.nist.gov/projects/role-based-access-control" target="_blank" rel="noopener">Role Based Access Control</a>
+      <div class="meta">NIST Computer Security Resource Center · csrc.nist.gov 2024 · cited in <a href="03-access-control/index.html" style="font-weight:500;color:var(--a)">Identity and access control</a></div>
+      <p>RBAC was formalised by Ferraiolo and Kuhn in 1992; the NIST model became the ANSI/INCITS 359-2004 standard (revised 2012). Users get roles, roles carry permissions.</p></div>
+    <div class="paper-item"><a href="https://csrc.nist.gov/pubs/sp/800/162/upd2/final" target="_blank" rel="noopener">Guide to Attribute Based Access Control (ABAC) Definition and Considerations</a>
+      <div class="meta">Hu et al. (NIST) · NIST Special Publication 800-162 2014 · cited in <a href="03-access-control/index.html" style="font-weight:500;color:var(--a)">Identity and access control</a></div>
+      <p>Access decisions computed from attributes of the subject, the object, the requested operation and the environment, evaluated against policy.</p></div>
+    <div class="paper-item"><a href="https://www.usenix.org/conference/atc19/presentation/pang" target="_blank" rel="noopener">Zanzibar: Google's Consistent, Global Authorization System</a>
+      <div class="meta">Pang et al. · USENIX ATC 2019 · cited in <a href="03-access-control/index.html" style="font-weight:500;color:var(--a)">Identity and access control</a></div>
+      <p>Relationship-based access control as a service; ACLs stored as relation tuples, checked consistently at global scale.</p><div class="num">Remember: trillions of ACLs, millions of checks per second, p95 under 10 ms, over 99.999% availability for 3 years</div></div>
+    <div class="paper-item"><a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization" target="_blank" rel="noopener">Model Context Protocol: Authorization (revision 2026-07-28)</a>
+      <div class="meta">MCP specification · modelcontextprotocol.io 2026 · cited in <a href="03-access-control/index.html" style="font-weight:500;color:var(--a)">Identity and access control</a></div>
+      <p>OAuth 2.1 for HTTP (Hypertext Transfer Protocol) transports: servers are resource servers publishing Protected Resource Metadata (RFC 9728); clients use PKCE (S256) and the resource parameter (RFC 8707); servers must validate the token audience and must not pass tokens through; 403 insufficient_scope triggers step-up authorization.</p></div>
+    <div class="paper-item"><a href="https://www.rfc-editor.org/rfc/rfc8693" target="_blank" rel="noopener">OAuth 2.0 Token Exchange (RFC 8693)</a>
+      <div class="meta">Jones et al. · IETF (Internet Engineering Task Force) 2020 · cited in <a href="03-access-control/index.html" style="font-weight:500;color:var(--a)">Identity and access control</a></div>
+      <p>Exchange a subject token (and optional actor token) for a new token; distinguishes impersonation from delegation ("A is an agent for B") and records the acting party in the act claim.</p></div>
+  </div>
+</div>
+
+</body>
+</html>

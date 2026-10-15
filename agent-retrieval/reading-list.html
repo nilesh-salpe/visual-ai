@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retrieval stack Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← Retrieval stack</a>
+  <div class="label" style="margin-top:28px">Reading list · 16 papers and docs</div>
+  <h1>Retrieval stack: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://www.anthropic.com/news/contextual-retrieval" target="_blank" rel="noopener">Introducing Contextual Retrieval</a>
+      <div class="meta">Anthropic · Anthropic News 2024 · cited in <a href="01-indexing/index.html" style="font-weight:500;color:var(--a)">Indexing pipelines</a>, <a href="03-rerankers/index.html" style="font-weight:500;color:var(--a)">Rerankers</a></div>
+      <p>Prepend 50-100 tokens of chunk-specific context (written by an LLM from the whole document) before embedding and BM25 indexing; retrieve top 150, rerank, keep 20. Knowledge bases under 200,000 tokens can go straight into the prompt.</p><div class="num">Remember: top-20 retrieval failures 5.7% → 3.7% (−35%), 2.9% with BM25 (−49%), 1.9% with reranking (−67%); $1.02 per million document tokens</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2409.04701" target="_blank" rel="noopener">Late Chunking: Contextual Chunk Embeddings Using Long-Context Embedding Models</a>
+      <div class="meta">Günther et al. · arXiv 2024 · cited in <a href="01-indexing/index.html" style="font-weight:500;color:var(--a)">Indexing pipelines</a></div>
+      <p>Embed the whole long text first and pool token embeddings per chunk afterwards, so each chunk embedding carries the surrounding context; no extra training needed.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2104.08663" target="_blank" rel="noopener">BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models</a>
+      <div class="meta">Thakur et al. · NeurIPS Datasets and Benchmarks 2021 · cited in <a href="01-indexing/index.html" style="font-weight:500;color:var(--a)">Indexing pipelines</a></div>
+      <p>18 retrieval datasets for zero-shot evaluation; BM25 is a robust baseline, and re-ranking and late-interaction models score best on average at higher compute cost.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2210.07316" target="_blank" rel="noopener">MTEB: Massive Text Embedding Benchmark</a>
+      <div class="meta">Muennighoff et al. · EACL 2023 · cited in <a href="01-indexing/index.html" style="font-weight:500;color:var(--a)">Indexing pipelines</a></div>
+      <p>8 embedding tasks, 58 datasets, 112 languages; no single embedding method dominates across all tasks.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2004.04906" target="_blank" rel="noopener">Dense Passage Retrieval for Open-Domain Question Answering</a>
+      <div class="meta">Karpukhin et al. · EMNLP 2020 · cited in <a href="01-indexing/index.html" style="font-weight:500;color:var(--a)">Indexing pipelines</a></div>
+      <p>A dual encoder (separate query and passage encoders) trained on question-passage pairs; retrieval by inner product.</p><div class="num">Remember: +9 to 19 points top-20 accuracy over Lucene BM25</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1603.09320" target="_blank" rel="noopener">Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs</a>
+      <div class="meta">Malkov & Yashunin · IEEE TPAMI 2018 · cited in <a href="02-vector-databases/index.html" style="font-weight:500;color:var(--a)">Vector databases</a></div>
+      <p>A multi-layer proximity graph: each element's top layer is drawn from an exponentially decaying distribution (mL = 1/ln M), search descends greedily from the top layer, and layer 0 keeps up to 2M links per element; logarithmic complexity scaling.</p></div>
+    <div class="paper-item"><a href="https://inria.hal.science/inria-00514462" target="_blank" rel="noopener">Product Quantization for Nearest Neighbor Search</a>
+      <div class="meta">Jégou, Douze & Schmid · IEEE TPAMI 2011 · cited in <a href="02-vector-databases/index.html" style="font-weight:500;color:var(--a)">Vector databases</a></div>
+      <p>Split each vector into m subvectors and quantize each with its own small codebook, so a vector is stored as m short codes; distances are estimated from per-query lookup tables (asymmetric distance computation), combined with an inverted file (IVFADC).</p></div>
+    <div class="paper-item"><a href="https://proceedings.neurips.cc/paper/2019/hash/09853c7fb1d3f8ee67a61b6bf4a7f8e6-Abstract.html" target="_blank" rel="noopener">DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single Node</a>
+      <div class="meta">Subramanya et al. · NeurIPS 2019 · cited in <a href="02-vector-databases/index.html" style="font-weight:500;color:var(--a)">Vector databases</a></div>
+      <p>A graph index (Vamana) stored on SSD with compressed vectors in RAM serves a billion-point index from one workstation.</p><div class="num">Remember: 1B points, 64 GB RAM, >5,000 queries/s, <3 ms mean latency, 95%+ 1-recall@1 on 16 cores</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2401.08281" target="_blank" rel="noopener">The Faiss library</a>
+      <div class="meta">Douze et al. · arXiv 2024 · cited in <a href="02-vector-databases/index.html" style="font-weight:500;color:var(--a)">Vector databases</a></div>
+      <p>The vector-search toolkit behind many vector databases: flat, IVF, PQ and graph indexes, and the trade-off space between accuracy, speed, memory and build time.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1908.10396" target="_blank" rel="noopener">Accelerating Large-Scale Inference with Anisotropic Vector Quantization</a>
+      <div class="meta">Guo et al. · ICML 2020 · cited in <a href="02-vector-databases/index.html" style="font-weight:500;color:var(--a)">Vector databases</a></div>
+      <p>ScaNN: a quantization loss that penalises the error parallel to the data point more than the orthogonal error, which suits maximum inner product search.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1908.10084" target="_blank" rel="noopener">Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks</a>
+      <div class="meta">Reimers & Gurevych · EMNLP 2019 · cited in <a href="03-rerankers/index.html" style="font-weight:500;color:var(--a)">Rerankers</a></div>
+      <p>A bi-encoder producing one embedding per sentence, compared by cosine similarity.</p><div class="num">Remember: most similar pair among 10,000 sentences takes ~65 h with a BERT cross-encoder vs ~5 s with SBERT</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1901.04085" target="_blank" rel="noopener">Passage Re-ranking with BERT</a>
+      <div class="meta">Nogueira & Cho · arXiv 2019 · cited in <a href="03-rerankers/index.html" style="font-weight:500;color:var(--a)">Rerankers</a></div>
+      <p>A BERT cross-encoder reads query and passage together and outputs a relevance score; used to rerank BM25 candidates.</p><div class="num">Remember: +27% relative MRR@10 over the previous state of the art on MS MARCO</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2004.12832" target="_blank" rel="noopener">ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT</a>
+      <div class="meta">Khattab & Zaharia · SIGIR 2020 · cited in <a href="03-rerankers/index.html" style="font-weight:500;color:var(--a)">Rerankers</a></div>
+      <p>Late interaction: query and document are encoded separately into token embeddings (documents offline), then scored by summing each query token's maximum similarity (MaxSim).</p><div class="num">Remember: competitive with BERT rerankers, two orders of magnitude faster, four orders fewer FLOPs (floating-point operations) per query</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2304.09542" target="_blank" rel="noopener">Is ChatGPT Good at Search? Investigating Large Language Models as Re-Ranking Agents</a>
+      <div class="meta">Sun et al. · EMNLP 2023 · cited in <a href="03-rerankers/index.html" style="font-weight:500;color:var(--a)">Rerankers</a></div>
+      <p>Listwise reranking by an instructed LLM that outputs a permutation, applied with a sliding window over BM25's top 100; the ranking ability distils into small models.</p><div class="num">Remember: a distilled 440M model beats a 3B supervised reranker on BEIR</div></div>
+    <div class="paper-item"><a href="https://cormack.uwaterloo.ca/cormacksigir09-rrf.pdf" target="_blank" rel="noopener">Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods</a>
+      <div class="meta">Cormack, Clarke & Büttcher · SIGIR 2009 · cited in <a href="03-rerankers/index.html" style="font-weight:500;color:var(--a)">Rerankers</a></div>
+      <p>Fuse several rankings by score(d) = Σ 1/(k + rank_r(d)) with k = 60; simple, training-free and better than the individual rankings.</p></div>
+    <div class="paper-item"><a href="https://docs.cohere.com/docs/rerank-overview" target="_blank" rel="noopener">Rerank overview</a>
+      <div class="meta">Cohere documentation · docs.cohere.com 2026 · cited in <a href="03-rerankers/index.html" style="font-weight:500;color:var(--a)">Rerankers</a></div>
+      <p>A hosted reranker API that orders documents by relevance to a query and returns a relevance score per document; structured documents are best passed as YAML strings.</p></div>
+  </div>
+</div>
+
+</body>
+</html>

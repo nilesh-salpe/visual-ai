@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Indexing Pipelines</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Indexing pipelines" data-home="../index.html" data-home-label="Retrieval">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual Agents · Retrieval · 01</div>
+    <h1>Indexing pipelines for retrieval</h1>
+    <p class="sub">Everything that happens before the first query: parsing, chunking, adding context and metadata, embedding, lexical indexes, and keeping the index fresh as documents change.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Retrieval quality is mostly decided at indexing time. A chunk that says "revenue grew 3% over the previous quarter" without naming the company cannot be found by a query that names it; garbled tables, stale documents and missing permissions break even the best retriever.</div>
+      <div class="c"><b>Core idea</b>Run an <b>indexing pipeline</b>: parse → chunk → <b>enrich</b> (context, metadata, access lists) → embed and build a <b>lexical (BM25 (Okapi Best Matching 25 ranking function)) index</b> → write, with <b>incremental updates</b> keyed by content hash. Anthropic's <b>Contextual Retrieval</b> prepends 50-100 tokens of chunk-specific context, cutting top-20 retrieval failures by 35%, by 49% with BM25, and by 67% with reranking.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Next: <a href="../02-vector-databases/index.html">Vector databases →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Bad indexes cannot be rescued at query time</h2>
+    <hr>
+<div class="grid2">
+      <div class="card d"><h3>Context lost in chunking</h3><p>Splitting a document cuts each piece off from the title, entity and section it belongs to.</p></div>
+      <div class="card b"><h3>Parsing</h3><p>PDF (Portable Document Format) columns, tables, slides and code need different extraction; errors become wrong chunks.</p></div>
+      <div class="card c"><h3>Freshness</h3><p>Documents change and get deleted; a stale index answers with old or revoked content.</p></div>
+      <div class="card a"><h3>Model lock-in</h3><p>Vectors from different embedding models are not comparable; changing the model means re-embedding everything.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Chunks that carry their context</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Chunk sizes</h3><p>Usually no more than a few hundred tokens per chunk; split on structure (headings, paragraphs, functions) where possible.</p></div>
+      <div class="card a"><h3>Contextual chunks</h3><p>An LLM (large language model) reads the whole document and writes 50-100 tokens situating each chunk; the result is prepended before embedding and BM25 indexing. One-time cost: $1.02 per million document tokens with prompt caching.</p></div>
+      <div class="card c"><h3>Late chunking</h3><p>Alternative: run a long-context embedding model over the whole document, then pool token embeddings per chunk, so each chunk vector already reflects its surroundings.</p></div>
+      <div class="card e"><h3>Hybrid indexes</h3><p>Keep a dense vector index and a BM25 index. BEIR found BM25 a robust zero-shot baseline; exact terms such as error codes are lexical matches.</p></div>
+    </div>
+<p>When the whole knowledge base is under about 200,000 tokens (about 500 pages), Anthropic suggests skipping retrieval and putting it all in the prompt, with prompt caching.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>The pipeline</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Connectors pull documents from each source with their permissions and timestamps.&quot;, &quot;Parsing turns files into clean text, keeping tables and headings as structure.&quot;, &quot;Chunking splits on structure into pieces of a few hundred tokens, possibly with overlap.&quot;, &quot;Enrichment adds the document title and section, an LLM-written context sentence, metadata for filters, and the access list.&quot;, &quot;The contextualised chunk is embedded with a pinned model version and also indexed lexically (BM25).&quot;, &quot;Vectors are stored with the chunk text and metadata so results can be filtered and shown.&quot;, &quot;A change feed re-processes only new or changed documents (compare content hashes) and deletes chunks of removed documents.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="152.0" y1="48.0" x2="176.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="3"><line x1="322.0" y1="48.0" x2="346.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="4"><line x1="492.0" y1="48.0" x2="506.0" y2="48.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="5"><line x1="580.0" y1="78.0" x2="580.0" y2="126.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="5"><line x1="536.4" y1="78.0" x2="466.5" y2="126.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="6"><line x1="580.0" y1="188.0" x2="580.0" y2="231.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah7)"/></g><g data-step="7"><line x1="126.4" y1="128.0" x2="200.5" y2="80.0" style="stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4;" marker-end="url(#ah7)"/></g><g data-step="1"><rect x="10" y="20" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="80.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Sources</text><text x="80.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">docs · wikis · code</text></g><g data-step="2"><rect x="180" y="20" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="250.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Parse</text><text x="250.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">text · tables · layout</text></g><g data-step="3"><rect x="350" y="20" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="420.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Chunk</text><text x="420.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">structure-aware</text></g><g data-step="4"><rect x="510" y="20" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="580.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Enrich</text><text x="580.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">context · metadata · ACL</text></g><g data-step="5"><rect x="510" y="130" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="580.0" y="156.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Embed</text><text x="580.0" y="172.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">versioned model</text></g><g data-step="5"><rect x="350" y="130" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="420.0" y="156.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Lexical index</text><text x="420.0" y="172.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">BM25</text></g><g data-step="6"><rect x="510" y="235" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="580.0" y="261.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Vector index</text><text x="580.0" y="277.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">vector · text · metadata</text></g><g data-step="7"><rect x="10" y="130" width="140" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="80.0" y="156.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Change feed</text><text x="80.0" y="172.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">hash · version · delete</text></g><g data-step="7"><text x="163.5" y="99.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">changed only</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>Contextualising one chunk</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Each call sees the whole document and one of its chunks. The document part is the same for all its chunks, so prompt caching makes it cheap.&quot;, &quot;A small, fast model is asked for a short context that situates the chunk within the document, to improve search retrieval.&quot;, &quot;Output: e.g. \&quot;This chunk is from ACME&#x27;s Q2 2023 filing; the previous quarter&#x27;s revenue was $314M.\&quot;&quot;, &quot;The context is prepended to the chunk before both embedding and BM25 indexing.&quot;, &quot;Store a record with the content hash, embedding model version and access list, so updates and permission changes can be applied incrementally.&quot;]"><div class="controls" style="margin-top:0"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" style="width:100%;height:auto;margin-top:8px" role="img" aria-label="diagram"><defs><marker id="ah8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker></defs><g data-step="2"><line x1="172.0" y1="70.6" x2="226.0" y2="85.5" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="2"><line x1="172.0" y1="146.9" x2="226.0" y2="132.9" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="3"><line x1="402.0" y1="87.5" x2="456.0" y2="73.6" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="4"><line x1="555.0" y1="78.0" x2="555.0" y2="136.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="5"><line x1="475.0" y1="198.0" x2="400.3" y2="226.0" style="stroke:var(--ink);stroke-width:1.6;" marker-end="url(#ah8)"/></g><g data-step="1"><rect x="10" y="20" width="160" height="56" rx="10" style="fill:color-mix(in srgb, var(--faint) 16%, var(--panel));stroke:var(--faint);stroke-width:2"/><text x="90.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Whole document</text><text x="90.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">cached in prompt</text></g><g data-step="1"><rect x="10" y="140" width="160" height="56" rx="10" style="fill:color-mix(in srgb, var(--c) 16%, var(--panel));stroke:var(--c);stroke-width:2"/><text x="90.0" y="166.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">One chunk</text><text x="90.0" y="182.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">~ few hundred tokens</text></g><g data-step="2"><rect x="230" y="80" width="170" height="60" rx="10" style="fill:color-mix(in srgb, var(--a) 16%, var(--panel));stroke:var(--a);stroke-width:2"/><text x="315.0" y="108.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Small LLM</text><text x="315.0" y="124.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">&quot;situate this chunk&quot;</text></g><g data-step="3"><rect x="460" y="20" width="190" height="56" rx="10" style="fill:color-mix(in srgb, var(--b) 16%, var(--panel));stroke:var(--b);stroke-width:2"/><text x="555.0" y="46.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Context</text><text x="555.0" y="62.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">50-100 tokens</text></g><g data-step="4"><rect x="460" y="140" width="190" height="56" rx="10" style="fill:color-mix(in srgb, var(--e) 16%, var(--panel));stroke:var(--e);stroke-width:2"/><text x="555.0" y="166.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Context + chunk</text><text x="555.0" y="182.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">embed and BM25</text></g><g data-step="5"><rect x="230" y="230" width="170" height="56" rx="10" style="fill:color-mix(in srgb, var(--d) 16%, var(--panel));stroke:var(--d);stroke-width:2"/><text x="315.0" y="256.0" text-anchor="middle" style="font:700 13px Inter,sans-serif;fill:var(--ink)">Index record</text><text x="315.0" y="272.0" text-anchor="middle" style="font:500 11px Inter,sans-serif;fill:var(--muted)">hash · model · ACL</text></g><g data-step="4"><text x="555.0" y="102.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">prepend</text></g><g data-step="5"><text x="437.7" y="207.0" text-anchor="middle" style="font:600 11px Inter,sans-serif;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px">write</text></g></svg><p class="readout dgcap"></p></div>
+
+<div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap">for doc in changed_documents():          # from the change feed&#10;    for chunk in chunk(parse(doc)):&#10;        h = sha256(chunk.text + doc.acl)&#10;        if index.has(h): continue           # unchanged: skip LLM and embedding cost&#10;        ctx = small_llm(doc.text, chunk.text)  # document prefix is prompt-cached&#10;        text = ctx + "\n" + chunk.text&#10;        index.upsert(h, embed(text, model=EMBED_V3), bm25_terms(text),&#10;                     meta=dict(doc=doc.id, acl=doc.acl, version=doc.version))&#10;    index.delete_missing(doc.id, keep=current_hashes)</pre></div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl"><tr><th>Choice</th><th>Benefit</th><th>Cost</th></tr><tr><td>Small chunks</td><td>precise matches, less noise in context</td><td>less context per chunk; more chunks to store</td></tr><tr><td>Large chunks</td><td>more self-contained</td><td>embeddings blur several topics; more tokens per result</td></tr><tr><td>Contextual chunks (LLM-written)</td><td>large drop in retrieval failures</td><td>one LLM call per chunk at indexing time</td></tr><tr><td>Late chunking</td><td>context without an LLM call</td><td>needs a long-context embedding model</td></tr><tr><td>Dense only</td><td>semantic matches, one index</td><td>misses exact identifiers and rare terms</td></tr><tr><td>Streaming updates</td><td>fresh results</td><td>more complex than nightly rebuilds</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl"><tr><th>Failure</th><th>Symptom</th><th>Mitigation</th></tr><tr><td>Mixed embedding versions</td><td>similarity scores meaningless after a partial migration</td><td>version the index; rebuild fully, then swap an alias</td></tr><tr><td>Deleted documents still found</td><td>answers cite removed or revoked content</td><td>process deletes from the change feed; periodic reconciliation</td></tr><tr><td>Tables and figures garbled</td><td>numbers attributed to the wrong row</td><td>layout-aware parsing; keep tables whole</td></tr><tr><td>Answer split across chunks</td><td>neither half retrieves well</td><td>structure-aware splitting, overlap, or returning neighbouring chunks</td></tr><tr><td>Duplicates</td><td>top-k filled with copies of one page</td><td>deduplicate by content hash at ingestion</td></tr></table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Evaluate on your queries</h3><p>MTEB found no embedding method best on every task: build a labelled set and measure recall@k for each change.</p></div>
+      <div class="card c"><h3>Blue/green indexes</h3><p>Build a new index beside the old one, evaluate, then switch traffic by alias.</p></div>
+      <div class="card b"><h3>Backfill cost</h3><p>Re-embedding and re-contextualising a large corpus is a planned batch job: budget tokens and time.</p></div>
+      <div class="card e"><h3>Ingestion lag</h3><p>Monitor time from document change to searchable; it is a freshness service-level objective.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://www.anthropic.com/news/contextual-retrieval" target="_blank" rel="noopener">Introducing Contextual Retrieval</a>
+        <div class="meta">Anthropic · Anthropic News 2024</div>
+        <p>Prepend 50-100 tokens of chunk-specific context (written by an LLM from the whole document) before embedding and BM25 indexing; retrieve top 150, rerank, keep 20. Knowledge bases under 200,000 tokens can go straight into the prompt.</p><div class="num">Remember: top-20 retrieval failures 5.7% → 3.7% (−35%), 2.9% with BM25 (−49%), 1.9% with reranking (−67%); $1.02 per million document tokens</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2409.04701" target="_blank" rel="noopener">Late Chunking: Contextual Chunk Embeddings Using Long-Context Embedding Models</a>
+        <div class="meta">Günther et al. · arXiv 2024</div>
+        <p>Embed the whole long text first and pool token embeddings per chunk afterwards, so each chunk embedding carries the surrounding context; no extra training needed.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2104.08663" target="_blank" rel="noopener">BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models</a>
+        <div class="meta">Thakur et al. · NeurIPS Datasets and Benchmarks 2021</div>
+        <p>18 retrieval datasets for zero-shot evaluation; BM25 is a robust baseline, and re-ranking and late-interaction models score best on average at higher compute cost.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2210.07316" target="_blank" rel="noopener">MTEB: Massive Text Embedding Benchmark</a>
+        <div class="meta">Muennighoff et al. · EACL 2023</div>
+        <p>8 embedding tasks, 58 datasets, 112 languages; no single embedding method dominates across all tasks.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2004.04906" target="_blank" rel="noopener">Dense Passage Retrieval for Open-Domain Question Answering</a>
+        <div class="meta">Karpukhin et al. · EMNLP 2020</div>
+        <p>A dual encoder (separate query and passage encoders) trained on question-passage pairs; retrieval by inner product.</p><div class="num">Remember: +9 to 19 points top-20 accuracy over Lucene BM25</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+  document.querySelectorAll('.dgm').forEach(box => {
+    const caps = JSON.parse(box.dataset.steps), els = [...box.querySelectorAll('[data-step]')], max = Math.max(0, ...els.map(e => +e.dataset.step)), cap = box.querySelector('.dgcap');
+    let k = max, full = true;
+    const show = () => {
+      els.forEach(e => { const s = +e.dataset.step; e.style.opacity = s <= k ? 1 : 0.08; e.style.transition = 'opacity .25s'; e.querySelectorAll('rect').forEach(r => r.style.strokeWidth = s === k && k ? 3.5 : 2); });
+      cap.innerHTML = k === 0 ? 'Press <b>next step</b> to walk through the design.' : k === max && full ? 'Full design shown. Press <b>reset</b>, then <b>next step</b>, to walk through it one step at a time.' : `<b>Step ${k} of ${max}.</b> ${caps[k - 1] || ''}`;
+      full = false;
+    };
+    box.querySelector('[data-dg=next]').addEventListener('click', () => { k = Math.min(max, k + 1); show(); });
+    box.querySelector('[data-dg=all]').addEventListener('click', () => { k = max; full = false; show(); cap.innerHTML = '<b>Full design.</b> ' + caps.map((c, i) => `${i + 1}. ${c}`).join(' '); });
+    box.querySelector('[data-dg=reset]').addEventListener('click', () => { k = 0; show(); });
+    show();
+  });
+
+})();
+</script>
+</body>
+</html>

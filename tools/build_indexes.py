@@ -438,6 +438,17 @@ AGENT_HUBS = {
         ('01-evaluating-agents', 'Evaluating agents', 'End-state grading, pass^k, harnesses, benchmarks.'),
         ('02-safety-and-reliability', 'Safety and reliability', 'Prompt injection, least privilege, approvals, idempotency.'),
         ('03-cost-and-latency', 'Cost and latency', 'Quadratic context growth, prompt caching, routing, budgets.')]),
+    'agent-infra': ('Agent infrastructure', 'The platform under agents: one gateway for all model traffic, routing each request to the right model or agent, and making agents act with the user\'s permissions and no more.', [
+        ('01-llm-gateway', 'LLM gateway', 'Virtual keys, limits, retries, fallbacks, metering.'),
+        ('02-model-router', 'Model and agent routing', 'Intent routing, learned routers, cascades.'),
+        ('03-access-control', 'Identity and access control', 'RBAC, ABAC, delegation, MCP authorization, ACL-aware retrieval.')]),
+    'agent-retrieval': ('Retrieval stack', 'What sits under agentic retrieval: building the index, searching vectors fast, and reranking candidates before they reach the model.', [
+        ('01-indexing', 'Indexing pipelines', 'Parsing, chunking, contextual chunks, incremental updates.'),
+        ('02-vector-databases', 'Vector databases', 'IVF, product quantization, HNSW, DiskANN, filters.'),
+        ('03-rerankers', 'Rerankers', 'Cross-encoders, ColBERT, LLM reranking, fusion.')]),
+    'agent-models': ('Models for agents', 'The models themselves: how they are trained to use tools and finish long tasks, and how inference servers handle agent traffic.', [
+        ('01-training-for-agents', 'Training LLMs for agents', 'Synthetic trajectories, SFT, RL with verifiable rewards.'),
+        ('02-serving-for-agents', 'Serving LLMs for agent workloads', 'Prefix reuse, constrained decoding, program-aware scheduling.')]),
 }
 
 if __name__ == '__main__':
