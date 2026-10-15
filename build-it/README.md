@@ -45,6 +45,7 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/nn-fundamentals/
 | [10 · INT8/INT4 quantization and SmoothQuant](inference/10_quantization.ipynb) | 45 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/10_quantization.ipynb) |
 | [11 · FP8 (E4M3 / E5M2) emulation](inference/11_fp8_emulation.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/11_fp8_emulation.ipynb) |
 | [12 · Tensor-parallel linear layers (Megatron-style)](inference/12_tensor_parallel.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/12_tensor_parallel.ipynb) |
+| [13 · Decoding: temperature, top-k, top-p, min-p and beam search](inference/13_decoding.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/13_decoding.ipynb) |
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/inference/
 

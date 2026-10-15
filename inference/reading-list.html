@@ -11,7 +11,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="index.html">← LLM Inference and Serving</a>
-  <div class="label" style="margin-top:28px">Reading list · 19 papers and docs</div>
+  <div class="label" style="margin-top:28px">Reading list · 29 papers and docs</div>
   <h1>LLM Inference and Serving: key papers</h1>
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">
@@ -72,6 +72,36 @@
     <div class="paper-item"><a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener">Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism</a>
       <div class="meta">Shoeybi et al. · arXiv 2019 · cited in <a href="08-parallelism/index.html" style="font-weight:500;color:var(--a)">Parallelism for inference</a></div>
       <p>Intra-layer (tensor) model parallelism that splits each attention and MLP block across GPUs with only a few all-reduce operations, implemented in plain PyTorch.</p><div class="num">Remember: 2 all-reduces per transformer block in the forward pass; 76% scaling efficiency on 512 GPUs</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1904.09751" target="_blank" rel="noopener">The Curious Case of Neural Text Degeneration</a>
+      <div class="meta">Holtzman et al. · ICLR 2020 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Maximizing likelihood when decoding gives bland, repetitive text; nucleus (top-p) sampling samples from the smallest set of tokens holding probability p.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1805.04833" target="_blank" rel="noopener">Hierarchical Neural Story Generation</a>
+      <div class="meta">Fan, Lewis, Dauphin · ACL 2018 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Story generation with top-k random sampling: at each step sample from the k most likely tokens.</p><div class="num">Remember: k = 10</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1909.05858" target="_blank" rel="noopener">CTRL: A Conditional Transformer Language Model for Controllable Generation</a>
+      <div class="meta">Keskar et al. · arXiv (Salesforce) 2019 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Introduced penalized sampling (the repetition penalty): discount the scores of previously generated tokens.</p><div class="num">Remember: greedy decoding with θ ≈ 1.2</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.01082" target="_blank" rel="noopener">Turning Up the Heat: Min-p Sampling for Creative and Coherent LLM (large language model) Outputs</a>
+      <div class="meta">Nguyen et al. · ICLR 2025 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Min-p keeps tokens whose probability is at least a fraction of the top token's; reports better quality and diversity at high temperature.</p><div class="num">Remember: threshold = min_p × p_max</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2506.13681" target="_blank" rel="noopener">Min-p, Max Exaggeration: A Critical Analysis of Min-p Sampling in Language Models</a>
+      <div class="meta">Schaeffer et al. · arXiv 2025 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Re-analysis of the min-p paper's human, benchmark and LLM-judge evidence: min-p does not outperform baseline samplers when hyperparameters are controlled.</p><div class="num">Remember: no improvement over top-p, top-k or basic sampling</div></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/vllm/v1/sample/sampler.py" target="_blank" rel="noopener">vLLM SamplingParams and Sampler (v0.31.0 source)</a>
+      <div class="meta">vLLM project · GitHub 2026 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Sampler order: allowed tokens, bad words, logit bias and min tokens, penalties (repetition, frequency, presence), temperature, min-p, top-k/top-p, sample; temperature below 1e-5 is greedy.</p><div class="num">Remember: defaults: temperature 1.0, top_p 1.0, top_k 0, min_p 0.0, repetition_penalty 1.0</div></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/api/messages/create" target="_blank" rel="noopener">Messages API reference: temperature, top_p, top_k (Claude documentation)</a>
+      <div class="meta">Anthropic · Claude platform docs 2026 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Sampling parameters are deprecated; models released after Claude Opus 4.6 reject non-default temperature, any top_k and top_p below 0.99. Even temperature 0.0 is not fully deterministic.</p><div class="num">Remember: temperature default 1.0, range 0–1</div></div>
+    <div class="paper-item"><a href="https://developers.openai.com/api/docs/guides/latest-model" target="_blank" rel="noopener">Using the latest model (OpenAI API documentation)</a>
+      <div class="meta">OpenAI · OpenAI developer docs 2026 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>With reasoning effort other than none, remove temperature, top_p and top_logprobs from requests.</p><div class="num">Remember: unsupported with reasoning: temperature, top_p</div></div>
+    <div class="paper-item"><a href="https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/" target="_blank" rel="noopener">Defeating Nondeterminism in LLM Inference</a>
+      <div class="meta">He and Thinking Machines Lab · Thinking Machines (Connectionism) 2025 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Temperature-0 outputs vary because kernels are not batch-invariant (floating-point reduction order depends on batch size); batch-invariant kernels make completions identical.</p><div class="num">Remember: 1,000 completions at T = 0: 80 unique; first divergence at token 103; all identical with batch-invariant kernels</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2411.15100" target="_blank" rel="noopener">XGrammar: Flexible and Efficient Structured Generation Engine for Large Language Models</a>
+      <div class="meta">Dong et al. · MLSys 2025 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Constrained decoding with context-free grammars: context-independent tokens are prechecked into masks, only context-dependent tokens are checked at runtime with a persistent stack, and mask computation overlaps GPU (graphics processing unit) work.</p><div class="num">Remember: up to 100× faster grammar execution; near-zero overhead end to end</div></div>
   </div>
 </div>
 

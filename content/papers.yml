@@ -2694,3 +2694,248 @@ vllm_v029:
   year: 2026
   url: https://github.com/vllm-project/vllm/releases/tag/v0.29.0
   summary: 'Model Runner V2 becomes the default for all models; Model Runner V1 is deprecated, with removal targeted for v0.32 (it remains a fallback for a few unsupported features).'
+why_halluc:
+  title: Why Language Models Hallucinate
+  authors: Kalai, Nachum, Vempala, Zhang
+  venue: arXiv (OpenAI)
+  year: 2025
+  url: https://arxiv.org/abs/2509.04664
+  summary: Hallucinations arise as ordinary classification errors (at least the singleton rate for arbitrary facts) and persist because binary-graded benchmarks reward
+    guessing; proposes explicit confidence targets with penalty t/(1 − t).
+  number: answer only if confidence > t; errors cost t/(1 − t) points
+halluc_survey:
+  title: 'A Survey on Hallucination in Large Language Models: Principles, Taxonomy, Challenges, and Open Questions'
+  authors: Huang et al.
+  venue: ACM TOIS
+  year: 2025
+  url: https://arxiv.org/abs/2311.05232
+  summary: 'Taxonomy: factuality hallucination (factual inconsistency, fabrication) vs faithfulness hallucination (instruction, context and logical inconsistency);
+    causes, detection and mitigation.'
+  number: 'two primary types: factuality and faithfulness'
+truthfulqa:
+  title: 'TruthfulQA: Measuring How Models Mimic Human Falsehoods'
+  authors: Lin, Hilton, Evans
+  venue: ACL
+  year: 2022
+  url: https://arxiv.org/abs/2109.07958
+  summary: Questions some people answer falsely because of misconceptions; larger models were generally less truthful.
+  number: 817 questions, 38 categories; best model 58% truthful vs 94% human
+factscore:
+  title: 'FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation'
+  authors: Min et al.
+  venue: EMNLP
+  year: 2023
+  url: https://arxiv.org/abs/2305.14251
+  summary: Splits a generation into atomic facts and reports the share supported by a knowledge source; automated estimator for large-scale evaluation.
+  number: 'biographies: InstructGPT 42.5%, ChatGPT 58.3%, PerplexityAI 71.5%; ChatGPT 80% → 16% as entities get rarer'
+simpleqa:
+  title: Measuring short-form factuality in large language models (SimpleQA)
+  authors: Wei et al.
+  venue: arXiv (OpenAI)
+  year: 2024
+  url: https://arxiv.org/abs/2411.04368
+  summary: Short fact-seeking questions with one indisputable answer, collected adversarially against GPT-4o; graded correct, incorrect or not attempted.
+  number: 4,326 questions; GPT-4o 38.2% correct / 60.8% incorrect; Claude 3.5 Sonnet 28.9% / 36.1% with 35.0% not attempted
+selfcheckgpt:
+  title: 'SelfCheckGPT: Zero-Resource Black-Box Hallucination Detection for Generative Large Language Models'
+  authors: Manakul, Liusie, Gales
+  venue: EMNLP
+  year: 2023
+  url: https://arxiv.org/abs/2303.08896
+  summary: Detects hallucinated sentences by checking whether stochastically sampled responses support them (BERTScore, QA, n-gram, NLI or LLM-prompt variants); needs
+    no output probabilities or external database.
+  number: 'black-box: sampled text only'
+semantic_entropy:
+  title: 'Semantic Uncertainty: Linguistic Invariances for Uncertainty Estimation in Natural Language Generation'
+  authors: Kuhn, Gal, Farquhar
+  venue: ICLR
+  year: 2023
+  url: https://arxiv.org/abs/2302.09664
+  summary: Clusters sampled answers by meaning with bidirectional entailment and computes entropy over meanings; more predictive of QA accuracy than token-level baselines.
+  number: unsupervised; one off-the-shelf model
+know_what_they_know:
+  title: Language Models (Mostly) Know What They Know
+  authors: Kadavath et al.
+  venue: arXiv (Anthropic)
+  year: 2022
+  url: https://arxiv.org/abs/2207.05221
+  summary: Larger models are well calibrated on multiple-choice and true/false questions in the right format; models can estimate P(True) for their own answers and
+    be trained to predict P(IK).
+  number: P(True) self-evaluation improves when the model sees several of its own samples
+cove:
+  title: Chain-of-Verification Reduces Hallucination in Large Language Models
+  authors: Dhuliawala et al.
+  venue: arXiv (Meta AI)
+  year: 2023
+  url: https://arxiv.org/abs/2309.11495
+  summary: Draft, plan verification questions, answer them independently, then revise; reduces hallucination on list questions, closed-book QA and long-form generation.
+  number: Wikidata list precision 0.17 → 0.36 (Llama 65B, two-step CoVe)
+ft_new_knowledge:
+  title: Does Fine-Tuning LLMs on New Knowledge Encourage Hallucinations?
+  authors: Gekhman et al.
+  venue: EMNLP
+  year: 2024
+  url: https://arxiv.org/abs/2405.05904
+  summary: Fine-tuning examples with knowledge the model lacks are learned much more slowly than known ones and, once learned, linearly increase hallucination; early
+    stopping mitigates it.
+  number: models acquire new facts through pretraining, mostly not fine-tuning
+claude_reduce_halluc:
+  title: Reduce hallucinations (Claude documentation)
+  authors: Anthropic
+  venue: Claude platform docs
+  year: 2026
+  url: https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations
+  summary: Allow "I don't know", extract word-for-word quotes first for documents over 20k tokens, require citations and retract unsupported claims, compare several
+    runs.
+  number: quote-first grounding for long documents (>20k tokens)
+topk_fan:
+  title: Hierarchical Neural Story Generation
+  authors: Fan, Lewis, Dauphin
+  venue: ACL
+  year: 2018
+  url: https://arxiv.org/abs/1805.04833
+  summary: 'Story generation with top-k random sampling: at each step sample from the k most likely tokens.'
+  number: k = 10
+ctrl:
+  title: 'CTRL: A Conditional Transformer Language Model for Controllable Generation'
+  authors: Keskar et al.
+  venue: arXiv (Salesforce)
+  year: 2019
+  url: https://arxiv.org/abs/1909.05858
+  summary: 'Introduced penalized sampling (the repetition penalty): discount the scores of previously generated tokens.'
+  number: greedy decoding with θ ≈ 1.2
+minp:
+  title: 'Turning Up the Heat: Min-p Sampling for Creative and Coherent LLM Outputs'
+  authors: Nguyen et al.
+  venue: ICLR
+  year: 2025
+  url: https://arxiv.org/abs/2407.01082
+  summary: Min-p keeps tokens whose probability is at least a fraction of the top token's; reports better quality and diversity at high temperature.
+  number: threshold = min_p × p_max
+minp_critique:
+  title: 'Min-p, Max Exaggeration: A Critical Analysis of Min-p Sampling in Language Models'
+  authors: Schaeffer et al.
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2506.13681
+  summary: 'Re-analysis of the min-p paper''s human, benchmark and LLM-judge evidence: min-p does not outperform baseline samplers when hyperparameters are controlled.'
+  number: no improvement over top-p, top-k or basic sampling
+vllm_sampling:
+  title: vLLM SamplingParams and Sampler (v0.31.0 source)
+  authors: vLLM project
+  venue: GitHub
+  year: 2026
+  url: https://github.com/vllm-project/vllm/blob/v0.31.0/vllm/v1/sample/sampler.py
+  summary: 'Sampler order: allowed tokens, bad words, logit bias and min tokens, penalties (repetition, frequency, presence), temperature, min-p, top-k/top-p, sample;
+    temperature below 1e-5 is greedy.'
+  number: 'defaults: temperature 1.0, top_p 1.0, top_k 0, min_p 0.0, repetition_penalty 1.0'
+claude_messages_api:
+  title: 'Messages API reference: temperature, top_p, top_k (Claude documentation)'
+  authors: Anthropic
+  venue: Claude platform docs
+  year: 2026
+  url: https://platform.claude.com/docs/en/api/messages/create
+  summary: Sampling parameters are deprecated; models released after Claude Opus 4.6 reject non-default temperature, any top_k and top_p below 0.99. Even temperature
+    0.0 is not fully deterministic.
+  number: temperature default 1.0, range 0–1
+oai_latest_model:
+  title: Using the latest model (OpenAI API documentation)
+  authors: OpenAI
+  venue: OpenAI developer docs
+  year: 2026
+  url: https://developers.openai.com/api/docs/guides/latest-model
+  summary: With reasoning effort other than none, remove temperature, top_p and top_logprobs from requests.
+  number: 'unsupported with reasoning: temperature, top_p'
+tm_nondeterminism:
+  title: Defeating Nondeterminism in LLM Inference
+  authors: He and Thinking Machines Lab
+  venue: Thinking Machines (Connectionism)
+  year: 2025
+  url: https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/
+  summary: Temperature-0 outputs vary because kernels are not batch-invariant (floating-point reduction order depends on batch size); batch-invariant kernels make
+    completions identical.
+  number: '1,000 completions at T = 0: 80 unique; first divergence at token 103; all identical with batch-invariant kernels'
+distilbert:
+  title: 'DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter'
+  authors: Sanh, Debut, Chaumond, Wolf
+  venue: NeurIPS EMC² workshop
+  year: 2019
+  url: https://arxiv.org/abs/1910.01108
+  summary: Distillation during pretraining with a triple loss (soft targets, masked language modelling, cosine of hidden states).
+  number: 40% smaller, 60% faster, 97% of BERT's language understanding
+seqkd:
+  title: Sequence-Level Knowledge Distillation
+  authors: Kim, Rush
+  venue: EMNLP
+  year: 2016
+  url: https://arxiv.org/abs/1606.07947
+  summary: Train the student on the teacher's beam-search outputs instead of matching per-token distributions; removes the need for beam search at test time.
+  number: student 10× faster than its teacher; 13× fewer parameters with pruning, −0.4 BLEU
+minillm:
+  title: 'MiniLLM: On-Policy Distillation of Large Language Models'
+  authors: Gu, Dong, Wei, Huang
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2306.08543
+  summary: Replaces forward KL with reverse KL, so the student does not overestimate the teacher's low-probability regions, optimised with an on-policy policy-gradient
+    method.
+  number: students from 120M to 13B parameters
+gkd:
+  title: 'On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes (GKD)'
+  authors: Agarwal et al.
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2306.13649
+  summary: 'Generalized Knowledge Distillation: train the student on its own sampled sequences with teacher feedback, with a choice of divergence; addresses the train-inference
+    distribution mismatch.'
+  number: summarisation, translation and GSM8K with T5 students
+gemma2:
+  title: 'Gemma 2: Improving Open Language Models at a Practical Size'
+  authors: Gemma Team, Google DeepMind
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2408.00118
+  summary: The 2B and 9B models are trained with knowledge distillation from a larger teacher instead of next-token prediction.
+  number: '2B on 500B tokens: 67.7 distilled vs 60.3 from scratch (3-benchmark average)'
+llama32_blog:
+  title: 'Llama 3.2: Revolutionizing edge AI and vision with open, customizable models'
+  authors: Meta AI
+  venue: Meta AI blog
+  year: 2024
+  url: https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/
+  summary: The 1B and 3B models were pruned from Llama 3.1 8B and trained with logits from Llama 3.1 8B and 70B as token-level targets during pretraining.
+  number: 'teachers: Llama 3.1 8B and 70B'
+minitron:
+  title: Compact Language Models via Pruning and Knowledge Distillation (Minitron)
+  authors: Muralidharan et al. (NVIDIA)
+  venue: arXiv (NVIDIA)
+  year: 2024
+  url: https://arxiv.org/abs/2407.14679
+  summary: Prune depth, width, attention and MLP of Nemotron-4 15B, then retrain with distillation on under 3% of the original data.
+  number: up to 40× fewer training tokens per model; up to 16% better MMLU than from scratch
+qwen3:
+  title: Qwen3 Technical Report
+  authors: Qwen Team
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2505.09388
+  summary: 'Small models are post-trained with strong-to-weak distillation: off-policy distillation from teacher outputs, then on-policy logit distillation to Qwen3-32B
+    or Qwen3-235B-A22B.'
+  number: about 1/10 of the GPU hours of the four-stage pipeline
+tm_onpolicy:
+  title: On-Policy Distillation
+  authors: Lu and Thinking Machines Lab
+  venue: Thinking Machines (Connectionism)
+  year: 2025
+  url: https://thinkingmachines.ai/blog/on-policy-distillation/
+  summary: The student samples, the teacher scores each token, and the student minimises per-token reverse KL; replicates Qwen3's results for a fraction of the cost
+    of RL.
+  number: 'Qwen3-8B-Base: 70% AIME 2024; 9–30× cheaper than extending off-policy SFT'
+anthropic_terms:
+  title: Commercial Terms of Service
+  authors: Anthropic
+  venue: anthropic.com
+  year: 2026
+  url: https://www.anthropic.com/legal/commercial-terms
+  summary: 'Use restrictions (D.4): customers may not access the services to build a competing product or service, including to train competing AI models.'
+  number: section D.4

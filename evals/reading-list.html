@@ -11,7 +11,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="index.html">← Evaluating LLMs</a>
-  <div class="label" style="margin-top:28px">Reading list · 19 papers and docs</div>
+  <div class="label" style="margin-top:28px">Reading list · 31 papers and docs</div>
   <h1>Evaluating LLMs: key papers</h1>
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">
@@ -72,6 +72,42 @@
     <div class="paper-item"><a href="https://arxiv.org/abs/2109.08203" target="_blank" rel="noopener">Torch.manual_seed(3407) is all you need: On the influence of random seeds in deep learning architectures for computer vision</a>
       <div class="meta">Picard · arXiv 2021 · cited in <a href="08-training-experiments/index.html" style="font-weight:500;color:var(--a)">Experiments in LLM training</a></div>
       <p>Scanning up to 10^4 seeds on CIFAR-10 (and fewer on ImageNet) shows it is surprisingly easy to find outlier seeds that perform much better or worse than average.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2509.04664" target="_blank" rel="noopener">Why Language Models Hallucinate</a>
+      <div class="meta">Kalai, Nachum, Vempala, Zhang · arXiv (OpenAI) 2025 · cited in <a href="09-hallucination/index.html" style="font-weight:500;color:var(--a)">Hallucination and factuality</a></div>
+      <p>Hallucinations arise as ordinary classification errors (at least the singleton rate for arbitrary facts) and persist because binary-graded benchmarks reward guessing; proposes explicit confidence targets with penalty t/(1 − t).</p><div class="num">Remember: answer only if confidence > t; errors cost t/(1 − t) points</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2311.05232" target="_blank" rel="noopener">A Survey on Hallucination in Large Language Models: Principles, Taxonomy, Challenges, and Open Questions</a>
+      <div class="meta">Huang et al. · ACM TOIS 2025 · cited in <a href="09-hallucination/index.html" style="font-weight:500;color:var(--a)">Hallucination and factuality</a></div>
+      <p>Taxonomy: factuality hallucination (factual inconsistency, fabrication) vs faithfulness hallucination (instruction, context and logical inconsistency); causes, detection and mitigation.</p><div class="num">Remember: two primary types: factuality and faithfulness</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2109.07958" target="_blank" rel="noopener">TruthfulQA: Measuring How Models Mimic Human Falsehoods</a>
+      <div class="meta">Lin, Hilton, Evans · ACL 2022 · cited in <a href="09-hallucination/index.html" style="font-weight:500;color:var(--a)">Hallucination and factuality</a></div>
+      <p>Questions some people answer falsely because of misconceptions; larger models were generally less truthful.</p><div class="num">Remember: 817 questions, 38 categories; best model 58% truthful vs 94% human</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.14251" target="_blank" rel="noopener">FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation</a>
+      <div class="meta">Min et al. · EMNLP 2023 · cited in <a href="09-hallucination/index.html" style="font-weight:500;color:var(--a)">Hallucination and factuality</a></div>
+      <p>Splits a generation into atomic facts and reports the share supported by a knowledge source; automated estimator for large-scale evaluation.</p><div class="num">Remember: biographies: InstructGPT 42.5%, ChatGPT 58.3%, PerplexityAI 71.5%; ChatGPT 80% → 16% as entities get rarer</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2411.04368" target="_blank" rel="noopener">Measuring short-form factuality in large language models (SimpleQA)</a>
+      <div class="meta">Wei et al. · arXiv (OpenAI) 2024 · cited in <a href="09-hallucination/index.html" style="font-weight:500;color:var(--a)">Hallucination and factuality</a></div>
+      <p>Short fact-seeking questions with one indisputable answer, collected adversarially against GPT-4o; graded correct, incorrect or not attempted.</p><div class="num">Remember: 4,326 questions; GPT-4o 38.2% correct / 60.8% incorrect; Claude 3.5 Sonnet 28.9% / 36.1% with 35.0% not attempted</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2303.08896" target="_blank" rel="noopener">SelfCheckGPT: Zero-Resource Black-Box Hallucination Detection for Generative Large Language Models</a>
+      <div class="meta">Manakul, Liusie, Gales · EMNLP 2023 · cited in <a href="09-hallucination/index.html" style="font-weight:500;color:var(--a)">Hallucination and factuality</a></div>
+      <p>Detects hallucinated sentences by checking whether stochastically sampled responses support them (BERTScore, QA, n-gram, NLI (natural language inference) or LLM-prompt variants); needs no output probabilities or external database.</p><div class="num">Remember: black-box: sampled text only</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2302.09664" target="_blank" rel="noopener">Semantic Uncertainty: Linguistic Invariances for Uncertainty Estimation in Natural Language Generation</a>
+      <div class="meta">Kuhn, Gal, Farquhar · ICLR 2023 · cited in <a href="09-hallucination/index.html" style="font-weight:500;color:var(--a)">Hallucination and factuality</a></div>
+      <p>Clusters sampled answers by meaning with bidirectional entailment and computes entropy over meanings; more predictive of QA accuracy than token-level baselines.</p><div class="num">Remember: unsupervised; one off-the-shelf model</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2207.05221" target="_blank" rel="noopener">Language Models (Mostly) Know What They Know</a>
+      <div class="meta">Kadavath et al. · arXiv (Anthropic) 2022 · cited in <a href="09-hallucination/index.html" style="font-weight:500;color:var(--a)">Hallucination and factuality</a></div>
+      <p>Larger models are well calibrated on multiple-choice and true/false questions in the right format; models can estimate P(True) for their own answers and be trained to predict P(IK).</p><div class="num">Remember: P(True) self-evaluation improves when the model sees several of its own samples</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2309.11495" target="_blank" rel="noopener">Chain-of-Verification Reduces Hallucination in Large Language Models</a>
+      <div class="meta">Dhuliawala et al. · arXiv (Meta AI (artificial intelligence)) 2023 · cited in <a href="09-hallucination/index.html" style="font-weight:500;color:var(--a)">Hallucination and factuality</a></div>
+      <p>Draft, plan verification questions, answer them independently, then revise; reduces hallucination on list questions, closed-book QA and long-form generation.</p><div class="num">Remember: Wikidata list precision 0.17 → 0.36 (Llama 65B, two-step CoVe)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2405.05904" target="_blank" rel="noopener">Does Fine-Tuning LLMs on New Knowledge Encourage Hallucinations?</a>
+      <div class="meta">Gekhman et al. · EMNLP 2024 · cited in <a href="09-hallucination/index.html" style="font-weight:500;color:var(--a)">Hallucination and factuality</a></div>
+      <p>Fine-tuning examples with knowledge the model lacks are learned much more slowly than known ones and, once learned, linearly increase hallucination; early stopping mitigates it.</p><div class="num">Remember: models acquire new facts through pretraining, mostly not fine-tuning</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2005.11401" target="_blank" rel="noopener">Retrieval-Augmented Generation for Knowledge-Intensive NLP (natural language processing) Tasks</a>
+      <div class="meta">Lewis et al. · NeurIPS 2020 · cited in <a href="09-hallucination/index.html" style="font-weight:500;color:var(--a)">Hallucination and factuality</a></div>
+      <p>Combines a seq2seq generator with a dense retriever over Wikipedia (non-parametric memory), trained end to end.</p></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations" target="_blank" rel="noopener">Reduce hallucinations (Claude documentation)</a>
+      <div class="meta">Anthropic · Claude platform docs 2026 · cited in <a href="09-hallucination/index.html" style="font-weight:500;color:var(--a)">Hallucination and factuality</a></div>
+      <p>Allow "I don't know", extract word-for-word quotes first for documents over 20k tokens, require citations and retract unsupported claims, compare several runs.</p><div class="num">Remember: quote-first grounding for long documents (>20k tokens)</div></div>
   </div>
 </div>
 

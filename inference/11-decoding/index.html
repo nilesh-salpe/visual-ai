@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decoding Strategies</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Decoding strategies" data-home="../index.html" data-home-label="Inference">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">LLM Inference &amp; Serving · 11</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-15</span><span class="status-note">Checked against vLLM v0.31.0 source and the Claude and OpenAI API (application programming interface) docs (2026-10-15).</span></div>
+    <h1>Decoding: from probabilities to text</h1>
+    <p class="sub">How the next token is chosen from the model's probabilities: greedy and beam search, temperature, top-k, top-p and min-p, repetition penalties, the order a serving engine applies them, and why temperature 0 is still not deterministic.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>At every step the model gives a probability for each token in its vocabulary, and something has to pick one. Always taking the most likely token produces bland, repetitive text; sampling from the full distribution wanders into the unreliable tail and produces incoherent text.</div>
+      <div class="c"><b>Core idea</b>Decoding is a <b>rule for choosing from the next-token distribution</b>. <b>Greedy</b> and <b>beam search</b> maximise likelihood, which suits short, closed answers. For open-ended text, <b>reshape</b> the distribution with <b>temperature</b>, <b>cut its tail</b> with <b>top-k</b>, <b>top-p</b> (nucleus) or <b>min-p</b>, then sample. <b>Penalties</b> discourage repeats. Serving engines apply these steps in a fixed order, for every sequence in the batch.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>The model gives probabilities, not words</h2>
+    <hr>
+<p class="lede">At every step the model outputs one score (logit) for every token in the vocabulary; softmax turns them into probabilities. Generation is a long chain of choices from these distributions.</p>
+<div class="grid3">
+      <div class="card f"><h3>A choice per token</h3><p>Hundreds of choices for a paragraph, each from a distribution over the whole vocabulary.</p></div>
+      <div class="card d"><h3>Maximising is bland</h3><p>Holtzman et al.: beam search (size 32) on GPT-2 Large produced degenerate repetition; the probability of a repeated phrase rises with each repetition.</p></div>
+      <div class="card b"><h3>Pure sampling is incoherent</h3><p>The long tail of unlikely tokens has substantial mass in total, so full sampling regularly draws a token that derails the text.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why one rule does not fit every step</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Fixed k</h3><p>Top-k with k = 10 (Fan et al. 2018, story generation) keeps ten tokens whether the model has one sensible choice or hundreds.</p></div>
+      <div class="card b"><h3>Temperature alone</h3><p>Lowering temperature removes tail mass everywhere but also removes diversity; raising it brings the incoherence back.</p></div>
+      <div class="card c"><h3>Repetition loops</h3><p>Once a phrase repeats, repeating it again becomes more likely (Holtzman et al., Figure 4), so greedy text gets stuck.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which tokens does top-p keep?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">Probabilities are 0.50, 0.25, 0.15, 0.06 and 0.04, and top_p = 0.8. Which tokens can be sampled?</p>
+      <div class="opts">
+      <button>A. Only the 0.50 token</button>
+      <button>B. The 0.50 and 0.25 tokens</button>
+      <button data-ok>C. The 0.50, 0.25 and 0.15 tokens</button>
+      <button>D. All five</button>
+      </div>
+      <div class="why"><strong>C.</strong> Sort by probability and keep the smallest set whose cumulative probability reaches p: 0.50 + 0.25 = 0.75 is below 0.8, so the 0.15 token is needed (0.90). Then renormalise.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Reshape, cut the tail, sample</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Greedy and beam search</h3><p>Take the argmax, or keep the B most likely partial sequences by total log-probability. Good for short, closed outputs; degenerates on open-ended text.</p></div>
+      <div class="card b"><h3>Temperature T</h3><p>Divide the logits by T before softmax, so probabilities become proportional to p^(1/T). T &lt; 1 sharpens, T &gt; 1 flattens, T → 0 is greedy.</p></div>
+      <div class="card a"><h3>Truncation</h3><p><b>Top-k</b>: the k most likely tokens. <b>Top-p</b> (nucleus): the smallest set with cumulative probability ≥ p. <b>Min-p</b>: tokens with p ≥ min_p × p_max, so the cut scales with the model's confidence.</p></div>
+      <div class="card d"><h3>Penalties</h3><p><b>Repetition penalty</b> (CTRL, θ ≈ 1.2 with greedy decoding): divide a seen token's positive logit by θ. <b>Frequency</b> and <b>presence</b> penalties subtract an amount per count and per occurrence.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>One decoding step <span class="ill">interactive</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">temperature <input type="range" id="dT" min="0" max="2" step="0.05" value="1"> <output id="dTo"></output></label><label class="ctl">top-k <input type="range" id="dK" min="0" max="10" step="1" value="0"> <output id="dKo"></output></label><label class="ctl">top-p <input type="range" id="dP" min="0.3" max="1" step="0.05" value="1"> <output id="dPo"></output></label><label class="ctl">min-p <input type="range" id="dM" min="0" max="0.5" step="0.01" value="0"> <output id="dMo"></output></label></div><div class="bars"><div id="dBars"></div></div><p class="readout" id="dOut"></p></div>
+
+<p>The distribution is illustrative. Applied in vLLM's order: temperature, then min-p, then top-k and top-p, then renormalise and sample.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Inside a serving engine</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Parameter</th>
+<th>vLLM default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>temperature</code></td>
+<td>1.0</td>
+<td>divides logits; below 1e-5 means greedy (then <code>n</code> must be 1)</td>
+</tr>
+<tr>
+<td><code>top_k</code></td>
+<td>0 (off)</td>
+<td>keep the k most likely tokens</td>
+</tr>
+<tr>
+<td><code>top_p</code></td>
+<td>1.0 (off)</td>
+<td>keep the smallest set with cumulative probability ≥ p</td>
+</tr>
+<tr>
+<td><code>min_p</code></td>
+<td>0.0 (off)</td>
+<td>keep tokens with p ≥ min_p × p_max</td>
+</tr>
+<tr>
+<td><code>repetition_penalty</code></td>
+<td>1.0 (off)</td>
+<td>scales logits of tokens seen in the prompt <strong>or</strong> the output</td>
+</tr>
+<tr>
+<td><code>frequency_penalty</code>, <code>presence_penalty</code></td>
+<td>0.0 (off)</td>
+<td>subtract per count / per occurrence, output tokens only (OpenAI definition)</td>
+</tr>
+<tr>
+<td><code>seed</code></td>
+<td>none</td>
+<td>per-request random seed</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Hosted reasoning models fix these knobs.</strong> On the Claude API, <code>temperature</code>, <code>top_p</code> and <code>top_k</code> are deprecated: models released after Claude Opus 4.6 reject any non-default value with a 400 error <span class="lbl lbl-legacy" title="superseded; mostly found in older systems">Legacy</span>. OpenAI's latest-model guide says to remove <code>temperature</code> and <code>top_p</code> when reasoning effort is not none. The knobs matter most when you serve open models yourself.</p>
+<div class="deep"><h4>Constrained decoding</h4><p>Structured output (JSON (JavaScript Object Notation) schemas, grammars) is also a decoding step: before sampling, a grammar engine such as XGrammar sets the logits of every token that would break the grammar to −∞, so only valid continuations can be drawn. See the serving-for-agents deck in Visual Agents.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: one step, four rules</h2>
+    <hr>
+    <p class="lede">Five candidate tokens with probabilities 0.50, 0.25, 0.15, 0.06 and 0.04 at temperature 1.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Top-k = 2 keeps 0.50 and 0.25 and renormalises them to 0.67 and 0.33.</li><li>Top-p = 0.9: the cumulative sums are 0.50, 0.75, 0.90, so the first three survive (the token that reaches 0.9 is included), renormalised to 0.56, 0.28, 0.17.</li><li>Min-p = 0.1: the threshold is 0.1 × 0.50 = 0.05, so 0.50, 0.25, 0.15 and 0.06 survive and 0.04 is dropped.</li><li>Temperature 0.5 first: probabilities become proportional to p², giving 0.74, 0.18, 0.07, 0.01, 0.005. Now top-p = 0.9 keeps only two tokens (0.74 + 0.18 = 0.92).</li></ol><div class="result">Temperature changes the shape; truncation decides which tokens can be drawn at all. Because temperature comes first, it changes what top-p keeps.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why truncation works, and what it cannot fix</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>The tail is unreliable</h3><p>Each tail token is unlikely, but together they are drawn often; cutting the tail removes most incoherent draws (Holtzman et al.).</p></div>
+      <div class="card c"><h3>Adaptive cut</h3><p>Top-p and min-p keep few tokens when the distribution is peaked and many when it is flat. In the notebook's 1,000-token example, as T goes from 0.5 to 1.6, top-p 0.9 keeps 4 → 739 tokens and min-p 0.1 keeps 2 → 28.</p></div>
+      <div class="card b"><h3>Disputed: min-p vs top-p</h3><p>Nguyen et al. (ICLR 2025) report min-p improves quality and diversity at high temperature. Schaeffer et al. (2025) re-analysed the evidence and found no improvement once hyperparameter tuning is controlled. Treat it as one more option, not a default.</p></div>
+      <div class="card e"><h3>Greedy is not reproducible by default</h3><p>Floating-point sums depend on batch size. With batch-invariant kernels, all 1,000 temperature-0 completions matched (Thinking Machines).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Temperature 0 gives the same output every time."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Thinking Machines sampled 1,000 completions at temperature 0 and got 80 distinct ones; they first diverged at token 103. The Claude API documentation also notes temperature 0.0 is not fully deterministic.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"The most likely sequence is the best text."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Holtzman et al.: maximisation is an inappropriate objective for open-ended generation; beam search text is bland and repetitive.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Min-p has been shown to beat top-p."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The original paper reports gains; a 2025 re-analysis found none when tuning effort is equalised. Sources disagree.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Temperature 0 means greedy.</b> In vLLM any temperature below 1e-5 switches to argmax, and n must then be 1.</li><li><b>Adaptive beats fixed.</b> A fixed k is too many tokens when the model is sure and too few when it is not; top-p and min-p follow the distribution.</li><li><b>Match the rule to the task.</b> Greedy or beam search for short closed outputs (extraction, translation); sampling with truncation for open-ended text.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Expecting temperature 0 to be deterministic.</b> 1,000 greedy runs of a Qwen3-235B model gave 80 distinct completions, because kernels depend on batch size.</li><li><b>Beam search for open-ended text.</b> Maximising likelihood leads to bland, repetitive text (Holtzman et al.).</li><li><b>Strong repetition penalties.</b> They also suppress tokens that should repeat (names, code identifiers); vLLM's repetition penalty counts prompt tokens too.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">With vLLM's defaults (temperature 1.0, top_p 1.0, top_k 0, min_p 0.0), how is the next token chosen?</p>
+      <div class="opts">
+      <button>A. Greedy</button>
+      <button data-ok>B. Sampled from the full softmax distribution</button>
+      <button>C. Top-50 sampling</button>
+      <button>D. Beam search</button>
+      </div>
+      <div class="why"><strong>B.</strong> All truncation is off and temperature is 1, so it samples from the unmodified distribution. Set the parameters explicitly for your use case.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why does lowering the temperature change what top-p keeps?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Temperature is applied before truncation. A sharper distribution reaches the cumulative threshold with fewer tokens.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">With min-p = 0.1, what is the cut when the top token has probability 0.9? And 0.2?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Thresholds 0.09 and 0.02. When the model is confident only a few tokens survive; when it is unsure, many do.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Decoding turns probabilities into text: maximise for short closed answers; for open-ended text, reshape with temperature, cut the unreliable tail, then sample.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>At each step the model outputs a distribution over the vocabulary. Greedy decoding and beam search pick the most likely continuation, which is right for short closed answers but makes open-ended text bland and repetitive. Sampling instead divides the logits by a temperature and truncates the unreliable tail with top-k, top-p (the smallest set reaching cumulative probability p) or min-p (tokens above a fraction of the top probability). vLLM applies penalties, then temperature, then min-p, then top-k and top-p. Hosted reasoning models increasingly fix these parameters, and even temperature 0 is not deterministic without batch-invariant kernels.</p></div>
+    <div class="recap"><div><span><b>Maximise:</b> greedy and beam search, for closed tasks</span></div><div><span><b>Reshape:</b> temperature: p^(1/T)</span></div><div><span><b>Truncate:</b> top-k, top-p, min-p</span></div><div><span><b>In practice:</b> fixed order in engines; hosted reasoning models fix these knobs</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/13_decoding.ipynb" target="_blank" rel="noopener">13 · Decoding: temperature, top-k, top-p, min-p and beam search</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/13_decoding.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../10-putting-it-together/index.html">← 10</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1904.09751" target="_blank" rel="noopener">The Curious Case of Neural Text Degeneration</a>
+        <div class="meta">Holtzman et al. · ICLR 2020</div>
+        <p>Maximizing likelihood when decoding gives bland, repetitive text; nucleus (top-p) sampling samples from the smallest set of tokens holding probability p.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1805.04833" target="_blank" rel="noopener">Hierarchical Neural Story Generation</a>
+        <div class="meta">Fan, Lewis, Dauphin · ACL 2018</div>
+        <p>Story generation with top-k random sampling: at each step sample from the k most likely tokens.</p><div class="num">Remember: k = 10</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1909.05858" target="_blank" rel="noopener">CTRL: A Conditional Transformer Language Model for Controllable Generation</a>
+        <div class="meta">Keskar et al. · arXiv (Salesforce) 2019</div>
+        <p>Introduced penalized sampling (the repetition penalty): discount the scores of previously generated tokens.</p><div class="num">Remember: greedy decoding with θ ≈ 1.2</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.01082" target="_blank" rel="noopener">Turning Up the Heat: Min-p Sampling for Creative and Coherent LLM (large language model) Outputs</a>
+        <div class="meta">Nguyen et al. · ICLR 2025</div>
+        <p>Min-p keeps tokens whose probability is at least a fraction of the top token's; reports better quality and diversity at high temperature.</p><div class="num">Remember: threshold = min_p × p_max</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2506.13681" target="_blank" rel="noopener">Min-p, Max Exaggeration: A Critical Analysis of Min-p Sampling in Language Models</a>
+        <div class="meta">Schaeffer et al. · arXiv 2025</div>
+        <p>Re-analysis of the min-p paper's human, benchmark and LLM-judge evidence: min-p does not outperform baseline samplers when hyperparameters are controlled.</p><div class="num">Remember: no improvement over top-p, top-k or basic sampling</div></div>
+      <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/vllm/v1/sample/sampler.py" target="_blank" rel="noopener">vLLM SamplingParams and Sampler (v0.31.0 source)</a>
+        <div class="meta">vLLM project · GitHub 2026</div>
+        <p>Sampler order: allowed tokens, bad words, logit bias and min tokens, penalties (repetition, frequency, presence), temperature, min-p, top-k/top-p, sample; temperature below 1e-5 is greedy.</p><div class="num">Remember: defaults: temperature 1.0, top_p 1.0, top_k 0, min_p 0.0, repetition_penalty 1.0</div></div>
+      <div class="paper-item"><a href="https://platform.claude.com/docs/en/api/messages/create" target="_blank" rel="noopener">Messages API reference: temperature, top_p, top_k (Claude documentation)</a>
+        <div class="meta">Anthropic · Claude platform docs 2026</div>
+        <p>Sampling parameters are deprecated; models released after Claude Opus 4.6 reject non-default temperature, any top_k and top_p below 0.99. Even temperature 0.0 is not fully deterministic.</p><div class="num">Remember: temperature default 1.0, range 0–1</div></div>
+      <div class="paper-item"><a href="https://developers.openai.com/api/docs/guides/latest-model" target="_blank" rel="noopener">Using the latest model (OpenAI API documentation)</a>
+        <div class="meta">OpenAI · OpenAI developer docs 2026</div>
+        <p>With reasoning effort other than none, remove temperature, top_p and top_logprobs from requests.</p><div class="num">Remember: unsupported with reasoning: temperature, top_p</div></div>
+      <div class="paper-item"><a href="https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/" target="_blank" rel="noopener">Defeating Nondeterminism in LLM Inference</a>
+        <div class="meta">He and Thinking Machines Lab · Thinking Machines (Connectionism) 2025</div>
+        <p>Temperature-0 outputs vary because kernels are not batch-invariant (floating-point reduction order depends on batch size); batch-invariant kernels make completions identical.</p><div class="num">Remember: 1,000 completions at T = 0: 80 unique; first divergence at token 103; all identical with batch-invariant kernels</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2411.15100" target="_blank" rel="noopener">XGrammar: Flexible and Efficient Structured Generation Engine for Large Language Models</a>
+        <div class="meta">Dong et al. · MLSys 2025</div>
+        <p>Constrained decoding with context-free grammars: context-independent tokens are prechecked into masks, only context-dependent tokens are checked at runtime with a persistent stack, and mask computation overlaps GPU (graphics processing unit) work.</p><div class="num">Remember: up to 100× faster grammar execution; near-zero overhead end to end</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const W = ['mat', 'floor', 'sofa', 'bed', 'chair', 'roof', 'table', 'keyboard', 'moon', 'banana'];
+  const P = [0.42, 0.18, 0.12, 0.09, 0.06, 0.04, 0.03, 0.03, 0.02, 0.01];
+  Deck.bind(['dT', 'dK', 'dP', 'dM'], () => {
+    const T = Deck.val('dT'), k = Deck.val('dK'), tp = Deck.val('dP'), mp = Deck.val('dM');
+    Deck.out('dTo', T.toFixed(2)); Deck.out('dKo', k ? k : 'off'); Deck.out('dPo', tp >= 1 ? 'off' : tp.toFixed(2)); Deck.out('dMo', mp ? mp.toFixed(2) : 'off');
+    let q;
+    if (T < 1e-5) { q = P.map((_, i) => (i === 0 ? 1 : 0)); }
+    else { const z = P.map(p => Math.pow(p, 1 / T)); const s = z.reduce((a, b) => a + b, 0); q = z.map(v => v / s); }
+    const mx = Math.max(...q);
+    let keep = q.map(v => v > 0 && (!mp || v >= mp * mx));
+    const order = q.map((v, i) => i).sort((a, b) => q[b] - q[a]);
+    if (k) order.forEach((i, r) => { if (r >= k) keep[i] = false; });
+    if (tp < 1) { let c = 0, done = false; order.forEach(i => { if (!keep[i]) return; if (done) keep[i] = false; else { c += q[i]; if (c >= tp - 1e-9) done = true; } }); }
+    const s = q.reduce((a, v, i) => a + (keep[i] ? v : 0), 0);
+    const f = q.map((v, i) => (keep[i] ? v / s : 0));
+    Deck.hbars(document.getElementById('dBars'), W.map((w, i) => ({ label: '"' + w + '"', value: f[i], color: keep[i] ? 'var(--a)' : 'var(--faint)', text: keep[i] ? (100 * f[i]).toFixed(1) + '%' : 'cut' })), { max: 1 });
+    const n = keep.filter(Boolean).length;
+    document.getElementById('dOut').innerHTML = `After "The cat sat on the …": <b>${n}</b> of 10 tokens can be sampled; "mat" has probability <b>${(100 * f[0]).toFixed(0)}%</b>. ` +
+      (T < 1e-5 ? 'Temperature 0 is greedy: the argmax always wins.' : n <= 2 ? 'Nearly deterministic: little diversity.' : f[9] > 0 ? 'The unreliable tail ("moon", "banana") is still in play.' : 'The tail is cut; the remaining tokens are plausible.');
+  });
+})();
+</script>
+</body>
+</html>

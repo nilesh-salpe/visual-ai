@@ -1102,3 +1102,149 @@ print("That small, latency-sensitive traffic is why TP stays inside the NVLink d
     - Column-then-row (Megatron) keeps elementwise ops local, so each MLP or attention block costs **one** all-reduce.
     - In decode those all-reduces are small and on the critical path, so TP is kept within NVLink.''',
 ))
+
+
+NBS.append(dict(
+    slug='13_decoding', title='13 · Decoding: temperature, top-k, top-p, min-p and beam search', deck='inference/11-decoding/', deck_name='Decoding strategies', minutes=40,
+    goals='the sampling pipeline a serving engine runs on every step (repetition penalty, temperature, top-k, top-p, min-p) and beam search, then measure how temperature changes what each filter keeps.',
+    setup=r'''
+def softmax(z):
+    z = np.asarray(z, dtype=float); e = np.exp(z - z.max()); return e / e.sum()
+
+P5 = np.array([0.50, 0.25, 0.15, 0.06, 0.04])      # the worked example on the deck
+LOGITS = np.log(P5)
+print('P5 =', P5, '; helper softmax(z)')''',
+    tasks=[
+        dict(name='temp', fn='apply_temperature', title='Temperature', md=r'''
+            Return the probabilities `softmax(logits / T)`. For `T == 0` return the **greedy** distribution: probability 1 on the argmax, 0 elsewhere (vLLM treats any temperature below 1e-5 as greedy).
+            Dividing logits by `T` is the same as raising probabilities to the power `1/T` and renormalising.''',
+             starter=r'''
+            def apply_temperature(logits, T):
+                # TODO
+                raise NotImplementedError''',
+             test=r'''
+            def _test_apply_temperature(f):
+                assert np.allclose(f(LOGITS, 1.0), P5), "T = 1 must return the original probabilities"
+                q = P5 ** 2 / (P5 ** 2).sum()
+                assert np.allclose(f(LOGITS, 0.5), q), "T = 0.5 must give p^2, renormalised"
+                g = f(LOGITS, 0)
+                assert np.allclose(g, [1, 0, 0, 0, 0]), "T = 0 must be greedy (one-hot on the argmax)"
+                assert f(LOGITS, 2.0).max() < 0.5, "T > 1 must flatten the distribution"''',
+             solution=r'''
+            def apply_temperature_solution(logits, T):
+                logits = np.asarray(logits, dtype=float)
+                if T < 1e-5:
+                    out = np.zeros_like(logits); out[np.argmax(logits)] = 1.0; return out
+                return softmax(logits / T)'''),
+        dict(name='topk', fn='top_k_filter', title='Top-k', md=r'''
+            Keep the `k` most likely tokens, set the rest to 0 and renormalise. `k == 0` means "off" (keep everything), as in vLLM.''',
+             starter=r'''
+            def top_k_filter(probs, k):
+                # TODO
+                raise NotImplementedError''',
+             test=r'''
+            def _test_top_k_filter(f):
+                assert np.allclose(f(P5, 2), [2/3, 1/3, 0, 0, 0]), "top-2 of P5 is 0.50 and 0.25, renormalised to 2/3 and 1/3"
+                assert np.allclose(f(P5, 0), P5), "k = 0 disables top-k"
+                assert np.allclose(f(P5, 5), P5), "k = vocabulary size keeps everything"''',
+             solution=r'''
+            def top_k_filter_solution(probs, k):
+                probs = np.asarray(probs, dtype=float)
+                if k <= 0 or k >= len(probs): return probs / probs.sum()
+                keep = np.argsort(-probs)[:k]
+                out = np.zeros_like(probs); out[keep] = probs[keep]; return out / out.sum()'''),
+        dict(name='topp', fn='top_p_filter', title='Top-p (nucleus)', md=r'''
+            Sort tokens by probability and keep the **smallest** prefix whose cumulative probability is at least `p`; the token that crosses the threshold is included. Zero the rest and renormalise.
+            Floating-point sums can land a hair below `p` (0.5 + 0.25 + 0.15 = 0.8999…), so compare with a small tolerance (1e-9).''',
+             starter=r'''
+            def top_p_filter(probs, p):
+                # TODO
+                raise NotImplementedError''',
+             test=r'''
+            def _test_top_p_filter(f):
+                assert np.allclose(f(P5, 0.9), [0.5/0.9, 0.25/0.9, 0.15/0.9, 0, 0]), "top-p 0.9 keeps the first three tokens of P5 (0.50 + 0.25 + 0.15 = 0.90)"
+                assert np.allclose(f(P5, 0.8), [0.5/0.9, 0.25/0.9, 0.15/0.9, 0, 0]), "top-p 0.8 also needs the third token: 0.75 < 0.8"
+                assert np.allclose(f(P5, 0.5), [1, 0, 0, 0, 0]), "the top token alone reaches 0.5"
+                assert np.allclose(f(P5, 1.0), P5), "top-p 1.0 keeps everything"''',
+             solution=r'''
+            def top_p_filter_solution(probs, p):
+                probs = np.asarray(probs, dtype=float)
+                order = np.argsort(-probs)
+                cum = np.cumsum(probs[order])
+                n = int(np.searchsorted(cum, p - 1e-9)) + 1          # first index where cum >= p, inclusive
+                keep = order[:n]
+                out = np.zeros_like(probs); out[keep] = probs[keep]; return out / out.sum()'''),
+        dict(name='minp', fn='min_p_filter', title='Min-p', md=r'''
+            Keep tokens whose probability is at least `min_p × max(probs)`, zero the rest and renormalise. `min_p == 0` keeps everything.
+            The cut is **relative**: it keeps few tokens when the model is confident and many when it is not.''',
+             starter=r'''
+            def min_p_filter(probs, min_p):
+                # TODO
+                raise NotImplementedError''',
+             test=r'''
+            def _test_min_p_filter(f):
+                kept = f(P5, 0.1)
+                assert np.allclose(kept, np.r_[P5[:4], 0] / P5[:4].sum()), "min-p 0.1: threshold 0.05 keeps 0.50, 0.25, 0.15, 0.06 and drops 0.04"
+                assert np.allclose(f(P5, 0.0), P5), "min-p 0 keeps everything"
+                flat = np.full(10, 0.1)
+                assert (f(flat, 0.5) > 0).sum() == 10, "a flat distribution keeps every token"''',
+             solution=r'''
+            def min_p_filter_solution(probs, min_p):
+                probs = np.asarray(probs, dtype=float)
+                out = np.where(probs >= min_p * probs.max(), probs, 0.0); return out / out.sum()'''),
+        dict(name='beam', fn='beam_search', title='Beam search', md=r'''
+            `step(seq)` returns a probability vector over the next token given the tuple `seq`. Starting from the empty sequence, keep the `width` partial sequences with the highest **total log-probability**, extend each by every token, and repeat for `length` steps.
+            Return the best `(sequence, logprob)` found. With `width = 1` this is greedy decoding.''',
+             starter=r'''
+            def beam_search(step, width, length):
+                # TODO
+                raise NotImplementedError''',
+             test=r'''
+            # A two-step toy model where greedy is fooled: token 0 looks best first, but every continuation after it is weak.
+            def toy_step(seq):
+                if len(seq) == 0: return np.array([0.6, 0.4])
+                if seq[0] == 0:   return np.array([0.5, 0.5])
+                return np.array([0.9, 0.1])
+            def _test_beam_search(f):
+                seq1, lp1 = f(toy_step, 1, 2)
+                assert tuple(seq1) == (0, 0) and np.isclose(lp1, np.log(0.6 * 0.5)), f"width 1 is greedy: expected (0, 0) with p = 0.30, got {seq1}"
+                seq2, lp2 = f(toy_step, 2, 2)
+                assert tuple(seq2) == (1, 0) and np.isclose(lp2, np.log(0.4 * 0.9)), f"width 2 must find (1, 0) with p = 0.36, got {seq2}"''',
+             solution=r'''
+            def beam_search_solution(step, width, length):
+                beams = [((), 0.0)]
+                for _ in range(length):
+                    cand = [(seq + (t,), lp + np.log(pt)) for seq, lp in beams for t, pt in enumerate(step(seq)) if pt > 0]
+                    beams = sorted(cand, key=lambda c: -c[1])[:width]
+                return beams[0]'''),
+    ],
+    explore_md='''
+        These use the reference solutions. First, how many tokens each filter keeps as temperature changes, on a 1,000-token Zipf-like distribution (a peaked head and a long tail). Then a CTRL-style repetition penalty, applied before temperature as vLLM does.''',
+    explore=r'''
+V = 1000
+base = np.log(1.0 / np.arange(1, V + 1) ** 1.1)            # Zipf-like logits
+print(" T     top-p 0.9 keeps   min-p 0.1 keeps   top-k 40 keeps   mass outside the top 40")
+for T in [0.5, 0.7, 1.0, 1.3, 1.6]:
+    q = apply_temperature_solution(base, T)
+    kp = (top_p_filter_solution(q, 0.9) > 0).sum(); km = (min_p_filter_solution(q, 0.1) > 0).sum()
+    tail = np.sort(q)[::-1][40:].sum()
+    print(f"{T:3.1f}   {kp:14d}   {km:15d}   {40:14d}   {tail:20.2f}")
+print("\nTop-p's nucleus grows quickly with temperature: at high T it admits hundreds of tail tokens.")
+print("Min-p's cut is relative to the top token, so it grows more slowly. Top-k ignores the shape entirely.\n")
+
+def repetition_penalty(logits, seen, theta):
+    """CTRL / Hugging Face / vLLM style: seen tokens' positive logits are divided by theta, negative ones multiplied."""
+    z = np.array(logits, dtype=float)
+    for t in set(seen):
+        z[t] = z[t] / theta if z[t] > 0 else z[t] * theta
+    return z
+
+z = np.array([2.0, 1.5, 0.5, -1.0])
+for theta in [1.0, 1.2, 2.0]:
+    print(f"theta {theta}: p(token 0 after it was already generated) = {softmax(repetition_penalty(z, [0], theta))[0]:.2f}")''',
+    takeaways='''
+    - **Temperature reshapes** the distribution (p^(1/T)); **top-k, top-p and min-p cut** its tail; then one token is sampled. T = 0 is greedy.
+    - **Order matters:** temperature is applied before truncation, so the same top-p keeps far more tokens at high temperature.
+    - **Beam search** maximises sequence probability and beats greedy when an early choice is a trap, which suits short closed outputs, not open-ended text.
+    - Repetition penalties change logits of tokens already seen; strong values also suppress tokens that should repeat.''',
+))

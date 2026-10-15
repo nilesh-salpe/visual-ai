@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowledge Distillation</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Knowledge distillation" data-home="../index.html" data-home-label="Post-training">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Post-training · 10</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-15</span><span class="status-note">Written from primary sources 2026-10-15; logit and on-policy distillation are how current small open models are trained.</span></div>
+    <h1>Knowledge distillation</h1>
+    <p class="sub">Training a small model to imitate a large one: soft targets and temperature, sequence-level distillation from teacher outputs, logit distillation in pretraining (Gemma 2, Llama 3.2), on-policy distillation with reverse KL (Kullback-Leibler divergence), and distilled reasoning models.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Large models are accurate but slow and costly to serve. A small model trained from scratch on the same data is much weaker, partly because a one-hot next-token label says nothing about which other tokens were nearly right.</div>
+      <div class="c"><b>Core idea</b>Use the large model as a <b>teacher</b>. The <b>student</b> learns from the teacher's full probability distribution (<b>soft targets</b>, logit distillation) or from its sampled outputs (<b>sequence-level</b> distillation: fine-tune on teacher text). <b>On-policy</b> distillation lets the student generate and has the teacher score every token it wrote (reverse KL), so the student learns on the states it actually reaches.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Big models are good; small models are what you can afford</h2>
+    <hr>
+<p class="lede">Serving cost and latency grow with model size, and many products need a model that runs on one GPU (graphics processing unit) or on a phone. Training a small model from scratch on the same data leaves accuracy on the table.</p>
+<div class="grid3">
+      <div class="card d"><h3>Labels are thin</h3><p>A next-token label is one-hot: it says which token came next, not which alternatives were plausible.</p></div>
+      <div class="card b"><h3>Capacity is limited</h3><p>A small model cannot learn everything in the data, so what it is shown, and how, matters more.</p></div>
+      <div class="card c"><h3>The teacher already knows</h3><p>A large model's probabilities encode similarity between answers: "Sydney" is a better wrong answer than an unrelated word. Hinton et al. call this the information in the small probabilities.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why simply fine-tuning on teacher text is not enough</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>One sample per prompt</h3><p>Sampled teacher text shows one continuation; the teacher's other likely answers are lost.</p></div>
+      <div class="card b"><h3>Train-inference mismatch</h3><p>A student fine-tuned on teacher text learns on the teacher's states, then generates from its own, where its early mistakes take it off the training distribution (GKD (Generalized Knowledge Distillation)).</p></div>
+      <div class="card c"><h3>Mode covering</h3><p>Matching the teacher with forward KL pushes a small student to spread probability over everything the teacher allows, including regions it cannot model well (MiniLLM).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Distill or run RL?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">DeepSeek trained Qwen2.5-32B two ways: large-scale RL (reinforcement learning) directly on the base model, and SFT (supervised fine-tuning) on outputs from DeepSeek-R1. Which scored higher on AIME (American Invitational Mathematics Examination) 2024 (pass@1)?</p>
+      <div class="opts">
+      <button>A. RL on the 32B base: the model learns to reason by itself</button>
+      <button data-ok>B. Distillation from R1: 72.6% vs 47.0% for RL</button>
+      <button>C. They tied</button>
+      <button>D. Neither improved on the base model</button>
+      </div>
+      <div class="why"><strong>B.</strong> DeepSeek-R1-Distill-Qwen-32B scored 72.6%, Qwen2.5-32B-Zero (RL) 47.0%. The paper concludes that distilling a stronger model into a smaller one works better than large-scale RL on the small model, though going beyond the teacher still needs stronger base models and RL.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Three ways to learn from a teacher</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Soft targets (logit distillation)</h3><p>Minimise the cross-entropy (equivalently, forward KL) between the teacher's and student's token distributions, both at temperature T, scaled by T², often mixed with the normal label loss. Needs the teacher's logits.</p></div>
+      <div class="card b"><h3>Sequence-level distillation</h3><p>Kim and Rush: train on the teacher's generated outputs (beam search in translation, samples for LLMs (large language models)). Works with only text access; the best student ran 10× faster than its teacher with little loss in BLEU (Bilingual Evaluation Understudy, an n-gram overlap score for translation).</p></div>
+      <div class="card a"><h3>On-policy distillation</h3><p>The student samples a response; the teacher scores each of its tokens and the student minimises reverse KL(student ‖ teacher) per token (GKD, MiniLLM). Dense, per-token feedback on the student's own mistakes.</p></div>
+      <div class="card e"><h3>Pruning plus distillation</h3><p>Cut layers, heads or neurons from a trained model, then recover quality by distilling from the original: Minitron needed up to 40× fewer tokens per model than training from scratch.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Forward vs reverse KL <span class="ill">interactive</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">distance between modes <input type="range" id="kdD" min="0" max="4" step="0.1" value="3.5"> <output id="kdDo"></output></label><label class="ctl">weight of left mode <input type="range" id="kdW" min="0.1" max="0.9" step="0.05" value="0.5"> <output id="kdWo"></output></label></div><svg id="kdSvg" viewBox="0 0 660 290" role="img" aria-label="A two-mode teacher distribution with single-Gaussian student fits under forward and reverse KL"></svg><p class="readout" id="kdOut"></p></div>
+
+<p>A one-dimensional picture of a capacity gap: the student is a single Gaussian, the teacher has two modes. For a language model, "modes" are different plausible continuations.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Who distils, and how</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Model</th>
+<th>Teacher</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gemma 2 2B, 9B (2024)</td>
+<td>larger Gemma 2 model</td>
+<td>pretraining on the teacher's token probabilities instead of next-token labels</td>
+</tr>
+<tr>
+<td>Llama 3.2 1B, 3B (2024)</td>
+<td>Llama 3.1 8B and 70B</td>
+<td>pruned from 8B; teacher logits as token-level targets during pretraining</td>
+</tr>
+<tr>
+<td>Minitron 8B, 4B (2024)</td>
+<td>Nemotron-4 15B</td>
+<td>prune, then retrain with distillation on under 3% of the original data</td>
+</tr>
+<tr>
+<td>DeepSeek-R1-Distill 1.5B to 70B (2025)</td>
+<td>DeepSeek-R1</td>
+<td>SFT on 800K curated samples; no RL stage</td>
+</tr>
+<tr>
+<td>Qwen3 0.6B to 14B, 30B-A3B (2025)</td>
+<td>Qwen3-32B or Qwen3-235B-A22B</td>
+<td>off-policy, then on-policy logit distillation</td>
+</tr>
+</tbody>
+</table></div>
+<p>Gemma 2's ablation: a 2B model trained on 500B tokens scored 67.7 (average of three benchmarks) with distillation from a 7B teacher, versus 60.3 from scratch.</p>
+<div class="deep"><h4>On-policy distillation, in numbers</h4><p>Thinking Machines distilled Qwen3-32B into Qwen3-8B-Base for maths reasoning. Off-policy SFT on 400K prompts reached 60% on AIME 2024; the Qwen3 report's RL stage reached 67.6% using 17,920 GPU hours; on-policy distillation reached 70%, at an estimated 9 to 30 times lower cost than extending SFT to 2M prompts. Qwen3 itself reports that strong-to-weak distillation needed about 1/10 of the GPU hours of its four-stage training.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: what a soft target carries</h2>
+    <hr>
+    <p class="lede">For "The capital of Australia is", a teacher gives Canberra 0.90, Sydney 0.08 and Melbourne 0.02 (illustrative numbers). The one-hot label says only "Canberra".</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Hard label: the loss is −log q(Canberra). The student learns nothing about Sydney being a closer mistake than an unrelated word.</li><li>Soft target at T = 1: the cross-entropy −Σ p log q covers all three tokens, so the student is also pushed to give Sydney about 0.08.</li><li>At T = 4 for both models, the teacher's probabilities become proportional to p^(1/4): 0.974, 0.532, 0.376, or <b>0.52, 0.28, 0.20</b> after normalising. The small probabilities now carry a visible signal.</li><li>Hinton et al. multiply the soft-target loss by T² (16 here), because its gradients scale as 1/T²; this keeps it balanced against the hard-label loss.</li></ol><div class="result">A soft target gives the student a full distribution per token instead of one label; temperature makes the small probabilities count.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>More bits per example</h3><p>A soft target is a whole distribution per token; DistilBERT kept 97% of BERT (Bidirectional Encoder Representations from Transformers)'s language understanding with 40% fewer parameters, running 60% faster.</p></div>
+      <div class="card c"><h3>Easier targets</h3><p>The teacher has already resolved noise and ambiguity in the data, so its outputs are cleaner to learn than raw web text.</p></div>
+      <div class="card b"><h3>Ensembles into one</h3><p>Hinton et al.: over 80% of the frame-accuracy gain from an ensemble of 10 speech models transferred to a single distilled model.</p></div>
+      <div class="card e"><h3>Learning from your own mistakes</h3><p>On-policy distillation grades the states the student actually visits, like RL, but with a dense per-token signal instead of one reward per episode.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Distillation only shrinks a model after training."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Gemma 2 and Llama 3.2 used teacher probabilities during pretraining itself, as the main training signal for the small models.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"A distilled student cannot get anywhere near its teacher."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Gaps remain, but they can be small: DeepSeek-R1-Distill-Qwen-32B scored 72.6% on AIME 2024 against 79.8% for R1 itself, and beat OpenAI o1-mini (63.6%).</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"You always need the teacher's logits."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Sequence-level distillation needs only generated text (as in the R1 distills); logits allow richer token-level and on-policy distillation.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Small open models are distilled.</b> Gemma 2 (2B, 9B), Llama 3.2 (1B, 3B) and the small Qwen3 models were all trained against a larger teacher.</li><li><b>Reverse KL suits generative students.</b> MiniLLM: forward KL makes the student overestimate the teacher's low-probability regions; reverse KL is mode-seeking.</li><li><b>On-policy distillation is cheap.</b> Thinking Machines reached 70% on AIME 2024 with Qwen3-8B-Base at an estimated 9 to 30 times lower cost than extending off-policy SFT.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Training only on teacher text.</b> The student never sees its own mistakes during training, so errors compound at inference (the mismatch GKD addresses).</li><li><b>Copying the teacher's errors.</b> Distillation transfers mistakes and biases too; filter the teacher's outputs (R1 used rejection sampling and checks).</li><li><b>Ignoring terms of service.</b> Some providers prohibit using outputs to train competing models (for example Anthropic's commercial terms, section D.4).</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Why does Hinton et al.'s soft-target loss get multiplied by T²?</p>
+      <div class="opts">
+      <button>A. To make training faster</button>
+      <button data-ok>B. Because the gradients from soft targets scale as 1/T², so the term would otherwise vanish next to the hard-label loss</button>
+      <button>C. To convert nats to bits</button>
+      <button>D. It is a regulariser that prevents overfitting</button>
+      </div>
+      <div class="why"><strong>B.</strong> Scaling by T² keeps the relative contribution of soft and hard targets roughly unchanged when T changes.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What is the difference between off-policy and on-policy distillation?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Off-policy: the student trains on sequences the teacher (or a dataset) produced. On-policy: the student generates its own sequences and the teacher scores each token, so training covers the states the student reaches at inference.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why is reverse KL preferred for distilling generative LMs (language models) in MiniLLM?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Forward KL is mode-covering: it penalises the student for missing any teacher mass, so a small student spreads probability into regions the teacher rarely uses. Reverse KL is mode-seeking: the student concentrates on outputs the teacher rates highly.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Distillation trains a small model on what a large model believes, the full distribution or its outputs, so the small model gets far more signal per example than labels alone.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Hinton et al. trained a small model on a large model's softened probabilities: temperature T exposes the small probabilities, and the loss is scaled by T². For language models, sequence-level distillation fine-tunes the student on teacher outputs (DeepSeek-R1-Distill-Qwen-32B reached 72.6% on AIME 2024, versus 47.0% for RL on the same base), while logit distillation trains on the teacher's token probabilities (Gemma 2, Llama 3.2). On-policy distillation lets the student generate and minimises reverse KL to the teacher on its own tokens, which avoids the train-inference mismatch and matched RL results at a fraction of the cost.</p></div>
+    <div class="recap"><div><span><b>Soft targets:</b> teacher probabilities at temperature T, loss × T²</span></div><div><span><b>Sequence-level:</b> fine-tune on teacher outputs</span></div><div><span><b>On-policy:</b> student samples, teacher grades each token (reverse KL)</span></div><div><span><b>In practice:</b> how today's small open models are trained</span></div></div>
+    <p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../09-rlaif-constitutional-ai/index.html">← 09</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1503.02531" target="_blank" rel="noopener">Distilling the Knowledge in a Neural Network</a>
+        <div class="meta">Hinton, Vinyals & Dean · NeurIPS workshop 2015</div>
+        <p>Train a small model on a large model's softened output distribution (softmax with temperature T), minimizing cross-entropy to those soft targets.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1910.01108" target="_blank" rel="noopener">DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter</a>
+        <div class="meta">Sanh, Debut, Chaumond, Wolf · NeurIPS EMC² workshop 2019</div>
+        <p>Distillation during pretraining with a triple loss (soft targets, masked language modelling, cosine of hidden states).</p><div class="num">Remember: 40% smaller, 60% faster, 97% of BERT's language understanding</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/1606.07947" target="_blank" rel="noopener">Sequence-Level Knowledge Distillation</a>
+        <div class="meta">Kim, Rush · EMNLP 2016</div>
+        <p>Train the student on the teacher's beam-search outputs instead of matching per-token distributions; removes the need for beam search at test time.</p><div class="num">Remember: student 10× faster than its teacher; 13× fewer parameters with pruning, −0.4 BLEU</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2306.08543" target="_blank" rel="noopener">MiniLLM: On-Policy Distillation of Large Language Models</a>
+        <div class="meta">Gu, Dong, Wei, Huang · ICLR 2024</div>
+        <p>Replaces forward KL with reverse KL, so the student does not overestimate the teacher's low-probability regions, optimised with an on-policy policy-gradient method.</p><div class="num">Remember: students from 120M to 13B parameters</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2306.13649" target="_blank" rel="noopener">On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes (GKD)</a>
+        <div class="meta">Agarwal et al. · ICLR 2024</div>
+        <p>Generalized Knowledge Distillation: train the student on its own sampled sequences with teacher feedback, with a choice of divergence; addresses the train-inference distribution mismatch.</p><div class="num">Remember: summarisation, translation and GSM8K (Grade School Math 8K) with T5 students</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2408.00118" target="_blank" rel="noopener">Gemma 2: Improving Open Language Models at a Practical Size</a>
+        <div class="meta">Gemma Team, Google DeepMind · arXiv 2024</div>
+        <p>The 2B and 9B models are trained with knowledge distillation from a larger teacher instead of next-token prediction.</p><div class="num">Remember: 2B on 500B tokens: 67.7 distilled vs 60.3 from scratch (3-benchmark average)</div></div>
+      <div class="paper-item"><a href="https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/" target="_blank" rel="noopener">Llama 3.2: Revolutionizing edge AI (artificial intelligence) and vision with open, customizable models</a>
+        <div class="meta">Meta AI · Meta AI blog 2024</div>
+        <p>The 1B and 3B models were pruned from Llama 3.1 8B and trained with logits from Llama 3.1 8B and 70B as token-level targets during pretraining.</p><div class="num">Remember: teachers: Llama 3.1 8B and 70B</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.14679" target="_blank" rel="noopener">Compact Language Models via Pruning and Knowledge Distillation (Minitron)</a>
+        <div class="meta">Muralidharan et al. (NVIDIA) · arXiv (NVIDIA) 2024</div>
+        <p>Prune depth, width, attention and MLP (multilayer perceptron) of Nemotron-4 15B, then retrain with distillation on under 3% of the original data.</p><div class="num">Remember: up to 40× fewer training tokens per model; up to 16% better MMLU (Massive Multitask Language Understanding) than from scratch</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2501.12948" target="_blank" rel="noopener">DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning</a>
+        <div class="meta">DeepSeek-AI · arXiv 2025</div>
+        <p>R1-Zero: RL with rule-based accuracy and format rewards directly on a base model; R1 adds cold-start data and a multi-stage pipeline.</p><div class="num">Remember: AIME 2024 pass@1 15.6% → 77.9% (R1-Zero)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2505.09388" target="_blank" rel="noopener">Qwen3 Technical Report</a>
+        <div class="meta">Qwen Team · arXiv 2025</div>
+        <p>Small models are post-trained with strong-to-weak distillation: off-policy distillation from teacher outputs, then on-policy logit distillation to Qwen3-32B or Qwen3-235B-A22B.</p><div class="num">Remember: about 1/10 of the GPU hours of the four-stage pipeline</div></div>
+      <div class="paper-item"><a href="https://thinkingmachines.ai/blog/on-policy-distillation/" target="_blank" rel="noopener">On-Policy Distillation</a>
+        <div class="meta">Lu and Thinking Machines Lab · Thinking Machines (Connectionism) 2025</div>
+        <p>The student samples, the teacher scores each token, and the student minimises per-token reverse KL; replicates Qwen3's results for a fraction of the cost of RL.</p><div class="num">Remember: Qwen3-8B-Base: 70% AIME 2024; 9–30× cheaper than extending off-policy SFT</div></div>
+      <div class="paper-item"><a href="https://www.anthropic.com/legal/commercial-terms" target="_blank" rel="noopener">Commercial Terms of Service</a>
+        <div class="meta">Anthropic · anthropic.com 2026</div>
+        <p>Use restrictions (D.4): customers may not access the services to build a competing product or service, including to train competing AI models.</p><div class="num">Remember: section D.4</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const s = document.getElementById('kdSvg'), X0 = -8, X1 = 8, N = 321;
+  const xs = Array.from({ length: N }, (_, i) => X0 + (X1 - X0) * i / (N - 1)), dx = (X1 - X0) / (N - 1);
+  const g = (x, m, sd) => Math.exp(-0.5 * ((x - m) / sd) ** 2) / (sd * Math.sqrt(2 * Math.PI));
+  const px = x => 40 + (x - X0) / (X1 - X0) * 580, py = y => 250 - y * 560;
+  const curve = (ys, col, w, dash) => svg('path', { d: ys.map((y, i) => (i ? 'L' : 'M') + px(xs[i]).toFixed(1) + ',' + py(y).toFixed(1)).join(''), style: `fill:none;stroke:${col};stroke-width:${w}` + (dash ? ';stroke-dasharray:6 4' : '') }, s);
+  Deck.bind(['kdD', 'kdW'], () => {
+    const d = Deck.val('kdD'), w = Deck.val('kdW');
+    Deck.out('kdDo', d.toFixed(1)); Deck.out('kdWo', w.toFixed(2));
+    const P = xs.map(x => w * g(x, -d, 1) + (1 - w) * g(x, d, 1));
+    const mu = (1 - 2 * w) * d, va = 1 + d * d - mu * mu;           // forward KL = moment matching
+    const F = xs.map(x => g(x, mu, Math.sqrt(va)));
+    let best = [1e9, 0, 1];                                          // reverse KL by grid search
+    for (let m = -5; m <= 5; m += 0.1) for (let sd = 0.4; sd <= 4; sd += 0.05) {
+      let kl = 0; for (let i = 0; i < N; i++) { const q = g(xs[i], m, sd); if (q > 1e-12) kl += q * Math.log(q / (P[i] + 1e-300)) * dx; }
+      if (kl < best[0]) best = [kl, m, sd];
+    }
+    const R = xs.map(x => g(x, best[1], best[2]));
+    clear(s);
+    svg('line', { x1: 40, y1: 250, x2: 620, y2: 250, class: 'ln' }, s);
+    svg('path', { d: 'M40,250' + P.map((y, i) => 'L' + px(xs[i]).toFixed(1) + ',' + py(y).toFixed(1)).join('') + 'L620,250Z', style: 'fill:var(--faint);opacity:.3' }, s);
+    curve(P, 'var(--faint)', 2); curve(F, 'var(--b)', 3, true); curve(R, 'var(--a)', 3);
+    [['teacher p', 'var(--faint)', 50], ['forward KL(p‖q) fit', 'var(--b)', 230], ['reverse KL(q‖p) fit', 'var(--a)', 450]].forEach(([t, c, x]) => svg('text', { x, y: 278, class: 't', style: `fill:${c};font-weight:700`, text: t }, s));
+    const mid = P[Math.round((0 - X0) / dx)], one = best[2] < 1.3, f1 = v => (Math.abs(v) < 0.05 ? 0 : v).toFixed(1);
+    document.getElementById('kdOut').innerHTML = `Teacher modes ${(2 * d).toFixed(1)} apart (each σ = 1). <b>Forward KL</b> (distillation on teacher probabilities) is mean-seeking: the student covers both modes (μ = ${f1(mu)}, σ = ${Math.sqrt(va).toFixed(2)}) and puts mass between them, where the teacher's density is ${mid.toFixed(3)}. <b>Reverse KL</b> (MiniLLM, on-policy distillation): ` +
+      (one ? `mode-seeking, the student sits on one mode (μ = ${f1(best[1])}, σ = ${best[2].toFixed(2)}) and ignores the other.` : `while the modes overlap it also spreads (μ = ${f1(best[1])}, σ = ${best[2].toFixed(2)}); separate them, or make one heavier, and it locks onto a single mode.`);
+  });
+})();
+</script>
+</body>
+</html>

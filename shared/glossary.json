@@ -893,6 +893,12 @@
   },
   "POPE": {
    "exp": "Polling-based Object Probing Evaluation"
+  },
+  "NLI": {
+   "exp": "natural language inference"
+  },
+  "GKD": {
+   "exp": "Generalized Knowledge Distillation"
   }
  },
  "exempt": [
@@ -1310,6 +1316,22 @@
   "FSDP1",
   "FullyShardedDataParallel",
   "AsyncLLMEngine",
-  "MQLLMEngine"
+  "MQLLMEngine",
+  "BERTScore",
+  "CoVe",
+  "DD",
+  "FActScore",
+  "IK",
+  "PerplexityAI",
+  "SelfCheckGPT",
+  "SimpleQA",
+  "TruthfulQA",
+  "CTRL",
+  "SamplingParams",
+  "SamplingParam",
+  "DistilBERT",
+  "EMC",
+  "MiniLLM",
+  "Minitron"
  ]
 }

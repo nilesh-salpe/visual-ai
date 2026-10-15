@@ -152,6 +152,7 @@ POST_CARDS = [
     ('07-dpo-and-friends', 'DPO, KTO and rejection sampling', 'The implicit reward and RL-free preference tuning.'),
     ('08-rlvr-grpo', 'RLVR and GRPO', 'Verifiable rewards, group baselines, DeepSeek-R1.'),
     ('09-rlaif-constitutional-ai', 'RLAIF and Constitutional AI', 'Principles, self-critique and AI preference labels.'),
+    ('10-distillation', 'Knowledge distillation', 'Soft targets, sequence-level and on-policy distillation; how small open models are trained.'),
 ]
 
 
@@ -172,7 +173,7 @@ def post_hub():
   <a class="brand" href="../llm/index.html">← Visual LLM</a>
   <div class="label" style="margin-top:28px">Visual guide · {len(POST_CARDS)} decks + {n_nb} Colab notebooks</div>
   <h1>Post-training LLMs</h1>
-  <p class="lede">How a pretrained model becomes an assistant: supervised fine-tuning, LoRA and QLoRA, reward models, RLHF with PPO, reward hacking, DPO and its relatives, RL with verifiable rewards (GRPO), and Constitutional AI. Every deck follows the 9-beat template, numbers are checked against the source papers, and most concepts have a hands-on Colab notebook.</p>
+  <p class="lede">How a pretrained model becomes an assistant: supervised fine-tuning, LoRA and QLoRA, reward models, RLHF with PPO, reward hacking, DPO and its relatives, RL with verifiable rewards (GRPO), Constitutional AI, and knowledge distillation into smaller models. Every deck follows the 9-beat template, numbers are checked against the source papers, and most concepts have a hands-on Colab notebook.</p>
   <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
     <div><h3 style="margin:0 0 4px">🛠 Build it: {n_nb} Colab notebooks</h3><p class="caption" style="margin:0">Implement SFT loss masking and packing, LoRA, NF4 quantization, a Bradley-Terry reward model, PPO with a KL penalty, best-of-n overoptimization, DPO and GRPO in NumPy. Built-in tests, hidden solutions, no GPU needed.</p></div>
     <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
@@ -199,6 +200,7 @@ EVAL_CARDS = [
     ('06-llm-as-judge', 'LLM-as-judge', 'Agreement with humans; position, verbosity and self-enhancement bias.'),
     ('07-arenas', 'Arenas and ratings', 'Bradley-Terry vs online Elo, confidence intervals.'),
     ('08-training-experiments', 'Experiments in LLM training', 'Seed noise, low-noise metrics, small-to-large decisions, search.'),
+    ('09-hallucination', 'Hallucination and factuality', 'Why models guess, SimpleQA and FActScore, sample-based detection, grounding.'),
 ]
 
 

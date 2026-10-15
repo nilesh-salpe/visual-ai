@@ -250,6 +250,6 @@ Answer from memory. If you can't, revisit the slide named in the answer.
 
 <div class="recap"><div><span><b>Problem:</b> many knobs; tuning without measurement breaks SLOs or wastes GPUs.</span></div><div><span><b>Core idea:</b> measure → locate the phase and resource → apply the matching technique → re-check goodput.</span></div></div>
 
-<p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../09-disaggregated-serving/index.html">← 09</a> · <a href="../index.html">All decks</a></p>
+<p class="start-hint">Next: <a href="../11-decoding/index.html">11 · Decoding strategies →</a> · Previous: <a href="../09-disaggregated-serving/index.html">← 09</a> · <a href="../index.html">All decks</a></p>
 
 <!-- slide id="s-papers" from="papers" -->

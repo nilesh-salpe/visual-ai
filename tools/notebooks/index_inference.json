@@ -94,5 +94,13 @@
   "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/12_tensor_parallel.ipynb",
   "deck": "inference/08-parallelism/",
   "minutes": 35
+ },
+ {
+  "slug": "13_decoding",
+  "title": "13 \u00b7 Decoding: temperature, top-k, top-p, min-p and beam search",
+  "path": "build-it/inference/13_decoding.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/13_decoding.ipynb",
+  "deck": "inference/11-decoding/",
+  "minutes": 40
  }
 ]
