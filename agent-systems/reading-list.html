@@ -11,7 +11,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="index.html">← Agent systems</a>
-  <div class="label" style="margin-top:28px">Reading list · 6 papers and docs</div>
+  <div class="label" style="margin-top:28px">Reading list · 12 papers and docs</div>
   <h1>Agent systems: key papers</h1>
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">
@@ -33,6 +33,24 @@
     <div class="paper-item"><a href="https://arxiv.org/abs/2307.13854" target="_blank" rel="noopener">WebArena: A Realistic Web Environment for Building Autonomous Agents</a>
       <div class="meta">Zhou et al. · ICLR 2024 · cited in <a href="02-computer-use/index.html" style="font-weight:500;color:var(--a)">Computer and browser use</a></div>
       <p>Self-hosted, functional websites (shopping, forums, code hosting, CMS (content management system)) with tasks graded on functional correctness.</p><div class="num">Remember: best GPT-4 agent 14.41% vs humans 78.24% (at release)</div></div>
+    <div class="paper-item"><a href="https://docs.temporal.io/workflows" target="_blank" rel="noopener">Temporal Workflows</a>
+      <div class="meta">Temporal documentation · docs.temporal.io 2026 · cited in <a href="03-durable-workflows/index.html" style="font-weight:500;color:var(--a)">Durable workflows for agents</a></div>
+      <p>Workflow code is replayed against the recorded event history to rebuild state (no memory snapshots), so it must be deterministic; activities do the side effects and their results are recorded once and reused on replay.</p></div>
+    <div class="paper-item"><a href="https://docs.temporal.io/encyclopedia/retry-policies" target="_blank" rel="noopener">Retry policies (Temporal)</a>
+      <div class="meta">Temporal documentation · docs.temporal.io 2026 · cited in <a href="03-durable-workflows/index.html" style="font-weight:500;color:var(--a)">Durable workflows for agents</a></div>
+      <p>Activity defaults: initial interval 1 s, backoff 2.0, maximum interval 100 × initial, unlimited attempts; workflows do not retry by default.</p></div>
+    <div class="paper-item"><a href="https://docs.temporal.io/workflow-execution/limits" target="_blank" rel="noopener">Temporal Workflow Execution limits</a>
+      <div class="meta">Temporal documentation · docs.temporal.io 2026 · cited in <a href="03-durable-workflows/index.html" style="font-weight:500;color:var(--a)">Durable workflows for agents</a></div>
+      <p>Event History is limited to 51,200 events or 50 MB, with warnings after 10,240 events or 10 MB.</p></div>
+    <div class="paper-item"><a href="https://docs.langchain.com/oss/python/langgraph/persistence" target="_blank" rel="noopener">Persistence (LangGraph)</a>
+      <div class="meta">LangChain documentation · docs.langchain.com 2026 · cited in <a href="03-durable-workflows/index.html" style="font-weight:500;color:var(--a)">Durable workflows for agents</a></div>
+      <p>Checkpointers save thread-scoped graph state for conversation continuity, human-in-the-loop, time travel and fault tolerance; stores keep application data across threads.</p></div>
+    <div class="paper-item"><a href="https://airflow.apache.org/docs/apache-airflow/stable/index.html" target="_blank" rel="noopener">Apache Airflow documentation (3.x)</a>
+      <div class="meta">Apache Software Foundation · airflow.apache.org 2026 · cited in <a href="03-durable-workflows/index.html" style="font-weight:500;color:var(--a)">Durable workflows for agents</a></div>
+      <p>A platform for developing, scheduling and monitoring workflows defined as Python DAGs; aimed at batch workflows with a clear start and end.</p></div>
+    <div class="paper-item"><a href="https://argo-workflows.readthedocs.io/en/latest/" target="_blank" rel="noopener">Argo Workflows documentation</a>
+      <div class="meta">Argo Project (CNCF) · argo-workflows.readthedocs.io 2026 · cited in <a href="03-durable-workflows/index.html" style="font-weight:500;color:var(--a)">Durable workflows for agents</a></div>
+      <p>A container-native workflow engine for Kubernetes implemented as a CRD; each step runs as a container, as steps or a DAG; used for machine-learning pipelines, batch processing, and continuous integration and delivery.</p></div>
   </div>
 </div>
 

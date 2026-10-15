@@ -19,7 +19,7 @@ intro:
   problem: 'Many tasks only exist behind GUIs: legacy apps, websites without APIs, desktop software. An API-only agent cannot do them.'
   core: Give the model <b>screenshot, mouse and keyboard</b> tools. In a loop it sees the screen, chooses an action (click at coordinates, type, scroll, key press),
     the harness performs it in a <b>sandboxed VM or container</b>, and returns a new screenshot. Prefer APIs when they exist; GUIs are slower and more error-prone.
-  hint: 'Previous: [Multi-agent systems](../01-multi-agent/index.html) · [All decks](../index.html)'
+  hint: 'Previous: [Multi-agent systems](../01-multi-agent/index.html) · Next: [Durable workflows for agents →](../03-durable-workflows/index.html) · [All decks](../index.html)'
 papers:
 - ant_computer
 - osworld

@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent2Agent Protocol (A2A)</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Agent2Agent protocol (A2A)" data-home="../index.html" data-home-label="Context">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual Agents · Context · 04</div>
+    <h1>Agent2Agent protocol (A2A)</h1>
+    <p class="sub">An open protocol for agents built by different teams and vendors to discover each other, delegate tasks and stream results, without sharing their internals. Pinned to A2A v1.0.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>An agent that needs help from another organisation's agent has no standard way to find it, learn what it can do, hand it a long-running task, follow progress, or receive files back. Wrapping every remote agent as a custom tool repeats that integration for each pair.</div>
+      <div class="c"><b>Core idea</b>Each agent publishes an <b>Agent Card</b> (its skills, endpoints, capabilities and security schemes). A client agent sends a <b>Message</b> made of <b>Parts</b>; the remote agent answers with a Message or a <b>Task</b> that moves through a lifecycle and produces <b>Artifacts</b>. Agents stay <b>opaque</b>: they cooperate without sharing memory, tools or plans. MCP (Model Context Protocol) connects an agent to tools and data; A2A connects agents to agents.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Previous: <a href="../03-mcp/index.html">Model Context Protocol (MCP)</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Agents from different builders cannot cooperate</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Discovery</h3><p>No standard place to learn what a remote agent does, where it lives and how to authenticate.</p></div>
+      <div class="card b"><h3>Long-running work</h3><p>Delegated work may take hours and need more input midway; a single request-response call does not fit.</p></div>
+      <div class="card c"><h3>Opaque partners</h3><p>Vendors will not expose their prompts, tools or memory; integration must work through a narrow interface.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Cards, messages, tasks, artifacts</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Agent Card</h3><p>A JSON (JavaScript Object Notation) document at https://{domain}/.well-known/agent-card.json: name, description, supportedInterfaces (first is preferred), capabilities (streaming, push notifications), skills, securitySchemes.</p></div>
+      <div class="card a"><h3>Message and Part</h3><p>A turn with a role (user or agent) and Parts; each Part holds exactly one of text, raw bytes, a url or structured data.</p></div>
+      <div class="card c"><h3>Task</h3><p>The unit of work: id, contextId, status, artifacts and history. A contextId groups related tasks and messages into one conversation.</p></div>
+      <div class="card e"><h3>Artifact</h3><p>An output of a task, itself made of Parts: a report, a file, structured data.</p></div>
+    </div>
+<p>Google announced A2A on 9 April 2025 with more than 50 partners; the project moved to the Linux Foundation, released v1.0 in March 2026, and by April 2026 had more than 150 supporting organisations.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>Client agent and remote agent</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A user asks the client agent for something it cannot do alone.&quot;, &quot;The client fetches the remote agent&#x27;s Agent Card to learn its skills, endpoint, capabilities and how to authenticate.&quot;, &quot;It sends a Message (Parts: text, files, data) with SendMessage, or SendStreamingMessage for live updates.&quot;, &quot;The remote agent replies with a Message for quick answers, or a Task whose status changes over time and whose results arrive as Artifacts.&quot;, &quot;Internally the remote agent may use MCP to reach its own tools and data; the client never sees them.&quot;, &quot;For long tasks the client can register a webhook and receive push notifications instead of holding a connection.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="1"><line x1="122.0" y1="148.0" x2="156.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="2"><line x1="312.0" y1="117.8" x2="433.5" y2="70.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="312.0" y1="148.0" x2="376.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="4"><line x1="378.0" y1="158.0" x2="314.0" y2="158.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="495.9" y1="178.0" x2="465.4" y2="226.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="6"><line x1="443.2" y1="178.0" x2="304.4" y2="236.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="110" height="56" rx="10"/><text class="dg-text" x="65.0" y="153.0" text-anchor="middle">User</text></g><g class="dg-node a" data-step="1"><rect x="160" y="110" width="150" height="76" rx="10"/><text class="dg-text" x="235.0" y="146.0" text-anchor="middle">Client agent</text><text class="dg-sub" x="235.0" y="162.0" text-anchor="middle">plans, delegates</text></g><g class="dg-node b" data-step="2"><rect x="380" y="10" width="270" height="56" rx="10"/><text class="dg-text" x="515.0" y="36.0" text-anchor="middle">Agent Card</text><text class="dg-sub" x="515.0" y="52.0" text-anchor="middle">/.well-known/agent-card.json</text></g><g class="dg-node c" data-step="3"><rect x="380" y="120" width="270" height="56" rx="10"/><text class="dg-text" x="515.0" y="146.0" text-anchor="middle">Remote agent (A2A server)</text><text class="dg-sub" x="515.0" y="162.0" text-anchor="middle">opaque: own model, tools, memory</text></g><g class="dg-node e" data-step="5"><rect x="380" y="230" width="130" height="56" rx="10"/><text class="dg-text" x="445.0" y="256.0" text-anchor="middle">MCP servers</text><text class="dg-sub" x="445.0" y="272.0" text-anchor="middle">its tools</text></g><g class="dg-node d" data-step="6"><rect x="160" y="240" width="150" height="50" rx="10"/><text class="dg-text" x="235.0" y="263.0" text-anchor="middle">Webhook</text><text class="dg-sub" x="235.0" y="279.0" text-anchor="middle">push updates</text></g><g data-step="2"><text class="dg-label" x="372.8" y="88.9" text-anchor="middle">discover</text></g><g data-step="3"><text class="dg-label" x="344.0" y="143.0" text-anchor="middle">SendMessage</text></g><g data-step="4"><text class="dg-label" x="346.0" y="173.0" text-anchor="middle">Task · status · Artifacts</text></g><g data-step="5"><text class="dg-label" x="480.6" y="197.0" text-anchor="middle">uses</text></g><g data-step="6"><text class="dg-label" x="373.8" y="202.0" text-anchor="middle">task updates</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>A task's lifecycle on the wire</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;The server creates a task (it generates the id) and acknowledges it.&quot;, &quot;It works, streaming status updates and artifact chunks over Server-Sent Events, or via push notifications.&quot;, &quot;It may pause in an interrupted state, INPUT_REQUIRED or AUTH_REQUIRED, until the client sends another message on the same task.&quot;, &quot;When the work finishes the task is COMPLETED, a terminal state; the artifacts hold the result.&quot;, &quot;FAILED, CANCELED and REJECTED are the other terminal states.&quot;, &quot;A terminal task accepts no further messages: a follow-up starts a new task in the same contextId.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga2" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="142.0" y1="45.0" x2="226.0" y2="45.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="305.0" y1="72.0" x2="305.0" y2="136.0" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="3"><line x1="295.0" y1="138.0" x2="295.0" y2="74.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="4"><line x1="382.0" y1="45.0" x2="496.0" y2="45.0" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="5"><line x1="382.0" y1="67.2" x2="496.0" y2="100.2" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="5"><line x1="347.1" y1="72.0" x2="532.9" y2="191.0" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="5"><line x1="75.0" y1="72.0" x2="75.0" y2="136.0" marker-end="url(#dga2)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="20" width="130" height="50" rx="10"/><text class="dg-text" x="75.0" y="50.0" text-anchor="middle">SUBMITTED</text></g><g class="dg-node a" data-step="2"><rect x="230" y="20" width="150" height="50" rx="10"/><text class="dg-text" x="305.0" y="43.0" text-anchor="middle">WORKING</text><text class="dg-sub" x="305.0" y="59.0" text-anchor="middle">artifact updates</text></g><g class="dg-node d" data-step="3"><rect x="230" y="140" width="150" height="56" rx="10"/><text class="dg-text" x="305.0" y="166.0" text-anchor="middle">INPUT_REQUIRED</text><text class="dg-sub" x="305.0" y="182.0" text-anchor="middle">or AUTH_REQUIRED</text></g><g class="dg-node e" data-step="4"><rect x="500" y="20" width="150" height="50" rx="10"/><text class="dg-text" x="575.0" y="43.0" text-anchor="middle">COMPLETED</text><text class="dg-sub" x="575.0" y="59.0" text-anchor="middle">artifacts final</text></g><g class="dg-node d" data-step="5"><rect x="500" y="100" width="150" height="46" rx="10"/><text class="dg-text" x="575.0" y="128.0" text-anchor="middle">FAILED</text></g><g class="dg-node b" data-step="5"><rect x="500" y="195" width="150" height="46" rx="10"/><text class="dg-text" x="575.0" y="216.0" text-anchor="middle">CANCELED</text><text class="dg-sub" x="575.0" y="232.0" text-anchor="middle">CancelTask</text></g><g class="dg-node b" data-step="5"><rect x="10" y="140" width="130" height="50" rx="10"/><text class="dg-text" x="75.0" y="163.0" text-anchor="middle">REJECTED</text><text class="dg-sub" x="75.0" y="179.0" text-anchor="middle">refused</text></g><g class="dg-node c" data-step="6"><rect x="10" y="245" width="370" height="46" rx="10"/><text class="dg-text" x="195.0" y="266.0" text-anchor="middle">Follow-up: same contextId, new task</text><text class="dg-sub" x="195.0" y="282.0" text-anchor="middle">terminal tasks accept no more messages</text></g><g data-step="3"><text class="dg-label" x="305.0" y="99.0" text-anchor="middle">needs input</text></g><g data-step="3"><text class="dg-label" x="295.0" y="121.0" text-anchor="middle">client replies</text></g><g data-step="4"><text class="dg-label" x="439.0" y="40.0" text-anchor="middle">completes</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Binding</th>
+<th>Send a message</th>
+<th>Read a task</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JSON-RPC 2.0</td>
+<td>method SendMessage (PascalCase, matching gRPC)</td>
+<td>GetTask</td>
+</tr>
+<tr>
+<td>gRPC</td>
+<td>SendMessage</td>
+<td>GetTask</td>
+</tr>
+<tr>
+<td>HTTP (Hypertext Transfer Protocol)+JSON (REST (representational state transfer))</td>
+<td>POST /message:send (POST /message:stream for SSE (server-sent events))</td>
+<td>GET /tasks/&#123;id}</td>
+</tr>
+</tbody>
+</table></div>
+<div class="visual"><pre class="code">{
+  &quot;name&quot;: &quot;Travel booking agent&quot;,
+  &quot;description&quot;: &quot;Finds and books flights and hotels.&quot;,
+  &quot;supportedInterfaces&quot;: [{&quot;url&quot;: &quot;https://agents.example.com/a2a&quot;, ...}],
+  &quot;capabilities&quot;: {&quot;streaming&quot;: true, &quot;pushNotifications&quot;: true},
+  &quot;skills&quot;: [{&quot;id&quot;: &quot;book-flight&quot;, &quot;name&quot;: &quot;Book a flight&quot;, ...}],
+  &quot;securitySchemes&quot;: {&quot;oauth&quot;: {...}}
+}</pre></div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Choice</th>
+<th>Benefit</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A2A between agents</td>
+<td>one interface for any vendor's agent; long tasks, streaming, push</td>
+<td>another protocol to operate and secure</td>
+</tr>
+<tr>
+<td>Remote agent as an MCP tool</td>
+<td>simple when the work is a quick function call</td>
+<td>no task lifecycle, negotiation or partial results</td>
+</tr>
+<tr>
+<td>Opaque agents</td>
+<td>vendors keep their internals; loose coupling</td>
+<td>harder to debug across the boundary</td>
+</tr>
+<tr>
+<td>Streaming (SSE)</td>
+<td>live progress</td>
+<td>long-lived connections</td>
+</tr>
+<tr>
+<td>Push notifications</td>
+<td>no open connection for hours-long tasks</td>
+<td>webhook endpoints to secure and keep reachable</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Spoofed or tampered Agent Card</td>
+<td>client sends data to an impostor</td>
+<td>TLS (Transport Layer Security), signed Agent Cards (JWS (JSON Web Signature)) verified by the client, allowlists of trusted agents</td>
+</tr>
+<tr>
+<td>Forged webhook calls</td>
+<td>fake task updates injected</td>
+<td>agents MUST authenticate webhook calls; clients MUST validate them</td>
+</tr>
+<tr>
+<td>Prompt injection across agents</td>
+<td>remote artifacts instruct the client agent</td>
+<td>treat artifacts as untrusted data, as with any tool output</td>
+</tr>
+<tr>
+<td>Version mismatch</td>
+<td>v0.3 clients expect the removed kind field</td>
+<td>pin versions; 1.0 replaced kind with member names</td>
+</tr>
+<tr>
+<td>Orphaned tasks</td>
+<td>work continues after the user gave up</td>
+<td>CancelTask, timeouts and budgets on delegated work</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Identity and auth</h3><p>Use the declared security schemes (OAuth 2.0, OpenID Connect, mutual TLS); the extended Agent Card MUST require authentication.</p></div>
+      <div class="card c"><h3>Trace across agents</h3><p>Propagate trace ids through contextId and metadata so a delegated task appears in one trace.</p></div>
+      <div class="card b"><h3>Budgets for delegation</h3><p>A remote agent can spend your money: cap steps, time and cost per delegated task.</p></div>
+      <div class="card e"><h3>Platform support</h3><p>Microsoft (Azure AI (artificial intelligence) Foundry, Copilot Studio) and AWS (Bedrock AgentCore Runtime) support A2A.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://a2a-protocol.org/latest/specification/" target="_blank" rel="noopener">Agent2Agent (A2A) Protocol Specification (v1.0)</a>
+        <div class="meta">A2A Project · a2a-protocol.org 2026</div>
+        <p>Agent Cards at /.well-known/agent-card.json; Messages of Parts (exactly one of text, raw, url or data); Tasks with a lifecycle (SUBMITTED, WORKING, INPUT_REQUIRED, AUTH_REQUIRED, COMPLETED, FAILED, CANCELED, REJECTED) producing Artifacts; JSON-RPC, gRPC and HTTP+JSON bindings; streaming over SSE and push notifications. v1.0.0 released 12 March 2026.</p></div>
+      <div class="paper-item"><a href="https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/" target="_blank" rel="noopener">Announcing the Agent2Agent Protocol (A2A)</a>
+        <div class="meta">Google · Google for Developers Blog 2025</div>
+        <p>An open protocol for agent-to-agent communication that complements MCP; built on HTTP, SSE and JSON-RPC; secure by default; long-running tasks; modality agnostic.</p><div class="num">Remember: announced 9 April 2025 with more than 50 technology partners</div></div>
+      <div class="paper-item"><a href="https://www.linuxfoundation.org/press/a2a-protocol-surpasses-150-organizations-lands-in-major-cloud-platforms-and-sees-enterprise-production-use-in-first-year" target="_blank" rel="noopener">A2A protocol surpasses 150 organizations, lands in major cloud platforms</a>
+        <div class="meta">Linux Foundation · Linux Foundation press release 2026</div>
+        <p>One-year milestone: version 1.0 is the first stable specification; integrations in Azure AI Foundry, Copilot Studio and Amazon Bedrock AgentCore Runtime.</p><div class="num">Remember: more than 150 supporting organizations (April 2026)</div></div>
+      <div class="paper-item"><a href="https://modelcontextprotocol.io/specification/2026-07-28" target="_blank" rel="noopener">Model Context Protocol specification (revision 2026-07-28)</a>
+        <div class="meta">MCP maintainers · modelcontextprotocol.io 2026</div>
+        <p>Hosts, clients and servers over JSON-RPC 2.0; servers offer tools, resources and prompts; stdio and Streamable HTTP transports; stateless requests with per-request protocol version and capabilities.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>

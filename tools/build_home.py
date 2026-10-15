@@ -39,12 +39,12 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
 AGENT_SECTIONS = [  # same shape as LLM_SECTIONS
     ('Building agents', [
         ('agent-foundations', 'Topic · 4 decks', 'Agent foundations', 'What an agent is, tool calling, the ReAct loop, and planning and task decomposition.', ['agent loop', 'tool calling', 'ReAct', 'planning']),
-        ('agent-context', 'Topic · 3 decks', 'Agent context', 'Memory and context management, agentic retrieval, and the Model Context Protocol (revision 2026-07-28).', ['memory', 'agentic RAG', 'MCP']),
-        ('agent-systems', 'Topic · 2 decks', 'Agent systems', 'Multi-agent orchestrator-workers designs, and computer and browser use.', ['multi-agent', 'computer use']),
+        ('agent-context', 'Topic · 4 decks', 'Agent context', 'Memory and context management, agentic retrieval, the Model Context Protocol (revision 2026-07-28) and the Agent2Agent protocol (v1.0).', ['memory', 'agentic RAG', 'MCP', 'A2A']),
+        ('agent-systems', 'Topic · 3 decks', 'Agent systems', 'Multi-agent orchestrator-workers designs, computer and browser use, and durable workflows for long-running agents.', ['multi-agent', 'computer use', 'Temporal']),
         ('agent-frameworks', 'Topic · 3 decks + 3 notebooks', 'Agent frameworks', 'LangChain basics, LangGraph core and LangGraph in production (checkpoints, interrupts, resuming), with Colab notebooks.', ['LangChain', 'LangGraph', 'checkpoints', 'interrupts']),
     ]),
     ('Platform', [
-        ('agent-infra', 'Topic · 3 decks', 'Agent infrastructure', 'The LLM gateway, model and agent routing, and identity and access control for agents.', ['LLM gateway', 'routing', 'RBAC', 'OAuth']),
+        ('agent-infra', 'Topic · 4 decks', 'Agent infrastructure', 'The LLM gateway, model and agent routing, identity and access control, and sandboxing agent-run code.', ['LLM gateway', 'routing', 'RBAC', 'sandboxing']),
         ('agent-retrieval', 'Topic · 3 decks', 'Retrieval stack', 'Indexing pipelines, vector databases and ANN indexes, and rerankers.', ['chunking', 'HNSW', 'IVF-PQ', 'rerankers']),
         ('agent-models', 'Topic · 2 decks', 'Models for agents', 'Training LLMs for tool use and agency, and serving LLMs for agent workloads.', ['tool-use SFT', 'agentic RL', 'prefix reuse', 'constrained decoding']),
     ]),

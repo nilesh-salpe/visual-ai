@@ -431,10 +431,12 @@ AGENT_HUBS = {
     'agent-context': ('Agent context', 'What an agent knows: memory and context management, agentic retrieval, and the Model Context Protocol for connecting tools and data.', [
         ('01-memory', 'Memory and context management', 'Context rot, compaction, notes, scored long-term memory.'),
         ('02-agentic-rag', 'Agentic retrieval (RAG)', 'Retrieve, grade, refine, cite; Self-RAG and CRAG.'),
-        ('03-mcp', 'Model Context Protocol (MCP)', 'Hosts, clients, servers; the stateless 2026-07-28 revision.')]),
+        ('03-mcp', 'Model Context Protocol (MCP)', 'Hosts, clients, servers; the stateless 2026-07-28 revision.'),
+        ('04-a2a', 'Agent2Agent protocol (A2A)', 'Agent Cards, tasks, artifacts; agents talking to agents (v1.0).')]),
     'agent-systems': ('Agent systems', 'Larger agent architectures: lead agents with parallel subagents, and agents that operate computers and browsers.', [
         ('01-multi-agent', 'Multi-agent systems', 'Orchestrator-workers, delegation, the 15× token cost.'),
-        ('02-computer-use', 'Computer and browser use', 'Screenshot-action loops, grounding, sandboxing.')]),
+        ('02-computer-use', 'Computer and browser use', 'Screenshot-action loops, grounding, sandboxing.'),
+        ('03-durable-workflows', 'Durable workflows for agents', 'Temporal event history and replay; vs LangGraph, Airflow, Argo.')]),
     'agent-operations': ('Agent operations', 'Running agents for real: evaluating them, keeping them safe and reliable, and controlling cost and latency.', [
         ('01-evaluating-agents', 'Evaluating agents', 'End-state grading, pass^k, harnesses, benchmarks.'),
         ('02-safety-and-reliability', 'Safety and reliability', 'Prompt injection, least privilege, approvals, idempotency.'),
@@ -446,7 +448,8 @@ AGENT_HUBS = {
     'agent-infra': ('Agent infrastructure', 'The platform under agents: one gateway for all model traffic, routing each request to the right model or agent, and making agents act with the user\'s permissions and no more.', [
         ('01-llm-gateway', 'LLM gateway', 'Virtual keys, limits, retries, fallbacks, metering.'),
         ('02-model-router', 'Model and agent routing', 'Intent routing, learned routers, cascades.'),
-        ('03-access-control', 'Identity and access control', 'RBAC, ABAC, delegation, MCP authorization, ACL-aware retrieval.')]),
+        ('03-access-control', 'Identity and access control', 'RBAC, ABAC, delegation, MCP authorization, ACL-aware retrieval.'),
+        ('04-sandboxing', 'Sandboxing agents', 'Filesystem and network boundaries, gVisor, Firecracker, secrets outside.')]),
     'agent-retrieval': ('Retrieval stack', 'What sits under agentic retrieval: building the index, searching vectors fast, and reranking candidates before they reach the model.', [
         ('01-indexing', 'Indexing pipelines', 'Parsing, chunking, contextual chunks, incremental updates.'),
         ('02-vector-databases', 'Vector databases', 'IVF, product quantization, HNSW, DiskANN, filters.'),

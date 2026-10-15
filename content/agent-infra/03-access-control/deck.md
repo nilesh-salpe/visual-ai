@@ -21,7 +21,7 @@ intro:
   core: Authorise every action <b>as the user</b>, with <b>least privilege</b>. A policy engine (role-based, attribute-based or relationship-based access control)
     decides outside the model, a gateway in front of tools enforces it, tokens are <b>scoped and bound to one audience</b> (OAuth 2.1, RFC 8707) and delegation is
     explicit (RFC 8693). Retrieval filters by the user's access lists <b>before</b> the model sees any text. The model never decides who may do what.
-  hint: 'Previous: [Model and agent routing](../02-model-router/index.html) · [All decks](../index.html)'
+  hint: 'Previous: [Model and agent routing](../02-model-router/index.html) · Next: [Sandboxing agents →](../04-sandboxing/index.html) · [All decks](../index.html)'
 papers:
 - owasp_llm
 - nist_rbac

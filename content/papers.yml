@@ -2115,3 +2115,91 @@ claude_agent_sdk:
   year: 2026
   url: https://code.claude.com/docs/en/agent-sdk/overview
   summary: 'Claude Code as a library: the same tools, agent loop and context management, with hooks, subagents, MCP, permissions and sessions, in Python and TypeScript.'
+a2a_spec:
+  title: Agent2Agent (A2A) Protocol Specification (v1.0)
+  authors: A2A Project
+  venue: a2a-protocol.org
+  year: 2026
+  url: https://a2a-protocol.org/latest/specification/
+  summary: 'Agent Cards at /.well-known/agent-card.json; Messages of Parts (exactly one of text, raw, url or data); Tasks with a lifecycle (SUBMITTED, WORKING, INPUT_REQUIRED, AUTH_REQUIRED, COMPLETED, FAILED, CANCELED, REJECTED) producing Artifacts; JSON-RPC, gRPC and HTTP+JSON bindings; streaming over SSE and push notifications. v1.0.0 released 12 March 2026.'
+a2a_announce:
+  title: 'Announcing the Agent2Agent Protocol (A2A)'
+  authors: Google
+  venue: Google for Developers Blog
+  year: 2025
+  url: https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/
+  summary: 'An open protocol for agent-to-agent communication that complements MCP; built on HTTP, SSE and JSON-RPC; secure by default; long-running tasks; modality agnostic.'
+  number: announced 9 April 2025 with more than 50 technology partners
+a2a_lf:
+  title: A2A protocol surpasses 150 organizations, lands in major cloud platforms
+  authors: Linux Foundation
+  venue: Linux Foundation press release
+  year: 2026
+  url: https://www.linuxfoundation.org/press/a2a-protocol-surpasses-150-organizations-lands-in-major-cloud-platforms-and-sees-enterprise-production-use-in-first-year
+  summary: 'One-year milestone: version 1.0 is the first stable specification; integrations in Azure AI Foundry, Copilot Studio and Amazon Bedrock AgentCore Runtime.'
+  number: more than 150 supporting organizations (April 2026)
+ant_sandboxing:
+  title: 'Beyond permission prompts: making Claude Code more secure and autonomous'
+  authors: Anthropic
+  venue: Anthropic Engineering
+  year: 2025
+  url: https://www.anthropic.com/engineering/claude-code-sandboxing
+  summary: 'Filesystem and network isolation built on Linux bubblewrap and macOS Seatbelt; egress through a proxy outside the sandbox with allowed domains; in the cloud version credentials stay outside the sandbox and a git proxy attaches the real token.'
+  number: sandboxing cut permission prompts by 84% in internal use
+firecracker:
+  title: 'Firecracker: Lightweight Virtualization for Serverless Applications'
+  authors: Agache et al.
+  venue: NSDI
+  year: 2020
+  url: https://www.usenix.org/conference/nsdi20/presentation/agache
+  summary: A minimal KVM-based virtual machine monitor for multi-tenant serverless workloads, used by AWS Lambda and Fargate.
+  number: '< 125 ms boot, < 5 MiB overhead per microVM, up to 150 microVMs per second per host (firecracker-microvm.github.io)'
+gvisor:
+  title: gVisor documentation
+  authors: gVisor project
+  venue: gvisor.dev
+  year: 2026
+  url: https://gvisor.dev/docs/
+  summary: 'An application kernel in user space: the Sentry services system calls without passing them to the host kernel, a Gofer mediates file access, and runsc plugs into Docker and Kubernetes; costs some compatibility and syscall-heavy performance.'
+seccomp:
+  title: Seccomp BPF (secure computing with filters)
+  authors: Linux kernel documentation
+  venue: docs.kernel.org
+  year: 2026
+  url: https://docs.kernel.org/userspace-api/seccomp_filter.html
+  summary: A process installs a BPF filter on system calls and their arguments to reduce the kernel attack surface; the docs note system call filtering "isn't a sandbox" by itself.
+temporal_workflows:
+  title: Temporal Workflows
+  authors: Temporal documentation
+  venue: docs.temporal.io
+  year: 2026
+  url: https://docs.temporal.io/workflows
+  summary: 'Workflow code is replayed against the recorded event history to rebuild state (no memory snapshots), so it must be deterministic; activities do the side effects and their results are recorded once and reused on replay.'
+temporal_retries:
+  title: Retry policies (Temporal)
+  authors: Temporal documentation
+  venue: docs.temporal.io
+  year: 2026
+  url: https://docs.temporal.io/encyclopedia/retry-policies
+  summary: 'Activity defaults: initial interval 1 s, backoff 2.0, maximum interval 100 × initial, unlimited attempts; workflows do not retry by default.'
+temporal_limits:
+  title: Temporal Workflow Execution limits
+  authors: Temporal documentation
+  venue: docs.temporal.io
+  year: 2026
+  url: https://docs.temporal.io/workflow-execution/limits
+  summary: Event History is limited to 51,200 events or 50 MB, with warnings after 10,240 events or 10 MB.
+airflow:
+  title: Apache Airflow documentation (3.x)
+  authors: Apache Software Foundation
+  venue: airflow.apache.org
+  year: 2026
+  url: https://airflow.apache.org/docs/apache-airflow/stable/index.html
+  summary: 'A platform for developing, scheduling and monitoring workflows defined as Python DAGs; aimed at batch workflows with a clear start and end.'
+argo:
+  title: Argo Workflows documentation
+  authors: Argo Project (CNCF)
+  venue: argo-workflows.readthedocs.io
+  year: 2026
+  url: https://argo-workflows.readthedocs.io/en/latest/
+  summary: A container-native workflow engine for Kubernetes implemented as a CRD; each step runs as a container, as steps or a DAG; used for machine-learning pipelines, batch processing, and continuous integration and delivery.

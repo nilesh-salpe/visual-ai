@@ -11,7 +11,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="index.html">← Agent infrastructure</a>
-  <div class="label" style="margin-top:28px">Reading list · 13 papers and docs</div>
+  <div class="label" style="margin-top:28px">Reading list · 17 papers and docs</div>
   <h1>Agent infrastructure: key papers</h1>
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">
@@ -25,7 +25,7 @@
       <div class="meta">Anthropic documentation · platform.claude.com 2026 · cited in <a href="01-llm-gateway/index.html" style="font-weight:500;color:var(--a)">LLM gateway</a></div>
       <p>Limits in requests, input tokens and output tokens per minute (RPM, ITPM, OTPM) per model class, enforced with a token bucket; 429 errors with retry-after; for most models cached input tokens do not count toward ITPM.</p><div class="num">Remember: 2M ITPM with an 80% cache hit rate ≈ 10M total input tokens per minute</div></div>
     <div class="paper-item"><a href="https://genai.owasp.org/llmrisk/llm062025-excessive-agency/" target="_blank" rel="noopener">OWASP Top 10 for LLM Applications 2025</a>
-      <div class="meta">OWASP GenAI Security Project · genai.owasp.org 2025 · cited in <a href="01-llm-gateway/index.html" style="font-weight:500;color:var(--a)">LLM gateway</a>, <a href="03-access-control/index.html" style="font-weight:500;color:var(--a)">Identity and access control</a></div>
+      <div class="meta">OWASP GenAI Security Project · genai.owasp.org 2025 · cited in <a href="01-llm-gateway/index.html" style="font-weight:500;color:var(--a)">LLM gateway</a>, <a href="03-access-control/index.html" style="font-weight:500;color:var(--a)">Identity and access control</a>, <a href="04-sandboxing/index.html" style="font-weight:500;color:var(--a)">Sandboxing agents</a></div>
       <p>LLM06:2025 Excessive Agency: root causes are excessive functionality, excessive permissions and excessive autonomy; mitigations include minimising extensions and their permissions, executing in the user's context, user approval and complete mediation.</p></div>
     <div class="paper-item"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Building effective agents</a>
       <div class="meta">Anthropic · Anthropic Engineering 2024 · cited in <a href="02-model-router/index.html" style="font-weight:500;color:var(--a)">Model and agent routing</a></div>
@@ -54,6 +54,18 @@
     <div class="paper-item"><a href="https://www.rfc-editor.org/rfc/rfc8693" target="_blank" rel="noopener">OAuth 2.0 Token Exchange (RFC 8693)</a>
       <div class="meta">Jones et al. · IETF (Internet Engineering Task Force) 2020 · cited in <a href="03-access-control/index.html" style="font-weight:500;color:var(--a)">Identity and access control</a></div>
       <p>Exchange a subject token (and optional actor token) for a new token; distinguishes impersonation from delegation ("A is an agent for B") and records the acting party in the act claim.</p></div>
+    <div class="paper-item"><a href="https://www.anthropic.com/engineering/claude-code-sandboxing" target="_blank" rel="noopener">Beyond permission prompts: making Claude Code more secure and autonomous</a>
+      <div class="meta">Anthropic · Anthropic Engineering 2025 · cited in <a href="04-sandboxing/index.html" style="font-weight:500;color:var(--a)">Sandboxing agents</a></div>
+      <p>Filesystem and network isolation built on Linux bubblewrap and macOS Seatbelt; egress through a proxy outside the sandbox with allowed domains; in the cloud version credentials stay outside the sandbox and a git proxy attaches the real token.</p><div class="num">Remember: sandboxing cut permission prompts by 84% in internal use</div></div>
+    <div class="paper-item"><a href="https://www.usenix.org/conference/nsdi20/presentation/agache" target="_blank" rel="noopener">Firecracker: Lightweight Virtualization for Serverless Applications</a>
+      <div class="meta">Agache et al. · NSDI 2020 · cited in <a href="04-sandboxing/index.html" style="font-weight:500;color:var(--a)">Sandboxing agents</a></div>
+      <p>A minimal KVM-based virtual machine monitor for multi-tenant serverless workloads, used by AWS (Amazon Web Services) Lambda and Fargate.</p><div class="num">Remember: < 125 ms boot, < 5 MiB overhead per microVM, up to 150 microVMs per second per host (firecracker-microvm.github.io)</div></div>
+    <div class="paper-item"><a href="https://gvisor.dev/docs/" target="_blank" rel="noopener">gVisor documentation</a>
+      <div class="meta">gVisor project · gvisor.dev 2026 · cited in <a href="04-sandboxing/index.html" style="font-weight:500;color:var(--a)">Sandboxing agents</a></div>
+      <p>An application kernel in user space: the Sentry services system calls without passing them to the host kernel, a Gofer mediates file access, and runsc plugs into Docker and Kubernetes; costs some compatibility and syscall-heavy performance.</p></div>
+    <div class="paper-item"><a href="https://docs.kernel.org/userspace-api/seccomp_filter.html" target="_blank" rel="noopener">Seccomp BPF (secure computing with filters)</a>
+      <div class="meta">Linux kernel documentation · docs.kernel.org 2026 · cited in <a href="04-sandboxing/index.html" style="font-weight:500;color:var(--a)">Sandboxing agents</a></div>
+      <p>A process installs a BPF filter on system calls and their arguments to reduce the kernel attack surface; the docs note system call filtering "isn't a sandbox" by itself.</p></div>
   </div>
 </div>
 

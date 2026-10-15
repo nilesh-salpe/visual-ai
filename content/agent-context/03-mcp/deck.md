@@ -20,7 +20,7 @@ intro:
   core: '<b>MCP</b> standardises the connection. <b>Hosts</b> (AI applications) run <b>clients</b> that talk to <b>servers</b> using JSON-RPC 2.0. Servers expose
     <b>tools</b> (model-controlled functions), <b>resources</b> (context data) and <b>prompts</b> (templates). In revision <b>2026-07-28</b> every request is <b>self-contained</b>:
     it carries its protocol version and capabilities, with no initialize handshake or session.'
-  hint: 'Previous: [Agentic retrieval (RAG)](../02-agentic-rag/index.html) · [All decks](../index.html)'
+  hint: 'Previous: [Agentic retrieval (RAG)](../02-agentic-rag/index.html) · Next: [Agent2Agent protocol (A2A) →](../04-a2a/index.html) · [All decks](../index.html)'
 papers:
 - mcp_spec
 - mcp_changes

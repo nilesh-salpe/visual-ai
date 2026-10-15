@@ -797,6 +797,30 @@
   },
   "RRF": {
    "exp": "reciprocal rank fusion"
+  },
+  "AWS": {
+   "exp": "Amazon Web Services"
+  },
+  "JWS": {
+   "exp": "JSON Web Signature"
+  },
+  "TLS": {
+   "exp": "Transport Layer Security"
+  },
+  "BPF": {
+   "exp": "Berkeley Packet Filter"
+  },
+  "KVM": {
+   "exp": "Kernel-based Virtual Machine"
+  },
+  "SSH": {
+   "exp": "Secure Shell"
+  },
+  "ML": {
+   "exp": "machine learning"
+  },
+  "CRD": {
+   "exp": "custom resource definition"
   }
  },
  "exempt": [
@@ -1125,6 +1149,24 @@
   "RetryPolicy",
   "RuntimeError",
   "TypeError",
-  "ValueError"
+  "ValueError",
+  "Agent2Agent",
+  "AgentCore",
+  "CANCELED",
+  "COMPLETED",
+  "CancelTask",
+  "FAILED",
+  "GetTask",
+  "OpenID",
+  "PascalCase",
+  "REJECTED",
+  "SUBMITTED",
+  "SendMessage",
+  "WORKING",
+  "MicroVM",
+  "CNCF",
+  "INPUT_REQUIRED",
+  "AUTH_REQUIRED",
+  "SendStreamingMessage"
  ]
 }

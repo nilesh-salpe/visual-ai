@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sandboxing Agents</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Sandboxing agents" data-home="../index.html" data-home-label="Infrastructure">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual Agents · Infrastructure · 04</div>
+    <h1>Sandboxing agents</h1>
+    <p class="sub">Running agent-written code and commands safely: the threat model, the isolation spectrum from syscall filters to microVMs, and the design of a per-task sandbox with no secrets inside and network access only through a proxy.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Coding and computer-use agents run code they wrote a moment ago, often after reading untrusted text. Without isolation, one injected instruction can read SSH (Secure Shell) keys, delete files, mine crypto or send data anywhere, with your credentials.</div>
+      <div class="c"><b>Core idea</b>Run every task in a <b>sandbox</b> with two boundaries: <b>filesystem</b> (only the task's files) and <b>network</b> (egress only through a proxy that enforces an allowlist). Keep <b>secrets outside</b>: a proxy adds real credentials to approved requests. Pick the isolation strength to match the risk: process sandboxes (bubblewrap, Seatbelt), containers, a user-space kernel (gVisor) or a <b>microVM</b> (Firecracker: under 125 ms to boot, under 5 MiB overhead).</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Previous: <a href="../03-access-control/index.html">Identity and access control</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Agents run untrusted code by design</h2>
+    <hr>
+<div class="grid2">
+      <div class="card d"><h3>Untrusted inputs</h3><p>Web pages, issues and documents can carry instructions that the model may follow.</p></div>
+      <div class="card b"><h3>Real side effects</h3><p>Shell, package installs and file writes act on whatever machine the agent runs on.</p></div>
+      <div class="card c"><h3>Exfiltration</h3><p>Anthropic's point: without network isolation a compromised agent could send out files such as SSH keys; without filesystem isolation it could escape the sandbox and gain network access.</p></div>
+      <div class="card a"><h3>Approval fatigue</h3><p>Asking a human before every command is slow and people stop reading; Anthropic reports sandboxing cut permission prompts by 84% in internal use.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Two boundaries, secrets outside</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Filesystem</h3><p>The agent sees only its working directory (and read-only system files); writes elsewhere fail.</p></div>
+      <div class="card a"><h3>Network</h3><p>All traffic leaves through a proxy outside the sandbox that allows listed domains and asks about new ones.</p></div>
+      <div class="card c"><h3>Credentials</h3><p>Tokens never enter the sandbox: a proxy checks a scoped credential and attaches the real token (Anthropic's git proxy for Claude Code on the web).</p></div>
+      <div class="card e"><h3>Resources</h3><p>CPU (central processing unit), memory, disk, process count and wall-clock limits stop runaway or abusive jobs.</p></div>
+    </div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Isolation</th>
+<th>Mechanism</th>
+<th>Strength</th>
+<th>Start-up and cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Syscall filter (seccomp)</td>
+<td>BPF (Berkeley Packet Filter) filter on system calls</td>
+<td>shrinks the kernel attack surface; the kernel docs say it "isn't a sandbox" alone</td>
+<td>negligible</td>
+</tr>
+<tr>
+<td>Process sandbox (bubblewrap, Seatbelt)</td>
+<td>namespaces / OS (operating system) sandbox profiles</td>
+<td>good for a local agent on a developer machine</td>
+<td>milliseconds</td>
+</tr>
+<tr>
+<td>Container</td>
+<td>namespaces, cgroups, shared host kernel</td>
+<td>kernel bugs can break out</td>
+<td>sub-second</td>
+</tr>
+<tr>
+<td>User-space kernel (gVisor)</td>
+<td>Sentry services syscalls; does not pass them to the host</td>
+<td>much smaller host kernel surface</td>
+<td>slower syscall-heavy work; some incompatibilities</td>
+</tr>
+<tr>
+<td>MicroVM (Firecracker)</td>
+<td>KVM (Kernel-based Virtual Machine) virtual machine with a minimal device model</td>
+<td>hardware-virtualisation boundary</td>
+<td>&lt; 125 ms boot, &lt; 5 MiB overhead, up to 150 microVMs/s per host</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>A sandbox per task</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;The agent decides to run a command or code.&quot;, &quot;An orchestrator creates (or reuses) a sandbox for this task and enforces its limits.&quot;, &quot;The command runs inside, seeing only the task&#x27;s files and tools. Restrictions apply to every subprocess it starts.&quot;, &quot;Network traffic can only leave through the egress proxy, which enforces the allowed domains.&quot;, &quot;Operations that need credentials go through a proxy that checks the request (e.g. the right repository and branch) and attaches the real token outside the sandbox.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="132.0" y1="68.0" x2="201.0" y2="68.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="352.0" y1="68.0" x2="376.0" y2="68.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="488.1" y1="118.0" x2="462.2" y2="166.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="4"><line x1="470.9" y1="228.0" x2="496.9" y2="258.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="543.8" y1="118.0" x2="571.5" y2="166.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="562.2" y1="228.0" x2="534.4" y2="258.0" marker-end="url(#dga1)"/></g><g class="dg-node a" data-step="1"><rect x="10" y="40" width="120" height="56" rx="10"/><text class="dg-text" x="70.0" y="66.0" text-anchor="middle">Agent loop</text><text class="dg-sub" x="70.0" y="82.0" text-anchor="middle">model + harness</text></g><g class="dg-node f" data-step="2"><rect x="205" y="40" width="145" height="56" rx="10"/><text class="dg-text" x="277.5" y="66.0" text-anchor="middle">Orchestrator</text><text class="dg-sub" x="277.5" y="82.0" text-anchor="middle">create · limit · destroy</text></g><g class="dg-node c" data-step="3"><rect x="380" y="20" width="270" height="96" rx="10"/><text class="dg-text" x="515.0" y="66.0" text-anchor="middle">Sandbox (microVM / container)</text><text class="dg-sub" x="515.0" y="82.0" text-anchor="middle">task files · tools · no secrets</text></g><g class="dg-node d" data-step="4"><rect x="380" y="170" width="130" height="56" rx="10"/><text class="dg-text" x="445.0" y="196.0" text-anchor="middle">Egress proxy</text><text class="dg-sub" x="445.0" y="212.0" text-anchor="middle">domain allowlist</text></g><g class="dg-node b" data-step="5"><rect x="530" y="170" width="120" height="56" rx="10"/><text class="dg-text" x="590.0" y="196.0" text-anchor="middle">Credential proxy</text><text class="dg-sub" x="590.0" y="212.0" text-anchor="middle">adds real token</text></g><g class="dg-node f" data-step="4"><rect x="380" y="262" width="270" height="34" rx="10"/><text class="dg-text" x="515.0" y="284.0" text-anchor="middle">Internet / internal APIs</text></g><g data-step="2"><text class="dg-label" x="166.5" y="63.0" text-anchor="middle">command</text></g><g data-step="3"><text class="dg-label" x="364.0" y="63.0" text-anchor="middle">exec</text></g><g data-step="4"><text class="dg-label" x="475.2" y="137.0" text-anchor="middle">all traffic</text></g><g data-step="5"><text class="dg-label" x="557.7" y="137.0" text-anchor="middle">git push</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>Inside the boundary</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A process the agent started makes system calls as usual.&quot;, &quot;Under gVisor, the Sentry (written in Go) services them in user space and does not pass them to the host kernel; a Gofer process mediates file access.&quot;, &quot;In a microVM, a guest kernel handles syscalls and Firecracker&#x27;s minimal virtual machine monitor talks to KVM on the host.&quot;, &quot;Pools of pre-booted sandboxes or memory snapshots hide start-up time.&quot;, &quot;Resource limits (cgroups) cap CPU, memory and process count for each sandbox.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga2" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="212.0" y1="48.0" x2="236.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="2"><line x1="432.0" y1="48.0" x2="456.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="3"><line x1="335.0" y1="78.0" x2="335.0" y2="146.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="432.0" y1="178.0" x2="456.0" y2="178.0" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="4"><line x1="212.0" y1="178.0" x2="236.0" y2="178.0" marker-end="url(#dga2)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="20" width="200" height="56" rx="10"/><text class="dg-text" x="110.0" y="46.0" text-anchor="middle">Agent-run process</text><text class="dg-sub" x="110.0" y="62.0" text-anchor="middle">python · npm · bash</text></g><g class="dg-node b" data-step="2"><rect x="240" y="20" width="190" height="56" rx="10"/><text class="dg-text" x="335.0" y="46.0" text-anchor="middle">gVisor Sentry</text><text class="dg-sub" x="335.0" y="62.0" text-anchor="middle">syscalls in user space</text></g><g class="dg-node b" data-step="2"><rect x="460" y="20" width="190" height="56" rx="10"/><text class="dg-text" x="555.0" y="46.0" text-anchor="middle">Gofer</text><text class="dg-sub" x="555.0" y="62.0" text-anchor="middle">mediates file access</text></g><g class="dg-node c" data-step="3"><rect x="240" y="150" width="190" height="56" rx="10"/><text class="dg-text" x="335.0" y="176.0" text-anchor="middle">Firecracker VMM</text><text class="dg-sub" x="335.0" y="192.0" text-anchor="middle">minimal devices</text></g><g class="dg-node d" data-step="3"><rect x="460" y="150" width="190" height="56" rx="10"/><text class="dg-text" x="555.0" y="183.0" text-anchor="middle">Host kernel + KVM</text></g><g class="dg-node e" data-step="4"><rect x="10" y="150" width="200" height="56" rx="10"/><text class="dg-text" x="110.0" y="176.0" text-anchor="middle">Snapshot / warm pool</text><text class="dg-sub" x="110.0" y="192.0" text-anchor="middle">fast start</text></g><g class="dg-node e" data-step="5"><rect x="10" y="245" width="200" height="50" rx="10"/><text class="dg-text" x="110.0" y="268.0" text-anchor="middle">cgroups limits</text><text class="dg-sub" x="110.0" y="284.0" text-anchor="middle">CPU · memory · pids</text></g><g data-step="2"><text class="dg-label" x="224.0" y="43.0" text-anchor="middle">syscall</text></g><g data-step="2"><text class="dg-label" x="444.0" y="43.0" text-anchor="middle">files</text></g><g data-step="3"><text class="dg-label" x="335.0" y="107.0" text-anchor="middle">or run in a microVM</text></g><g data-step="4"><text class="dg-label" x="224.0" y="173.0" text-anchor="middle">restore</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Choice</th>
+<th>Benefit</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stronger isolation (microVM)</td>
+<td>protects against kernel exploits</td>
+<td>more start-up time, memory and operational work</td>
+</tr>
+<tr>
+<td>Lighter isolation (process / container)</td>
+<td>fast and cheap; good on developer machines</td>
+<td>a shared kernel is the boundary</td>
+</tr>
+<tr>
+<td>No network</td>
+<td>no exfiltration at all</td>
+<td>cannot install packages or call APIs (application programming interfaces)</td>
+</tr>
+<tr>
+<td>Allowlisted egress</td>
+<td>useful and contained</td>
+<td>allowlisted domains can still be abused (e.g. upload to a permitted site)</td>
+</tr>
+<tr>
+<td>Long-lived sandboxes</td>
+<td>warm caches, faster tasks</td>
+<td>state and secrets accumulate; cross-task leakage</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Secrets inside the sandbox</td>
+<td>tokens in env vars or files get exfiltrated</td>
+<td>credential proxies; short-lived scoped tokens</td>
+</tr>
+<tr>
+<td>Exfiltration through allowed domains</td>
+<td>data posted to a permitted service</td>
+<td>narrow allowlists; inspect or block uploads; per-task policies</td>
+</tr>
+<tr>
+<td>Escape via kernel bug</td>
+<td>container breakout</td>
+<td>gVisor or microVMs for untrusted code; patch hosts</td>
+</tr>
+<tr>
+<td>Resource abuse</td>
+<td>crypto-mining, fork bombs, disk fill</td>
+<td>cgroups limits, timeouts, quotas</td>
+</tr>
+<tr>
+<td>Persistence between tasks</td>
+<td>one task's files visible to the next</td>
+<td>fresh sandbox per task; wipe or snapshot-restore</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Fast start</h3><p>Users wait on sandbox creation: keep warm pools and restore from snapshots.</p></div>
+      <div class="card c"><h3>Audit everything</h3><p>Log commands, network requests and denied actions per task for incident response.</p></div>
+      <div class="card b"><h3>Policy per task</h3><p>Different tasks need different domains and files; generate the policy from the task, not one global list.</p></div>
+      <div class="card e"><h3>Defence in depth</h3><p>Sandboxing complements least-privilege tools, approvals for risky actions and prompt-injection defences.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://www.anthropic.com/engineering/claude-code-sandboxing" target="_blank" rel="noopener">Beyond permission prompts: making Claude Code more secure and autonomous</a>
+        <div class="meta">Anthropic · Anthropic Engineering 2025</div>
+        <p>Filesystem and network isolation built on Linux bubblewrap and macOS Seatbelt; egress through a proxy outside the sandbox with allowed domains; in the cloud version credentials stay outside the sandbox and a git proxy attaches the real token.</p><div class="num">Remember: sandboxing cut permission prompts by 84% in internal use</div></div>
+      <div class="paper-item"><a href="https://www.usenix.org/conference/nsdi20/presentation/agache" target="_blank" rel="noopener">Firecracker: Lightweight Virtualization for Serverless Applications</a>
+        <div class="meta">Agache et al. · NSDI 2020</div>
+        <p>A minimal KVM-based virtual machine monitor for multi-tenant serverless workloads, used by AWS (Amazon Web Services) Lambda and Fargate.</p><div class="num">Remember: < 125 ms boot, < 5 MiB overhead per microVM, up to 150 microVMs per second per host (firecracker-microvm.github.io)</div></div>
+      <div class="paper-item"><a href="https://gvisor.dev/docs/" target="_blank" rel="noopener">gVisor documentation</a>
+        <div class="meta">gVisor project · gvisor.dev 2026</div>
+        <p>An application kernel in user space: the Sentry services system calls without passing them to the host kernel, a Gofer mediates file access, and runsc plugs into Docker and Kubernetes; costs some compatibility and syscall-heavy performance.</p></div>
+      <div class="paper-item"><a href="https://docs.kernel.org/userspace-api/seccomp_filter.html" target="_blank" rel="noopener">Seccomp BPF (secure computing with filters)</a>
+        <div class="meta">Linux kernel documentation · docs.kernel.org 2026</div>
+        <p>A process installs a BPF filter on system calls and their arguments to reduce the kernel attack surface; the docs note system call filtering "isn't a sandbox" by itself.</p></div>
+      <div class="paper-item"><a href="https://genai.owasp.org/llmrisk/llm062025-excessive-agency/" target="_blank" rel="noopener">OWASP (Open Worldwide Application Security Project) Top 10 for LLM (large language model) Applications 2025</a>
+        <div class="meta">OWASP GenAI Security Project · genai.owasp.org 2025</div>
+        <p>LLM06:2025 Excessive Agency: root causes are excessive functionality, excessive permissions and excessive autonomy; mitigations include minimising extensions and their permissions, executing in the user's context, user approval and complete mediation.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>

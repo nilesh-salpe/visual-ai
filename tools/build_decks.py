@@ -221,6 +221,7 @@ CURRENT = ['']
 
 def build(folder):
     CURRENT[0] = os.path.relpath(folder, os.path.join(REPO, 'content'))
+    diagram._count[0] = 0                                # marker ids only need to be unique within one page
     src = open(os.path.join(folder, 'deck.md')).read()
     _, front, body = src.split('---\n', 2)
     fm = yaml.safe_load(front)

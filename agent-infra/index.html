@@ -10,7 +10,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="../agents/index.html">← Visual Agents</a>
-  <div class="label" style="margin-top:28px">Visual guide · 3 decks</div>
+  <div class="label" style="margin-top:28px">Visual guide · 4 decks</div>
   <h1>Agent infrastructure</h1>
   <p class="lede">The platform under agents: one gateway for all model traffic, routing each request to the right model or agent, and making agents act with the user's permissions and no more. Each deck follows the agent template: problem, core idea, high-level design, low-level design, trade-offs, failure modes and challenges in production, with steppable diagrams and sources checked against the primary papers, specifications and documentation.</p>
 <!--x:map--><style>
@@ -26,11 +26,11 @@
 </style>
   <div class="visual" style="margin-top:22px">
     <h3 style="margin:0 0 10px">The big picture</h3>
-    <div class="bigmap"><div class="stage"><h4>Traffic</h4><a href="01-llm-gateway/index.html"><span>01</span>LLM (large language model) gateway</a><a href="02-model-router/index.html"><span>02</span>Model and agent routing</a></div><div class="arrow">→</div><div class="stage"><h4>Security</h4><a href="03-access-control/index.html"><span>03</span>Identity and access control</a></div></div>
+    <div class="bigmap"><div class="stage"><h4>Traffic</h4><a href="01-llm-gateway/index.html"><span>01</span>LLM (large language model) gateway</a><a href="02-model-router/index.html"><span>02</span>Model and agent routing</a></div><div class="arrow">→</div><div class="stage"><h4>Security</h4><a href="03-access-control/index.html"><span>03</span>Identity and access control</a><a href="04-sandboxing/index.html"><span>04</span>Sandboxing agents</a></div></div>
     <div class="hub-links"><a class="btn" href="reading-list.html">📚 Reading list</a><a class="btn" href="../glossary/index.html">🔤 Glossary</a></div>
   </div>
 <!--/x:map-->
-  <div class="hub-grid"><a class="hub-card" href="01-llm-gateway/index.html"><div class="n">01</div><h3>LLM gateway</h3><p>Virtual keys, limits, retries, fallbacks, metering.</p></a><a class="hub-card" href="02-model-router/index.html"><div class="n">02</div><h3>Model and agent routing</h3><p>Intent routing, learned routers, cascades.</p></a><a class="hub-card" href="03-access-control/index.html"><div class="n">03</div><h3>Identity and access control</h3><p>RBAC (role-based access control), ABAC (attribute-based access control), delegation, MCP (Model Context Protocol) authorization, ACL-aware retrieval.</p></a></div>
+  <div class="hub-grid"><a class="hub-card" href="01-llm-gateway/index.html"><div class="n">01</div><h3>LLM gateway</h3><p>Virtual keys, limits, retries, fallbacks, metering.</p></a><a class="hub-card" href="02-model-router/index.html"><div class="n">02</div><h3>Model and agent routing</h3><p>Intent routing, learned routers, cascades.</p></a><a class="hub-card" href="03-access-control/index.html"><div class="n">03</div><h3>Identity and access control</h3><p>RBAC (role-based access control), ABAC (attribute-based access control), delegation, MCP (Model Context Protocol) authorization, ACL-aware retrieval.</p></a><a class="hub-card" href="04-sandboxing/index.html"><div class="n">04</div><h3>Sandboxing agents</h3><p>Filesystem and network boundaries, gVisor, Firecracker, secrets outside.</p></a></div>
   <p class="cite" style="margin-top:26px">Sources: See each deck's Key papers slide and this topic's reading list.</p>
 </div>
 </body>
