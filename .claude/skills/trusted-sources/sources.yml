@@ -1,0 +1,68 @@
+# Trusted sources for Visual AI decks. tier: 1 = primary, 2 = reputable secondary (see SKILL.md).
+# check: how to verify facts from this source. blocks_scripts: true if it returns 403 to curl/urllib.
+
+papers:
+  - {name: arXiv, url: https://arxiv.org, tier: 1, check: "abstract page /abs/<id>; HTML /html/<id> or PDF for tables"}
+  - {name: OpenReview, url: https://openreview.net, tier: 1, check: "ICLR and other venues; reviews show accepted version"}
+  - {name: NeurIPS proceedings, url: https://proceedings.neurips.cc, tier: 1}
+  - {name: PMLR (ICML, AISTATS, COLT), url: https://proceedings.mlr.press, tier: 1}
+  - {name: ACL Anthology (ACL, EMNLP, NAACL), url: https://aclanthology.org, tier: 1}
+  - {name: USENIX (OSDI, NSDI, ATC, FAST), url: https://www.usenix.org, tier: 1}
+  - {name: ACM Digital Library (SOSP, KDD, SIGIR), url: https://dl.acm.org, tier: 1, blocks_scripts: true, check: "cite arXiv or author copy for the link checker"}
+  - {name: Transformer Circuits Thread, url: https://transformer-circuits.pub, tier: 1, check: "pages are very large; download and search the text"}
+
+labs:
+  - {name: Anthropic research, url: https://www.anthropic.com/research, tier: 1}
+  - {name: Anthropic engineering, url: https://www.anthropic.com/engineering, tier: 1}
+  - {name: Claude platform docs, url: https://platform.claude.com/docs, tier: 1, check: "current API parameters, limits, pricing rules"}
+  - {name: Claude Code docs, url: https://code.claude.com/docs, tier: 1}
+  - {name: OpenAI research, url: https://openai.com/research, tier: 1, blocks_scripts: true, check: "prefer arXiv papers or developers.openai.com"}
+  - {name: OpenAI developer docs, url: https://developers.openai.com, tier: 1}
+  - {name: Google DeepMind research, url: https://deepmind.google/research/, tier: 1}
+  - {name: Google Research blog, url: https://research.google/blog/, tier: 1}
+  - {name: Google AI for developers (Gemini docs), url: https://ai.google.dev, tier: 1}
+  - {name: Meta AI research, url: https://ai.meta.com/research/, tier: 1}
+  - {name: Microsoft Research, url: https://www.microsoft.com/en-us/research/, tier: 1, blocks_scripts: true}
+  - {name: Mistral AI news, url: https://mistral.ai/news, tier: 1}
+  - {name: DeepSeek (GitHub), url: https://github.com/deepseek-ai, tier: 1, check: "technical reports also on arXiv"}
+  - {name: Qwen, url: https://qwenlm.github.io, tier: 1}
+  - {name: Allen Institute for AI (OLMo, Tülu), url: https://allenai.org, tier: 1}
+  - {name: Hugging Face blog, url: https://huggingface.co/blog, tier: 1, check: "tier 1 for Hugging Face's own work; tier 2 for community posts"}
+
+nvidia:
+  - {name: NVIDIA technical blog, url: https://developer.nvidia.com/blog, tier: 1}
+  - {name: NVIDIA documentation hub, url: https://docs.nvidia.com, tier: 1, check: "CUDA, NCCL, cuDNN, TensorRT-LLM, NeMo, Megatron-Core"}
+  - {name: NVIDIA data-center GPUs (datasheets), url: https://www.nvidia.com/en-us/data-center/, tier: 1, check: "peak TFLOPS, memory, bandwidth; note dense vs sparse figures"}
+  - {name: NVIDIA GitHub, url: https://github.com/NVIDIA, tier: 1, check: "Megatron-LM, TensorRT-LLM source and release notes"}
+
+frameworks_and_infra:
+  - {name: PyTorch docs, url: https://docs.pytorch.org, tier: 1}
+  - {name: PyTorch blog, url: https://pytorch.org/blog, tier: 1}
+  - {name: JAX scaling book, url: https://jax-ml.github.io/scaling-book/, tier: 2}
+  - {name: vLLM docs, url: https://docs.vllm.ai, tier: 1, check: "pin the version; defaults change between releases"}
+  - {name: SGLang docs, url: https://docs.sglang.ai, tier: 1}
+  - {name: Ray docs, url: https://docs.ray.io, tier: 1}
+  - {name: LangChain and LangGraph docs, url: https://docs.langchain.com, tier: 1, check: "verify behaviour in the installed source too"}
+  - {name: Temporal docs, url: https://docs.temporal.io, tier: 1}
+  - {name: Kubernetes docs, url: https://kubernetes.io/docs, tier: 1, check: "feature states change by version (alpha/beta/stable)"}
+  - {name: Slurm (SchedMD), url: https://slurm.schedmd.com, tier: 1, check: "pages show the documented Slurm version"}
+  - {name: Google Cloud TPU docs, url: https://cloud.google.com/tpu/docs, tier: 1}
+  - {name: AWS Machine Learning blog, url: https://aws.amazon.com/blogs/machine-learning/, tier: 1, check: "tier 1 for AWS services; tier 2 otherwise"}
+
+standards_and_security:
+  - {name: Model Context Protocol specification, url: https://modelcontextprotocol.io, tier: 1, check: "cite the dated revision"}
+  - {name: Agent2Agent (A2A) specification, url: https://a2a-protocol.org, tier: 1}
+  - {name: IETF RFC Editor, url: https://www.rfc-editor.org, tier: 1}
+  - {name: NIST CSRC, url: https://csrc.nist.gov, tier: 1}
+  - {name: OWASP GenAI Security Project, url: https://genai.owasp.org, tier: 1}
+
+benchmarks_and_measurement:
+  - {name: LMArena, url: https://lmarena.ai, tier: 1, blocks_scripts: true, check: "rankings change daily: cite a date"}
+  - {name: SWE-bench, url: https://www.swebench.com, tier: 1}
+  - {name: MLCommons (MLPerf), url: https://mlcommons.org, tier: 1, blocks_scripts: true}
+  - {name: Epoch AI, url: https://epoch.ai, tier: 2, check: "data on training compute and trends; cite the dataset date"}
+  - {name: SemiAnalysis, url: https://www.semianalysis.com, tier: 2, check: "hardware and cost analysis; often paywalled"}
+
+releases:
+  - {name: PyPI JSON API, url: https://pypi.org, tier: 1, check: "curl -s https://pypi.org/pypi/<package>/json"}
+  - {name: GitHub releases, url: https://github.com, tier: 1, check: "gh api repos/<owner>/<repo>/releases"}

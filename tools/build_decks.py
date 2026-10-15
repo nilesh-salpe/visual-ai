@@ -41,6 +41,9 @@ A huge batch maximizes tokens/s …
 ::: colab <notebook path> [label]      # "Try it in Colab" banner; the body is the description
 <!-- slide from="title" -->             # the title slide, from the front-matter `intro` (kicker, h1, sub, problem, core, hint)
 
+Review status (see .claude/skills/deck-review): front matter `status: {label, reviewed, note}` puts a badge on the title
+slide; inline [[current]] [[trend]] [[legacy]] [[research]] put a small label next to a concept.
+
 A folder may also hold design.md: a long-form design document (front matter: title, back, back_label), rendered to
 <topic>/<slug>/design.html with the same styles; ::: diagram blocks work there too.
 {{glance}}                             # the at-a-glance diagram from front matter
@@ -229,6 +232,26 @@ def normalize(fm):
 
 
 CURRENT = ['']
+LABELS = {'current': 'Current practice', 'trend': 'Recent trend', 'legacy': 'Legacy', 'research': 'Research'}
+LABEL_HELP = {'current': 'widely used in production today', 'trend': 'new and gaining adoption; details may change',
+              'legacy': 'superseded; mostly found in older systems', 'research': 'promising, not common in production'}
+
+
+def label_html(label, short=False):
+    if label not in LABELS:
+        raise SystemExit(f'unknown status label {label!r} in {CURRENT[0]} (use one of {sorted(LABELS)})')
+    return f'<span class="lbl lbl-{label}" title="{LABEL_HELP[label]}">{LABELS[label]}</span>'
+
+
+def apply_status(page, fm):
+    """Inline [[label]] markers become badges; a deck-level status badge goes under the title-slide kicker."""
+    page = re.sub(r'\[\[(current|trend|legacy|research)\]\]', lambda m: label_html(m.group(1)), page)
+    st = fm.get('status')
+    if st and st.get('label'):
+        row = f'<div class="status-row">{label_html(st["label"])}<span class="reviewed">Reviewed {H.escape(str(st.get("reviewed", "")))}</span>' + \
+              (f'<span class="status-note">{H.escape(st["note"])}</span>' if st.get('note') else '') + '</div>'
+        page = re.sub(r'(<div class="kicker">.*?</div>)', lambda m: m.group(1) + row, page, count=1, flags=re.S)
+    return page
 
 
 def build(folder):
@@ -264,6 +287,7 @@ def build(folder):
 </html>
 '''
     _check_rendered(page, folder)
+    page = apply_status(page, fm)
     return expand_acronyms(page)[0]
 
 

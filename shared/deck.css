@@ -246,3 +246,13 @@ body.doc-page { overflow-y: auto; background: var(--bg); }
 .doc code { font: 13px 'JetBrains Mono', monospace; }
 .doc blockquote { margin: 14px 0; padding: 10px 16px; border-left: 3px solid var(--a); background: var(--panel); border-radius: 0 10px 10px 0; }
 .doc .dgm { margin: 16px 0; }
+
+/* Review status labels (.claude/skills/deck-review): deck badge under the title kicker, inline [[label]] badges */
+.lbl { display: inline-block; font: 700 10px 'JetBrains Mono', monospace; letter-spacing: .05em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; vertical-align: middle; margin: 0 2px; white-space: nowrap; }
+.lbl-current { background: var(--e-soft); color: var(--e); }
+.lbl-trend { background: color-mix(in srgb, var(--a) 15%, transparent); color: var(--a); }
+.lbl-legacy { background: color-mix(in srgb, var(--faint) 22%, transparent); color: var(--muted); }
+.lbl-research { background: color-mix(in srgb, var(--c) 15%, transparent); color: var(--c); }
+.status-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.status-row .status-note { font-style: italic; }
+.hub-card .lbl { margin-top: 6px; }

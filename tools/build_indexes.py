@@ -287,9 +287,22 @@ if __name__ == '__main__':
     print('wrote distributed/index.html')
 
 
+LABELS = {'current': 'Current practice', 'trend': 'Recent trend', 'legacy': 'Legacy', 'research': 'Research'}
+
+
+def _status_badge(folder, slug):
+    """The deck's review-status label (front matter `status.label`), if it has been reviewed."""
+    path = os.path.join(REPO, 'content', folder, slug, 'deck.md')
+    if not os.path.exists(path):
+        return ''
+    import yaml
+    st = (yaml.safe_load(open(path).read().split('---\n', 2)[1]) or {}).get('status') or {}
+    return f'<div><span class="lbl lbl-{st["label"]}">{LABELS[st["label"]]}</span></div>' if st.get('label') in LABELS else ''
+
+
 def topic_hub(folder, title, label, lede, nb_index, nb_blurb, cards, sources, back='../llm/index.html', back_label='Visual LLM'):
     """Generic hub page for a topic: header, optional Build-it banner, deck cards, sources."""
-    grid = ''.join(f'<a class="hub-card" href="{s}/index.html"><div class="n">{s[:2]}</div><h3>{t}</h3><p>{p}</p></a>' for s, t, p in cards)
+    grid = ''.join(f'<a class="hub-card" href="{s}/index.html"><div class="n">{s[:2]}</div><h3>{t}</h3><p>{p}</p>{_status_badge(folder, s)}</a>' for s, t, p in cards)
     n_nb = len(load(nb_index)) if nb_index else 0
     count = f'{len(cards)} decks' + (f' + {n_nb} Colab notebooks' if n_nb else '')
     banner = '' if not n_nb else f'''

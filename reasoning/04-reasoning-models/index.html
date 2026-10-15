@@ -11,9 +11,9 @@
 
 <section class="slide title-slide" id="s-title" data-chapter="Start">
   <div class="inner">
-    <div class="kicker">Reasoning and test-time compute · 04</div>
+    <div class="kicker">Reasoning and test-time compute · 04</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-15</span><span class="status-note">Claude thinking API (application programming interface) checked: fixed budgets deprecated in 4.6, rejected from 4.7</span></div>
     <h1>Reasoning models and thinking budgets</h1>
-    <p class="sub">Models trained to think at length before answering: reinforcement learning on verifiable rewards, budget forcing, thinking controls in APIs (application programming interfaces), and the limits (overthinking, unfaithful reasoning, cost).</p>
+    <p class="sub">Models trained to think at length before answering: reinforcement learning on verifiable rewards, budget forcing, thinking controls in APIs, and the limits (overthinking, unfaithful reasoning, cost).</p>
     <div class="ps">
       <div class="p"><b>What is the problem?</b>Prompting and sampling get more out of a model that was never trained to reason at length. To use test-time compute well, the model itself must learn to explore, check and correct its work, and users need a way to control how much it thinks.</div>
       <div class="c"><b>Core idea</b>Train long chains of thought with <b>reinforcement learning on verifiable rewards</b> (math answers, tests): DeepSeek-R1-Zero went from 15.6% to 77.9% pass@1 on AIME (American Invitational Mathematics Examination) 2024, and reflection and self-verification emerged. Even small supervised datasets plus <b>budget forcing</b> (s1: 1,000 examples; "Wait" to extend thinking) give test-time scaling. APIs expose thinking as a <b>controllable budget or effort level</b>; thinking tokens are billed as output.</div>
@@ -76,7 +76,7 @@
 <div class="grid2">
       <div class="card f"><h3>RL on verifiable rewards</h3><p>R1-Zero: AIME 2024 pass@1 15.6% → 77.9%; self-reflection, verification and strategy changes emerged without human-labelled traces. R1 adds cold-start data and a multi-stage pipeline.</p></div>
       <div class="card a"><h3>Cheap test-time scaling (s1)</h3><p>Finetune Qwen2.5-32B on 1,000 curated traces; budget forcing ends thinking early or appends "Wait" to extend it. s1-32B beat o1-preview by up to 27% on MATH and AIME24.</p></div>
-      <div class="card c"><h3>Thinking controls in APIs</h3><p>Claude: adaptive thinking with an effort level on newer models (fixed budget_tokens, minimum 1,024, on older ones); thinking tokens count as billed output.</p></div>
+      <div class="card c"><h3>Thinking controls in APIs</h3><p>Claude: adaptive thinking with an effort level on newer models <span class="lbl lbl-current" title="widely used in production today">Current practice</span> (fixed budget_tokens, minimum 1,024, only on older ones <span class="lbl lbl-legacy" title="superseded; mostly found in older systems">Legacy</span>); thinking tokens count as billed output.</p></div>
       <div class="card e"><h3>Interleaved thinking</h3><p>In agent loops the model can think between tool calls, reasoning about each result before the next action.</p></div>
     </div>
   </div>

@@ -71,3 +71,7 @@ Agent decks keep content, markup and style apart: `deck.md` holds only text and 
 * **Code**: `::: code` shows its body verbatim.
 * **Notebooks**: `::: colab build-it/<topic>/<notebook>.ipynb` with a one-line description as the body.
 * **Widgets**: controls as HTML in `deck.md` (classes only), behaviour in `widget.js`.
+
+## Review status and labels
+
+Decks carry a review status in front matter, `status: {label: current | trend | legacy | research, reviewed: YYYY-MM-DD, note: "..."}`, shown as a badge on the title slide and the topic hub. Inline markers `[[current]]`, `[[trend]]`, `[[legacy]]`, `[[research]]` label individual techniques. `python3 tools/review_status.py` lists decks by review age and writes `status/index.html`. The review procedure is the `deck-review` skill and the source rules are the `trusted-sources` skill, both in `.claude/skills/`.

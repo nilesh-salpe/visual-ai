@@ -41,6 +41,7 @@ papers:
 - overthinking
 - cot_faithful
 - claude_thinking
+status: {label: current, reviewed: 2026-10-15, note: "Claude thinking API checked: fixed budgets deprecated in 4.6, rejected from 4.7"}
 ---
 
 <!-- slide raw -->
@@ -114,7 +115,7 @@ R1-Zero: AIME 2024 pass@1 15.6% → 77.9%; self-reflection, verification and str
 Finetune Qwen2.5-32B on 1,000 curated traces; budget forcing ends thinking early or appends "Wait" to extend it. s1-32B beat o1-preview by up to 27% on MATH and AIME24.
 
 ### [c] Thinking controls in APIs
-Claude: adaptive thinking with an effort level on newer models (fixed budget_tokens, minimum 1,024, on older ones); thinking tokens count as billed output.
+Claude: adaptive thinking with an effort level on newer models [[current]] (fixed budget_tokens, minimum 1,024, only on older ones [[legacy]]); thinking tokens count as billed output.
 
 ### [e] Interleaved thinking
 In agent loops the model can think between tool calls, reasoning about each result before the next action.

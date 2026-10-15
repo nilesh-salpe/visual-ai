@@ -139,6 +139,7 @@ def root_page():
     <a class="hub-card big" href="llm/index.html"><div class="n">Visual LLM · {sum(len(c) for _, c in LLM_SECTIONS)} topics · {llm_decks} decks</div><h3>Large language models</h3><p>Math and neural-network foundations, GPUs, the Transformer and modern architectures, tokenization, pretraining data, distributed training, post-training, inference and evaluation.</p><div class="tags"><span>Transformer</span><span>KV cache</span><span>RLHF</span><span>FSDP</span></div></a>
     <a class="hub-card big" href="agents/index.html"><div class="n">Visual Agents · {f"{agent_decks} decks" if agent_decks else "in preparation"}</div><h3>LLM agents</h3><p>Agentic systems built on LLMs: tool calling, reasoning-action loops, planning, memory and retrieval, multi-agent patterns, evaluation and safety.</p><div class="tags"><span>tool use</span><span>ReAct</span><span>memory</span><span>MCP</span></div></a>
   </div>
+  <p style="margin-top:18px">Also: <a href="system-design/index.html">System design case studies</a> · <a href="status/index.html">Review status of every deck</a></p>
   {links('')}'''
     return PAGE.format(title='Visual AI', up='', body=body)
 
