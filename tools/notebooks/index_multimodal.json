@@ -1,0 +1,10 @@
+[
+ {
+  "slug": "01_images_as_tokens",
+  "title": "01 \u00b7 Images as tokens: patches, CLIP loss, zero-shot and token cost",
+  "path": "build-it/multimodal/01_images_as_tokens.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/multimodal/01_images_as_tokens.ipynb",
+  "deck": "multimodal/01-vision-encoders/",
+  "minutes": 35
+ }
+]

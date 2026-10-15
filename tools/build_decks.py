@@ -195,9 +195,18 @@ def title_slide(t):
 </section>'''
 
 
+def _papers_lib():
+    path = os.path.join(REPO, 'content', 'papers.yml')
+    keys = re.findall(r'^([A-Za-z0-9_]+):', open(path).read(), re.M)
+    dup = sorted({k for k in keys if keys.count(k) > 1})
+    if dup:                                  # YAML silently keeps the last duplicate, so decks would cite the wrong paper
+        raise SystemExit(f'duplicate keys in content/papers.yml: {dup}')
+    return yaml.safe_load(open(path))
+
+
 def resolve_papers(fm):
     if fm.get('papers') and isinstance(fm['papers'][0], str):
-        lib = yaml.safe_load(open(os.path.join(REPO, 'content', 'papers.yml')))
+        lib = _papers_lib()
         fm['papers'] = [lib[k] for k in fm['papers']]
 
 

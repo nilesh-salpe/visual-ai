@@ -20,6 +20,7 @@ TOPICS = {  # folder: (title, [(stage, [slug, ...]), ...])
     'agent-context': ('Agent context', [('Memory', ['01-memory']), ('Knowledge and tools', ['02-agentic-rag', '03-mcp']), ('Other agents', ['04-a2a'])]),
     'agent-systems': ('Agent systems', [('Architectures', ['01-multi-agent', '02-computer-use']), ('Reliability', ['03-durable-workflows'])]),
     'agent-operations': ('Agent operations', [('Quality', ['01-evaluating-agents']), ('Risk and cost', ['02-safety-and-reliability', '03-cost-and-latency']), ('Shipping changes', ['04-experimentation'])]),
+    'multimodal': ('Multimodal LLMs', [('Encoders', ['01-vision-encoders']), ('Architectures', ['02-vision-language-models']), ('Practice', ['03-images-in-practice'])]),
     'interpretability': ('Interpretability', [('Representations', ['01-features-and-superposition']), ('Dictionary learning', ['02-sparse-autoencoders']), ('Mechanisms', ['03-circuits-and-steering'])]),
     'reasoning': ('Reasoning and test-time compute', [('Prompting', ['01-chain-of-thought']), ('More samples', ['02-sampling-and-voting', '03-verifiers-and-search']), ('Trained reasoning', ['04-reasoning-models'])]),
     'cluster-scheduling': ('Cluster scheduling', [('Concepts', ['01-scheduling-basics']), ('Schedulers', ['02-slurm', '03-kubernetes-gpus']), ('Operations', ['04-operating-clusters'])]),

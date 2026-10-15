@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vision Encoders: ViT and CLIP</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Vision encoders: ViT and CLIP" data-home="../index.html" data-home-label="Multimodal">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Multimodal LLMs · 01</div>
+    <h1>Vision encoders: ViT and CLIP</h1>
+    <p class="sub">How images become sequences a transformer can read (patches), and how contrastive training on image-caption pairs gives encoders that line up with language: ViT (Vision Transformer), CLIP and SigLIP.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A language model reads tokens. An image is a grid of millions of pixel values with no tokens, and classic vision models were trained to predict a fixed list of labels, so their features do not connect to the open vocabulary of language.</div>
+      <div class="c"><b>Core idea</b>Cut the image into <b>patches</b> (16 × 16 pixels in ViT) and treat each as a token: a 224 × 224 image becomes 196 tokens. Train the encoder <b>contrastively</b> against text: CLIP learns to tell which caption goes with which image across a batch, from 400 million internet pairs, so image and text embeddings share one space and classes can be named in words (zero-shot).</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Pixels are not tokens</h2>
+    <hr>
+<p class="lede">A 1,000 × 1,000 photo is three million numbers. A language model expects a sequence of a few thousand token embeddings at most.</p>
+<pre><code>        ::: cards grid3
+</code></pre>
+<h3>[d] No tokens</h3>
+<p>Images have no natural vocabulary or word boundaries.</p>
+<h3>[b] Fixed labels</h3>
+<p>Classic classifiers predict a predetermined set of categories; naming a new concept needs new labelled data.</p>
+<h3>[c] Separate spaces</h3>
+<p>Image features and word embeddings were trained apart, so they do not line up.
+:::</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>What earlier vision models lacked</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>CNN inductive biases</h3><p>Convolutions build in locality, but tie vision to an architecture separate from language models.</p></div>
+      <div class="card b"><h3>Label bottleneck</h3><p>ImageNet's 1.28 million labelled images cover 1,000 classes.</p></div>
+      <div class="card c"><h3>Poor transfer by name</h3><p>You cannot ask a label classifier about "a corgi wearing sunglasses".</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>How many tokens?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">A ViT reads 224 × 224 RGB (red, green, blue) images with 16 × 16 patches. How many patch tokens does one image produce?</p>
+      <div class="opts">
+      <button>A. 224</button>
+      <button data-ok>B. 196</button>
+      <button>C. 50,176</button>
+      <button>D. 768</button>
+      </div>
+      <div class="why"><strong>B.</strong> (224 / 16)² = 14² = 196 patches; each patch flattens to 16 × 16 × 3 = 768 values before the linear projection.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Patches, then contrastive alignment</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>ViT</h3><p>Split into 16 × 16 patches, linearly embed, add positions and a [class] token, run a standard transformer. Pretrained on ImageNet-21k or JFT-300M, it reached 88.55% on ImageNet with less training compute than comparable CNNs (convolutional neural networks).</p></div>
+      <div class="card a"><h3>CLIP</h3><p>Train image and text encoders to predict which caption goes with which image in a batch; 400 million internet pairs; evaluated on over 30 datasets.</p></div>
+      <div class="card c"><h3>Zero-shot transfer</h3><p>Classify by comparing an image with text prompts for each class: CLIP matched the original ResNet-50 on ImageNet without its 1.28M training labels.</p></div>
+      <div class="card e"><h3>SigLIP</h3><p>A pairwise sigmoid loss needs no batch-wide softmax: 84.5% zero-shot ImageNet with 4 TPUv4 chips in 2 days; batches beyond 32k gave little extra benefit.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>From image to tokens <span class="ill">interactive</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">image side <input type="range" id="pS" min="112" max="672" step="112" value="224"> <output id="pSo"></output></label><label class="ctl">patch size <input type="range" id="pP" min="8" max="32" step="2" value="16"> <output id="pPo"></output></label></div><svg id="pSvg" viewBox="0 0 600 260" class="ill-svg"></svg><p class="readout" id="pOut"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: zero-shot classification with CLIP</h2>
+    <hr>
+    <p class="lede">Classify a photo as dog, cat or car without training a classifier.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Write one prompt per class: "a photo of a dog", "a photo of a cat", "a photo of a car", and embed each with the text encoder.</li><li>Embed the photo with the image encoder; normalise all vectors.</li><li>Compute the cosine similarity between the photo and each prompt; the highest wins.</li><li>This is how CLIP matched the original ResNet-50 on ImageNet zero-shot, without using any of its 1.28 million training examples.</li></ol><div class="result">With a shared embedding space, a class is just a sentence.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Language as supervision</h3><p>Captions name millions of concepts for free; the web supplies the labels.</p></div>
+      <div class="card c"><h3>Shared space</h3><p>Matching pairs pulled together, mismatches pushed apart, so text can query images and vice versa.</p></div>
+      <div class="card b"><h3>Scale over bias</h3><p>With enough data, a plain transformer learns the spatial structure CNNs had built in.</p></div>
+      <div class="card e"><h3>Reusable encoders</h3><p>CLIP-style encoders became the eyes of many vision-language models (deck 02).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Vision transformers need convolutions."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">ViT is a pure transformer over patches; with large-scale pretraining it matches or beats CNNs.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"CLIP was trained on ImageNet labels."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It was trained on 400M image-text pairs from the internet; its ImageNet result is zero-shot.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Contrastive learning needs huge batches forever."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">SigLIP found benefits diminish quickly; 32k was sufficient.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Tokens = (H/p) × (W/p).</b> 224 px with 16 px patches → 14 × 14 = 196 patch tokens (+1 class token in ViT).</li><li><b>Contrastive = batch classification.</b> Each image must pick its own caption out of the batch, and each caption its image.</li><li><b>Sigmoid loss scales easily.</b> SigLIP scores each pair independently, so no batch-wide normalisation is needed.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Forgetting resolution cost.</b> Halving the patch size quadruples the token count.</li><li><b>ViT on small data.</b> ViT shines when pretrained at scale (ImageNet-21k, JFT-300M); from scratch on small data CNNs win.</li><li><b>Assuming CLIP reads text in images well.</b> Its strengths and weaknesses vary widely across the 30+ datasets evaluated.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">What is CLIP's training objective?</p>
+      <div class="opts">
+      <button>A. Predict the next pixel</button>
+      <button data-ok>B. Pick the matching caption for each image (and image for each caption) within a batch</button>
+      <button>C. Classify 1,000 ImageNet classes</button>
+      <button>D. Reconstruct the image</button>
+      </div>
+      <div class="why"><strong>B.</strong> A symmetric contrastive loss over the batch.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">How does zero-shot classification with CLIP work?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Embed a text prompt per class and the image; predict the class with the highest cosine similarity.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does SigLIP change?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">It replaces the softmax over the batch with an independent sigmoid on each image-text pair, which decouples the loss from batch size.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">A vision encoder turns an image into patch tokens; contrastive training puts those tokens in the same space as language.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>A Vision Transformer splits an image into fixed-size patches (16 × 16 pixels), embeds each with a linear projection, adds positions and runs a standard transformer; a 224 × 224 image is 196 patch tokens. Pretrained at scale, ViT reached 88.55% on ImageNet. CLIP trains an image encoder and a text encoder together to pick the matching caption among a batch, on 400 million image-text pairs; the shared space allows zero-shot classification, matching ResNet-50 on ImageNet without its training labels. SigLIP replaces the softmax with a pairwise sigmoid loss and reached 84.5% zero-shot ImageNet with four TPUv4 chips in two days.</p></div>
+    <div class="recap"><div><span><b>Patches:</b> images as token sequences</span></div><div><span><b>ViT:</b> a plain transformer over patches</span></div><div><span><b>CLIP:</b> contrastive image-text training, 400M pairs</span></div><div><span><b>Zero-shot:</b> classes named by text prompts</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/multimodal/01_images_as_tokens.ipynb" target="_blank" rel="noopener">01 · Images as tokens: patches, CLIP loss, zero-shot and token cost</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/multimodal/01_images_as_tokens.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../02-vision-language-models/index.html">02 · Connecting vision to an LLM →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2010.11929" target="_blank" rel="noopener">An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+        <div class="meta">Dosovitskiy et al. · ICLR 2021</div>
+        <p>A pure transformer over sequences of image patches (16 × 16 pixels, linearly embedded, with a [class] token); pretrained on ImageNet-21k or JFT-300M it matches or beats CNNs with substantially less training compute.</p><div class="num">Remember: 88.55% on ImageNet (best model)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2103.00020" target="_blank" rel="noopener">Learning Transferable Visual Models From Natural Language Supervision (CLIP)</a>
+        <div class="meta">Radford et al. · ICML 2021</div>
+        <p>Image and text encoders trained contrastively to predict which caption goes with which image, on 400 million internet pairs; text prompts enable zero-shot transfer to over 30 datasets.</p><div class="num">Remember: matches the original ResNet-50 on ImageNet zero-shot, without its 1.28M training examples</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2303.15343" target="_blank" rel="noopener">Sigmoid Loss for Language Image Pre-Training (SigLIP)</a>
+        <div class="meta">Zhai et al. · ICCV 2023</div>
+        <p>A pairwise sigmoid loss that needs no batch-wide normalisation; works at small batch sizes and scales up; benefits of batch size diminish, 32k being sufficient.</p><div class="num">Remember: 84.5% zero-shot ImageNet with 4 TPUv4 chips in two days (SigLiT)</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  Deck.bind(['pS', 'pP'], () => {
+    const s = Deck.val('pS'), p = Deck.val('pP'); Deck.out('pSo', s + ' px'); Deck.out('pPo', p + ' px');
+    const n = Math.floor(s / p) ** 2;
+    const g = clear(document.getElementById('pSvg')), side = 220, k = Math.floor(s / p), cell = side / k;
+    for (let i = 0; i <= k; i++) {
+      svg('line', { x1: 190 + i * cell, y1: 20, x2: 190 + i * cell, y2: 20 + side, style: 'stroke:var(--line)' }, g);
+      svg('line', { x1: 190, y1: 20 + i * cell, x2: 190 + side, y2: 20 + i * cell, style: 'stroke:var(--line)' }, g);
+    }
+    svg('rect', { x: 190, y: 20, width: cell, height: cell, style: 'fill:var(--a);opacity:.5' }, g);
+    document.getElementById('pOut').innerHTML = `A ${s} × ${s} image with ${p} × ${p} patches → ${k} × ${k} = <b>${n} tokens</b> (ViT adds one class token). Each token holds ${p} × ${p} × 3 = ${p * p * 3} pixel values. Self-attention cost grows with the square of the token count: ${(n * n / 1e6).toFixed(2)} M pairs.`;
+  });
+})();
+</script>
+</body>
+</html>

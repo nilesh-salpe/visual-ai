@@ -21,6 +21,7 @@ PHASES = [  # (heading, notebook folder, index json)
     ('Infrastructure · Cluster scheduling', 'cluster-scheduling', 'index_cluster.json'),
     ('Frontier · Reasoning and test-time compute', 'reasoning', 'index_reasoning.json'),
     ('Frontier · Interpretability', 'interpretability', 'index_interp.json'),
+    ('Frontier · Multimodal LLMs', 'multimodal', 'index_multimodal.json'),
     ('Agents · LangChain and LangGraph', 'agent-frameworks', 'index_agent_frameworks.json'),
 ]
 
@@ -457,6 +458,12 @@ LLM_HUBS = {
         ('02-sparse-autoencoders', 'Sparse autoencoders', 'Dictionary learning from one layer to Claude 3 Sonnet.'),
         ('03-circuits-and-steering', 'Circuits, probes and steering', 'Patching, IOI, attribution graphs, ActAdd.')],
         'Elhage et al. 2022; Olsson et al. 2022; Bricken et al. 2023; Cunningham et al. 2024; Templeton et al. 2024; Gao et al. 2024; Lieberum et al. 2024; Wang et al. 2023; Meng et al. 2022; Lindsey et al. 2025; Turner et al. 2023; Zou et al. 2023.'),
+    'multimodal': ('Multimodal LLMs', 'How language models see: images as patch tokens and contrastive vision encoders (ViT, CLIP, SigLIP), connectors that join a vision encoder to an LLM (LLaVA, Flamingo, BLIP-2, early fusion), and what images cost and how vision-language models fail in practice. 9-beat template; numbers checked against the papers and API documentation.',
+                   'index_multimodal.json', 'Patchify an image ViT-style, implement CLIP\'s contrastive loss and zero-shot classification, and build an image-token cost calculator that reproduces the Claude API\'s published counts.', [
+        ('01-vision-encoders', 'Vision encoders: ViT and CLIP', 'Patches as tokens; contrastive image-text training.'),
+        ('02-vision-language-models', 'Connecting vision to an LLM', 'Projection, resampler, Q-Former, early fusion.'),
+        ('03-images-in-practice', 'Images as tokens in practice', 'Visual-token cost, limits, MMMU, hallucination.')],
+        'Dosovitskiy et al. 2021; Radford et al. 2021; Zhai et al. 2023; Liu et al. 2023, 2024; Alayrac et al. 2022; Li et al. 2023 (BLIP-2); Chameleon Team 2024; Radford et al. 2023 (Whisper); Yue et al. 2024; Li et al. 2023 (POPE); Claude API vision documentation.'),
 }
 
 

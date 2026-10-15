@@ -878,6 +878,21 @@
   },
   "DNA": {
    "exp": "deoxyribonucleic acid"
+  },
+  "RGB": {
+   "exp": "red, green, blue"
+  },
+  "VQA": {
+   "exp": "visual question answering"
+  },
+  "AGI": {
+   "exp": "artificial general intelligence"
+  },
+  "MMMU": {
+   "exp": "Massive Multi-discipline Multimodal Understanding"
+  },
+  "POPE": {
+   "exp": "Polling-based Object Probing Evaluation"
   }
  },
  "exempt": [
@@ -1280,6 +1295,14 @@
   "DeepMind",
   "JumpReLU",
   "ActAdd",
-  "OPT"
+  "OPT",
+  "JFT",
+  "SigLIP",
+  "SigLiT",
+  "TPUv4",
+  "BLIP",
+  "LLaVA",
+  "ScienceQA",
+  "VQAv2"
  ]
 }

@@ -173,6 +173,14 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/reasoning/
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/interpretability/
 
+## Frontier · Multimodal LLMs
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · Images as tokens: patches, CLIP loss, zero-shot and token cost](multimodal/01_images_as_tokens.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/multimodal/01_images_as_tokens.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/multimodal/
+
 ## Agents · LangChain and LangGraph
 
 | Notebook | Time | Colab |

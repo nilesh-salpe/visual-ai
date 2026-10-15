@@ -34,6 +34,7 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
     ('Frontier topics', [
         ('reasoning', 'Topic · 4 decks + 1 Colab notebook', 'Reasoning and test-time compute', 'Chain of thought, self-consistency and coverage, verifiers and process reward models, compute-optimal search, and reasoning models (RL on verifiable rewards, budget forcing, thinking budgets, faithfulness).', ['chain of thought', 'best-of-N', 'PRM', 'R1']),
         ('interpretability', 'Topic · 3 decks + 1 Colab notebook', 'Interpretability', 'Features and superposition, sparse autoencoders (Claude 3 Sonnet, GPT-4, Gemma Scope), and circuits, attribution graphs, probes and steering vectors.', ['superposition', 'SAEs', 'circuits', 'steering']),
+        ('multimodal', 'Topic · 3 decks + 1 Colab notebook', 'Multimodal LLMs', 'ViT and CLIP, connecting a vision encoder to an LLM (LLaVA, Flamingo, BLIP-2, early fusion), and images as tokens in practice: cost, limits, evaluation and hallucination.', ['ViT', 'CLIP', 'LLaVA', 'visual tokens']),
     ]),
     ('Serving and evaluation', [
         ('inference', 'Topic · 10 decks + 12 Colab notebooks', 'LLM Inference and Serving', 'Prefill vs decode, KV cache, continuous batching, chunked prefill, PagedAttention, speculative decoding, quantization, tensor parallelism, disaggregation, with hands-on notebooks.', ['KV cache', 'vLLM', 'speculative', 'Colab']),

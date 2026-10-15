@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Images as Tokens in Practice</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Images as tokens in practice" data-home="../index.html" data-home-label="Multimodal">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Multimodal LLMs · 03</div>
+    <h1>Images as tokens in practice</h1>
+    <p class="sub">What multimodal input costs and how it fails: visual-token counts and resolution limits in a production API (application programming interface), many-image requests, audio as another input, benchmarks such as MMMU (Massive Multi-discipline Multimodal Understanding), and object hallucination.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Images make prompts expensive and slow in ways that are easy to miss: a single screenshot can cost thousands of tokens, and agents resend every image on every turn. Models also describe things that are not in the image.</div>
+      <div class="c"><b>Core idea</b>Estimate the <b>visual-token cost</b> of every image: the Claude API counts one token per <b>28 × 28-pixel patch</b> and downsizes images above a <b>tier limit</b> (1,568 px and 1,568 tokens standard; 2,576 px and 4,784 tokens on high-resolution models). Resize before sending, put images before text, and reference repeated images by file. Evaluate on <b>expert multimodal benchmarks</b> (MMMU) and test for <b>object hallucination</b> (POPE (Polling-based Object Probing Evaluation)).</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>A picture is worth a few thousand tokens</h2>
+    <hr>
+<p class="lede">A user uploads ten full-resolution phone photos and asks a question. The request is slow and expensive, and the answer mentions a dog that is not in any photo.</p>
+<pre><code>        ::: cards grid3
+</code></pre>
+<h3>[d] Hidden cost</h3>
+<p>Images are converted to many tokens, billed like text input.</p>
+<h3>[b] Resizing surprises</h3>
+<p>Large images are downsized, which can make small text unreadable.</p>
+<h3>[c] Hallucination</h3>
+<p>Vision-language models describe plausible objects that are absent.
+:::</p>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>What the user cannot see</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Token count</h3><p>Pixels do not show how many tokens an image becomes.</p></div>
+      <div class="card b"><h3>Limits</h3><p>Per-request image counts, sizes and payload limits differ by platform.</p></div>
+      <div class="card c"><h3>Evaluation gaps</h3><p>Captioning-style benchmarks miss expert reasoning and hallucination.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>How many tokens?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">Under the Claude API rule of one visual token per 28 × 28 patch, about how many tokens does a 1000 × 1000 image cost (no resizing)?</p>
+      <div class="opts">
+      <button>A. 28</button>
+      <button>B. 784</button>
+      <button data-ok>C. 1,296</button>
+      <button>D. 1,000,000</button>
+      </div>
+      <div class="why"><strong>C.</strong> ⌈1000 / 28⌉² = 36² = 1,296 tokens.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Budget, resize, order, evaluate</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Count tokens</h3><p>Claude: ⌈w / 28⌉ × ⌈h / 28⌉ visual tokens; images above the tier limit (standard 1,568 px / 1,568 tokens, high-resolution 2,576 px / 4,784 tokens) are downscaled keeping aspect ratio.</p></div>
+      <div class="card a"><h3>Send them well</h3><p>Images before text; Files API for repeated images; up to 600 images per request (100 on 200k-context models), with stricter size limits above 20.</p></div>
+      <div class="card c"><h3>Other modalities</h3><p>Audio is converted to model inputs the same way; Whisper was trained on 680,000 hours of multilingual, multitask audio and transfers zero-shot.</p></div>
+      <div class="card e"><h3>Evaluate hard cases</h3><p>MMMU: 11.5K college-level questions across 30 subjects and 30 image types; GPT-4V 56%, Gemini Ultra 59%. POPE probes object hallucination with yes/no polling.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Image token calculator <span class="ill">Claude API rule</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">width <input type="range" id="iW" min="200" max="4000" step="40" value="1920"> <output id="iWo"></output></label><label class="ctl">height <input type="range" id="iH" min="200" max="4000" step="40" value="1080"> <output id="iHo"></output></label><label class="ctl">images in context <input type="range" id="iN" min="1" max="50" step="1" value="1"> <output id="iNo"></output></label></div><div class="bars"><div id="iBars"></div></div><p class="readout" id="iOut"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: a screenshot-heavy agent</h2>
+    <hr>
+    <p class="lede">A computer-use agent sends a 1920 × 1080 screenshot every step for 30 steps.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Standard tier: the screenshot is downsized to 1456 × 819, which costs ⌈1456/28⌉ × ⌈819/28⌉ = 52 × 30 = <b>1,560</b> tokens.</li><li>High-resolution tier: no downsizing, ⌈1920/28⌉ × ⌈1080/28⌉ = 69 × 39 = <b>2,691</b> tokens.</li><li>If every past screenshot stays in the context, step 30 carries 30 × 2,691 ≈ <b>80,700</b> tokens of images.</li><li>Downsample when the extra detail is not needed, drop or summarise old screenshots, and cache stable prefixes.</li></ol><div class="result">Image tokens accumulate in agent loops exactly like tool outputs do.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why these limits and failures exist</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Attention cost</h3><p>Every visual token is attended to like text, so resolution is capped to bound compute.</p></div>
+      <div class="card c"><h3>Detail vs budget</h3><p>High-resolution tiers use up to about three times more tokens; worth it for screenshots and dense documents.</p></div>
+      <div class="card b"><h3>Language priors</h3><p>Hallucinated objects tend to be ones that occur often in training instructions or co-occur with real objects.</p></div>
+      <div class="card e"><h3>Benchmarks shape progress</h3><p>Expert-level, diverse image types (charts, maps, chemical structures) expose gaps that captioning hides.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Image cost depends on file size."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It depends on pixel dimensions after resizing, not on bytes or format.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Sending a higher resolution is always better."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Above the tier limit the image is downsized anyway; below it, more pixels cost more tokens for detail you may not need.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"If the model names an object, it is in the image."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">POPE showed severe object hallucination across vision-language models.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Tokens ≈ pixels / 784.</b> One visual token per 28 × 28 patch (Claude API).</li><li><b>Images first.</b> Claude works best when images come before the text that refers to them.</li><li><b>Upload once.</b> The Files API avoids resending base64 bytes on every turn.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Many-image requests.</b> Above 20 images per request a stricter per-image size limit applies; keep each side ≤ 2,000 px.</li><li><b>Tiny or rotated images.</b> Accuracy drops on low-quality images or ones under 200 pixels.</li><li><b>Trusting object lists.</b> Models often mention objects that frequently co-occur with what is in the image, even when absent.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">A 1920 × 1080 screenshot on a high-resolution Claude model costs how many visual tokens?</p>
+      <div class="opts">
+      <button>A. 1,560</button>
+      <button data-ok>B. 2,691</button>
+      <button>C. 4,784</button>
+      <button>D. 2,073,600</button>
+      </div>
+      <div class="why"><strong>B.</strong> No downsizing: ⌈1920/28⌉ × ⌈1080/28⌉ = 69 × 39 = 2,691.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Give two ways to cut image cost in an agent loop.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Downsample screenshots, drop or summarise old images, use the Files API instead of resending base64, keep prefixes stable for caching (any two).</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does POPE measure?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Object hallucination in vision-language models, by polling yes/no questions about whether objects are present.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Treat images like long text: estimate their tokens, resize them, and check that the model is not seeing things.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>In the Claude API an image costs ⌈width / 28⌉ × ⌈height / 28⌉ visual tokens; images above a model's limits are downscaled (standard tier 1,568 px and 1,568 tokens; high-resolution models 2,576 px and 4,784 tokens). A 1080p screenshot costs 1,560 or 2,691 tokens, and agents that resend screenshots multiply that. Audio follows the same pattern of converting signals into model inputs; Whisper was trained on 680,000 hours of weakly supervised audio. On MMMU, 11.5K college-level multimodal questions, GPT-4V scored 56% and Gemini Ultra 59%. POPE showed vision-language models often hallucinate objects that frequently co-occur with real ones.</p></div>
+    <div class="recap"><div><span><b>Cost:</b> ⌈w/28⌉ × ⌈h/28⌉ visual tokens</span></div><div><span><b>Limits:</b> 1,568 / 4,784 tokens by tier</span></div><div><span><b>Benchmarks:</b> MMMU: GPT-4V 56%, Gemini Ultra 59%</span></div><div><span><b>Failure:</b> object hallucination (POPE)</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/multimodal/01_images_as_tokens.ipynb" target="_blank" rel="noopener">01 · Images as tokens: patches, CLIP loss, zero-shot and token cost</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/multimodal/01_images_as_tokens.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../02-vision-language-models/index.html">← 02</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://platform.claude.com/docs/en/build-with-claude/vision" target="_blank" rel="noopener">Vision (Claude API)</a>
+        <div class="meta">Anthropic documentation · platform.claude.com 2026</div>
+        <p>Images cost ⌈width/28⌉ × ⌈height/28⌉ visual tokens; images above a tier limit are downscaled (standard 1,568 px / 1,568 tokens; high-resolution models 2,576 px / 4,784 tokens); up to 600 images per request (100 on 200k-context models) with stricter sizes above 20; images before text work best.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2212.04356" target="_blank" rel="noopener">Robust Speech Recognition via Large-Scale Weak Supervision (Whisper)</a>
+        <div class="meta">Radford et al. · ICML 2023</div>
+        <p>Speech recognition trained on 680,000 hours of multilingual, multitask weakly supervised audio; generalises zero-shot and approaches human robustness.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2311.16502" target="_blank" rel="noopener">MMMU: A Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark for Expert AGI (artificial general intelligence)</a>
+        <div class="meta">Yue et al. · CVPR 2024</div>
+        <p>11.5K college-level multimodal questions across 6 disciplines, 30 subjects, 183 subfields and 30 image types (charts, maps, music sheets, chemical structures).</p><div class="num">Remember: GPT-4V 56%, Gemini Ultra 59%</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2305.10355" target="_blank" rel="noopener">Evaluating Object Hallucination in Large Vision-Language Models (POPE)</a>
+        <div class="meta">Li et al. · EMNLP 2023</div>
+        <p>Vision-language models hallucinate objects, especially ones frequent in visual instructions or co-occurring with real objects; POPE evaluates this with polling yes/no questions.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const tokens = (w, h, L, T) => {
+    const cost = (a, b) => Math.ceil(a / 28) * Math.ceil(b / 28);
+    const fits = s => Math.max(Math.floor(w * s), Math.floor(h * s)) <= L && cost(Math.floor(w * s), Math.floor(h * s)) <= T;
+    if (fits(1)) return [w, h, cost(w, h)];
+    let lo = 0, hi = 1; for (let i = 0; i < 50; i++) { const m = (lo + hi) / 2; if (fits(m)) lo = m; else hi = m; }
+    const nw = Math.floor(w * lo), nh = Math.floor(h * lo); return [nw, nh, cost(nw, nh)];
+  };
+  Deck.bind(['iW', 'iH', 'iN'], () => {
+    const w = Deck.val('iW'), h = Deck.val('iH'), n = Deck.val('iN');
+    Deck.out('iWo', w + ' px'); Deck.out('iHo', h + ' px'); Deck.out('iNo', n);
+    const s = tokens(w, h, 1568, 1568), r = tokens(w, h, 2576, 4784);
+    Deck.hbars(document.getElementById('iBars'), [{ label: 'standard tier, per image', value: s[2], color: 'var(--e)', text: s[2].toLocaleString() + ' tokens' },
+      { label: 'high-resolution tier, per image', value: r[2], color: 'var(--a)', text: r[2].toLocaleString() + ' tokens' }], { max: 5000 });
+    document.getElementById('iOut').innerHTML = `${w} × ${h}: standard tier sees ${s[0]} × ${s[1]} → <b>${s[2].toLocaleString()}</b> tokens; high-resolution tier sees ${r[0]} × ${r[1]} → <b>${r[2].toLocaleString()}</b> tokens. With ${n} image${n > 1 ? 's' : ''} kept in context: ${(n * s[2]).toLocaleString()} or ${(n * r[2]).toLocaleString()} tokens.`;
+  });
+})();
+</script>
+</body>
+</html>
