@@ -20,7 +20,7 @@ intro:
   core: 'Make the plan explicit. <b>Plan-and-execute</b>: produce a list (or DAG) of subtasks, then run them. <b>Search</b>: explore alternative partial solutions
     and evaluate them (Tree of Thoughts). <b>Replan</b> when results contradict the plan. For work you cannot predict, an <b>orchestrator</b> breaks the task down
     dynamically and delegates.'
-  hint: 'Previous: [ReAct: reasoning and acting](../03-react-loop/index.html) · [All decks](../index.html)'
+  hint: 'Previous: [ReAct: reasoning and acting](../03-react-loop/index.html) · Next: [Prompting and in-context learning →](../05-prompting/index.html) · [All decks](../index.html)'
 papers:
 - planandsolve
 - tot

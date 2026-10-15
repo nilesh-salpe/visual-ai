@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prompting and In-Context Learning</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Prompting and in-context learning" data-home="../index.html" data-home-label="Foundations">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual Agents · Foundations · 05</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-15</span><span class="status-note">Written from primary sources 2026-10-15; prompting guidance from the Claude docs on that date.</span></div>
+    <h1>Prompting and in-context learning</h1>
+    <p class="sub">How a model learns a task from its prompt alone: what in-context examples really teach, the biases that make few-shot prompts unstable, how to structure a prompt (role, documents, instructions, examples, query), many-shot prompting, and optimising prompts against an eval set.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>The same model gives very different results depending on wording, the examples chosen and even their order. In an agent the system prompt, tool descriptions and examples are the program, yet they are often edited by hand and never tested.</div>
+      <div class="c"><b>Core idea</b><b>In-context learning</b>: the model infers the task from instructions and examples in the prompt, with no weight updates. Examples mostly teach the <b>format, the label space and the input distribution</b>, not new facts. Write prompts like a brief for a capable new colleague: <b>role and reasons</b>, long documents <b>first</b>, numbered <b>instructions</b>, <b>3 to 5 varied examples</b> in tags, the <b>query last</b>, and a <b>schema</b> for the output. Then treat the prompt as code: version it, test it on an eval set, and optimise it.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Previous: <a href="../04-planning/index.html">Planning and task decomposition</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>The same task, very different results</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Unstable few-shot prompts</h3><p>Zhao et al.: the prompt format, the choice of training examples and even their order moved GPT-3 from near chance to near state of the art.</p></div>
+      <div class="card b"><h3>Systematic biases</h3><p>Models favour answers that are frequent among the examples (majority label bias), that appear last (recency bias), or are common in pretraining (common token bias).</p></div>
+      <div class="card c"><h3>Formatting alone</h3><p>Sclar et al.: semantically equivalent formats (separators, casing, spacing) changed accuracy by up to 76 points for LLaMA-2-13B.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Examples teach the format; instructions teach the goal</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>In-context learning</h3><p>GPT-3 showed that large models can perform a new task from a few input-output pairs in the prompt, with no gradient updates, and that larger models use those examples more efficiently.</p></div>
+      <div class="card a"><h3>What examples carry</h3><p>Min et al.: replacing the gold labels in demonstrations with random labels cost only 0 to 5% absolute on classification and multiple choice. The label space, the input distribution and the format mattered far more.</p></div>
+      <div class="card b"><h3>Instructions with reasons</h3><p>Explain why a rule exists ("read aloud by a text-to-speech engine, so never use ellipses") and say what to do rather than what not to do; the model generalises from the reason (Claude docs).</p></div>
+      <div class="card e"><h3>Many-shot</h3><p>With long contexts, hundreds or thousands of examples can override pretraining biases and perform comparably to fine-tuning on some tasks (Agarwal et al. 2024); model-generated rationales can stand in for scarce human ones.</p></div>
+    </div>
+<p>Calibration helps too: Zhao et al. estimate the model's bias from a content-free input such as "N/A" and correct for it, improving GPT-3 and GPT-2 accuracy by up to 30.0% absolute.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>Anatomy of a prompt</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;The stable part first: the role, the goal and rules with their reasons, then tool definitions. Keeping it identical across requests also makes it cacheable.&quot;, &quot;Long documents (20K+ tokens) go near the top, above the instructions and the question: the Claude docs report queries at the end can improve response quality by up to 30% on complex, multi-document inputs.&quot;, &quot;Numbered instructions, then 3 to 5 examples that are relevant, varied and wrapped in tags so they cannot be mistaken for instructions.&quot;, &quot;The specific question or input comes last.&quot;, &quot;For machine-read output, constrain it with a schema (structured outputs, or a tool with an enum of valid labels) rather than hoping for the format.&quot;, &quot;Every prompt change is scored on an eval set before it ships; failures drive the next revision.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 280" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="1"><line x1="135.0" y1="56.0" x2="135.0" y2="58.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="2"><line x1="135.0" y1="108.0" x2="135.0" y2="110.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="135.0" y1="160.0" x2="135.0" y2="162.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="135.0" y1="212.0" x2="135.0" y2="214.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="262.0" y1="239.5" x2="326.0" y2="239.3" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="462.0" y1="239.0" x2="496.0" y2="239.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="6"><line x1="575.0" y1="209.0" x2="575.0" y2="100.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="6"><line x1="497.2" y1="71.7" x2="263.2" y2="52.5" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="10" width="250" height="44" rx="10"/><text class="dg-text" x="135.0" y="30.0" text-anchor="middle">System prompt</text><text class="dg-sub" x="135.0" y="46.0" text-anchor="middle">role · goal · rules with reasons</text></g><g class="dg-node f" data-step="1"><rect x="10" y="62" width="250" height="44" rx="10"/><text class="dg-text" x="135.0" y="82.0" text-anchor="middle">Tool definitions</text><text class="dg-sub" x="135.0" y="98.0" text-anchor="middle">names · descriptions · schemas</text></g><g class="dg-node c" data-step="2"><rect x="10" y="114" width="250" height="44" rx="10"/><text class="dg-text" x="135.0" y="134.0" text-anchor="middle">Long documents</text><text class="dg-sub" x="135.0" y="150.0" text-anchor="middle">placed near the top</text></g><g class="dg-node b" data-step="3"><rect x="10" y="166" width="250" height="44" rx="10"/><text class="dg-text" x="135.0" y="186.0" text-anchor="middle">Instructions and examples</text><text class="dg-sub" x="135.0" y="202.0" text-anchor="middle">numbered steps · 3–5 tagged examples</text></g><g class="dg-node a" data-step="4"><rect x="10" y="218" width="250" height="44" rx="10"/><text class="dg-text" x="135.0" y="238.0" text-anchor="middle">Query</text><text class="dg-sub" x="135.0" y="254.0" text-anchor="middle">last in the prompt</text></g><g class="dg-node e" data-step="5"><rect x="330" y="211" width="130" height="56" rx="10"/><text class="dg-text" x="395.0" y="244.0" text-anchor="middle">Model</text></g><g class="dg-node e" data-step="5"><rect x="500" y="211" width="150" height="56" rx="10"/><text class="dg-text" x="575.0" y="237.0" text-anchor="middle">Output</text><text class="dg-sub" x="575.0" y="253.0" text-anchor="middle">schema-validated</text></g><g class="dg-node d" data-step="6"><rect x="500" y="40" width="150" height="56" rx="10"/><text class="dg-text" x="575.0" y="66.0" text-anchor="middle">Eval set</text><text class="dg-sub" x="575.0" y="82.0" text-anchor="middle">test cases + grader</text></g><g data-step="6"><text class="dg-label" x="575.0" y="149.5" text-anchor="middle">score</text></g><g data-step="6"><text class="dg-label" x="380.2" y="77.1" text-anchor="middle">revise</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>A prompt, written out</h2>
+    <hr>
+<div class="visual"><pre class="code">[system]
+You triage Acme billing tickets.
+Each goes to a human queue, and a
+wrong queue delays refunds by days,
+so answer &quot;unsure&quot; if no label fits.
+
+[user]
+&lt;documents&gt;
+ &lt;document index=&quot;1&quot;&gt;
+  &lt;source&gt;refunds.md&lt;/source&gt;
+  &lt;document_content&gt;
+  ...
+  &lt;/document_content&gt;
+ &lt;/document&gt;
+&lt;/documents&gt;
+
+&lt;instructions&gt;
+1. Read the ticket.
+2. Pick one label: refund,
+   invoice, fraud or unsure.
+3. Quote the sentence that
+   decided it.
+&lt;/instructions&gt;
+
+&lt;examples&gt;
+ &lt;example&gt;
+  &lt;ticket&gt;Charged twice in May.
+  &lt;/ticket&gt;
+  &lt;label&gt;refund&lt;/label&gt;
+ &lt;/example&gt;
+ ... 3 to 5 varied examples,
+ balanced across labels,
+ in shuffled order ...
+&lt;/examples&gt;
+
+&lt;ticket&gt;{ticket_text}&lt;/ticket&gt;</pre></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Technique</th>
+<th>Use it for</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>XML (Extensible Markup Language) tags around documents, examples, inputs</td>
+<td>unambiguous structure</td>
+<td>Claude docs: tags help parse complex prompts</td>
+</tr>
+<tr>
+<td>Balanced, shuffled examples</td>
+<td>avoiding majority-label and recency bias</td>
+<td>Zhao et al. 2021; Lu et al. 2022 (order alone spans near state of the art to chance)</td>
+</tr>
+<tr>
+<td>Quote first, then answer</td>
+<td>grounding answers in long documents</td>
+<td>Claude docs; see Hallucination and factuality in Evals</td>
+</tr>
+<tr>
+<td>Structured outputs or an enum tool</td>
+<td>classification and JSON (JavaScript Object Notation) outputs</td>
+<td>Claude docs: the replacement for prefilled responses</td>
+</tr>
+<tr>
+<td>Prefilling the assistant turn <span class="lbl lbl-legacy" title="superseded; mostly found in older systems">Legacy</span></td>
+<td>forcing a format by starting the answer</td>
+<td>returns a 400 error on Claude 4.6 models and later</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Choice</th>
+<th>Benefit</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Zero-shot instructions</td>
+<td>short prompt; no examples to maintain</td>
+<td>the format and edge cases are left to the model</td>
+</tr>
+<tr>
+<td>Few-shot (3 to 5 examples)</td>
+<td>reliable format, tone and label space</td>
+<td>example bias; extra tokens on every call</td>
+</tr>
+<tr>
+<td>Many-shot (hundreds of examples)</td>
+<td>can rival fine-tuning, no training run</td>
+<td>long, costly prompts unless cached; curation effort</td>
+</tr>
+<tr>
+<td>Fine-tuning instead</td>
+<td>short prompts; behaviour built in</td>
+<td>training pipeline; stale when the task changes (RAG (retrieval-augmented generation) vs fine-tuning deck)</td>
+</tr>
+<tr>
+<td>Hand-written prompts</td>
+<td>fast to start, readable</td>
+<td>brittle; no evidence a change helped</td>
+</tr>
+<tr>
+<td>Optimised prompts (DSPy, OPRO (Optimization by Prompting))</td>
+<td>measured gains: DSPy beat standard few-shot by over 25% (GPT-3.5); OPRO up to 8% on GSM8K (Grade School Math 8K)</td>
+<td>needs an eval set and a metric; can overfit it</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Example bias</td>
+<td>answers drift to the label most frequent or last in the examples</td>
+<td>balance labels; shuffle order; calibrate</td>
+</tr>
+<tr>
+<td>Examples copied too literally</td>
+<td>outputs mimic an example's wording or length</td>
+<td>vary the examples; state that they are illustrations</td>
+</tr>
+<tr>
+<td>Format sensitivity</td>
+<td>accuracy moves with a separator or casing change</td>
+<td>test several formats; report the spread, not the best one</td>
+</tr>
+<tr>
+<td>Unexplained rules</td>
+<td>the model follows the letter and misses the intent</td>
+<td>give the reason for each rule</td>
+</tr>
+<tr>
+<td>Model upgrade regressions</td>
+<td>a prompt tuned for one model misbehaves on the next</td>
+<td>pin model versions; rerun the eval set on every upgrade</td>
+</tr>
+<tr>
+<td>Untrusted text in the prompt</td>
+<td>retrieved pages or tool results contain instructions</td>
+<td>separate data from instructions with tags; treat it as data (Safety and reliability deck)</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Prompts are code</h3><p>Keep them in version control with tests; review changes; log the prompt version with every request.</p></div>
+      <div class="card c"><h3>Evals gate changes</h3><p>A fixed set of real cases with graders; every prompt or model change runs against it (Evaluating agents deck).</p></div>
+      <div class="card b"><h3>Cache the stable prefix</h3><p>System prompt, tools and documents rarely change; keep them first and byte-identical so prompt caching applies.</p></div>
+      <div class="card e"><h3>Re-tune per model</h3><p>Guidance changes between model generations (for example, prefill removal); read the provider's current prompting guide when you upgrade.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2005.14165" target="_blank" rel="noopener">Language Models are Few-Shot Learners (GPT-3)</a>
+        <div class="meta">Brown et al. · NeurIPS 2020</div>
+        <p>Besides in-context learning, a systematic contamination study: 13-gram overlap flags and clean vs dirty scores.</p><div class="num">Remember: 13-gram overlap; a filtering bug left some overlap in</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2202.12837" target="_blank" rel="noopener">Rethinking the Role of Demonstrations: What Makes In-Context Learning Work?</a>
+        <div class="meta">Min et al. · EMNLP 2022</div>
+        <p>Ground-truth labels in demonstrations matter little; the label space, the distribution of input text and the format drive in-context learning.</p><div class="num">Remember: random labels cost 0–5% absolute</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2102.09690" target="_blank" rel="noopener">Calibrate Before Use: Improving Few-Shot Performance of Language Models</a>
+        <div class="meta">Zhao, Wallace, Feng, Klein, Singh · ICML 2021</div>
+        <p>Few-shot accuracy swings with format, examples and order because of majority label, recency and common token biases; contextual calibration with a content-free input corrects them.</p><div class="num">Remember: up to 30.0% absolute accuracy gain (GPT-3, GPT-2)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2104.08786" target="_blank" rel="noopener">Fantastically Ordered Prompts and Where to Find Them: Overcoming Few-Shot Prompt Order Sensitivity</a>
+        <div class="meta">Lu et al. · ACL 2022</div>
+        <p>The order of the same few-shot examples can make the difference between near state-of-the-art and random-guess performance, across model sizes.</p><div class="num">Remember: order alone: near state of the art to chance</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2310.11324" target="_blank" rel="noopener">Quantifying Language Models' Sensitivity to Spurious Features in Prompt Design</a>
+        <div class="meta">Sclar et al. · ICLR 2024</div>
+        <p>Shows equivalent prompt formats (separators, casing, spacing) change accuracy dramatically, and proposes reporting the spread (FormatSpread).</p><div class="num">Remember: up to 76 accuracy points (LLaMA-2-13B)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2404.11018" target="_blank" rel="noopener">Many-Shot In-Context Learning</a>
+        <div class="meta">Agarwal et al. · NeurIPS 2024</div>
+        <p>Hundreds or thousands of in-context examples give large gains over few-shot, can override pretraining biases and perform comparably to fine-tuning; Reinforced ICL uses model-generated rationales.</p><div class="num">Remember: Gemini 1.5 Pro; gains across generative and discriminative tasks</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2310.03714" target="_blank" rel="noopener">DSPy: Compiling Declarative Language Model Calls into Self-Improving Pipelines</a>
+        <div class="meta">Khattab et al. · arXiv 2023</div>
+        <p>Programs of declarative LM modules whose prompts and demonstrations are optimised (compiled) against a metric.</p><div class="num">Remember: over 25% (GPT-3.5) and 65% (llama2-13b-chat) above standard few-shot prompting</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2309.03409" target="_blank" rel="noopener">Large Language Models as Optimizers (OPRO)</a>
+        <div class="meta">Yang et al. · ICLR 2024</div>
+        <p>An LLM proposes new instructions given previous ones and their scores; the best prompts beat human-designed ones.</p><div class="num">Remember: up to 8% on GSM8K and up to 50% on Big-Bench Hard</div></div>
+      <div class="paper-item"><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices" target="_blank" rel="noopener">Prompting best practices (Claude documentation)</a>
+        <div class="meta">Anthropic · Claude platform docs 2026</div>
+        <p>Be clear and direct, explain the reasons for rules, use 3–5 examples in example tags, structure with XML tags, put long documents first and the query last; prefilled responses are not supported from Claude 4.6 models (use structured outputs).</p><div class="num">Remember: queries at the end: up to 30% better response quality on long, complex inputs</div></div>
+      <div class="paper-item"><a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">Effective context engineering for AI (artificial intelligence) agents</a>
+        <div class="meta">Anthropic · Anthropic Engineering 2025</div>
+        <p>Context as a finite "attention budget" (context rot); just-in-time retrieval; compaction, structured note-taking and sub-agents for long-horizon tasks.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>

@@ -506,16 +506,18 @@ def write_case_hub():
     print('wrote system-design/index.html')
 
 AGENT_HUBS = {
-    'agent-foundations': ('Agent foundations', 'What an agent is, how models call tools, the ReAct loop, and planning: the building blocks every agent shares.', [
+    'agent-foundations': ('Agent foundations', 'What an agent is, how models call tools, the ReAct loop, planning, and prompting: the building blocks every agent shares.', [
         ('01-what-is-an-agent', 'What an agent is', 'Workflows vs agents; the decide-act-observe loop.'),
         ('02-tool-calling', 'Tool calling', 'Schemas, structured calls, results, parallel calls, tool choice.'),
         ('03-react-loop', 'ReAct: reasoning and acting', 'Thought → action → observation; Reflexion.'),
-        ('04-planning', 'Planning and task decomposition', 'Plan-and-execute, task DAGs, Tree of Thoughts, replanning.')]),
-    'agent-context': ('Agent context', 'What an agent knows: memory and context management, agentic retrieval, and the Model Context Protocol for connecting tools and data.', [
+        ('04-planning', 'Planning and task decomposition', 'Plan-and-execute, task DAGs, Tree of Thoughts, replanning.'),
+        ('05-prompting', 'Prompting and in-context learning', 'What examples teach, few-shot biases, prompt anatomy, many-shot, optimisation.')]),
+    'agent-context': ('Agent context', 'What an agent knows: memory and context management, agentic retrieval, the Model Context Protocol and A2A for connecting tools, data and other agents, and when to use retrieval, fine-tuning or long context.', [
         ('01-memory', 'Memory and context management', 'Context rot, compaction, notes, scored long-term memory.'),
         ('02-agentic-rag', 'Agentic retrieval (RAG)', 'Retrieve, grade, refine, cite; Self-RAG and CRAG.'),
         ('03-mcp', 'Model Context Protocol (MCP)', 'Hosts, clients, servers; the stateless 2026-07-28 revision.'),
-        ('04-a2a', 'Agent2Agent protocol (A2A)', 'Agent Cards, tasks, artifacts; agents talking to agents (v1.0).')]),
+        ('04-a2a', 'Agent2Agent protocol (A2A)', 'Agent Cards, tasks, artifacts; agents talking to agents (v1.0).'),
+        ('05-rag-vs-finetuning', 'RAG, fine-tuning or long context', 'What each is for, the evidence, cost per query, routing (Self-Route).')]),
     'agent-systems': ('Agent systems', 'Larger agent architectures: lead agents with parallel subagents, and agents that operate computers and browsers.', [
         ('01-multi-agent', 'Multi-agent systems', 'Orchestrator-workers, delegation, the 15× token cost.'),
         ('02-computer-use', 'Computer and browser use', 'Screenshot-action loops, grounding, sandboxing.'),

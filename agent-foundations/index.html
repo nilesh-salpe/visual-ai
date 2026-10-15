@@ -10,9 +10,9 @@
 <body>
 <div class="hub">
   <a class="brand" href="../agents/index.html">← Visual Agents</a>
-  <div class="label" style="margin-top:28px">Visual guide · 4 decks</div>
+  <div class="label" style="margin-top:28px">Visual guide · 5 decks</div>
   <h1>Agent foundations</h1>
-  <p class="lede">What an agent is, how models call tools, the ReAct loop, and planning: the building blocks every agent shares. Each deck follows the agent template: problem, core idea, high-level design, low-level design, trade-offs, failure modes and challenges in production, with steppable diagrams and sources checked against the primary papers, specifications and documentation.</p>
+  <p class="lede">What an agent is, how models call tools, the ReAct loop, planning, and prompting: the building blocks every agent shares. Each deck follows the agent template: problem, core idea, high-level design, low-level design, trade-offs, failure modes and challenges in production, with steppable diagrams and sources checked against the primary papers, specifications and documentation.</p>
 <!--x:map--><style>
 .bigmap { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding: 4px 2px 10px; }
 .bigmap .stage { flex: 1 1 0; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
@@ -26,11 +26,11 @@
 </style>
   <div class="visual" style="margin-top:22px">
     <h3 style="margin:0 0 10px">The big picture</h3>
-    <div class="bigmap"><div class="stage"><h4>Basics</h4><a href="01-what-is-an-agent/index.html"><span>01</span>What an agent is</a><a href="02-tool-calling/index.html"><span>02</span>Tool calling</a></div><div class="arrow">→</div><div class="stage"><h4>Control</h4><a href="03-react-loop/index.html"><span>03</span>ReAct: reasoning and acting</a><a href="04-planning/index.html"><span>04</span>Planning and task decomposition</a></div></div>
+    <div class="bigmap"><div class="stage"><h4>Basics</h4><a href="01-what-is-an-agent/index.html"><span>01</span>What an agent is</a><a href="02-tool-calling/index.html"><span>02</span>Tool calling</a></div><div class="arrow">→</div><div class="stage"><h4>Control</h4><a href="03-react-loop/index.html"><span>03</span>ReAct: reasoning and acting</a><a href="04-planning/index.html"><span>04</span>Planning and task decomposition</a></div><div class="arrow">→</div><div class="stage"><h4>Instructions</h4><a href="05-prompting/index.html"><span>05</span>Prompting and in-context learning</a></div></div>
     <div class="hub-links"><a class="btn" href="reading-list.html">📚 Reading list</a><a class="btn" href="../glossary/index.html">🔤 Glossary</a></div>
   </div>
 <!--/x:map-->
-  <div class="hub-grid"><a class="hub-card" href="01-what-is-an-agent/index.html"><div class="n">01</div><h3>What an agent is</h3><p>Workflows vs agents; the decide-act-observe loop.</p></a><a class="hub-card" href="02-tool-calling/index.html"><div class="n">02</div><h3>Tool calling</h3><p>Schemas, structured calls, results, parallel calls, tool choice.</p></a><a class="hub-card" href="03-react-loop/index.html"><div class="n">03</div><h3>ReAct: reasoning and acting</h3><p>Thought → action → observation; Reflexion.</p></a><a class="hub-card" href="04-planning/index.html"><div class="n">04</div><h3>Planning and task decomposition</h3><p>Plan-and-execute, task DAGs (directed acyclic graphs), Tree of Thoughts, replanning.</p></a></div>
+  <div class="hub-grid"><a class="hub-card" href="01-what-is-an-agent/index.html"><div class="n">01</div><h3>What an agent is</h3><p>Workflows vs agents; the decide-act-observe loop.</p></a><a class="hub-card" href="02-tool-calling/index.html"><div class="n">02</div><h3>Tool calling</h3><p>Schemas, structured calls, results, parallel calls, tool choice.</p></a><a class="hub-card" href="03-react-loop/index.html"><div class="n">03</div><h3>ReAct: reasoning and acting</h3><p>Thought → action → observation; Reflexion.</p></a><a class="hub-card" href="04-planning/index.html"><div class="n">04</div><h3>Planning and task decomposition</h3><p>Plan-and-execute, task DAGs (directed acyclic graphs), Tree of Thoughts, replanning.</p></a><a class="hub-card" href="05-prompting/index.html"><div class="n">05</div><h3>Prompting and in-context learning</h3><p>What examples teach, few-shot biases, prompt anatomy, many-shot, optimisation.</p><div><span class="lbl lbl-current">Current practice</span></div></a></div>
   <p class="cite" style="margin-top:26px">Sources: See each deck's Key papers slide and this topic's reading list.</p>
 </div>
 </body>

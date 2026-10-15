@@ -11,7 +11,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="index.html">← Agent context</a>
-  <div class="label" style="margin-top:28px">Reading list · 14 papers and docs</div>
+  <div class="label" style="margin-top:28px">Reading list · 23 papers and docs</div>
   <h1>Agent context: key papers</h1>
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">
@@ -25,10 +25,10 @@
       <div class="meta">Park et al. · UIST 2023 · cited in <a href="01-memory/index.html" style="font-weight:500;color:var(--a)">Memory and context management</a></div>
       <p>A memory stream of observations retrieved by recency, importance and relevance, periodically synthesised into reflections that guide planning.</p><div class="num">Remember: retrieval score = recency + importance + relevance (each min-max scaled, weights 1)</div></div>
     <div class="paper-item"><a href="https://arxiv.org/abs/2307.03172" target="_blank" rel="noopener">Lost in the Middle: How Language Models Use Long Contexts</a>
-      <div class="meta">Liu et al. · TACL 2024 · cited in <a href="01-memory/index.html" style="font-weight:500;color:var(--a)">Memory and context management</a></div>
+      <div class="meta">Liu et al. · TACL 2024 · cited in <a href="01-memory/index.html" style="font-weight:500;color:var(--a)">Memory and context management</a>, <a href="05-rag-vs-finetuning/index.html" style="font-weight:500;color:var(--a)">RAG, fine-tuning or long context</a></div>
       <p>Performance is often highest when relevant information is at the beginning or end of the context and degrades when it is in the middle.</p></div>
     <div class="paper-item"><a href="https://arxiv.org/abs/2005.11401" target="_blank" rel="noopener">Retrieval-Augmented Generation for Knowledge-Intensive NLP (natural language processing) Tasks</a>
-      <div class="meta">Lewis et al. · NeurIPS 2020 · cited in <a href="02-agentic-rag/index.html" style="font-weight:500;color:var(--a)">Agentic retrieval (RAG)</a></div>
+      <div class="meta">Lewis et al. · NeurIPS 2020 · cited in <a href="02-agentic-rag/index.html" style="font-weight:500;color:var(--a)">Agentic retrieval (RAG)</a>, <a href="05-rag-vs-finetuning/index.html" style="font-weight:500;color:var(--a)">RAG, fine-tuning or long context</a></div>
       <p>Combines a seq2seq generator with a dense retriever over Wikipedia (non-parametric memory), trained end to end.</p></div>
     <div class="paper-item"><a href="https://arxiv.org/abs/2310.11511" target="_blank" rel="noopener">Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection</a>
       <div class="meta">Asai et al. · ICLR 2024 · cited in <a href="02-agentic-rag/index.html" style="font-weight:500;color:var(--a)">Agentic retrieval (RAG)</a></div>
@@ -57,6 +57,33 @@
     <div class="paper-item"><a href="https://www.linuxfoundation.org/press/a2a-protocol-surpasses-150-organizations-lands-in-major-cloud-platforms-and-sees-enterprise-production-use-in-first-year" target="_blank" rel="noopener">A2A protocol surpasses 150 organizations, lands in major cloud platforms</a>
       <div class="meta">Linux Foundation · Linux Foundation press release 2026 · cited in <a href="04-a2a/index.html" style="font-weight:500;color:var(--a)">Agent2Agent protocol (A2A)</a></div>
       <p>One-year milestone: version 1.0 is the first stable specification; integrations in Azure AI Foundry, Copilot Studio and Amazon Bedrock AgentCore Runtime.</p><div class="num">Remember: more than 150 supporting organizations (April 2026)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2312.05934" target="_blank" rel="noopener">Fine-Tuning or Retrieval? Comparing Knowledge Injection in LLMs (large language models)</a>
+      <div class="meta">Ovadia, Brief, Mishaeli, Elisha · arXiv (Microsoft) 2023 · cited in <a href="05-rag-vs-finetuning/index.html" style="font-weight:500;color:var(--a)">RAG, fine-tuning or long context</a></div>
+      <p>Retrieval consistently outperformed unsupervised fine-tuning for injecting both existing and new knowledge; training on many paraphrases of a fact helps fine-tuning.</p><div class="num">Remember: current events, Mistral 7B: 0.481 base, 0.504 fine-tuned, 0.588 with paraphrases, 0.875 with RAG</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2405.05904" target="_blank" rel="noopener">Does Fine-Tuning LLMs on New Knowledge Encourage Hallucinations?</a>
+      <div class="meta">Gekhman et al. · EMNLP 2024 · cited in <a href="05-rag-vs-finetuning/index.html" style="font-weight:500;color:var(--a)">RAG, fine-tuning or long context</a></div>
+      <p>Fine-tuning examples with knowledge the model lacks are learned much more slowly than known ones and, once learned, linearly increase hallucination; early stopping mitigates it.</p><div class="num">Remember: models acquire new facts through pretraining, mostly not fine-tuning</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.16833" target="_blank" rel="noopener">Retrieval Augmented Generation or Long-Context LLMs? A Comprehensive Study and Hybrid Approach</a>
+      <div class="meta">Li et al. · EMNLP Industry 2024 · cited in <a href="05-rag-vs-finetuning/index.html" style="font-weight:500;color:var(--a)">RAG, fine-tuning or long context</a></div>
+      <p>Long context beats RAG on average when resourced sufficiently, but RAG is far cheaper; Self-Route lets the model declare a query unanswerable from retrieved chunks and only then uses long context.</p><div class="num">Remember: identical predictions on over 60% of queries; cost −65% (Gemini-1.5-Pro), −39% (GPT-4o)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2404.06654" target="_blank" rel="noopener">RULER: What's the Real Context Size of Your Long-Context Language Models?</a>
+      <div class="meta">Hsieh et al. · COLM 2024 · cited in <a href="05-rag-vs-finetuning/index.html" style="font-weight:500;color:var(--a)">RAG, fine-tuning or long context</a></div>
+      <p>Synthetic long-context benchmark beyond needle-in-a-haystack (multi-key retrieval, multi-hop tracing, aggregation); models degrade sharply as length grows.</p><div class="num">Remember: 17 models; only about half of those claiming 32K+ perform satisfactorily at 32K</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2403.10131" target="_blank" rel="noopener">RAFT: Adapting Language Model to Domain Specific RAG</a>
+      <div class="meta">Zhang et al. · arXiv 2024 · cited in <a href="05-rag-vs-finetuning/index.html" style="font-weight:500;color:var(--a)">RAG, fine-tuning or long context</a></div>
+      <p>Fine-tune with questions, a golden document and distractor documents (and some examples with no golden document), with chain-of-thought answers that quote the source.</p><div class="num">Remember: gains on PubMed, HotpotQA and Gorilla in-domain RAG</div></div>
+    <div class="paper-item"><a href="https://www.anthropic.com/news/contextual-retrieval" target="_blank" rel="noopener">Introducing Contextual Retrieval</a>
+      <div class="meta">Anthropic · Anthropic News 2024 · cited in <a href="05-rag-vs-finetuning/index.html" style="font-weight:500;color:var(--a)">RAG, fine-tuning or long context</a></div>
+      <p>Prepend 50-100 tokens of chunk-specific context (written by an LLM from the whole document) before embedding and BM25 (Okapi Best Matching 25 ranking function) indexing; retrieve top 150, rerank, keep 20. Knowledge bases under 200,000 tokens can go straight into the prompt.</p><div class="num">Remember: top-20 retrieval failures 5.7% → 3.7% (−35%), 2.9% with BM25 (−49%), 1.9% with reranking (−67%); $1.02 per million document tokens</div></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching" target="_blank" rel="noopener">Prompt caching</a>
+      <div class="meta">Anthropic documentation · platform.claude.com 2026 · cited in <a href="05-rag-vs-finetuning/index.html" style="font-weight:500;color:var(--a)">RAG, fine-tuning or long context</a></div>
+      <p>Reuse of cached prompt prefixes: 5-minute cache writes cost 1.25× base input, 1-hour writes 2×, and reads 0.1× on most models (lower on some newer ones).</p></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/build-with-claude/context-windows" target="_blank" rel="noopener">Context windows (Claude documentation)</a>
+      <div class="meta">Anthropic · Claude platform docs 2026 · cited in <a href="05-rag-vs-finetuning/index.html" style="font-weight:500;color:var(--a)">RAG, fine-tuning or long context</a></div>
+      <p>Context window up to 1M tokens depending on the model; more context is not automatically better, because accuracy and recall degrade as token count grows (context rot).</p><div class="num">Remember: up to 1M tokens; 200k on older models</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2106.09685" target="_blank" rel="noopener">LoRA: Low-Rank Adaptation of Large Language Models</a>
+      <div class="meta">Hu et al. · ICLR 2022 · cited in <a href="05-rag-vs-finetuning/index.html" style="font-weight:500;color:var(--a)">RAG, fine-tuning or long context</a></div>
+      <p>Freezes the pretrained weights and trains a low-rank update BA (B initialized to zero) that can be merged after training.</p><div class="num">Remember: 10,000× fewer trainable parameters, 3× less GPU (graphics processing unit) memory (GPT-3 175B)</div></div>
   </div>
 </div>
 

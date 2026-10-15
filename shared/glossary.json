@@ -899,6 +899,18 @@
   },
   "GKD": {
    "exp": "Generalized Knowledge Distillation"
+  },
+  "RAFT": {
+   "exp": "retrieval-augmented fine-tuning"
+  },
+  "ICL": {
+   "exp": "in-context learning"
+  },
+  "XML": {
+   "exp": "Extensible Markup Language"
+  },
+  "OPRO": {
+   "exp": "Optimization by Prompting"
   }
  },
  "exempt": [
@@ -1332,6 +1344,9 @@
   "DistilBERT",
   "EMC",
   "MiniLLM",
-  "Minitron"
+  "Minitron",
+  "PubMed",
+  "RULER",
+  "DSPy"
  ]
 }

@@ -11,7 +11,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="index.html">← Agent foundations</a>
-  <div class="label" style="margin-top:28px">Reading list · 10 papers and docs</div>
+  <div class="label" style="margin-top:28px">Reading list · 20 papers and docs</div>
   <h1>Agent foundations: key papers</h1>
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">
@@ -45,6 +45,36 @@
     <div class="paper-item"><a href="https://arxiv.org/abs/2303.17580" target="_blank" rel="noopener">HuggingGPT: Solving AI (artificial intelligence) Tasks with ChatGPT and its Friends in Hugging Face</a>
       <div class="meta">Shen et al. · NeurIPS 2023 · cited in <a href="04-planning/index.html" style="font-weight:500;color:var(--a)">Planning and task decomposition</a></div>
       <p>An LLM (large language model) controller plans subtasks, selects specialist models by their descriptions, executes them and summarises the results.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2005.14165" target="_blank" rel="noopener">Language Models are Few-Shot Learners (GPT-3)</a>
+      <div class="meta">Brown et al. · NeurIPS 2020 · cited in <a href="05-prompting/index.html" style="font-weight:500;color:var(--a)">Prompting and in-context learning</a></div>
+      <p>Besides in-context learning, a systematic contamination study: 13-gram overlap flags and clean vs dirty scores.</p><div class="num">Remember: 13-gram overlap; a filtering bug left some overlap in</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2202.12837" target="_blank" rel="noopener">Rethinking the Role of Demonstrations: What Makes In-Context Learning Work?</a>
+      <div class="meta">Min et al. · EMNLP 2022 · cited in <a href="05-prompting/index.html" style="font-weight:500;color:var(--a)">Prompting and in-context learning</a></div>
+      <p>Ground-truth labels in demonstrations matter little; the label space, the distribution of input text and the format drive in-context learning.</p><div class="num">Remember: random labels cost 0–5% absolute</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2102.09690" target="_blank" rel="noopener">Calibrate Before Use: Improving Few-Shot Performance of Language Models</a>
+      <div class="meta">Zhao, Wallace, Feng, Klein, Singh · ICML 2021 · cited in <a href="05-prompting/index.html" style="font-weight:500;color:var(--a)">Prompting and in-context learning</a></div>
+      <p>Few-shot accuracy swings with format, examples and order because of majority label, recency and common token biases; contextual calibration with a content-free input corrects them.</p><div class="num">Remember: up to 30.0% absolute accuracy gain (GPT-3, GPT-2)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2104.08786" target="_blank" rel="noopener">Fantastically Ordered Prompts and Where to Find Them: Overcoming Few-Shot Prompt Order Sensitivity</a>
+      <div class="meta">Lu et al. · ACL 2022 · cited in <a href="05-prompting/index.html" style="font-weight:500;color:var(--a)">Prompting and in-context learning</a></div>
+      <p>The order of the same few-shot examples can make the difference between near state-of-the-art and random-guess performance, across model sizes.</p><div class="num">Remember: order alone: near state of the art to chance</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2310.11324" target="_blank" rel="noopener">Quantifying Language Models' Sensitivity to Spurious Features in Prompt Design</a>
+      <div class="meta">Sclar et al. · ICLR 2024 · cited in <a href="05-prompting/index.html" style="font-weight:500;color:var(--a)">Prompting and in-context learning</a></div>
+      <p>Shows equivalent prompt formats (separators, casing, spacing) change accuracy dramatically, and proposes reporting the spread (FormatSpread).</p><div class="num">Remember: up to 76 accuracy points (LLaMA-2-13B)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2404.11018" target="_blank" rel="noopener">Many-Shot In-Context Learning</a>
+      <div class="meta">Agarwal et al. · NeurIPS 2024 · cited in <a href="05-prompting/index.html" style="font-weight:500;color:var(--a)">Prompting and in-context learning</a></div>
+      <p>Hundreds or thousands of in-context examples give large gains over few-shot, can override pretraining biases and perform comparably to fine-tuning; Reinforced ICL uses model-generated rationales.</p><div class="num">Remember: Gemini 1.5 Pro; gains across generative and discriminative tasks</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2310.03714" target="_blank" rel="noopener">DSPy: Compiling Declarative Language Model Calls into Self-Improving Pipelines</a>
+      <div class="meta">Khattab et al. · arXiv 2023 · cited in <a href="05-prompting/index.html" style="font-weight:500;color:var(--a)">Prompting and in-context learning</a></div>
+      <p>Programs of declarative LM modules whose prompts and demonstrations are optimised (compiled) against a metric.</p><div class="num">Remember: over 25% (GPT-3.5) and 65% (llama2-13b-chat) above standard few-shot prompting</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2309.03409" target="_blank" rel="noopener">Large Language Models as Optimizers (OPRO)</a>
+      <div class="meta">Yang et al. · ICLR 2024 · cited in <a href="05-prompting/index.html" style="font-weight:500;color:var(--a)">Prompting and in-context learning</a></div>
+      <p>An LLM proposes new instructions given previous ones and their scores; the best prompts beat human-designed ones.</p><div class="num">Remember: up to 8% on GSM8K and up to 50% on Big-Bench Hard</div></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices" target="_blank" rel="noopener">Prompting best practices (Claude documentation)</a>
+      <div class="meta">Anthropic · Claude platform docs 2026 · cited in <a href="05-prompting/index.html" style="font-weight:500;color:var(--a)">Prompting and in-context learning</a></div>
+      <p>Be clear and direct, explain the reasons for rules, use 3–5 examples in example tags, structure with XML tags, put long documents first and the query last; prefilled responses are not supported from Claude 4.6 models (use structured outputs).</p><div class="num">Remember: queries at the end: up to 30% better response quality on long, complex inputs</div></div>
+    <div class="paper-item"><a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">Effective context engineering for AI (artificial intelligence) agents</a>
+      <div class="meta">Anthropic · Anthropic Engineering 2025 · cited in <a href="05-prompting/index.html" style="font-weight:500;color:var(--a)">Prompting and in-context learning</a></div>
+      <p>Context as a finite "attention budget" (context rot); just-in-time retrieval; compaction, structured note-taking and sub-agents for long-horizon tasks.</p></div>
   </div>
 </div>
 

@@ -25,7 +25,7 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
     ('Data and training', [
         ('pretraining-data', 'Topic · 10 decks + 6 Colab notebooks', 'Web crawling and pretraining data', 'How crawlers work and stay polite, robots.txt and consent, text extraction, quality filtering, MinHash deduplication, PII and safety filtering, data mixtures and the C4 → FineWeb → Llama 3 pipelines.', ['crawler', 'robots.txt', 'MinHash', 'FineWeb']),
         ('distributed', 'Topic · 11 decks + 8 Colab notebooks', 'Distributed training &amp; reliability', 'Data, sharded (ZeRO/FSDP), tensor, pipeline, context and expert parallelism, activation recomputation, mixed precision and FP8, 4D layouts, checkpointing and loss spikes.', ['FSDP', 'pipeline', 'ring attention', 'FP8']),
-        ('post-training', 'Topic · 9 decks + 8 Colab notebooks', 'Post-training LLMs', 'SFT, LoRA and QLoRA, reward models, RLHF with PPO, reward hacking, DPO and KTO, RL with verifiable rewards (GRPO, DeepSeek-R1), and Constitutional AI.', ['RLHF', 'DPO', 'GRPO', 'LoRA']),
+        ('post-training', 'Topic · 10 decks + 8 Colab notebooks', 'Post-training LLMs', 'SFT, LoRA and QLoRA, reward models, RLHF with PPO, reward hacking, DPO and KTO, RL with verifiable rewards (GRPO, DeepSeek-R1), Constitutional AI, and knowledge distillation.', ['RLHF', 'DPO', 'GRPO', 'LoRA']),
     ]),
     ('Frameworks', [
         ('pytorch', 'Framework · 9 decks + 9 Colab notebooks', 'PyTorch for LLMs', 'Tensors and views, autograd, nn.Module, the training loop, data pipelines, mixed precision, torch.compile and SDPA, DDP and FSDP2, and a tiny GPT. Checked against PyTorch 2.14.1.', ['autograd', 'SDPA', 'torch.compile', 'FSDP2']),
@@ -40,15 +40,15 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
         ('system-design', 'Case studies · 4 decks + 4 design docs', 'System design case studies', 'End-to-end designs: serving a chat assistant, an enterprise RAG assistant, an autonomous coding agent, and planning a pretraining run.', ['capacity', 'KV cache', 'checkpoints', 'trade-offs']),
     ]),
     ('Serving and evaluation', [
-        ('inference', 'Topic · 10 decks + 12 Colab notebooks', 'LLM Inference and Serving', 'Prefill vs decode, KV cache, continuous batching, chunked prefill, PagedAttention, speculative decoding, quantization, tensor parallelism, disaggregation, with hands-on notebooks.', ['KV cache', 'vLLM', 'speculative', 'Colab']),
-        ('evals', 'Topic · 8 decks + 5 Colab notebooks', 'Evaluating LLMs', 'What a score measures, benchmark failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases, arena ratings, and experiments in LLM training (seed noise, small-to-large decisions).', ['pass@k', 'error bars', 'LLM judge', 'Arena']),
+        ('inference', 'Topic · 11 decks + 13 Colab notebooks', 'LLM Inference and Serving', 'Prefill vs decode, KV cache, continuous batching, chunked prefill, PagedAttention, speculative decoding, quantization, tensor parallelism, disaggregation, decoding strategies, with hands-on notebooks.', ['KV cache', 'vLLM', 'speculative', 'Colab']),
+        ('evals', 'Topic · 9 decks + 5 Colab notebooks', 'Evaluating LLMs', 'What a score measures, benchmark failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases, arena ratings, experiments in LLM training (seed noise, small-to-large decisions), and hallucination and factuality.', ['pass@k', 'error bars', 'LLM judge', 'Arena']),
     ]),
 ]
 
 AGENT_SECTIONS = [  # same shape as LLM_SECTIONS
     ('Building agents', [
-        ('agent-foundations', 'Topic · 4 decks', 'Agent foundations', 'What an agent is, tool calling, the ReAct loop, and planning and task decomposition.', ['agent loop', 'tool calling', 'ReAct', 'planning']),
-        ('agent-context', 'Topic · 4 decks', 'Agent context', 'Memory and context management, agentic retrieval, the Model Context Protocol (revision 2026-07-28) and the Agent2Agent protocol (v1.0).', ['memory', 'agentic RAG', 'MCP', 'A2A']),
+        ('agent-foundations', 'Topic · 5 decks', 'Agent foundations', 'What an agent is, tool calling, the ReAct loop, planning and task decomposition, and prompting and in-context learning.', ['agent loop', 'tool calling', 'ReAct', 'prompting']),
+        ('agent-context', 'Topic · 5 decks', 'Agent context', 'Memory and context management, agentic retrieval, the Model Context Protocol (revision 2026-07-28), the Agent2Agent protocol (v1.0), and choosing between retrieval, fine-tuning and long context.', ['memory', 'agentic RAG', 'MCP', 'A2A']),
         ('agent-systems', 'Topic · 3 decks', 'Agent systems', 'Multi-agent orchestrator-workers designs, computer and browser use, and durable workflows for long-running agents.', ['multi-agent', 'computer use', 'Temporal']),
         ('agent-frameworks', 'Topic · 3 decks + 3 notebooks', 'Agent frameworks', 'LangChain basics, LangGraph core and LangGraph in production (checkpoints, interrupts, resuming), with Colab notebooks.', ['LangChain', 'LangGraph', 'checkpoints', 'interrupts']),
     ]),

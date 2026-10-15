@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG, Fine-tuning or Long Context</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="RAG, fine-tuning or long context" data-home="../index.html" data-home-label="Context">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual Agents · Context · 05</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-15</span><span class="status-note">Written from primary sources 2026-10-15; context limits and caching prices from the Claude docs on that date.</span></div>
+    <h1>RAG, fine-tuning or long context?</h1>
+    <p class="sub">Three ways to give a model knowledge it lacks: retrieve it per query, train it into the weights, or put everything in the context window. What each is good at, what the evidence says, what a query costs, and how production systems combine them.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>An assistant must answer from a company's documents, which change daily and were never in pretraining. Teams fine-tune "to teach it our data", or paste everything into a huge context window, and get stale facts, hallucinations or a large bill.</div>
+      <div class="c"><b>Core idea</b>Match the tool to what is missing. Missing <b>knowledge</b> (facts that change, need citations or access control): <b>retrieval</b>. Missing <b>behaviour</b> (format, style, tool use, a domain's way of working): <b>fine-tuning</b>. A <b>bounded set of documents</b> that fits and is asked about repeatedly: <b>long context with prompt caching</b>. Production systems combine them: fine-tune for behaviour, retrieve for facts, and route each query to retrieval or long context.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Previous: <a href="../04-a2a/index.html">Agent2Agent protocol (A2A)</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Three ways to add knowledge</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Facts change</h3><p>Prices, policies and tickets change daily; model weights are a snapshot from the last training run.</p></div>
+      <div class="card b"><h3>Fine-tuning teaches facts poorly</h3><p>Ovadia et al.: retrieval beat unsupervised fine-tuning for both known and new facts. On new current-events questions, Mistral 7B scored 0.481 base, 0.504 fine-tuned (0.588 with paraphrased data) and 0.875 with retrieval.</p></div>
+      <div class="card c"><h3>Long context is not free</h3><p>Every query pays for every token in the prompt, and accuracy and recall degrade as contexts grow (context rot). In RULER, only about half of 17 models claiming 32K+ context performed satisfactorily at 32K.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Match the tool to what is missing</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>What the model lacks</th>
+<th>Use</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Facts that change, must be cited, or depend on who asks</td>
+<td>Retrieval (RAG (retrieval-augmented generation))</td>
+<td>update the index, not the model; cite sources; filter by permissions</td>
+</tr>
+<tr>
+<td>A format, style, tool-use habit or domain behaviour</td>
+<td>Fine-tuning (SFT (supervised fine-tuning), LoRA (Low-Rank Adaptation))</td>
+<td>behaviour generalises from examples; facts are learned slowly and can increase hallucination</td>
+</tr>
+<tr>
+<td>A bounded set of documents, asked about repeatedly</td>
+<td>Long context + prompt caching</td>
+<td>no retrieval misses; Anthropic suggests knowledge bases under 200,000 tokens can go straight into the prompt</td>
+</tr>
+<tr>
+<td>Better use of retrieved documents in one domain</td>
+<td>Retrieval-aware fine-tuning (RAFT (retrieval-augmented fine-tuning))</td>
+<td>train with distractor documents so the model learns to ignore irrelevant chunks and quote the right one</td>
+</tr>
+</tbody>
+</table></div>
+<p>Gekhman et al. add a warning for fine-tuning on facts: examples with knowledge the model lacks are learned much more slowly and, once learned, linearly increase its tendency to hallucinate.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>Combining all three</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A query arrives with the user&#x27;s identity, which decides what they may read.&quot;, &quot;A router picks the knowledge path: retrieval for a large or changing corpus, long context for a small, fixed set (for example one contract or one code repository).&quot;, &quot;Retrieval path: an index updated whenever documents change, hybrid search and reranking (Retrieval stack decks), returning the top chunks with their sources.&quot;, &quot;Long-context path: the whole document set goes into the prompt as a stable prefix, so prompt caching makes repeat queries cheap.&quot;, &quot;The model may be fine-tuned, but for behaviour (answer format, citation style, tool use), not to memorise the documents. It answers from the supplied text and cites it.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="122.0" y1="148.0" x2="156.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="274.0" y1="118.0" x2="342.4" y2="80.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="3"><line x1="282.0" y1="48.0" x2="326.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="472.0" y1="48.0" x2="506.0" y2="48.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="580.0" y1="78.0" x2="580.0" y2="116.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="274.0" y1="178.0" x2="342.4" y2="216.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="454.0" y1="218.0" x2="522.4" y2="180.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="110" height="56" rx="10"/><text class="dg-text" x="65.0" y="146.0" text-anchor="middle">Query</text><text class="dg-sub" x="65.0" y="162.0" text-anchor="middle">user + permissions</text></g><g class="dg-node b" data-step="2"><rect x="160" y="120" width="120" height="56" rx="10"/><text class="dg-text" x="220.0" y="146.0" text-anchor="middle">Router</text><text class="dg-sub" x="220.0" y="162.0" text-anchor="middle">RAG or full docs</text></g><g class="dg-node f" data-step="3"><rect x="160" y="20" width="120" height="56" rx="10"/><text class="dg-text" x="220.0" y="46.0" text-anchor="middle">Index</text><text class="dg-sub" x="220.0" y="62.0" text-anchor="middle">updated on change</text></g><g class="dg-node a" data-step="3"><rect x="330" y="20" width="140" height="56" rx="10"/><text class="dg-text" x="400.0" y="46.0" text-anchor="middle">Retriever</text><text class="dg-sub" x="400.0" y="62.0" text-anchor="middle">hybrid + rerank</text></g><g class="dg-node a" data-step="3"><rect x="510" y="20" width="140" height="56" rx="10"/><text class="dg-text" x="580.0" y="46.0" text-anchor="middle">Top-k chunks</text><text class="dg-sub" x="580.0" y="62.0" text-anchor="middle">with sources</text></g><g class="dg-node c" data-step="4"><rect x="330" y="220" width="140" height="56" rx="10"/><text class="dg-text" x="400.0" y="246.0" text-anchor="middle">Document set</text><text class="dg-sub" x="400.0" y="262.0" text-anchor="middle">cached prefix</text></g><g class="dg-node e" data-step="5"><rect x="510" y="120" width="140" height="56" rx="10"/><text class="dg-text" x="580.0" y="146.0" text-anchor="middle">Fine-tuned model</text><text class="dg-sub" x="580.0" y="162.0" text-anchor="middle">format · tools · style</text></g><g data-step="3"><text class="dg-label" x="308.2" y="94.0" text-anchor="middle">open corpus</text></g><g data-step="4"><text class="dg-label" x="308.2" y="192.0" text-anchor="middle">bounded set</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>Routing per query: Self-Route</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Retrieve the top 5 chunks of 300 words for the query (Li et al. 2024).&quot;, &quot;Ask the model to answer from the chunks, or to write \&quot;unanswerable\&quot; if they are not enough.&quot;, &quot;Most queries stop here. Retrieval and long context gave identical predictions on over 60% of queries, so routing those to retrieval loses nothing.&quot;, &quot;Only \&quot;unanswerable\&quot; queries pay for a long-context call. With GPT-4o this used 61% of the tokens for a score of 46.83 vs 47.04 for long context alone; cost fell 65% for Gemini-1.5-Pro and 39% for GPT-4o.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 270" role="img" aria-label="diagram"><defs><marker id="dga2" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="1"><line x1="122.0" y1="68.0" x2="136.0" y2="68.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="2"><line x1="262.0" y1="68.0" x2="281.0" y2="68.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="437.0" y1="68.0" x2="526.0" y2="68.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="4"><line x1="360.0" y1="98.0" x2="360.0" y2="186.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="4"><line x1="437.0" y1="218.0" x2="526.0" y2="218.0" marker-end="url(#dga2)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="40" width="110" height="56" rx="10"/><text class="dg-text" x="65.0" y="73.0" text-anchor="middle">Query</text></g><g class="dg-node a" data-step="1"><rect x="140" y="40" width="120" height="56" rx="10"/><text class="dg-text" x="200.0" y="66.0" text-anchor="middle">Retrieve top-k</text><text class="dg-sub" x="200.0" y="82.0" text-anchor="middle">5 × 300 words</text></g><g class="dg-node b" data-step="2"><rect x="285" y="40" width="150" height="56" rx="10"/><text class="dg-text" x="360.0" y="66.0" text-anchor="middle">Model + chunks</text><text class="dg-sub" x="360.0" y="82.0" text-anchor="middle">answer or &quot;unanswerable&quot;</text></g><g class="dg-node e" data-step="3"><rect x="530" y="40" width="120" height="56" rx="10"/><text class="dg-text" x="590.0" y="66.0" text-anchor="middle">Answer (RAG)</text><text class="dg-sub" x="590.0" y="82.0" text-anchor="middle">most queries</text></g><g class="dg-node c" data-step="4"><rect x="285" y="190" width="150" height="56" rx="10"/><text class="dg-text" x="360.0" y="216.0" text-anchor="middle">Long-context call</text><text class="dg-sub" x="360.0" y="232.0" text-anchor="middle">full documents</text></g><g class="dg-node e" data-step="4"><rect x="530" y="190" width="120" height="56" rx="10"/><text class="dg-text" x="590.0" y="216.0" text-anchor="middle">Answer (LC)</text><text class="dg-sub" x="590.0" y="232.0" text-anchor="middle">the hard cases</text></g><g data-step="3"><text class="dg-label" x="481.5" y="63.0" text-anchor="middle">answerable</text></g><g data-step="4"><text class="dg-label" x="360.0" y="137.0" text-anchor="middle">unanswerable</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual"><div class="controls"><label class="ctl">corpus tokens <input type="range" id="rcN" min="1" max="200" step="1" value="30"> <output id="rcNo"></output></label><label class="ctl">queries per day <input type="range" id="rcQ" min="100" max="50000" step="100" value="5000"> <output id="rcQo"></output></label><label class="ctl">retrieved tokens per query <input type="range" id="rcK" min="1" max="20" step="1" value="4"> <output id="rcKo"></output></label><label class="ctl">input price per million tokens <input type="range" id="rcP" min="0.25" max="15" step="0.25" value="3"> <output id="rcPo"></output></label></div><div class="bars"><div id="rcBars"></div></div><p class="readout" id="rcOut"></p></div>
+
+<p>Prices are assumptions to set yourself. Cache multipliers are from the Claude prompt-caching documentation: reads cost 0.1× the base input price on most models (less on some newer ones), 5-minute cache writes 1.25×.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Approach</th>
+<th>Strengths</th>
+<th>Weaknesses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Retrieval (RAG)</td>
+<td>fresh facts, citations, permission filtering, scales to any corpus size, cheap per query</td>
+<td>retrieval misses; chunking loses context; more moving parts</td>
+</tr>
+<tr>
+<td>Fine-tuning</td>
+<td>reliable format and behaviour; shorter prompts; can specialise a small, cheap model</td>
+<td>facts go stale; new facts learned slowly and can raise hallucination; retraining for every update</td>
+</tr>
+<tr>
+<td>Long context</td>
+<td>no retrieval misses; whole-document reasoning; simple to build</td>
+<td>cost and latency grow with every token; recall degrades with length and position; bounded by the window (up to 1M tokens on current Claude models)</td>
+</tr>
+<tr>
+<td>Long context + caching</td>
+<td>repeat queries on a stable prefix are cheap and fast</td>
+<td>cache expires (5 minutes or 1 hour); any change before the cached prefix invalidates it</td>
+</tr>
+<tr>
+<td>Hybrid (route per query)</td>
+<td>retrieval cost for easy queries, long-context quality for hard ones</td>
+<td>two paths to build, test and monitor</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fine-tuned on facts</td>
+<td>confident answers from last quarter's policy</td>
+<td>retrieve facts at query time; fine-tune for behaviour only</td>
+</tr>
+<tr>
+<td>Retrieval miss</td>
+<td>"I can't find that" although the document exists</td>
+<td>hybrid search, contextual chunks, reranking; route misses to long context</td>
+</tr>
+<tr>
+<td>Lost in the middle</td>
+<td>facts in the middle of a long prompt are ignored</td>
+<td>put key material at the start or end; retrieve to shorten the prompt</td>
+</tr>
+<tr>
+<td>Distractor chunks</td>
+<td>the model answers from a similar but wrong document</td>
+<td>reranking; RAFT-style training with distractors; require quotes</td>
+</tr>
+<tr>
+<td>Cache misses</td>
+<td>long-context bill far above estimates</td>
+<td>keep the prefix byte-identical; put variable content after the cache breakpoint</td>
+</tr>
+<tr>
+<td>Permission leaks</td>
+<td>a user sees content from documents they cannot open</td>
+<td>filter retrieval by the user's permissions; never fine-tune on restricted data</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Start with retrieval</h3><p>It is the default for enterprise knowledge: fresh, citable and permission-aware. See the enterprise RAG case study.</p></div>
+      <div class="card c"><h3>Fine-tune last, for behaviour</h3><p>When prompts cannot fix format, tone or tool use, fine-tune (often LoRA) on examples of the behaviour, and keep facts in retrieval.</p></div>
+      <div class="card b"><h3>Long context for bounded tasks</h3><p>One contract, one repository, one long report: put it all in, cache the prefix, and skip the retrieval pipeline.</p></div>
+      <div class="card e"><h3>Measure per path</h3><p>Track answer quality, retrieval recall, tokens and cost separately for each path, and re-test when the model or the corpus changes.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2312.05934" target="_blank" rel="noopener">Fine-Tuning or Retrieval? Comparing Knowledge Injection in LLMs (large language models)</a>
+        <div class="meta">Ovadia, Brief, Mishaeli, Elisha · arXiv (Microsoft) 2023</div>
+        <p>Retrieval consistently outperformed unsupervised fine-tuning for injecting both existing and new knowledge; training on many paraphrases of a fact helps fine-tuning.</p><div class="num">Remember: current events, Mistral 7B: 0.481 base, 0.504 fine-tuned, 0.588 with paraphrases, 0.875 with RAG</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2405.05904" target="_blank" rel="noopener">Does Fine-Tuning LLMs on New Knowledge Encourage Hallucinations?</a>
+        <div class="meta">Gekhman et al. · EMNLP 2024</div>
+        <p>Fine-tuning examples with knowledge the model lacks are learned much more slowly than known ones and, once learned, linearly increase hallucination; early stopping mitigates it.</p><div class="num">Remember: models acquire new facts through pretraining, mostly not fine-tuning</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.16833" target="_blank" rel="noopener">Retrieval Augmented Generation or Long-Context LLMs? A Comprehensive Study and Hybrid Approach</a>
+        <div class="meta">Li et al. · EMNLP Industry 2024</div>
+        <p>Long context beats RAG on average when resourced sufficiently, but RAG is far cheaper; Self-Route lets the model declare a query unanswerable from retrieved chunks and only then uses long context.</p><div class="num">Remember: identical predictions on over 60% of queries; cost −65% (Gemini-1.5-Pro), −39% (GPT-4o)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2404.06654" target="_blank" rel="noopener">RULER: What's the Real Context Size of Your Long-Context Language Models?</a>
+        <div class="meta">Hsieh et al. · COLM 2024</div>
+        <p>Synthetic long-context benchmark beyond needle-in-a-haystack (multi-key retrieval, multi-hop tracing, aggregation); models degrade sharply as length grows.</p><div class="num">Remember: 17 models; only about half of those claiming 32K+ perform satisfactorily at 32K</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2307.03172" target="_blank" rel="noopener">Lost in the Middle: How Language Models Use Long Contexts</a>
+        <div class="meta">Liu et al. · TACL 2024</div>
+        <p>Performance is often highest when relevant information is at the beginning or end of the context and degrades when it is in the middle.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2403.10131" target="_blank" rel="noopener">RAFT: Adapting Language Model to Domain Specific RAG</a>
+        <div class="meta">Zhang et al. · arXiv 2024</div>
+        <p>Fine-tune with questions, a golden document and distractor documents (and some examples with no golden document), with chain-of-thought answers that quote the source.</p><div class="num">Remember: gains on PubMed, HotpotQA and Gorilla in-domain RAG</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2005.11401" target="_blank" rel="noopener">Retrieval-Augmented Generation for Knowledge-Intensive NLP (natural language processing) Tasks</a>
+        <div class="meta">Lewis et al. · NeurIPS 2020</div>
+        <p>Combines a seq2seq generator with a dense retriever over Wikipedia (non-parametric memory), trained end to end.</p></div>
+      <div class="paper-item"><a href="https://www.anthropic.com/news/contextual-retrieval" target="_blank" rel="noopener">Introducing Contextual Retrieval</a>
+        <div class="meta">Anthropic · Anthropic News 2024</div>
+        <p>Prepend 50-100 tokens of chunk-specific context (written by an LLM from the whole document) before embedding and BM25 (Okapi Best Matching 25 ranking function) indexing; retrieve top 150, rerank, keep 20. Knowledge bases under 200,000 tokens can go straight into the prompt.</p><div class="num">Remember: top-20 retrieval failures 5.7% → 3.7% (−35%), 2.9% with BM25 (−49%), 1.9% with reranking (−67%); $1.02 per million document tokens</div></div>
+      <div class="paper-item"><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching" target="_blank" rel="noopener">Prompt caching</a>
+        <div class="meta">Anthropic documentation · platform.claude.com 2026</div>
+        <p>Reuse of cached prompt prefixes: 5-minute cache writes cost 1.25× base input, 1-hour writes 2×, and reads 0.1× on most models (lower on some newer ones).</p></div>
+      <div class="paper-item"><a href="https://platform.claude.com/docs/en/build-with-claude/context-windows" target="_blank" rel="noopener">Context windows (Claude documentation)</a>
+        <div class="meta">Anthropic · Claude platform docs 2026</div>
+        <p>Context window up to 1M tokens depending on the model; more context is not automatically better, because accuracy and recall degrade as token count grows (context rot).</p><div class="num">Remember: up to 1M tokens; 200k on older models</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2106.09685" target="_blank" rel="noopener">LoRA: Low-Rank Adaptation of Large Language Models</a>
+        <div class="meta">Hu et al. · ICLR 2022</div>
+        <p>Freezes the pretrained weights and trains a low-rank update BA (B initialized to zero) that can be merged after training.</p><div class="num">Remember: 10,000× fewer trainable parameters, 3× less GPU (graphics processing unit) memory (GPT-3 175B)</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+<script>
+(() => {
+Deck.bind(['rcN', 'rcQ', 'rcK', 'rcP'], () => {
+  const N = Deck.val('rcN') * 10000, Q = Deck.val('rcQ'), K = Deck.val('rcK') * 1000, P = Deck.val('rcP');
+  Deck.out('rcNo', N >= 1e6 ? (N / 1e6).toFixed(2) + 'M' : Math.round(N / 1000) + 'K'); Deck.out('rcQo', Q.toLocaleString()); Deck.out('rcKo', K / 1000 + 'K'); Deck.out('rcPo', '$' + P.toFixed(2));
+  const ask = 500, rag = (K + ask) * P / 1e6, lc = (N + ask) * P / 1e6, lcc = (0.1 * N + ask) * P / 1e6;
+  const fits = N <= 1e6;
+  Deck.hbars(document.getElementById('rcBars'), [
+    { label: 'RAG: retrieved chunks', value: rag * Q, color: 'var(--a)', text: '$' + Math.round(rag * Q).toLocaleString() + '/day' },
+    { label: 'long context, no cache', value: fits ? lc * Q : 0, color: 'var(--d)', text: fits ? '$' + Math.round(lc * Q).toLocaleString() + '/day' : 'does not fit' },
+    { label: 'long context, warm cache (0.1×)', value: fits ? lcc * Q : 0, color: 'var(--b)', text: fits ? '$' + Math.round(lcc * Q).toLocaleString() + '/day' : 'does not fit' }], { max: Math.max(rag, fits ? lc : rag) * Q * 1.05 });
+  document.getElementById('rcOut').innerHTML = fits
+    ? `Per query: RAG <b>$${rag.toFixed(4)}</b>, long context <b>$${lc.toFixed(3)}</b> (${(lc / rag).toFixed(0)}× RAG), or <b>$${lcc.toFixed(4)}</b> if every query hits a warm cache. Input tokens only; cache writes (1.25×) and output are extra.`
+    : `A ${(N / 1e6).toFixed(1)}M-token corpus does not fit in a 1M-token context window: retrieval is required.`;
+});
+})();
+</script>
+</body>
+</html>

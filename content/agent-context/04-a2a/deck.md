@@ -21,7 +21,7 @@ intro:
   core: 'Each agent publishes an <b>Agent Card</b> (its skills, endpoints, capabilities and security schemes). A client agent sends a <b>Message</b> made of <b>Parts</b>;
     the remote agent answers with a Message or a <b>Task</b> that moves through a lifecycle and produces <b>Artifacts</b>. Agents stay <b>opaque</b>: they cooperate
     without sharing memory, tools or plans. MCP connects an agent to tools and data; A2A connects agents to agents.'
-  hint: 'Previous: [Model Context Protocol (MCP)](../03-mcp/index.html) · [All decks](../index.html)'
+  hint: 'Previous: [Model Context Protocol (MCP)](../03-mcp/index.html) · Next: [RAG, fine-tuning or long context →](../05-rag-vs-finetuning/index.html) · [All decks](../index.html)'
 papers:
 - a2a_spec
 - a2a_announce

@@ -2939,3 +2939,106 @@ anthropic_terms:
   url: https://www.anthropic.com/legal/commercial-terms
   summary: 'Use restrictions (D.4): customers may not access the services to build a competing product or service, including to train competing AI models.'
   number: section D.4
+ft_or_rag:
+  title: Fine-Tuning or Retrieval? Comparing Knowledge Injection in LLMs
+  authors: Ovadia, Brief, Mishaeli, Elisha
+  venue: arXiv (Microsoft)
+  year: 2023
+  url: https://arxiv.org/abs/2312.05934
+  summary: Retrieval consistently outperformed unsupervised fine-tuning for injecting both existing and new knowledge; training on many paraphrases of a fact helps
+    fine-tuning.
+  number: 'current events, Mistral 7B: 0.481 base, 0.504 fine-tuned, 0.588 with paraphrases, 0.875 with RAG'
+selfroute:
+  title: Retrieval Augmented Generation or Long-Context LLMs? A Comprehensive Study and Hybrid Approach
+  authors: Li et al.
+  venue: EMNLP Industry
+  year: 2024
+  url: https://arxiv.org/abs/2407.16833
+  summary: Long context beats RAG on average when resourced sufficiently, but RAG is far cheaper; Self-Route lets the model declare a query unanswerable from retrieved
+    chunks and only then uses long context.
+  number: identical predictions on over 60% of queries; cost −65% (Gemini-1.5-Pro), −39% (GPT-4o)
+ruler:
+  title: 'RULER: What''s the Real Context Size of Your Long-Context Language Models?'
+  authors: Hsieh et al.
+  venue: COLM
+  year: 2024
+  url: https://arxiv.org/abs/2404.06654
+  summary: Synthetic long-context benchmark beyond needle-in-a-haystack (multi-key retrieval, multi-hop tracing, aggregation); models degrade sharply as length grows.
+  number: 17 models; only about half of those claiming 32K+ perform satisfactorily at 32K
+raft:
+  title: 'RAFT: Adapting Language Model to Domain Specific RAG'
+  authors: Zhang et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2403.10131
+  summary: Fine-tune with questions, a golden document and distractor documents (and some examples with no golden document), with chain-of-thought answers that quote
+    the source.
+  number: gains on PubMed, HotpotQA and Gorilla in-domain RAG
+claude_context_windows:
+  title: Context windows (Claude documentation)
+  authors: Anthropic
+  venue: Claude platform docs
+  year: 2026
+  url: https://platform.claude.com/docs/en/build-with-claude/context-windows
+  summary: Context window up to 1M tokens depending on the model; more context is not automatically better, because accuracy and recall degrade as token count grows
+    (context rot).
+  number: up to 1M tokens; 200k on older models
+min_demos:
+  title: 'Rethinking the Role of Demonstrations: What Makes In-Context Learning Work?'
+  authors: Min et al.
+  venue: EMNLP
+  year: 2022
+  url: https://arxiv.org/abs/2202.12837
+  summary: Ground-truth labels in demonstrations matter little; the label space, the distribution of input text and the format drive in-context learning.
+  number: random labels cost 0–5% absolute
+calibrate:
+  title: 'Calibrate Before Use: Improving Few-Shot Performance of Language Models'
+  authors: Zhao, Wallace, Feng, Klein, Singh
+  venue: ICML
+  year: 2021
+  url: https://arxiv.org/abs/2102.09690
+  summary: Few-shot accuracy swings with format, examples and order because of majority label, recency and common token biases; contextual calibration with a content-free
+    input corrects them.
+  number: up to 30.0% absolute accuracy gain (GPT-3, GPT-2)
+order_sens:
+  title: 'Fantastically Ordered Prompts and Where to Find Them: Overcoming Few-Shot Prompt Order Sensitivity'
+  authors: Lu et al.
+  venue: ACL
+  year: 2022
+  url: https://arxiv.org/abs/2104.08786
+  summary: The order of the same few-shot examples can make the difference between near state-of-the-art and random-guess performance, across model sizes.
+  number: 'order alone: near state of the art to chance'
+manyshot_icl:
+  title: Many-Shot In-Context Learning
+  authors: Agarwal et al.
+  venue: NeurIPS
+  year: 2024
+  url: https://arxiv.org/abs/2404.11018
+  summary: Hundreds or thousands of in-context examples give large gains over few-shot, can override pretraining biases and perform comparably to fine-tuning; Reinforced
+    ICL uses model-generated rationales.
+  number: Gemini 1.5 Pro; gains across generative and discriminative tasks
+dspy:
+  title: 'DSPy: Compiling Declarative Language Model Calls into Self-Improving Pipelines'
+  authors: Khattab et al.
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2310.03714
+  summary: Programs of declarative LM modules whose prompts and demonstrations are optimised (compiled) against a metric.
+  number: over 25% (GPT-3.5) and 65% (llama2-13b-chat) above standard few-shot prompting
+opro:
+  title: Large Language Models as Optimizers (OPRO)
+  authors: Yang et al.
+  venue: ICLR
+  year: 2024
+  url: https://arxiv.org/abs/2309.03409
+  summary: An LLM proposes new instructions given previous ones and their scores; the best prompts beat human-designed ones.
+  number: up to 8% on GSM8K and up to 50% on Big-Bench Hard
+claude_prompting:
+  title: Prompting best practices (Claude documentation)
+  authors: Anthropic
+  venue: Claude platform docs
+  year: 2026
+  url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+  summary: Be clear and direct, explain the reasons for rules, use 3–5 examples in example tags, structure with XML tags, put long documents first and the query last;
+    prefilled responses are not supported from Claude 4.6 models (use structured outputs).
+  number: 'queries at the end: up to 30% better response quality on long, complex inputs'
