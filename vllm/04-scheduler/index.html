@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The vLLM Scheduler</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="The scheduler: continuous batching and chunked prefill" data-home="../index.html" data-home-label="vLLM">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">vLLM · 04</div>
+    <h1>The scheduler: continuous batching and chunked prefill</h1>
+    <p class="sub">How vLLM V1 decides what runs each step: one token budget shared by decodes and prefills, running requests first, chunked prefill, a long-prefill threshold, and preemption by recomputation.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Every step mixes requests at different stages: some decoding one token, some with long prompts to prefill, some just arrived. The scheduler must keep the GPU (graphics processing unit) full without stalling anyone.</div>
+      <div class="c"><b>Core idea</b>V1 has <b>no prefill or decode phase</b>. Each request has <code>num_computed_tokens</code> and a known token count; each step hands out a <b>token budget</b> (<code>max_num_batched_tokens</code>) so computed tokens catch up. <b>Running</b> requests go first, then <b>waiting</b> ones; long prompts are <b>chunked</b>. If KV (key-value) blocks run out, the newest running request is <b>preempted</b> and later recomputed.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Fill a step's token budget</h2>
+    <hr>
+<p class="lede">Running requests (decoding) and waiting ones (prompts to prefill) compete for one step's budget. Change the budget and the long-prefill threshold and press "step".</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">budget <input type="range" id="sB" min="16" max="512" step="16" value="128"> <output id="sBo"></output></label><label class="ctl">long-prefill threshold <input type="range" id="sL" min="0" max="256" step="16" value="0"> <output id="sLo"></output></label><button class="btn primary" id="sStep">step</button><button class="btn" id="sReset">reset</button></div>
+  <div id="sBars" style="margin-top:12px"></div>
+  <p class="readout" id="sOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>What older schemes got wrong</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Static batches</h3><p>Wait for the whole batch to finish before admitting new requests.</p></div>
+      <div class="card b"><h3>Prefill-first phases</h3><p>Separate prefill steps pause all decoding, causing latency spikes.</p></div>
+      <div class="card c"><h3>Whole prompts</h3><p>One long prompt can occupy an entire step.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Who goes first?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">Budget 64. One running request is decoding; a new request has a 200-token prompt. What does the step contain?</p>
+      <div class="opts">
+      <button>A. 200 prompt tokens only</button>
+      <button data-ok>B. 1 decode token + 63 prompt tokens</button>
+      <button>C. 64 prompt tokens</button>
+      <button>D. 1 decode token only</button>
+      </div>
+      <div class="why"><b>B.</b> Running requests are scheduled first (1 token), and the remaining 63 tokens start the new request's prefill as a chunk.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>One budget, no phases</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Token budget</h3><p>max_num_scheduled_tokens per step (from max_num_batched_tokens); spent on any mix of prefill chunks and decodes.</p></div>
+      <div class="card c"><h3>Order</h3><p>Running requests first (FCFS (first-come, first-served) policy by default, priority optional), then waiting requests while budget and KV blocks last.</p></div>
+      <div class="card b"><h3>Chunked prefill</h3><p>On by default in V1 (enable_chunked_prefill=True); long_prefill_token_threshold caps a single request's chunk.</p></div>
+      <div class="card d"><h3>Preemption</h3><p>If blocks run out, the newest (or lowest-priority) running request is preempted: blocks freed, computed tokens reset to 0, put back at the front of the waiting queue.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 188" role="img" aria-label="Concepts: Inference decks 03–04 (batching, chunked prefill)." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">token budget</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">max_num_batched_tokens</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">running first</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">decodes + prefill</text><text x="198.4" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">chunks</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">then waiting</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">admit while budget</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">and blocks</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--d)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">no blocks?</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">preempt newest</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">running</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">execute + update</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">computed +=</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">scheduled</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M593.2 136 V160 H66.8 V138" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="330.0" y="177" text-anchor="middle" class="tm" style="font-size:11px">every step</text></svg><p class="caption" style="margin:4px 0 0">Concepts: Inference decks 03–04 (batching, chunked prefill).</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>From the source</h2>
+    <hr>
+<p>The scheduler's own comment (vllm/v1/core/sched/scheduler.py, v0.31.0):</p>
+<div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap"># There's no "decoding phase" nor "prefill phase" in the scheduler.&#10;# Each request just has the num_computed_tokens and&#10;# num_tokens_with_spec. num_tokens_with_spec =&#10;# len(prompt_token_ids) + len(output_token_ids) + len(spec_token_ids).&#10;# At each step, the scheduler tries to assign tokens to the requests&#10;# so that each request's num_computed_tokens can catch up its&#10;# num_tokens_with_spec. This is general enough to cover&#10;# chunked prefills, prefix caching, speculative decoding, ...</pre></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: one step</h2>
+    <hr>
+    <p class="lede">Notebook 03's step function (mirroring vllm/v1/core/sched/scheduler.py): budget 64 tokens; one running request decoding; one new request with a 100-token prompt.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Running first: the decoding request needs 1 token → scheduled 1. Budget left: 63.</li><li>Waiting next: the new request needs 100 prompt tokens; the budget allows <b>63</b>, so its prefill is chunked: 63 now, 37 next step.</li><li>Blocks: 63 tokens need ⌈63/16⌉ = 4 new blocks, allocated from the pool.</li><li>Defaults in v0.31.0 depend on GPU and entrypoint: on H100/H200-class GPUs, max_num_batched_tokens is 16,384 for the LLM (large language model) class and 8,192 for the server; max_num_seqs 1,024. Other GPUs: 8,192 / 2,048 and 256.</li></ol><div class="result">Decodes are never starved by prefills, and prefills fill whatever budget is left.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why the unified design works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>One rule covers everything</h3><p>Prefill, decode, prefix-cache hits and speculative tokens are all "tokens to catch up".</p></div>
+      <div class="card e"><h3>Steady latency</h3><p>Decodes always get their token each step; prefills absorb the rest (Sarathi-Serve's stall-free idea).</p></div>
+      <div class="card b"><h3>Full GPU</h3><p>The budget keeps each step large enough to be efficient.</p></div>
+      <div class="card c"><h3>Graceful overload</h3><p>Preemption by recomputation frees memory without crashing; the request resumes later.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"vLLM batches requests that arrive together."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Batches change every step: requests join and leave continuously.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Preempted requests lose their output."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They keep generated tokens; only the KV cache is dropped and recomputed (prefix caching may make that cheap).</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Chunked prefill makes prompts slower."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Per prompt it can add a few steps, but it keeps decode latency smooth and the GPU busy.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Bigger budget = higher throughput.</b> But longer steps, so higher inter-token latency.</li><li><b>long_prefill_token_threshold.</b> Caps one prompt's chunk per step.</li><li><b>Watch vllm:num_preemptions.</b> Rising → raise memory or lower concurrency.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Too large max_num_seqs for the memory.</b> Constant preemption and recomputation.</li><li><b>Tiny budget with long prompts.</b> TTFT (time to first token) grows as prompts trickle in.</li><li><b>Assuming strict FCFS.</b> The scheduler may skip a blocked request to schedule later ones.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Default scheduling policy in v0.31.0?</p>
+      <div class="opts">
+      <button>A. priority</button>
+      <button data-ok>B. fcfs</button>
+      <button>C. shortest-job-first</button>
+      <button>D. round-robin</button>
+      </div>
+      <div class="why"><b>"fcfs"</b> (SchedulerConfig.policy).</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What happens to a preempted request in V1?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Its KV blocks are freed, num_computed_tokens is reset to 0, and it is put back at the front of the waiting queue to be recomputed later.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does long_prefill_token_threshold do?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Caps how many prompt tokens one request may be given in a single step, so one long prompt cannot monopolise the budget.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">vLLM V1 schedules with one per-step token budget and no phases: running requests first, then waiting ones in chunks, and preemption by recomputation when KV blocks run out.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Every vLLM step, the scheduler hands out a token budget. There is no separate prefill or decode phase: each request simply has tokens it already computed and tokens it knows about, and the scheduler assigns tokens so it catches up. Requests already running go first, which gives every decoding request its next token, then waiting requests fill the rest, with long prompts split into chunks and optionally capped per step. If the KV cache runs out of blocks, the newest running request is preempted: its blocks are freed and it is recomputed later. Budget size trades throughput against inter-token latency.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> mixed prefills and decodes every step.</span></div><div><span><b>Core idea:</b> token budget; running first; chunked prefill.</span></div><div><span><b>Overload:</b> preempt newest; recompute later.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/03_token_budget_scheduler.ipynb" target="_blank" rel="noopener">03 · The unified token-budget scheduler</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/vllm/03_token_budget_scheduler.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../05-prefix-caching/index.html">05 · Automatic prefix caching →</a> · Previous: <a href="../03-kv-cache-manager/index.html">← 03</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/configuration/optimization.html" target="_blank" rel="noopener">Optimization and Tuning</a>
+        <div class="meta">vLLM documentation · docs.vllm.ai 2026</div>
+        <p>Preemption by recomputation when KV space runs out, chunked prefill and max_num_batched_tokens trade-offs, and when to use tensor, pipeline, expert and data parallelism.</p></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2403.02310" target="_blank" rel="noopener">Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve</a>
+        <div class="meta">Agrawal et al. · OSDI 2024</div>
+        <p>Chunked prefills plus stall-free scheduling: new requests are added without pausing ongoing decodes, so throughput rises without TPOT (time per output token) spikes.</p><div class="num">Remember: 2.6× serving capacity (Mistral-7B, 1 A100) and up to 3.7× (Yi-34B, 2 A100s) vs vLLM; up to 5.6× with pipeline parallelism (Falcon-180B)</div></div>
+      <div class="paper-item"><a href="https://www.usenix.org/conference/osdi22/presentation/yu" target="_blank" rel="noopener">Orca: A Distributed Serving System for Transformer-Based Generative Models</a>
+        <div class="meta">Yu et al. · OSDI 2022</div>
+        <p>Iteration-level scheduling (requests join and leave the batch after every decode step) plus selective batching (batch the matmuls, run attention per request).</p><div class="num">Remember: 36.9× throughput over FasterTransformer at the same latency (GPT-3 175B)</div></div>
+      <div class="paper-item"><a href="https://github.com/vllm-project/vllm/releases/tag/v0.31.0" target="_blank" rel="noopener">vLLM v0.31.0 release</a>
+        <div class="meta">vLLM project · GitHub 2026</div>
+        <p>The release these decks were checked against (source at vllm/v1/core and vllm/config).</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  let reqs, stepNo;
+  const reset = () => { reqs = [{ id: 'A', prompt: 300, done: 300, run: true }, { id: 'B', prompt: 120, done: 120, run: true }, { id: 'C', prompt: 700, done: 0, run: false }, { id: 'D', prompt: 60, done: 0, run: false }]; stepNo = 0; draw({}); };
+  const draw = (s) => {
+    Deck.out('sBo', Deck.val('sB')); Deck.out('sLo', Deck.val('sL') || 'off');
+    Deck.hbars(document.getElementById('sBars'), reqs.map(r => ({ label: `${r.id} ${r.done >= r.prompt ? '(decoding)' : r.run ? '(prefilling)' : '(waiting)'}`, value: s[r.id] || 0, color: r.done >= r.prompt ? 'var(--a)' : 'var(--b)', text: (s[r.id] || 0) + ' tokens' })), { max: Deck.val('sB') });
+    const used = Object.values(s).reduce((a, b) => a + b, 0);
+    document.getElementById('sOut').innerHTML = stepNo ? `Step ${stepNo}: ${used}/${Deck.val('sB')} budget used. Prompt progress: ${reqs.filter(r => r.prompt > 0).map(r => `${r.id} ${Math.min(r.done, r.prompt)}/${r.prompt}`).join(', ')}.` : 'A and B are decoding; C (700-token prompt) and D (60) are waiting. Press step.';
+  };
+  document.getElementById('sStep').addEventListener('click', () => {
+    let budget = Deck.val('sB'); const lp = Deck.val('sL'), s = {};
+    const want = r => { let n = r.done >= r.prompt ? 1 : r.prompt - r.done; if (lp > 0) n = Math.min(n, lp); return Math.min(n, budget); };
+    reqs.filter(r => r.run).forEach(r => { if (budget <= 0) return; const n = want(r); s[r.id] = n; budget -= n; });
+    reqs.filter(r => !r.run).forEach(r => { if (budget <= 0) return; const n = want(r); r.run = true; s[r.id] = n; budget -= n; });
+    reqs.forEach(r => { if (s[r.id]) r.done += s[r.id]; }); stepNo++; draw(s);
+  });
+  document.getElementById('sReset').addEventListener('click', reset);
+  reset();
+  Deck.bind(['sB', 'sL'], () => draw({}));
+})();
+</script>
+</body>
+</html>

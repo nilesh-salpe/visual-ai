@@ -137,6 +137,9 @@
   "FA3": {
    "exp": "FlashAttention-3"
   },
+  "FCFS": {
+   "exp": "first-come, first-served"
+  },
   "FFBS": {
    "exp": "forward-filtering backward-sampling"
   },
@@ -273,6 +276,9 @@
   "IP": {
    "exp": "Internet Protocol"
   },
+  "IPC": {
+   "exp": "inter-process communication"
+  },
   "IPv4": {
    "exp": "Internet Protocol version 4"
   },
@@ -363,8 +369,14 @@
   "MTBF": {
    "exp": "mean time between failures"
   },
+  "MTP": {
+   "exp": "multi-token prediction"
+  },
   "MX": {
    "exp": "microscaling, block-scaled number formats"
+  },
+  "MXFP4": {
+   "exp": "microscaling 4-bit floating point"
   },
   "MXFP8": {
    "exp": "8-bit microscaling floating point"
@@ -681,6 +693,9 @@
   },
   "ZeRO": {
    "exp": "Zero Redundancy Optimizer"
+  },
+  "ZMQ": {
+   "exp": "ZeroMQ, a messaging library"
   }
  },
  "exempt": [
@@ -909,6 +924,21 @@
   "MATH",
   "FULL_SHARD",
   "SHARD_GRAD_OP",
-  "HYBRID_SHARD"
+  "HYBRID_SHARD",
+  "EngineCore",
+  "EngineCoreProc",
+  "AsyncMPClient",
+  "SyncMPClient",
+  "InprocClient",
+  "BlockPool",
+  "CacheConfig",
+  "FreeKVCacheBlockQueue",
+  "KVCacheManager",
+  "SchedulerConfig",
+  "SpeculativeMethod",
+  "ParallelConfig",
+  "AsyncLLM",
+  "LLMEngine",
+  "ZeroMQ"
  ]
 }

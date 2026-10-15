@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vLLM</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<style>body { overflow-y: auto; }</style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="../llm/index.html">← Visual LLM</a>
+  <div class="label" style="margin-top:28px">Visual guide · 8 decks + 5 Colab notebooks</div>
+  <h1>vLLM internals and operation</h1>
+  <p class="lede">How the vLLM serving engine works inside and how to run it: the process architecture, the paged KV (key-value) cache manager, the unified token-budget scheduler, automatic prefix caching, speculative decoding, parallelism and quantization, and tuning with metrics. Checked against the vLLM v0.31.0 source and documentation; the concepts are introduced in the LLM (large language model) Inference topic.</p>
+  <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
+    <div><h3 style="margin:0 0 4px">🛠 Build it: 5 Colab notebooks</h3><p class="caption" style="margin:0">Re-implement vLLM's block pool with ref counts and LRU (least recently used), chained-hash prefix caching, the token-budget scheduler with chunked prefill and preemption, a GPU (graphics processing unit) memory and concurrency planner, and n-gram speculative decoding, all as CPU (central processing unit) simulations.</p></div>
+    <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
+  </div>
+<!--x:map--><style>
+.bigmap { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding: 4px 2px 10px; }
+.bigmap .stage { flex: 1 1 0; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
+.bigmap .stage h4 { margin: 0 0 2px; font: 700 11.5px 'JetBrains Mono', monospace; letter-spacing: .05em; text-transform: uppercase; color: var(--a); }
+.bigmap .stage a { display: block; padding: 9px 11px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 14px; line-height: 1.3; }
+.bigmap .stage a:hover { border-color: var(--a); background: var(--a-soft); }
+.bigmap .stage a span { display: block; font: 600 11px 'JetBrains Mono', monospace; color: var(--faint); }
+.bigmap .arrow { align-self: center; color: var(--faint); font-size: 20px; }
+.hub-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+@media (max-width: 700px) { .bigmap { flex-direction: column; } .bigmap .arrow { transform: rotate(90deg); } }
+</style>
+  <div class="visual" style="margin-top:22px">
+    <h3 style="margin:0 0 10px">The big picture</h3>
+    <div class="bigmap"><div class="stage"><h4>The engine</h4><a href="01-what-is-vllm/index.html"><span>01</span>What vLLM is and a request&#x27;s life</a><a href="02-engine-architecture/index.html"><span>02</span>Engine architecture</a></div><div class="arrow">→</div><div class="stage"><h4>Memory and scheduling</h4><a href="03-kv-cache-manager/index.html"><span>03</span>KV cache manager and PagedAttention</a><a href="04-scheduler/index.html"><span>04</span>The scheduler: continuous batching and chunked prefill</a><a href="05-prefix-caching/index.html"><span>05</span>Automatic prefix caching</a></div><div class="arrow">→</div><div class="stage"><h4>Speed and scale</h4><a href="06-speculative-decoding/index.html"><span>06</span>Speculative decoding in vLLM</a><a href="07-parallelism-and-quantization/index.html"><span>07</span>Parallelism and quantization</a></div><div class="arrow">→</div><div class="stage"><h4>Operating it</h4><a href="08-running-and-tuning/index.html"><span>08</span>Running and tuning vLLM</a></div></div>
+    <div class="hub-links"><a class="btn" href="reading-list.html">📚 Reading list</a><a class="btn" href="../glossary/index.html">🔤 Glossary</a></div>
+  </div>
+<!--/x:map-->
+  <div class="hub-grid"><a class="hub-card" href="01-what-is-vllm/index.html"><div class="n">01</div><h3>What vLLM is and a request's life</h3><p>Offline LLM class vs vllm serve; every stage a request passes.</p></a><a class="hub-card" href="02-engine-architecture/index.html"><div class="n">02</div><h3>Engine architecture</h3><p>API (application programming interface) servers, EngineCore per DP (data parallelism) rank, workers per GPU: A + DP + N processes.</p></a><a class="hub-card" href="03-kv-cache-manager/index.html"><div class="n">03</div><h3>KV cache manager and PagedAttention</h3><p>16-token blocks, block tables, ref counts, LRU free queue.</p></a><a class="hub-card" href="04-scheduler/index.html"><div class="n">04</div><h3>The scheduler</h3><p>One token budget, running first, chunked prefill, preemption by recompute.</p></a><a class="hub-card" href="05-prefix-caching/index.html"><div class="n">05</div><h3>Automatic prefix caching</h3><p>Chained block hashes, longest-prefix reuse, on by default.</p></a><a class="hub-card" href="06-speculative-decoding/index.html"><div class="n">06</div><h3>Speculative decoding in vLLM</h3><p>n-gram, draft, EAGLE, MTP (multi-token prediction) proposers; rejection sampling.</p></a><a class="hub-card" href="07-parallelism-and-quantization/index.html"><div class="n">07</div><h3>Parallelism and quantization</h3><p>-tp, -pp, -dp, expert parallelism, FP8 (8-bit floating point) weights and KV.</p></a><a class="hub-card" href="08-running-and-tuning/index.html"><div class="n">08</div><h3>Running and tuning vLLM</h3><p>Flags, OpenAI endpoints, /metrics, vllm bench, fixing preemptions.</p></a></div>
+  <p class="cite" style="margin-top:26px">Sources: Kwon et al. 2023 (PagedAttention / vLLM); vLLM V1 blog 2025; vLLM v0.31.0 source (vllm/v1/core, vllm/config, vllm/engine) and documentation (architecture overview, automatic prefix caching design, optimization and tuning, OpenAI-compatible server, parallelism and scaling, speculative decoding, quantization); Yu et al. 2022 (Orca); Agrawal et al. 2024 (Sarathi-Serve); Leviathan et al. 2023; Zheng et al. 2024 (SGLang).</p>
+</div>
+</body>
+</html>

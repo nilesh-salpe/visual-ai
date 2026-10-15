@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vLLM Reading List</title>
+<link rel="stylesheet" href="../shared/deck.css">
+<link rel="stylesheet" href="../shared/learn.css">
+<style>body { overflow-y: auto; } </style>
+</head>
+<body>
+<div class="hub">
+  <a class="brand" href="index.html">← vLLM</a>
+  <div class="label" style="margin-top:28px">Reading list · 18 papers and docs</div>
+  <h1>vLLM: key papers</h1>
+  <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
+  <div class="papers" style="margin-top:18px">
+    <div class="paper-item"><a href="https://arxiv.org/abs/2309.06180" target="_blank" rel="noopener">Efficient Memory Management for Large Language Model Serving with PagedAttention</a>
+      <div class="meta">Kwon et al. · SOSP 2023 · cited in <a href="01-what-is-vllm/index.html" style="font-weight:500;color:var(--a)">What vLLM is and a request's life</a>, <a href="03-kv-cache-manager/index.html" style="font-weight:500;color:var(--a)">KV cache manager and PagedAttention</a></div>
+      <p>Stores the KV cache in fixed-size blocks mapped by a block table, like virtual memory pages, giving near-zero fragmentation and sharing with copy-on-write. The basis of vLLM.</p><div class="num">Remember: 2–4× throughput vs FasterTransformer and Orca at the same latency</div></div>
+    <div class="paper-item"><a href="https://blog.vllm.ai/2025/01/27/v1-alpha-release.html" target="_blank" rel="noopener">vLLM V1: A Major Upgrade to vLLM's Core Architecture</a>
+      <div class="meta">vLLM Team · vLLM blog 2025 · cited in <a href="01-what-is-vllm/index.html" style="font-weight:500;color:var(--a)">What vLLM is and a request's life</a>, <a href="02-engine-architecture/index.html" style="font-weight:500;color:var(--a)">Engine architecture</a>, <a href="05-prefix-caching/index.html" style="font-weight:500;color:var(--a)">Automatic prefix caching</a></div>
+      <p>The V1 re-architecture: an isolated EngineCore busy loop (scheduler + executor) in its own process, a unified token-budget scheduler, zero-overhead prefix caching, torch.compile and piecewise CUDA graphs.</p><div class="num">Remember: up to 1.7× higher throughput than V0</div></div>
+    <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/design/arch_overview.html" target="_blank" rel="noopener">Architecture Overview</a>
+      <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="01-what-is-vllm/index.html" style="font-weight:500;color:var(--a)">What vLLM is and a request's life</a>, <a href="02-engine-architecture/index.html" style="font-weight:500;color:var(--a)">Engine architecture</a></div>
+      <p>Entrypoints (LLM class, OpenAI-compatible server) and the process layout: API server, one engine-core process per data-parallel rank running a busy loop, one worker process per GPU.</p></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/releases/tag/v0.31.0" target="_blank" rel="noopener">vLLM v0.31.0 release</a>
+      <div class="meta">vLLM project · GitHub 2026 · cited in <a href="02-engine-architecture/index.html" style="font-weight:500;color:var(--a)">Engine architecture</a>, <a href="03-kv-cache-manager/index.html" style="font-weight:500;color:var(--a)">KV cache manager and PagedAttention</a>, <a href="04-scheduler/index.html" style="font-weight:500;color:var(--a)">The scheduler: continuous batching and chunked prefill</a>, <a href="06-speculative-decoding/index.html" style="font-weight:500;color:var(--a)">Speculative decoding in vLLM</a>, <a href="08-running-and-tuning/index.html" style="font-weight:500;color:var(--a)">Running and tuning vLLM</a></div>
+      <p>The release these decks were checked against (source at vllm/v1/core and vllm/config).</p></div>
+    <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/design/prefix_caching.html" target="_blank" rel="noopener">Automatic Prefix Caching (design)</a>
+      <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="03-kv-cache-manager/index.html" style="font-weight:500;color:var(--a)">KV cache manager and PagedAttention</a>, <a href="05-prefix-caching/index.html" style="font-weight:500;color:var(--a)">Automatic prefix caching</a></div>
+      <p>Each KV block is hashed with its tokens and the prefix before it; blocks are reference-counted, freed blocks are evicted in LRU order, and cache hits skip prefill.</p></div>
+    <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/configuration/optimization.html" target="_blank" rel="noopener">Optimization and Tuning</a>
+      <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="04-scheduler/index.html" style="font-weight:500;color:var(--a)">The scheduler: continuous batching and chunked prefill</a>, <a href="08-running-and-tuning/index.html" style="font-weight:500;color:var(--a)">Running and tuning vLLM</a></div>
+      <p>Preemption by recomputation when KV space runs out, chunked prefill and max_num_batched_tokens trade-offs, and when to use tensor, pipeline, expert and data parallelism.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2403.02310" target="_blank" rel="noopener">Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve</a>
+      <div class="meta">Agrawal et al. · OSDI 2024 · cited in <a href="04-scheduler/index.html" style="font-weight:500;color:var(--a)">The scheduler: continuous batching and chunked prefill</a></div>
+      <p>Chunked prefills plus stall-free scheduling: new requests are added without pausing ongoing decodes, so throughput rises without TPOT (time per output token) spikes.</p><div class="num">Remember: 2.6× serving capacity (Mistral-7B, 1 A100) and up to 3.7× (Yi-34B, 2 A100s) vs vLLM; up to 5.6× with pipeline parallelism (Falcon-180B)</div></div>
+    <div class="paper-item"><a href="https://www.usenix.org/conference/osdi22/presentation/yu" target="_blank" rel="noopener">Orca: A Distributed Serving System for Transformer-Based Generative Models</a>
+      <div class="meta">Yu et al. · OSDI 2022 · cited in <a href="04-scheduler/index.html" style="font-weight:500;color:var(--a)">The scheduler: continuous batching and chunked prefill</a></div>
+      <p>Iteration-level scheduling (requests join and leave the batch after every decode step) plus selective batching (batch the matmuls, run attention per request).</p><div class="num">Remember: 36.9× throughput over FasterTransformer at the same latency (GPT-3 175B)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2312.07104" target="_blank" rel="noopener">SGLang: Efficient Execution of Structured Language Model Programs</a>
+      <div class="meta">Zheng et al. · NeurIPS 2024 · cited in <a href="05-prefix-caching/index.html" style="font-weight:500;color:var(--a)">Automatic prefix caching</a></div>
+      <p>A runtime and frontend for multi-call LLM (large language model) programs; RadixAttention keeps KV caches in a radix tree so shared prefixes are reused across requests automatically.</p><div class="num">Remember: up to 6.4× higher throughput</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2211.17192" target="_blank" rel="noopener">Fast Inference from Transformers via Speculative Decoding</a>
+      <div class="meta">Leviathan et al. · ICML 2023 · cited in <a href="06-speculative-decoding/index.html" style="font-weight:500;color:var(--a)">Speculative decoding in vLLM</a></div>
+      <p>A small model drafts tokens, the large model verifies them in parallel, and a modified rejection rule keeps the output distribution exactly unchanged.</p><div class="num">Remember: 2–3× faster on T5-XXL with identical outputs</div></div>
+    <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/features/spec_decode.html" target="_blank" rel="noopener">Speculative Decoding</a>
+      <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="06-speculative-decoding/index.html" style="font-weight:500;color:var(--a)">Speculative decoding in vLLM</a></div>
+      <p>Configuring speculative decoding with --speculative-config: n-gram (prompt lookup), draft models, EAGLE/EAGLE-3, MTP heads, Medusa and suffix decoding.</p></div>
+    <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/serving/parallelism_scaling.html" target="_blank" rel="noopener">Parallelism and Scaling</a>
+      <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="07-parallelism-and-quantization/index.html" style="font-weight:500;color:var(--a)">Parallelism and quantization</a></div>
+      <p>Single-node tensor parallelism, multi-node pipeline parallelism, data parallelism and expert parallelism for MoE models, and how to choose sizes.</p></div>
+    <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/features/quantization/index.html" target="_blank" rel="noopener">Quantization</a>
+      <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="07-parallelism-and-quantization/index.html" style="font-weight:500;color:var(--a)">Parallelism and quantization</a></div>
+      <p>Supported weight/activation quantization (FP8, AWQ, GPTQ, compressed-tensors, MXFP4 (microscaling 4-bit floating point), NVFP4 (NVIDIA's block-scaled 4-bit floating point) and more) and quantized KV caches, with hardware support tables.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener">Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism</a>
+      <div class="meta">Shoeybi et al. · arXiv 2019 · cited in <a href="07-parallelism-and-quantization/index.html" style="font-weight:500;color:var(--a)">Parallelism and quantization</a></div>
+      <p>Intra-layer (tensor) model parallelism that splits each attention and MLP (multilayer perceptron) block across GPUs with only a few all-reduce operations, implemented in plain PyTorch.</p><div class="num">Remember: 2 all-reduces per transformer block in the forward pass; 76% scaling efficiency on 512 GPUs</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2306.00978" target="_blank" rel="noopener">AWQ: Activation-aware Weight Quantization for LLM (large language model) Compression and Acceleration</a>
+      <div class="meta">Lin et al. · MLSys 2024 · cited in <a href="07-parallelism-and-quantization/index.html" style="font-weight:500;color:var(--a)">Parallelism and quantization</a></div>
+      <p>Weight-only low-bit quantization that protects the most important weight channels, chosen by activation magnitude, by scaling them up before quantizing.</p><div class="num">Remember: protecting 1% of salient weights greatly reduces error; >3× over Hugging Face FP16 (16-bit floating point) with its TinyChat kernels</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2210.17323" target="_blank" rel="noopener">GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers</a>
+      <div class="meta">Frantar et al. · ICLR 2023 · cited in <a href="07-parallelism-and-quantization/index.html" style="font-weight:500;color:var(--a)">Parallelism and quantization</a></div>
+      <p>One-shot weight quantization using approximate second-order information, quantizing one column at a time and compensating the error in the rest.</p><div class="num">Remember: 175B model to 3–4 bits in about four GPU hours</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2209.05433" target="_blank" rel="noopener">FP8 Formats for Deep Learning</a>
+      <div class="meta">Micikevicius et al. · arXiv 2022 · cited in <a href="07-parallelism-and-quantization/index.html" style="font-weight:500;color:var(--a)">Parallelism and quantization</a></div>
+      <p>Defines the two FP8 encodings, E4M3 (more precision) and E5M2 (more range), and shows FP8 training and post-training quantization matching 16-bit results.</p><div class="num">Remember: E4M3 max 448, E5M2 max 57,344</div></div>
+    <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html" target="_blank" rel="noopener">OpenAI-Compatible Server</a>
+      <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="08-running-and-tuning/index.html" style="font-weight:500;color:var(--a)">Running and tuning vLLM</a></div>
+      <p>vllm serve exposes /v1/completions, /v1/chat/completions and more with OpenAI-compatible request formats, plus /metrics for Prometheus.</p></div>
+  </div>
+</div>
+
+</body>
+</html>

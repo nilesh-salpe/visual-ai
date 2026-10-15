@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What vLLM Is</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="What vLLM is and a request&#x27;s life" data-home="../index.html" data-home-label="vLLM">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">vLLM · 01</div>
+    <h1>What vLLM is and a request's life</h1>
+    <p class="sub">The open-source LLM (large language model) inference and serving engine built around PagedAttention: what it does, the two ways to use it, and every stage a request passes through.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Serving an LLM well means batching many users' requests onto a GPU (graphics processing unit), managing a KV (key-value) cache that grows with every token, and streaming tokens back quickly. Writing that from scratch is a large systems project.</div>
+      <div class="c"><b>Core idea</b>vLLM is a serving engine: you give it a model and requests; it handles <b>batching</b> (continuous, token-budget scheduling), <b>KV memory</b> (paged blocks with prefix caching), <b>execution</b> (CUDA (Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors) graphs, fused kernels, parallelism) and <b>APIs (application programming interfaces)</b> (a Python <code>LLM</code> class for offline batches and <code>vllm serve</code> for an OpenAI-compatible server).</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Follow a request</h2>
+    <hr>
+<p class="lede">Step through the life of one request inside vLLM. Each stage names the process that runs it and the source module. Checked against vLLM v0.31.0.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><button class="btn primary" id="lNext">next stage</button><button class="btn" id="lReset">reset</button></div>
+  <svg id="lSvg" viewBox="0 0 660 200" style="margin-top:10px" role="img" aria-label="Request lifecycle"></svg>
+  <p class="readout" id="lOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why not serve with a plain model.generate()?</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>One request at a time</h3><p>GPUs sit mostly idle during decode without batching many users.</p></div>
+      <div class="card b"><h3>KV memory waste</h3><p>Contiguous per-request reservations used only 20.4%–38.2% of KV memory in earlier systems (PagedAttention paper).</p></div>
+      <div class="card c"><h3>Everything else</h3><p>Streaming, OpenAI-compatible APIs, metrics, parallelism, quantization, speculative decoding.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Offline or online?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">You need to label 2 million documents with an LLM overnight. Which vLLM entrypoint fits?</p>
+      <div class="opts">
+      <button>A. vllm serve and one HTTP call per document</button>
+      <button data-ok>B. The LLM class with all prompts passed to generate()</button>
+      <button>C. Either is identical</button>
+      <button>D. Neither: use plain Hugging Face generate</button>
+      </div>
+      <div class="why"><b>B.</b> The LLM class submits everything at once so the scheduler can batch maximally; an HTTP (Hypertext Transfer Protocol) server adds overhead you don't need offline.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Four jobs of a serving engine</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Batching</h3><p>A unified scheduler hands out a per-step token budget across prefills and decodes (deck 04).</p></div>
+      <div class="card c"><h3>KV memory</h3><p>Paged 16-token blocks, reference counts and automatic prefix caching (decks 03, 05).</p></div>
+      <div class="card b"><h3>Execution</h3><p>Model runner with CUDA graphs and torch.compile; tensor, pipeline, data and expert parallelism (decks 02, 07).</p></div>
+      <div class="card e"><h3>Interfaces</h3><p>LLM class, vllm serve (OpenAI-compatible), metrics, benchmarking tools (deck 08).</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 188" role="img" aria-label="The concepts behind each box are in the Inference topic; these decks show vLLM&#x27;s implementation." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">HTTP / LLM.generate</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">request in</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">API server</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">tokenize, validate</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">EngineCore</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">schedule each step</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">GPU workers</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">forward pass,</text><text x="461.6" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">sample</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">detokenize + stream</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">tokens out</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M461.6 136 V160 H330.0 V138" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="395.8" y="177" text-anchor="middle" class="tm" style="font-size:11px">once per generated token</text></svg><p class="caption" style="margin:4px 0 0">The concepts behind each box are in the Inference topic; these decks show vLLM's implementation.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>The two entrypoints</h2>
+    <hr>
+<div class="visual"><pre style="margin:0;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap"># offline batch inference&#10;from vllm import LLM, SamplingParams&#10;llm = LLM(model="meta-llama/Llama-3.1-8B-Instruct")&#10;outs = llm.generate(prompts, SamplingParams(temperature=0.7, max_tokens=200))&#10;&#10;# online serving (OpenAI-compatible)&#10;$ vllm serve meta-llama/Llama-3.1-8B-Instruct&#10;$ curl localhost:8000/v1/chat/completions -H "Content-Type: application/json"     -d '{"model": "meta-llama/Llama-3.1-8B-Instruct", "messages": [{"role": "user", "content": "Hi"}]}'</pre></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: one chat request</h2>
+    <hr>
+    <p class="lede">A client sends a 900-token prompt to <code>vllm serve meta-llama/Llama-3.1-8B-Instruct</code> and asks for up to 200 tokens. Checked against vLLM v0.31.0.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>The <b>API server</b> process applies the chat template, tokenises and sends the request to the engine core over ZMQ (ZeroMQ, a messaging library).</li><li>The <b>EngineCore</b> scheduler checks the prefix cache (a shared system prompt may already be cached), allocates 16-token KV blocks and schedules the prompt, in chunks if it exceeds the per-step token budget.</li><li>The <b>GPU worker</b> runs the forward pass for the whole batch (this request's prefill chunk plus other users' decode tokens), samples a token, and the request joins the decode set.</li><li>Each later step adds one token (or several with speculative decoding); the API server detokenises and streams them until 200 tokens or a stop condition, then the request's blocks are freed (and stay cached for reuse).</li></ol><div class="result">One request touches three kinds of processes and is batched with everyone else at every step.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why vLLM became the default open engine</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Memory efficiency</h3><p>PagedAttention gave 2–4× throughput over FasterTransformer and Orca at the same latency (Kwon et al., 2023).</p></div>
+      <div class="card e"><h3>Lower CPU overhead</h3><p>The V1 re-architecture isolated the engine loop and reported up to 1.7× higher throughput than V0.</p></div>
+      <div class="card b"><h3>Breadth</h3><p>Many model families, quantization formats, hardware back ends and parallelism modes.</p></div>
+      <div class="card c"><h3>Standard API</h3><p>OpenAI-compatible endpoints make it a drop-in back end.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"vLLM is a model."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It is an inference engine; it runs models (mostly from Hugging Face) efficiently.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"vLLM only helps big batches."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It also reduces per-request latency features (prefix caching, speculative decoding, CUDA graphs), but its biggest wins come from batching.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"PagedAttention is all vLLM does."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Scheduling, prefix caching, parallelism, quantization and the serving stack matter as much today.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Offline: LLM(model).generate(prompts).</b> Batches everything for throughput.</li><li><b>Online: vllm serve <model>.</b> OpenAI-compatible /v1/chat/completions.</li><li><b>Read the Inference topic first.</b> KV cache, batching, PagedAttention concepts.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Benchmarking one request at a time.</b> vLLM's gains come from batching many.</li><li><b>Assuming V0 behaviour.</b> V1 changed the scheduler, process layout and defaults.</li><li><b>Pinning advice to old versions.</b> Defaults change between releases; check the version you run.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Which process tokenises prompts in vLLM V1 serving?</p>
+      <div class="opts">
+      <button>A. GPU worker</button>
+      <button>B. EngineCore</button>
+      <button data-ok>C. API server</button>
+      <button>D. DP coordinator</button>
+      </div>
+      <div class="why">The <b>API server</b> (input processing), so the engine loop stays free for scheduling.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Name the two main ways to use vLLM.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The LLM class for offline batch inference, and vllm serve for an OpenAI-compatible HTTP server.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What happens to a request's KV blocks when it finishes?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">They are freed back to the pool but keep their hashes, so a later request with the same prefix can reuse them until evicted.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">vLLM is an LLM serving engine: an API server tokenises, the EngineCore schedules a token budget over paged KV blocks each step, GPU workers run the batch, and tokens stream back.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>vLLM is an open-source inference and serving engine. You use it offline through the LLM class, which batches a list of prompts, or online with vllm serve, an OpenAI-compatible server. Inside, an API server process tokenises requests and streams results; an engine-core process runs a loop that schedules every step, deciding how many tokens each request gets and allocating paged KV-cache blocks; GPU worker processes run the batched forward pass and sample tokens. Its origin is PagedAttention, which raised throughput two to four times by eliminating KV memory waste.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> efficient multi-user LLM serving is hard.</span></div><div><span><b>Core idea:</b> API server → EngineCore (schedule, KV) → GPU workers.</span></div><div><span><b>Use:</b> LLM class offline; vllm serve online.</span></div></div>
+    <p class="start-hint">Next: <a href="../02-engine-architecture/index.html">02 · Engine architecture →</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2309.06180" target="_blank" rel="noopener">Efficient Memory Management for Large Language Model Serving with PagedAttention</a>
+        <div class="meta">Kwon et al. · SOSP 2023</div>
+        <p>Stores the KV cache in fixed-size blocks mapped by a block table, like virtual memory pages, giving near-zero fragmentation and sharing with copy-on-write. The basis of vLLM.</p><div class="num">Remember: 2–4× throughput vs FasterTransformer and Orca at the same latency</div></div>
+      <div class="paper-item"><a href="https://blog.vllm.ai/2025/01/27/v1-alpha-release.html" target="_blank" rel="noopener">vLLM V1: A Major Upgrade to vLLM's Core Architecture</a>
+        <div class="meta">vLLM Team · vLLM blog 2025</div>
+        <p>The V1 re-architecture: an isolated EngineCore busy loop (scheduler + executor) in its own process, a unified token-budget scheduler, zero-overhead prefix caching, torch.compile and piecewise CUDA graphs.</p><div class="num">Remember: up to 1.7× higher throughput than V0</div></div>
+      <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/design/arch_overview.html" target="_blank" rel="noopener">Architecture Overview</a>
+        <div class="meta">vLLM documentation · docs.vllm.ai 2026</div>
+        <p>Entrypoints (LLM class, OpenAI-compatible server) and the process layout: API server, one engine-core process per data-parallel rank running a busy loop, one worker process per GPU.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const ST = [['client', 'HTTP request or LLM.generate()', 'f'], ['API server', 'chat template, tokenise, validate (entrypoints/)', 'c'], ['EngineCore', 'scheduler: prefix-cache lookup, KV blocks, token budget (v1/core/sched)', 'a'],
+    ['GPU worker', 'model runner: batched forward pass + sampling (v1/worker)', 'b'], ['EngineCore', 'update request state; repeat each step until done (v1/engine/core.py)', 'a'], ['API server', 'detokenise and stream tokens (v1/engine/output_processor.py)', 'e']];
+  let k = 0;
+  const draw = () => {
+    const s = clear(document.getElementById('lSvg')), w = 102;
+    ST.forEach(([n, d, c], i) => { svg('rect', { x: 10 + i * (w + 6), y: 40, width: w, height: 70, rx: 10, style: `fill:var(--${c});opacity:${i <= k ? 1 : .25}` }, s);
+      svg('text', { x: 10 + i * (w + 6) + w / 2, y: 80, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:700;font-size:12px', text: n }, s);
+      if (i < ST.length - 1) svg('text', { x: 10 + (i + 1) * (w + 6) - 3, y: 80, 'text-anchor': 'middle', class: 'tm', text: '→' }, s); });
+    svg('text', { x: 330, y: 150, 'text-anchor': 'middle', class: 'tm', text: 'stages 3–5 repeat once per generated token' }, s);
+    document.getElementById('lOut').innerHTML = `<b>${k + 1}. ${ST[k][0]}</b>: ${ST[k][1]}.`;
+  };
+  document.getElementById('lNext').addEventListener('click', () => { k = Math.min(ST.length - 1, k + 1); draw(); });
+  document.getElementById('lReset').addEventListener('click', () => { k = 0; draw(); });
+  draw();
+})();
+</script>
+</body>
+</html>

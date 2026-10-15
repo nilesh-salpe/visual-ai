@@ -1,0 +1,42 @@
+[
+ {
+  "slug": "01_block_pool",
+  "title": "01 \u00b7 The KV block pool: paging, ref counts and LRU",
+  "path": "build-it/vllm/01_block_pool.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/01_block_pool.ipynb",
+  "deck": "vllm/03-kv-cache-manager/",
+  "minutes": 35
+ },
+ {
+  "slug": "02_prefix_cache",
+  "title": "02 \u00b7 Automatic prefix caching with chained block hashes",
+  "path": "build-it/vllm/02_prefix_cache.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/02_prefix_cache.ipynb",
+  "deck": "vllm/05-prefix-caching/",
+  "minutes": 35
+ },
+ {
+  "slug": "03_token_budget_scheduler",
+  "title": "03 \u00b7 The unified token-budget scheduler",
+  "path": "build-it/vllm/03_token_budget_scheduler.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/03_token_budget_scheduler.ipynb",
+  "deck": "vllm/04-scheduler/",
+  "minutes": 40
+ },
+ {
+  "slug": "04_memory_planner",
+  "title": "04 \u00b7 Planning GPU memory: weights, KV cache and concurrency",
+  "path": "build-it/vllm/04_memory_planner.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/04_memory_planner.ipynb",
+  "deck": "vllm/08-running-and-tuning/",
+  "minutes": 25
+ },
+ {
+  "slug": "05_ngram_speculation",
+  "title": "05 \u00b7 N-gram speculative decoding",
+  "path": "build-it/vllm/05_ngram_speculation.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/05_ngram_speculation.ipynb",
+  "deck": "vllm/06-speculative-decoding/",
+  "minutes": 30
+ }
+]

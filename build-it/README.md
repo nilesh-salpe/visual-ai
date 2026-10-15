@@ -134,3 +134,15 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/pretraining-data/
 | [09 · Train a tiny GPT end to end](pytorch/09_tiny_gpt.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/pytorch/09_tiny_gpt.ipynb) |
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/pytorch/
+
+## Frameworks · vLLM internals
+
+| Notebook | Time | Colab |
+|---|---|---|
+| [01 · The KV block pool: paging, ref counts and LRU](vllm/01_block_pool.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/01_block_pool.ipynb) |
+| [02 · Automatic prefix caching with chained block hashes](vllm/02_prefix_cache.ipynb) | 35 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/02_prefix_cache.ipynb) |
+| [03 · The unified token-budget scheduler](vllm/03_token_budget_scheduler.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/03_token_budget_scheduler.ipynb) |
+| [04 · Planning GPU memory: weights, KV cache and concurrency](vllm/04_memory_planner.ipynb) | 25 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/04_memory_planner.ipynb) |
+| [05 · N-gram speculative decoding](vllm/05_ngram_speculation.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/05_ngram_speculation.ipynb) |
+
+Concept decks: https://nilesh-salpe.github.io/visual-ai/vllm/

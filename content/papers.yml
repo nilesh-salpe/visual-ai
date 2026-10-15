@@ -1460,3 +1460,71 @@ nanogpt:
   year: 2022
   url: https://github.com/karpathy/nanoGPT
   summary: A minimal, readable GPT training codebase in PyTorch (model.py + train.py) using SDPA, AdamW with weight-decay groups, cosine schedule, DDP and torch.compile.
+vllm_v1:
+  title: 'vLLM V1: A Major Upgrade to vLLM''s Core Architecture'
+  authors: vLLM Team
+  venue: vLLM blog
+  year: 2025
+  url: https://blog.vllm.ai/2025/01/27/v1-alpha-release.html
+  summary: 'The V1 re-architecture: an isolated EngineCore busy loop (scheduler + executor) in its own process, a unified token-budget scheduler, zero-overhead prefix
+    caching, torch.compile and piecewise CUDA graphs.'
+  number: up to 1.7× higher throughput than V0
+vllm_arch:
+  title: Architecture Overview
+  authors: vLLM documentation
+  venue: docs.vllm.ai
+  year: 2026
+  url: https://docs.vllm.ai/en/latest/design/arch_overview.html
+  summary: 'Entrypoints (LLM class, OpenAI-compatible server) and the process layout: API server, one engine-core process per data-parallel rank running a busy loop,
+    one worker process per GPU.'
+vllm_apc:
+  title: Automatic Prefix Caching (design)
+  authors: vLLM documentation
+  venue: docs.vllm.ai
+  year: 2026
+  url: https://docs.vllm.ai/en/latest/design/prefix_caching.html
+  summary: Each KV block is hashed with its tokens and the prefix before it; blocks are reference-counted, freed blocks are evicted in LRU order, and cache hits skip
+    prefill.
+vllm_opt:
+  title: Optimization and Tuning
+  authors: vLLM documentation
+  venue: docs.vllm.ai
+  year: 2026
+  url: https://docs.vllm.ai/en/latest/configuration/optimization.html
+  summary: Preemption by recomputation when KV space runs out, chunked prefill and max_num_batched_tokens trade-offs, and when to use tensor, pipeline, expert and
+    data parallelism.
+vllm_server:
+  title: OpenAI-Compatible Server
+  authors: vLLM documentation
+  venue: docs.vllm.ai
+  year: 2026
+  url: https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html
+  summary: vllm serve exposes /v1/completions, /v1/chat/completions and more with OpenAI-compatible request formats, plus /metrics for Prometheus.
+vllm_parallel:
+  title: Parallelism and Scaling
+  authors: vLLM documentation
+  venue: docs.vllm.ai
+  year: 2026
+  url: https://docs.vllm.ai/en/latest/serving/parallelism_scaling.html
+  summary: Single-node tensor parallelism, multi-node pipeline parallelism, data parallelism and expert parallelism for MoE models, and how to choose sizes.
+vllm_spec:
+  title: Speculative Decoding
+  authors: vLLM documentation
+  venue: docs.vllm.ai
+  year: 2026
+  url: https://docs.vllm.ai/en/latest/features/spec_decode.html
+  summary: 'Configuring speculative decoding with --speculative-config: n-gram (prompt lookup), draft models, EAGLE/EAGLE-3, MTP heads, Medusa and suffix decoding.'
+vllm_quant:
+  title: Quantization
+  authors: vLLM documentation
+  venue: docs.vllm.ai
+  year: 2026
+  url: https://docs.vllm.ai/en/latest/features/quantization/index.html
+  summary: Supported weight/activation quantization (FP8, AWQ, GPTQ, compressed-tensors, MXFP4, NVFP4 and more) and quantized KV caches, with hardware support tables.
+vllm_release:
+  title: vLLM v0.31.0 release
+  authors: vLLM project
+  venue: GitHub
+  year: 2026
+  url: https://github.com/vllm-project/vllm/releases/tag/v0.31.0
+  summary: The release these decks were checked against (source at vllm/v1/core and vllm/config).

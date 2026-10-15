@@ -14,6 +14,8 @@ TOPICS = {  # folder: (title, [(stage, [slug, ...]), ...])
                                ('Numerics and optimization', ['08-softmax-logsumexp', '09-optimization-basics', '10-floating-point'])]),
     'pytorch': ('PyTorch for LLMs', [('Core', ['01-tensors', '02-autograd', '03-nn-module']), ('Training', ['04-training-loop', '05-data', '06-mixed-precision']),
                                      ('Scaling up', ['07-performance', '08-distributed']), ('Together', ['09-putting-it-together'])]),
+    'vllm': ('vLLM', [('The engine', ['01-what-is-vllm', '02-engine-architecture']), ('Memory and scheduling', ['03-kv-cache-manager', '04-scheduler', '05-prefix-caching']),
+                      ('Speed and scale', ['06-speculative-decoding', '07-parallelism-and-quantization']), ('Operating it', ['08-running-and-tuning'])]),
     'pretraining-data': ('Web Crawling and Pretraining Data', [('Sources', ['01-where-data-comes-from']), ('Crawling', ['02-how-a-crawler-works', '03-crawling-at-scale', '04-robots-and-consent']),
                                                                ('Cleaning', ['05-text-extraction', '06-quality-filtering', '07-deduplication', '08-pii-and-safety']), ('Assembling', ['09-mixtures-and-repetition', '10-reference-pipelines'])]),
     'nn-fundamentals': ('Neural Network Fundamentals', [('Networks', ['01-perceptron-to-mlp', '02-activation-functions']), ('Learning', ['03-backpropagation', '04-loss-functions', '05-optimizers']),

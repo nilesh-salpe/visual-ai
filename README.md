@@ -205,6 +205,21 @@ Nine 9-beat decks plus 9 hands-on [Colab notebooks](build-it/), checked against 
 | 08 | [Distributed training in PyTorch](pytorch/08-distributed/) |
 | 09 | [Putting it together: a tiny GPT](pytorch/09-putting-it-together/) |
 
+## vLLM internals and operation
+
+Eight 9-beat decks plus 5 hands-on [Colab notebooks](build-it/), checked against vLLM v0.31.0.
+
+| # | Deck |
+|---|------|
+| 01 | [What vLLM is and a request's life](vllm/01-what-is-vllm/) |
+| 02 | [Engine architecture](vllm/02-engine-architecture/) |
+| 03 | [KV cache manager and PagedAttention](vllm/03-kv-cache-manager/) |
+| 04 | [The scheduler: continuous batching and chunked prefill](vllm/04-scheduler/) |
+| 05 | [Automatic prefix caching](vllm/05-prefix-caching/) |
+| 06 | [Speculative decoding in vLLM](vllm/06-speculative-decoding/) |
+| 07 | [Parallelism and quantization](vllm/07-parallelism-and-quantization/) |
+| 08 | [Running and tuning vLLM](vllm/08-running-and-tuning/) |
+
 ## Editing and regenerating
 
 Deck content lives in [`content/`](content/) as Markdown (`deck.md`) plus each deck's interactive code (`widget.js`); see [`content/README.md`](content/README.md) for the format. To rebuild the site:

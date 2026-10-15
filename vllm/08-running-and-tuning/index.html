@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Running and Tuning vLLM</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Running and tuning vLLM" data-home="../index.html" data-home-label="vLLM">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">vLLM · 08</div>
+    <h1>Running and tuning vLLM</h1>
+    <p class="sub">Serving with vllm serve: the flags that matter, the OpenAI-compatible endpoints, Prometheus metrics, benchmarking with vllm bench, and what to change when latency, throughput or preemptions look wrong.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Defaults are reasonable but every workload differs: long prompts or short, latency or throughput, many users or few. Tuning blind wastes GPUs (graphics processing units) or breaks latency targets.</div>
+      <div class="c"><b>Core idea</b>Size memory with <code>--gpu-memory-utilization</code> (0.92 by default in v0.31.0), concurrency with <code>--max-num-seqs</code>, step size with <code>--max-num-batched-tokens</code>, and context with <code>--max-model-len</code>. Watch <b>/metrics</b> (KV (key-value) usage, preemptions, queue, TTFT (time to first token), inter-token latency), and measure changes with <code>vllm bench serve</code>.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Build a launch command</h2>
+    <hr>
+<p class="lede">Pick a goal and constraints; the builder assembles a vllm serve command from flags that exist in v0.31.0 and explains each choice.</p>
+<div class="visual">
+  <div class="seg" id="cGoal"><button data-v="lat" class="on">low latency chat</button><button data-v="thr">max throughput</button><button data-v="long">long documents</button></div>
+  <div class="controls"><label class="ctl">GPUs <input type="range" id="cG" min="1" max="8" step="1" value="1"> <output id="cGo"></output></label><label class="ctl"><input type="checkbox" id="cF"> FP8 KV cache</label><label class="ctl"><input type="checkbox" id="cS"> speculative (n-gram)</label></div>
+  <pre id="cCmd" style="margin:12px 0 0;padding:12px;border-radius:10px;background:var(--panel-2);font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap"></pre>
+  <p class="readout" id="cOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why defaults are only a start</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Workloads differ</h3><p>Chat (short prompts, streaming) and batch summarisation (long prompts) want different budgets.</p></div>
+      <div class="card b"><h3>Hardware differs</h3><p>v0.31.0 already picks different batching defaults for H100-class, B200-class and other GPUs.</p></div>
+      <div class="card c"><h3>Targets differ</h3><p>Latency SLOs (service-level objectives) and cost per token pull in opposite directions.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What to change first?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">vllm:num_requests_waiting keeps growing while vllm:kv_cache_usage_perc stays at 40%. What is the likely limit?</p>
+      <div class="opts">
+      <button>A. KV memory</button>
+      <button data-ok>B. max_num_seqs (concurrency cap) or the token budget</button>
+      <button>C. The tokenizer</button>
+      <button>D. Network bandwidth</button>
+      </div>
+      <div class="why"><b>B.</b> Requests are waiting while KV memory is free, so a scheduling cap is binding: raise max_num_seqs or max_num_batched_tokens (and watch latency).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Flags, endpoints, metrics</h2>
+    <hr>
+<div class="grid3">
+      <div class="card a"><h3>Flags</h3><p>--gpu-memory-utilization, --max-num-seqs, --max-num-batched-tokens, --max-model-len, -tp/-pp/-dp, --kv-cache-dtype, --speculative-config.</p></div>
+      <div class="card c"><h3>Endpoints</h3><p>/v1/chat/completions, /v1/completions, /v1/models, /health, /metrics (OpenAI-compatible server).</p></div>
+      <div class="card b"><h3>Metrics</h3><p>vllm:kv_cache_usage_perc, num_requests_running / waiting, num_preemptions, time_to_first_token_seconds, inter_token_latency_seconds, prefix_cache_hits.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 202" role="img" aria-label="diagram" class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">vllm serve &lt;model&gt;</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">flags</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">clients</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">/v1/chat/completions</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">/metrics</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">Prometheus</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">vllm bench serve</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">measure</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">adjust</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">memory,</text><text x="593.2" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">concurrency,</text><text x="593.2" y="137.0" text-anchor="middle" class="tm" style="font-size:11px">budget</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><path d="M593.2 150 V174 H330.0 V152" fill="none" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#gArr)"/><text x="461.6" y="191" text-anchor="middle" class="tm" style="font-size:11px">iterate</text></svg></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Defaults to know (v0.31.0)</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Setting</th><th>Default</th><th>Source</th></tr>
+  <tr><td>gpu_memory_utilization</td><td>0.92</td><td>vllm/config/cache.py</td></tr>
+  <tr><td>block_size</td><td>16 (back ends may choose another)</td><td>CacheConfig.DEFAULT_BLOCK_SIZE</td></tr>
+  <tr><td>enable_prefix_caching</td><td>True</td><td>vllm/config/cache.py</td></tr>
+  <tr><td>enable_chunked_prefill</td><td>True</td><td>vllm/config/scheduler.py</td></tr>
+  <tr><td>policy</td><td>"fcfs"</td><td>vllm/config/scheduler.py</td></tr>
+  <tr><td>max_num_batched_tokens (LLM (large language model) class / server)</td><td>B200-class ≥ 160 GB: 16,384 / 16,384 · H100/H200-class: 16,384 / 8,192 · others: 8,192 / 2,048</td><td>vllm/engine/arg_utils.py</td></tr>
+  <tr><td>max_num_seqs</td><td>1,024 on ≥ 70 GB GPUs (except A100), else 256</td><td>vllm/engine/arg_utils.py</td></tr>
+</table></div>
+<p class="caption">Defaults change between releases; check `vllm serve --help` for your version.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: fixing preemptions</h2>
+    <hr>
+    <p class="lede">vLLM's optimization guide: when KV cache space runs out, requests are preempted and recomputed, logging a warning and raising vllm:num_preemptions.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Symptom: vllm:num_preemptions climbing, vllm:kv_cache_usage_perc near 1.0, and tail latency spikes.</li><li>Option 1 (from the guide): increase --gpu-memory-utilization to give the KV cache more of the GPU.</li><li>Option 2: decrease --max-num-seqs or --max-num-batched-tokens to run fewer requests at once.</li><li>Option 3: increase --tensor-parallel-size (weights per GPU shrink, KV room grows), or use --kv-cache-dtype fp8. Re-measure with vllm bench serve.</li></ol><div class="result">Preemption is a symptom of KV pressure; trade concurrency, memory share or parallelism against it, and measure.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why measure-then-tune works</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Metrics name the bottleneck</h3><p>KV pressure, scheduling caps and prefill load each show up in distinct metrics.</p></div>
+      <div class="card e"><h3>Built-in benchmarks</h3><p>vllm bench serve replays realistic request streams against a running server.</p></div>
+      <div class="card b"><h3>Few knobs matter most</h3><p>Memory share, concurrency, budget and parallelism cover most tuning.</p></div>
+      <div class="card c"><h3>Repeatable</h3><p>Pin the version and flags; defaults are versioned in code.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Setting gpu_memory_utilization to 1.0 is best."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It leaves no headroom for activations spikes, other processes or fragmentation; out-of-memory errors follow.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Higher max_num_seqs always means higher throughput."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Past the KV capacity it only causes preemption and recomputation.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Benchmark numbers transfer between workloads."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Prompt and output length distributions change results dramatically.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>--max-model-len below the model maximum.</b> Saves startup KV checks and memory if you never need full context.</li><li><b>vllm bench serve / throughput / latency.</b> Built-in benchmarks.</li><li><b>Key metrics.</b> kv_cache_usage_perc, num_requests_waiting, num_preemptions, time_to_first_token_seconds, inter_token_latency_seconds.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>gpu-memory-utilization too high with other processes on the GPU.</b> Out-of-memory at startup.</li><li><b>Tuning on a different workload.</b> Benchmark with your real prompt/output lengths.</li><li><b>Ignoring max_num_batched_tokens.</b> Larger raises throughput but also inter-token latency.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Default gpu_memory_utilization in vLLM v0.31.0?</p>
+      <div class="opts">
+      <button>A. 0.8</button>
+      <button>B. 0.9</button>
+      <button data-ok>C. 0.92</button>
+      <button>D. 0.95</button>
+      </div>
+      <div class="why"><b>0.92</b> (CacheConfig).</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Name three actions for frequent preemptions.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Increase gpu_memory_utilization; decrease max_num_seqs or max_num_batched_tokens; increase tensor_parallel_size (or use an FP8 (8-bit floating point) KV cache).</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Which metric shows how full the KV cache is?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">vllm:kv_cache_usage_perc.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Run vllm serve with memory (0.92 default), concurrency, token-budget and parallelism flags; watch /metrics for KV usage, queueing and preemptions; and measure every change with vllm bench serve.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Running vLLM well is a loop of configure, measure, adjust. The key flags set how much GPU memory vLLM may use, 0.92 by default in this version, how many requests run at once, how many tokens each step may schedule, the maximum context, parallelism, the KV-cache data type and speculative decoding. The server speaks the OpenAI API (application programming interface) and exports Prometheus metrics: KV-cache usage, running and waiting requests, preemptions, time to first token and inter-token latency. Preemptions mean KV pressure; waiting requests with free KV mean a scheduling cap. vllm bench serve measures the effect of each change.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> one configuration does not fit every workload.</span></div><div><span><b>Core idea:</b> flags → metrics → benchmark → adjust.</span></div><div><span><b>Defaults:</b> mem 0.92, block 16, prefix caching and chunked prefill on.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/04_memory_planner.ipynb" target="_blank" rel="noopener">04 · Planning GPU memory: weights, KV cache and concurrency</a> <span style="color:var(--faint)">· 25 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/vllm/04_memory_planner.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../07-parallelism-and-quantization/index.html">← 07</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html" target="_blank" rel="noopener">OpenAI-Compatible Server</a>
+        <div class="meta">vLLM documentation · docs.vllm.ai 2026</div>
+        <p>vllm serve exposes /v1/completions, /v1/chat/completions and more with OpenAI-compatible request formats, plus /metrics for Prometheus.</p></div>
+      <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/configuration/optimization.html" target="_blank" rel="noopener">Optimization and Tuning</a>
+        <div class="meta">vLLM documentation · docs.vllm.ai 2026</div>
+        <p>Preemption by recomputation when KV space runs out, chunked prefill and max_num_batched_tokens trade-offs, and when to use tensor, pipeline, expert and data parallelism.</p></div>
+      <div class="paper-item"><a href="https://github.com/vllm-project/vllm/releases/tag/v0.31.0" target="_blank" rel="noopener">vLLM v0.31.0 release</a>
+        <div class="meta">vLLM project · GitHub 2026</div>
+        <p>The release these decks were checked against (source at vllm/v1/core and vllm/config).</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  let goal = 'lat';
+  const draw = () => {
+    const g = Deck.val('cG'); Deck.out('cGo', g); const fp8 = document.getElementById('cF').checked, spec = document.getElementById('cS').checked;
+    const lines = ['vllm serve meta-llama/Llama-3.1-8B-Instruct'], why = [];
+    if (goal === 'thr' && g > 1) { lines.push(`  -dp ${g}`); why.push(`<b>-dp ${g}</b>: the model fits on one GPU, so replicas add throughput.`); }
+    else if (g > 1) { lines.push(`  -tp ${g}`); why.push(`<b>-tp ${g}</b>: shards weights and KV heads, freeing KV room and cutting per-step work.`); }
+    if (goal === 'lat') { lines.push('  --max-num-batched-tokens 2048'); why.push('<b>--max-num-batched-tokens 2048</b>: smaller steps keep inter-token latency low.'); }
+    if (goal === 'thr') { lines.push('  --max-num-batched-tokens 16384 --max-num-seqs 512'); why.push('<b>larger budget and concurrency</b>: fuller steps, higher tokens/s (watch preemptions).'); }
+    if (goal === 'long') { lines.push('  --max-model-len 131072 --max-num-seqs 16'); why.push('<b>--max-model-len 131072, fewer sequences</b>: room for long contexts per request.'); }
+    if (fp8) { lines.push('  --kv-cache-dtype fp8'); why.push('<b>--kv-cache-dtype fp8</b>: halves KV memory.'); }
+    if (spec) { lines.push(`  --speculative-config '{"method": "ngram", "num_speculative_tokens": 4, "prompt_lookup_max": 4}'`); why.push('<b>n-gram speculation</b>: helps when outputs copy the input (summaries, code edits).'); }
+    lines.push('  --gpu-memory-utilization 0.92'); why.push('<b>0.92</b> is the v0.31.0 default; lower it if other processes share the GPU.');
+    document.getElementById('cCmd').textContent = lines.join(' \\\n');
+    document.getElementById('cOut').innerHTML = why.join('<br>') + '<br>Then: <code>vllm bench serve</code> against it and check <code>/metrics</code>.';
+  };
+  Deck.seg('cGoal', v => { goal = v; draw(); }); Deck.bind(['cG', 'cF', 'cS'], draw);
+})();
+</script>
+</body>
+</html>

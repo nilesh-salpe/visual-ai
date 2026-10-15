@@ -17,6 +17,7 @@ PHASES = [  # (heading, notebook folder, index json)
     ('Phase 5 · Distributed training & reliability', 'distributed', 'index_distributed.json'),
     ('Phase 6 · Web crawling & pretraining data', 'pretraining-data', 'index_data.json'),
     ('Frameworks · PyTorch for LLMs', 'pytorch', 'index_torch.json'),
+    ('Frameworks · vLLM internals', 'vllm', 'index_vllm.json'),
 ]
 
 
@@ -389,3 +390,23 @@ if __name__ == '__main__':
         'index_torch.json', 'Split attention heads with strides, write a custom autograd Function, build a transformer block with SDPA, a resumable training loop, padding and packing collators, autocast and GradScaler, torch.compile graph-break hunting, DDP with torchrun, and a tiny GPT, all runnable on a CPU runtime.',
         TORCH_CARDS, 'Paszke et al. 2019 (PyTorch); Ansel et al. 2024 (PyTorch 2); PyTorch 2.14 documentation (tensor views, autograd mechanics, torch.utils.data, torch.amp, torch.compiler, SDPA tutorial, FSDP2 tutorial, torchrun, CUDA semantics); Li et al. 2020 (DDP); Zhao et al. 2023 (FSDP); Micikevicius et al. 2018; Kalamkar et al. 2019; Loshchilov & Hutter 2019; Dao 2023; Radford et al. 2019; Karpathy (nanoGPT).'))
     print('wrote pytorch/index.html')
+
+
+VLLM_CARDS = [
+    ('01-what-is-vllm', "What vLLM is and a request's life", 'Offline LLM class vs vllm serve; every stage a request passes.'),
+    ('02-engine-architecture', 'Engine architecture', 'API servers, EngineCore per DP rank, workers per GPU: A + DP + N processes.'),
+    ('03-kv-cache-manager', 'KV cache manager and PagedAttention', '16-token blocks, block tables, ref counts, LRU free queue.'),
+    ('04-scheduler', 'The scheduler', 'One token budget, running first, chunked prefill, preemption by recompute.'),
+    ('05-prefix-caching', 'Automatic prefix caching', 'Chained block hashes, longest-prefix reuse, on by default.'),
+    ('06-speculative-decoding', 'Speculative decoding in vLLM', 'n-gram, draft, EAGLE, MTP proposers; rejection sampling.'),
+    ('07-parallelism-and-quantization', 'Parallelism and quantization', '-tp, -pp, -dp, expert parallelism, FP8 weights and KV.'),
+    ('08-running-and-tuning', 'Running and tuning vLLM', 'Flags, OpenAI endpoints, /metrics, vllm bench, fixing preemptions.'),
+]
+
+if __name__ == '__main__':
+    open(os.path.join(REPO, 'vllm', 'index.html'), 'w').write(topic_hub(
+        'vllm', 'vLLM internals and operation', 'vLLM',
+        'How the vLLM serving engine works inside and how to run it: the process architecture, the paged KV cache manager, the unified token-budget scheduler, automatic prefix caching, speculative decoding, parallelism and quantization, and tuning with metrics. Checked against the vLLM v0.31.0 source and documentation; the concepts are introduced in the LLM Inference topic.',
+        'index_vllm.json', 'Re-implement vLLM\'s block pool with ref counts and LRU, chained-hash prefix caching, the token-budget scheduler with chunked prefill and preemption, a GPU memory and concurrency planner, and n-gram speculative decoding, all as CPU simulations.',
+        VLLM_CARDS, 'Kwon et al. 2023 (PagedAttention / vLLM); vLLM V1 blog 2025; vLLM v0.31.0 source (vllm/v1/core, vllm/config, vllm/engine) and documentation (architecture overview, automatic prefix caching design, optimization and tuning, OpenAI-compatible server, parallelism and scaling, speculative decoding, quantization); Yu et al. 2022 (Orca); Agrawal et al. 2024 (Sarathi-Serve); Leviathan et al. 2023; Zheng et al. 2024 (SGLang).'))
+    print('wrote vllm/index.html')

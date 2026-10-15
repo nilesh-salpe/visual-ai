@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automatic Prefix Caching</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Automatic prefix caching" data-home="../index.html" data-home-label="vLLM">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">vLLM · 05</div>
+    <h1>Automatic prefix caching</h1>
+    <p class="sub">How vLLM reuses KV (key-value) cache across requests that share a prefix (system prompts, few-shot examples, multi-turn chats, RAG (retrieval-augmented generation) documents): chained block hashes, cache hits, and eviction.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Many requests start with the same thousands of tokens. Recomputing their KV cache for every request wastes prefill compute and adds time to first token.</div>
+      <div class="c"><b>Core idea</b>Hash every <b>full</b> KV block together with the hash of the block before it, so a block hash identifies the <b>entire prefix</b> up to that block. A new prompt reuses the longest run of matching block hashes and only prefills the rest. Freed blocks keep their hashes until <b>LRU (least recently used) eviction</b>. In V1 it is <b>on by default</b> (<code>enable_prefix_caching=True</code>, hash <code>sha256</code>).</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Which blocks hit?</h2>
+    <hr>
+<p class="lede">Two prompts, split into 16-token blocks. Edit where the second prompt first differs from the first; blocks before that point (full blocks only) are cache hits.</p>
+<div class="visual">
+  <div class="controls" style="margin-top:0"><label class="ctl">shared prefix length <input type="range" id="pS" min="0" max="160" step="1" value="70"> <output id="pSo"></output></label><label class="ctl">prompt length <input type="range" id="pL" min="20" max="200" step="1" value="100"> <output id="pLo"></output></label></div>
+  <svg id="pSvg" viewBox="0 0 660 140" style="margin-top:10px" role="img" aria-label="Prefix cache hits"></svg>
+  <p class="readout" id="pOut"></p>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why exact-match hashing on whole prompts isn't enough</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Prompts differ at the end</h3><p>Whole-prompt hashes would almost never match.</p></div>
+      <div class="card b"><h3>Position matters</h3><p>The same text at a different position has different KV (positions are encoded in K).</p></div>
+      <div class="card c"><h3>Memory is finite</h3><p>Cached blocks must be evictable when space is needed.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Why chain the hashes?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">Why does vLLM hash each block together with its parent block's hash?</p>
+      <div class="opts">
+      <button>A. To make hashing faster</button>
+      <button data-ok>B. So a block hash identifies the whole prefix before it, not just its own 16 tokens</button>
+      <button>C. To compress the KV cache</button>
+      <button>D. Because sha256 requires it</button>
+      </div>
+      <div class="why"><b>B.</b> KV values depend on every earlier token. Chaining ensures a hit means the entire prefix matched.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Hash, look up, touch, evict</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Hash</h3><p>hash((parent_hash, block_tokens, extra_keys)) for each full block (sha256 by default; xxhash options exist).</p></div>
+      <div class="card c"><h3>Look up</h3><p>Walk the prompt's block hashes from the start; stop at the first miss.</p></div>
+      <div class="card b"><h3>Touch</h3><p>Hit blocks get ref count +1 and leave the free queue so they cannot be evicted while in use.</p></div>
+      <div class="card e"><h3>Evict</h3><p>Blocks with ref count 0 stay cached in the LRU free queue until reused for new data.</p></div>
+    </div>
+<!--x:glance--><div class="glance"><h4>At a glance</h4><svg viewBox="0 0 660 152" role="img" aria-label="Partial blocks are never cached; the last token is always recomputed to produce logits." class="glance-svg"><defs><marker id="gArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs><rect x="10.0" y="28" width="113.6" height="64" rx="10" style="fill:var(--faint)"/><text x="66.8" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">prompt tokens</text><text x="66.8" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">split into</text><text x="66.8" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">16-token blocks</text><rect x="141.6" y="28" width="113.6" height="64" rx="10" style="fill:var(--a)"/><text x="198.4" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">hash(parent, tokens)</text><text x="198.4" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">chained</text><line x1="125.6" y1="60.0" x2="139.6" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="273.2" y="28" width="113.6" height="64" rx="10" style="fill:var(--c)"/><text x="330.0" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">lookup</text><text x="330.0" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">longest matching</text><text x="330.0" y="123.0" text-anchor="middle" class="tm" style="font-size:11px">run</text><line x1="257.2" y1="60.0" x2="271.2" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="404.8" y="28" width="113.6" height="64" rx="10" style="fill:var(--b)"/><text x="461.6" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">touch hits</text><text x="461.6" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">ref count +1</text><line x1="388.8" y1="60.0" x2="402.8" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/><rect x="536.4" y="28" width="113.6" height="64" rx="10" style="fill:var(--e)"/><text x="593.2" y="65.0" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:12px">prefill only the rest</text><text x="593.2" y="109.0" text-anchor="middle" class="tm" style="font-size:11px">+ last token</text><line x1="520.4" y1="60.0" x2="534.4" y2="60.0" style="stroke:var(--muted);stroke-width:2" marker-end="url(#gArr)"/></svg><p class="caption" style="margin:4px 0 0">Partial blocks are never cached; the last token is always recomputed to produce logits.</p></div><!--/x:glance-->
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Where prefix caching shines</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+  <tr><th>Workload</th><th>Shared prefix</th></tr>
+  <tr><td>Chat with a long system prompt</td><td>system prompt + tool definitions</td></tr>
+  <tr><td>Multi-turn conversations</td><td>all earlier turns</td></tr>
+  <tr><td>Few-shot prompting</td><td>the examples</td></tr>
+  <tr><td>RAG over a fixed corpus</td><td>documents placed first, if repeated across queries</td></tr>
+  <tr><td>Agents</td><td>the growing trajectory: each call extends the previous one</td></tr>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: a shared system prompt</h2>
+    <hr>
+    <p class="lede">Notebook 02: every request = the same 70-token system prompt + a unique 30-token user message; requests processed in order with one cache.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>70 tokens = 4 full blocks (64 tokens) + 6 tokens in a partial block. Only the 4 full blocks can be cached.</li><li>The first request misses; each of the next 19 reuses 64 tokens: 19 × 64 / 2,000 = <b>60.8%</b> of all prompt tokens skip prefill (over 50 users: 62.7%).</li><li>A 500-token shared prefix saves <b>91.7%</b>; a 2,000-token one 96.6%; a 10-token one 0% (no full block).</li><li>Changing the very first token changes every block hash after it: the whole prefix misses.</li></ol><div class="result">Long, stable prefixes put first in the prompt are where prefix caching pays off.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it is nearly free</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Built on paging</h3><p>Blocks and ref counts already exist; caching just keeps hashes on freed blocks.</p></div>
+      <div class="card e"><h3>Zero overhead on misses</h3><p>V1 made prefix caching cheap enough to enable by default (V1 blog).</p></div>
+      <div class="card b"><h3>Big TTFT savings</h3><p>Skipped prefill tokens directly cut time to first token.</p></div>
+      <div class="card c"><h3>Composable</h3><p>Works with chunked prefill, preemption and speculative decoding through the same "computed tokens" counter.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Prefix caching caches responses."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It caches KV states of prompt prefixes; outputs are still generated fresh.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Any shared substring is reused."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Only an identical prefix from the first token, in whole blocks, is reused.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"It must be enabled manually."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">enable_prefix_caching defaults to True in vLLM V1 (v0.31.0).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Put shared content first.</b> System prompt, tools, documents, then the user turn.</li><li><b>Watch vllm:prefix_cache_hits / queries.</b> The hit rate.</li><li><b>Route DP (data parallelism) traffic by prefix.</b> Each data-parallel rank has its own cache.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Timestamps or IDs (identifiers) at the top of the prompt.</b> Every request misses.</li><li><b>Expecting hits on partial blocks.</b> Only full 16-token blocks are cached.</li><li><b>Assuming cached = permanent.</b> Blocks are evicted LRU under memory pressure.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">A 70-token shared system prompt with 16-token blocks caches how many tokens?</p>
+      <div class="opts">
+      <button>A. 70</button>
+      <button data-ok>B. 64</button>
+      <button>C. 80</button>
+      <button>D. 48</button>
+      </div>
+      <div class="why">4 full blocks = <b>64</b>.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why is the last prompt token always recomputed?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">The model needs to run at least one token through the network to produce the logits for the next token.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">How should you structure prompts to maximise hits?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Put stable, shared content (system prompt, tools, documents) first and the variable part last; avoid timestamps or IDs early in the prompt.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">vLLM caches full KV blocks under chained hashes, so any request sharing an exact prefix skips its prefill; it is on by default in V1 and pays off most for long, stable prefixes.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Automatic prefix caching reuses KV cache across requests. vLLM hashes each full sixteen-token block together with the hash of the block before it, so a block's hash stands for the entire prefix up to it. When a request arrives, the scheduler walks its block hashes from the start and reuses every matching block, prefilling only the rest plus the last token. Finished requests leave their blocks in a least-recently-used queue with their hashes intact until the memory is needed. In version one it is on by default. Put stable content like system prompts first.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> repeated prefixes waste prefill.</span></div><div><span><b>Core idea:</b> chained block hashes; longest matching run.</span></div><div><span><b>Default:</b> on in V1; sha256.</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/02_prefix_cache.ipynb" target="_blank" rel="noopener">02 · Automatic prefix caching with chained block hashes</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/vllm/02_prefix_cache.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">Next: <a href="../06-speculative-decoding/index.html">06 · Speculative decoding in vLLM →</a> · Previous: <a href="../04-scheduler/index.html">← 04</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/design/prefix_caching.html" target="_blank" rel="noopener">Automatic Prefix Caching (design)</a>
+        <div class="meta">vLLM documentation · docs.vllm.ai 2026</div>
+        <p>Each KV block is hashed with its tokens and the prefix before it; blocks are reference-counted, freed blocks are evicted in LRU order, and cache hits skip prefill.</p></div>
+      <div class="paper-item"><a href="https://blog.vllm.ai/2025/01/27/v1-alpha-release.html" target="_blank" rel="noopener">vLLM V1: A Major Upgrade to vLLM's Core Architecture</a>
+        <div class="meta">vLLM Team · vLLM blog 2025</div>
+        <p>The V1 re-architecture: an isolated EngineCore busy loop (scheduler + executor) in its own process, a unified token-budget scheduler, zero-overhead prefix caching, torch.compile and piecewise CUDA (Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors) graphs.</p><div class="num">Remember: up to 1.7× higher throughput than V0</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2312.07104" target="_blank" rel="noopener">SGLang: Efficient Execution of Structured Language Model Programs</a>
+        <div class="meta">Zheng et al. · NeurIPS 2024</div>
+        <p>A runtime and frontend for multi-call LLM (large language model) programs; RadixAttention keeps KV caches in a radix tree so shared prefixes are reused across requests automatically.</p><div class="num">Remember: up to 6.4× higher throughput</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  Deck.bind(['pS', 'pL'], () => {
+    let sh = Deck.val('pS'); const L = Deck.val('pL'); if (sh > L) sh = L; Deck.out('pSo', sh); Deck.out('pLo', L);
+    const s = clear(document.getElementById('pSvg')), nb = Math.ceil(L / 16), w = Math.min(60, 640 / nb - 4), full = Math.floor(L / 16);
+    let hits = 0;
+    for (let b = 0; b < nb; b++) { const end = Math.min((b + 1) * 16, L), isFull = (b + 1) * 16 <= L, hit = isFull && end <= sh && b === hits; if (hit) hits++;
+      svg('rect', { x: 10 + b * (w + 4), y: 20, width: w * (end - b * 16) / 16, height: 50, rx: 5, style: `fill:${hit ? 'var(--e)' : 'var(--b)'};opacity:${isFull ? 1 : .55}` }, s);
+      svg('text', { x: 10 + b * (w + 4) + w / 2, y: 50, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-size:11px', text: hit ? 'hit' : isFull ? 'miss' : 'partial' }, s); }
+    svg('line', { x1: 10 + sh / 16 * (w + 4), x2: 10 + sh / 16 * (w + 4), y1: 10, y2: 80, style: 'stroke:var(--d);stroke-width:2;stroke-dasharray:4 3' }, s);
+    svg('text', { x: 10 + sh / 16 * (w + 4) + 4, y: 100, class: 'tm', style: 'fill:var(--d)', text: 'prompts differ from here' }, s);
+    const reused = Math.min(hits * 16, L - 1);
+    document.getElementById('pOut').innerHTML = `<b>${reused}</b> of ${L} prompt tokens reused (${hits} full block${hits === 1 ? '' : 's'}); ${L - reused} to prefill. ${sh % 16 && sh < L ? `The ${sh % 16} shared tokens in the partial block after them are recomputed.` : ''}`;
+  });
+})();
+</script>
+</body>
+</html>

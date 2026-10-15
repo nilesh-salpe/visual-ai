@@ -28,6 +28,7 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
     ]),
     ('Frameworks', [
         ('pytorch', 'Framework · 9 decks + 9 Colab notebooks', 'PyTorch for LLMs', 'Tensors and views, autograd, nn.Module, the training loop, data pipelines, mixed precision, torch.compile and SDPA, DDP and FSDP2, and a tiny GPT. Checked against PyTorch 2.14.1.', ['autograd', 'SDPA', 'torch.compile', 'FSDP2']),
+        ('vllm', 'Framework · 8 decks + 5 Colab notebooks', 'vLLM internals and operation', 'How the vLLM engine works and how to run it: process architecture, paged KV cache, the token-budget scheduler, prefix caching, speculative decoding, parallelism, quantization and tuning. Checked against vLLM v0.31.0.', ['PagedAttention', 'scheduler', 'prefix cache', 'vllm serve']),
     ]),
     ('Serving and evaluation', [
         ('inference', 'Topic · 10 decks + 12 Colab notebooks', 'LLM Inference and Serving', 'Prefill vs decode, KV cache, continuous batching, chunked prefill, PagedAttention, speculative decoding, quantization, tensor parallelism, disaggregation, with hands-on notebooks.', ['KV cache', 'vLLM', 'speculative', 'Colab']),
