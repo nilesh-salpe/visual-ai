@@ -12,10 +12,13 @@ for key, p in PAPERS.items():
     url = p['url']
     m = re.match(r'https://arxiv.org/abs/(.+)', url)
     if not m:
-        try:
-            code = urllib.request.urlopen(urllib.request.Request(url, method='HEAD', headers={'User-Agent': 'Mozilla/5.0'}), timeout=30).status
-        except Exception as e:
-            code = str(e)
+        code = None
+        for method in ('HEAD', 'GET'):          # some servers answer HEAD with errors but serve GET fine
+            try:
+                code = urllib.request.urlopen(urllib.request.Request(url, method=method, headers={'User-Agent': 'Mozilla/5.0'}), timeout=30).status
+                break
+            except Exception as e:
+                code = str(e)
         ok_ = isinstance(code, int) and 200 <= code < 300; print(f"{'ok ' if ok_ else 'BAD'} {key}: {code} (non-arXiv)"); bad += not ok_
         continue
     f = os.path.join(cache, m.group(1).replace('/', '_') + '.html')
