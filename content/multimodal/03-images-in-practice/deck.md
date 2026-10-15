@@ -63,7 +63,7 @@ papers:
 A user uploads ten full-resolution phone photos and asks a question. The request is slow and expensive, and the answer mentions a dog that is not in any photo.
             {: .lede}
 
-            ::: cards grid3
+::: cards grid3
 ### [d] Hidden cost
 Images are converted to many tokens, billed like text input.
 

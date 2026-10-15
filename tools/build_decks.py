@@ -263,7 +263,19 @@ def build(folder):
 </body>
 </html>
 '''
+    _check_rendered(page, folder)
     return expand_acronyms(page)[0]
+
+
+def _check_rendered(page, folder):
+    """Fail the build if Markdown syntax leaked into the page as visible text (e.g. an indented ::: marker)."""
+    if re.search(r'<pre><code>', page):    # Markdown's indented-code blocks: never intended in decks, a sign of mis-indented source
+        snippet = re.search(r'<pre><code>(.{0,60})', page, re.S).group(1)
+        raise SystemExit(f'accidental indented code block in {os.path.relpath(folder, REPO)}: {snippet!r}')
+    visible = re.sub(r'<script\b.*?</script>|<style\b.*?</style>|<pre\b.*?</pre>|<code\b.*?</code>', '', page, flags=re.S)
+    leaks = re.findall(r'(?:^|>)\s*(:::\s*\w+[^<\n]*|\{:\s*[.#][^}<]*\})', visible, re.M)
+    if leaks:
+        raise SystemExit(f'unrendered Markdown in {os.path.relpath(folder, REPO)}: {leaks[:3]}')
 
 
 DOC_MD = markdown.Markdown(extensions=['attr_list', 'md_in_html', 'tables', 'fenced_code', 'toc'])

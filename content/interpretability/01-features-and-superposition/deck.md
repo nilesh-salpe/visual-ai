@@ -62,7 +62,7 @@ papers:
 You inspect one neuron of a language model and collect the texts that activate it most. They include academic citations, Korean text, HTTP requests and dialogue. There is no single concept to name.
             {: .lede}
 
-            ::: cards grid3
+::: cards grid3
 ### [d] Polysemantic neurons
 Many neurons respond to several unrelated concepts.
 

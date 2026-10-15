@@ -63,7 +63,7 @@ papers:
 Greedy decoding produces a single reasoning path. If any step goes wrong, the answer is wrong, even though a different path would have worked.
             {: .lede}
 
-            ::: cards grid3
+::: cards grid3
 ### [d] Fragile paths
 Long chains have many places to slip.
 

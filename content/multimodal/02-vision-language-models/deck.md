@@ -64,7 +64,7 @@ papers:
 You have a CLIP vision encoder and a 7B chat model. You want to ask "What is unusual about this image?" and get an answer.
             {: .lede}
 
-            ::: cards grid3
+::: cards grid3
 ### [d] Different spaces
 The encoder outputs patch features; the LLM expects word embeddings.
 

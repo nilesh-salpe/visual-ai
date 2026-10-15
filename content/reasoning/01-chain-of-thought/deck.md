@@ -61,7 +61,7 @@ papers:
 "Roger has 5 tennis balls. He buys 2 more cans of 3 tennis balls each. How many tennis balls does he have now?" Asked for the number directly, large models in 2022 often got problems like this wrong.
             {: .lede}
 
-            ::: cards grid3
+::: cards grid3
 ### [d] Fixed compute per token
 Each output token gets one forward pass through the network.
 

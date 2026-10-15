@@ -65,7 +65,7 @@ papers:
 Superposition means a layer's activation vector is a sparse sum of many feature directions that overlap. Given only activations, can we recover those directions?
             {: .lede}
 
-            ::: cards grid3
+::: cards grid3
 ### [d] Overcomplete
 There are more features than dimensions, so we need more directions than the layer has.
 

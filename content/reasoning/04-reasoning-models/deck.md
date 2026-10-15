@@ -63,7 +63,7 @@ papers:
 Chain-of-thought prompting and sampling squeeze more out of an ordinary model. But the model was trained to imitate text, not to explore, check its work and backtrack over thousands of tokens.
             {: .lede}
 
-            ::: cards grid3
+::: cards grid3
 ### [d] Short habits
 Pretrained models stop after a plausible-looking chain.
 

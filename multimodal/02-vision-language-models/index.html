@@ -28,15 +28,11 @@
     <h2>Two strong models that cannot talk</h2>
     <hr>
 <p class="lede">You have a CLIP vision encoder and a 7B chat model. You want to ask "What is unusual about this image?" and get an answer.</p>
-<pre><code>        ::: cards grid3
-</code></pre>
-<h3>[d] Different spaces</h3>
-<p>The encoder outputs patch features; the LLM expects word embeddings.</p>
-<h3>[b] Training cost</h3>
-<p>Pretraining a multimodal model end to end is very expensive.</p>
-<h3>[c] Instruction following</h3>
-<p>Even connected, the model needs examples of conversations about images.
-:::</p>
+<div class="grid3">
+      <div class="card d"><h3>Different spaces</h3><p>The encoder outputs patch features; the LLM expects word embeddings.</p></div>
+      <div class="card b"><h3>Training cost</h3><p>Pretraining a multimodal model end to end is very expensive.</p></div>
+      <div class="card c"><h3>Instruction following</h3><p>Even connected, the model needs examples of conversations about images.</p></div>
+    </div>
   </div>
 </section>
 

@@ -28,15 +28,11 @@
     <h2>A picture is worth a few thousand tokens</h2>
     <hr>
 <p class="lede">A user uploads ten full-resolution phone photos and asks a question. The request is slow and expensive, and the answer mentions a dog that is not in any photo.</p>
-<pre><code>        ::: cards grid3
-</code></pre>
-<h3>[d] Hidden cost</h3>
-<p>Images are converted to many tokens, billed like text input.</p>
-<h3>[b] Resizing surprises</h3>
-<p>Large images are downsized, which can make small text unreadable.</p>
-<h3>[c] Hallucination</h3>
-<p>Vision-language models describe plausible objects that are absent.
-:::</p>
+<div class="grid3">
+      <div class="card d"><h3>Hidden cost</h3><p>Images are converted to many tokens, billed like text input.</p></div>
+      <div class="card b"><h3>Resizing surprises</h3><p>Large images are downsized, which can make small text unreadable.</p></div>
+      <div class="card c"><h3>Hallucination</h3><p>Vision-language models describe plausible objects that are absent.</p></div>
+    </div>
   </div>
 </section>
 

@@ -62,7 +62,7 @@ papers:
 A 1,000 × 1,000 photo is three million numbers. A language model expects a sequence of a few thousand token embeddings at most.
             {: .lede}
 
-            ::: cards grid3
+::: cards grid3
 ### [d] No tokens
 Images have no natural vocabulary or word boundaries.
 

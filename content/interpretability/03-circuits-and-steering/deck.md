@@ -66,7 +66,7 @@ papers:
 GPT-2 small completes "When Mary and John went to the store, John gave a drink to" with " Mary". Which parts of the network make that happen?
             {: .lede}
 
-            ::: cards grid3
+::: cards grid3
 ### [d] Many components
 Hundreds of attention heads and MLP layers all contribute something.
 

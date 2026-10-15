@@ -28,15 +28,11 @@
     <h2>Some answers need more than one step</h2>
     <hr>
 <p class="lede">"Roger has 5 tennis balls. He buys 2 more cans of 3 tennis balls each. How many tennis balls does he have now?" Asked for the number directly, large models in 2022 often got problems like this wrong.</p>
-<pre><code>        ::: cards grid3
-</code></pre>
-<h3>[d] Fixed compute per token</h3>
-<p>Each output token gets one forward pass through the network.</p>
-<h3>[b] Hidden intermediate results</h3>
-<p>A direct answer must hold "2 × 3 = 6" and "5 + 6 = 11" implicitly inside one pass.</p>
-<h3>[c] Benchmarks</h3>
-<p>GSM8K (Grade School Math 8K), 8.5K grade-school math word problems, was built because even the largest models then struggled with multi-step arithmetic.
-:::</p>
+<div class="grid3">
+      <div class="card d"><h3>Fixed compute per token</h3><p>Each output token gets one forward pass through the network.</p></div>
+      <div class="card b"><h3>Hidden intermediate results</h3><p>A direct answer must hold "2 × 3 = 6" and "5 + 6 = 11" implicitly inside one pass.</p></div>
+      <div class="card c"><h3>Benchmarks</h3><p>GSM8K (Grade School Math 8K), 8.5K grade-school math word problems, was built because even the largest models then struggled with multi-step arithmetic.</p></div>
+    </div>
   </div>
 </section>
 

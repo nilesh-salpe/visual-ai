@@ -67,7 +67,7 @@ papers:
 A lab compares two pretraining data filters with one small run each. Filter B wins MMLU by 0.9 points, and B goes into the next large run.
             {: .lede}
 
-            ::: cards grid3
+::: cards grid3
 ### [d] Cost
 Each full-scale run is too expensive to repeat, so small proxies decide.
 

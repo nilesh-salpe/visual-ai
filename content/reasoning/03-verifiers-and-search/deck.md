@@ -64,7 +64,7 @@ papers:
 You sampled 16 solutions to a competition math problem; three different final answers came up. There is no answer key at inference time.
             {: .lede}
 
-            ::: cards grid3
+::: cards grid3
 ### [d] No automatic check
 Most reasoning tasks have no unit test.
 
