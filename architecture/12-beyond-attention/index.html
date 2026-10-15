@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beyond Attention: SSMs and Hybrids</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Beyond attention: SSMs and hybrids" data-home="../index.html" data-home-label="Architecture">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">The Modern LLM · 12</div><div class="status-row"><span class="lbl lbl-trend" title="new and gaining adoption; details may change">Recent trend</span><span class="reviewed">Reviewed 2026-10-15</span><span class="status-note">Hybrid linear/SSM (state space model) + attention stacks shipped in several open models in 2024–2025; attention-free LLMs (large language models) remain research.</span></div>
+    <h1>Beyond attention: state space models, linear attention and hybrids</h1>
+    <p class="sub">Layers that keep a fixed-size state instead of a growing KV (key-value) cache: linear attention, selective state space models (Mamba, Mamba-2), the gated delta rule, why they struggle to copy and recall, and the hybrid stacks now shipping in open models.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Attention compares each token with every earlier token. Training cost grows quadratically with sequence length, and at inference every attention layer caches keys and values for every past token, so long contexts, long reasoning traces and agents make decoding memory-bound and expensive.</div>
+      <div class="c"><b>Core idea</b>Replace most attention layers with layers that keep a <b>fixed-size state</b> updated once per token: <b>linear attention</b> (a running sum of key-value outer products), <b>selective state space models</b> such as <b>Mamba</b> (an input-dependent recurrence), and <b>delta-rule</b> layers such as <b>Gated DeltaNet</b> (overwrite the value stored for a key, decay the rest). A fixed state cannot hold every token exactly, so these layers are weak at <b>copying and in-context recall</b>. Shipping models are therefore <b>hybrids</b>: mostly linear or SSM layers plus a few full-attention layers (1 in 4 to 1 in 8).</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Attention gets expensive as context grows</h2>
+    <hr>
+<p class="lede">Long documents, long reasoning traces and agents that run for hundreds of turns all push context lengths up. Attention's costs grow with them.</p>
+<div class="grid3">
+      <div class="card d"><h3>Quadratic training cost</h3><p>Each token attends to every earlier token, so compute per sequence grows with N².</p></div>
+      <div class="card b"><h3>A cache that grows</h3><p>At inference each attention layer stores keys and values for every past token; memory per sequence grows linearly with context.</p></div>
+      <div class="card c"><h3>Decoding is memory-bound</h3><p>Each new token re-reads the whole KV cache, so long contexts lower throughput and the batch size that fits (KV cache deck).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Earlier fixes kept full attention</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Fewer KV heads</h3><p>GQA (grouped-query attention) and MLA (multi-head latent attention) shrink the cache by a constant factor; it still grows with every token.</p></div>
+      <div class="card b"><h3>Local windows</h3><p>Sliding-window attention caps memory, but a layer cannot see past its window.</p></div>
+      <div class="card c"><h3>Classic RNNs</h3><p>A fixed-size state is cheap at inference, but LSTMs (long short-term memory networks) train sequentially and lagged transformers in quality.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>What does a fixed-size state lose?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">In Zoology, a 70M-parameter attention model beat a 1.4B-parameter gated-convolution model on one task. Which kind?</p>
+      <div class="opts">
+      <button>A. Arithmetic</button>
+      <button data-ok>B. Associative recall: retrieving the value paired with a key earlier in the context</button>
+      <button>C. Sentiment classification</button>
+      <button>D. Predicting common words</button>
+      </div>
+      <div class="why"><strong>B.</strong> A fixed-size state must compress the past, so exact lookup of an earlier token is hard; attention reads it directly. Recall explained 82% of the perplexity gap on the Pile.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>A fixed-size state, updated selectively</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Linear attention</h3><p>Replace softmax(q·k) with a kernel φ(q)·φ(k). Attention becomes a running sum S ← S + φ(k)vᵀ read as φ(q)ᵀS: parallel in training, an RNN (recurrent neural network) at inference (up to 4000× faster autoregressive prediction on very long sequences, Katharopoulos et al.). RWKV and RetNet are related designs.</p></div>
+      <div class="card a"><h3>Selective SSMs (Mamba)</h3><p>Structured state space models (S4) with parameters that depend on the input, so each token decides what to keep or forget. Mamba: 5× the generation throughput of transformers; Mamba-3B matched transformers twice its size. Mamba-2 (state space duality) is 2 to 8× faster.</p></div>
+      <div class="card b"><h3>Delta rule and gating</h3><p>Gated DeltaNet overwrites the value stored for a key (the delta rule) and decays old memory (gating); it beat Mamba-2 and DeltaNet on language modelling, in-context retrieval and long-context tasks.</p></div>
+      <div class="card e"><h3>Hybrids</h3><p>Keep a few full-attention layers for exact recall. An 8B Mamba-2-Hybrid (24 Mamba-2, 4 attention, 28 MLP (multilayer perceptron) layers) beat a matched 8B transformer on all 12 standard tasks (+2.65 points) and is predicted to generate up to 8× faster.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Memory at long context <span class="ill">calculator</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">context (log₂ tokens) <input type="range" id="baN" min="10" max="20" step="1" value="18"> <output id="baNo"></output></label><label class="ctl">attention layers <input type="range" id="baR" min="0" max="8" step="1" value="4"> <output id="baRo"></output></label></div><div class="bars"><div id="baBars"></div></div><p class="readout" id="baOut"></p></div>
+
+<p>Set "attention layers" to 1 for a standard transformer, 4 for Qwen3-Next and Kimi Linear, 8 for Jamba and MiniMax-01, and 0 for a pure fixed-state model.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Hybrids in released models</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Model</th>
+<th>Layers</th>
+<th>Linear : full attention</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jamba (AI21, 2024)</td>
+<td>Mamba + attention, with MoE (Mixture of Experts)</td>
+<td>7 : 1; 256K context</td>
+</tr>
+<tr>
+<td>MiniMax-Text-01 (2025)</td>
+<td>lightning (linear) attention + softmax attention, MoE, 456B total / 45.9B active</td>
+<td>7 : 1; 1M tokens in training, 4M at inference</td>
+</tr>
+<tr>
+<td>Nemotron-H 8B, 56B (NVIDIA, 2025)</td>
+<td>Mamba-2 + attention + FFN (feed-forward network)</td>
+<td>about 8% attention (4 of 52 layers in 8B); up to 3× faster inference</td>
+</tr>
+<tr>
+<td>Qwen3-Next-80B-A3B (2025)</td>
+<td>Gated DeltaNet + gated attention, MoE</td>
+<td>3 : 1; 10× throughput beyond 32K tokens vs Qwen3-32B</td>
+</tr>
+<tr>
+<td>Kimi Linear 48B-A3B (2025)</td>
+<td>Kimi Delta Attention + MLA</td>
+<td>3 : 1; KV cache up to 75% smaller, up to 6× decoding throughput at 1M</td>
+</tr>
+</tbody>
+</table></div>
+<p>Hybrid stacks of linear or SSM layers with a few attention layers <span class="lbl lbl-trend" title="new and gaining adoption; details may change">Recent trend</span> have moved into released open models since 2024. Fully attention-free language models <span class="lbl lbl-research" title="promising, not common in production">Research</span> still trail on copying and in-context recall.</p>
+<div class="deep"><h4>Why a fixed state cannot copy everything</h4><p>Jelassi et al. prove that a two-layer transformer can copy strings of length exponential in its size, while any model with a fixed-size state is limited by that state, and confirm it empirically: transformers learned copying and retrieval from context far more efficiently. Zoology found the same gap on real language (associative recall) and showed that adding sparse, input-dependent attention closed 97.4% of it.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: decode memory in a 3 : 1 hybrid</h2>
+    <hr>
+    <p class="lede">Qwen3-Next-80B-A3B (model card): 48 layers, 12 with gated attention (2 KV heads of dimension 256) and 36 with Gated DeltaNet (32 value heads, head dimension 128). BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats), one sequence of 262,144 tokens.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>KV cache per token per attention layer: 2 (K and V) × 2 heads × 256 × 2 bytes = 2,048 bytes.</li><li>If all 48 layers were attention: 48 × 2,048 = 96 KiB per token, so <b>24 GiB</b> for 262,144 tokens.</li><li>With 12 attention layers: 24 KiB per token, so <b>6 GiB</b>: a quarter, because only a quarter of the layers cache keys and values.</li><li>The 36 DeltaNet layers each keep a state of 32 × 128 × 128 values: about 36 MiB in total in BF16, the same at 1K or 262K tokens.</li></ol><div class="result">Memory at long context is set by the attention layers; the linear layers add a small constant. (Our calculation from the published configuration.)</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why hybrids work</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Most tokens need a summary</h3><p>Much of language modelling needs a compressed running summary of the past, which a fixed state provides cheaply.</p></div>
+      <div class="card c"><h3>Some tokens need exact lookup</h3><p>Copying, retrieval from documents and few-shot examples need attention; a few layers are enough to supply it.</p></div>
+      <div class="card b"><h3>Decoding is bound by memory</h3><p>Cutting KV-cache memory 4 to 8 times raises the batch size and throughput at long context; Kimi Linear reports up to 6× decoding throughput at 1M tokens.</p></div>
+      <div class="card e"><h3>They train like transformers</h3><p>Linear attention, SSD (Mamba-2) and Gated DeltaNet have parallel or chunkwise algorithms for GPUs (graphics processing units); the recurrence is only used when generating.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Mamba replaced transformers."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">The released models in the table keep some full attention. At 8B, pure Mamba and Mamba-2 lagged transformers on tasks needing copying or in-context learning (Waleffe et al.).</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Linear attention is just a faster approximation of attention."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It changes what the model can do: its memory is a fixed-size summary, so exact recall of a distant token is no longer guaranteed.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Recurrent layers cannot be trained in parallel."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Linear attention, Mamba-2 (SSD) and Gated DeltaNet all train with parallel or chunkwise algorithms; only generation runs step by step.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>State, not cache.</b> A linear or SSM layer stores a fixed-size matrix per layer; an attention layer stores K and V for every token.</li><li><b>Count the attention layers.</b> In a hybrid, KV-cache memory scales with the number of full-attention layers.</li><li><b>Recall is the hard part.</b> Zoology: 82% of the perplexity gap between gated convolutions and attention came from associative recall.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>"Attention-free" means "no attention needed".</b> Pure SSMs lagged transformers on five-shot MMLU (Massive Multitask Language Understanding), phonebook lookup and long-context reasoning at 8B (Waleffe et al.).</li><li><b>Assuming quadratic cost dominates.</b> At inference the pain is KV-cache memory and bandwidth, which grow linearly per token, not the N² of training.</li><li><b>Comparing models without matching data.</b> Architecture claims need the same data and token budget; Waleffe et al. trained all 8B variants on the same 3.5T tokens.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Why does decode memory stay constant for a Mamba or linear-attention layer?</p>
+      <div class="opts">
+      <button>A. It drops old tokens from the context</button>
+      <button data-ok>B. It keeps a fixed-size state updated at every token, instead of keys and values for every token</button>
+      <button>C. It quantizes the KV cache</button>
+      <button>D. It recomputes attention from scratch</button>
+      </div>
+      <div class="why"><strong>B.</strong> The state has the same size at 1K or 1M tokens; information about old tokens survives only as far as the state can hold it.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why do hybrid models keep any full-attention layers?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">For exact recall: copying, looking up a value given a key, using in-context examples and retrieving from long documents, where fixed-state layers are weak.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">In Qwen3-Next, what share of layers use full attention, and what does that do to the KV cache?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">12 of 48 (1 in 4), so the KV cache is a quarter of an all-attention model with the same attention configuration; the DeltaNet layers add a small fixed state.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">Swap most attention layers for fixed-size-state layers to make long context cheap, and keep a few attention layers so the model can still look things up exactly.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Attention's KV cache grows with every token, which makes long contexts memory-bound. Linear attention, selective state space models (Mamba) and gated delta-rule layers keep a fixed-size state instead, so decode memory is constant per layer and throughput rises (Mamba reported 5×). The cost is exact recall: fixed-state models lag on copying, lookup and in-context learning. Hybrids fix this with a few full-attention layers: an 8B Mamba-2-Hybrid beat a matched transformer on 12 standard tasks, and Jamba, MiniMax-01, Nemotron-H, Qwen3-Next and Kimi Linear all ship hybrid stacks with one attention layer per 4 to 8 layers.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> the KV cache grows with every token</span></div><div><span><b>Fixed state:</b> linear attention, Mamba, Gated DeltaNet</span></div><div><span><b>Weakness:</b> copying and in-context recall</span></div><div><span><b>Practice:</b> hybrids: 1 attention layer in 4 to 8</span></div></div>
+    <p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../11-putting-it-together/index.html">← 11</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2006.16236" target="_blank" rel="noopener">Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention</a>
+        <div class="meta">Katharopoulos, Vyas, Pappas, Fleuret · ICML 2020</div>
+        <p>Expresses attention as a dot product of kernel feature maps; associativity reduces cost from O(N²) to O(N) and turns autoregressive attention into an RNN.</p><div class="num">Remember: up to 4000× faster autoregressive prediction on very long sequences</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2111.00396" target="_blank" rel="noopener">Efficiently Modeling Long Sequences with Structured State Spaces (S4)</a>
+        <div class="meta">Gu, Goel, Ré · ICLR 2022</div>
+        <p>Structured state space sequence model with an efficient parameterisation; strong on long-range benchmarks.</p><div class="num">Remember: linear scaling in sequence length</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2312.00752" target="_blank" rel="noopener">Mamba: Linear-Time Sequence Modeling with Selective State Spaces</a>
+        <div class="meta">Gu, Dao · arXiv 2023</div>
+        <p>SSM parameters become functions of the input (selection), with a hardware-aware parallel scan; an attention-free, MLP-free block.</p><div class="num">Remember: 5× generation throughput; Mamba-3B matches transformers twice its size</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2405.21060" target="_blank" rel="noopener">Transformers are SSMs: Generalized Models and Efficient Algorithms Through Structured State Space Duality (Mamba-2)</a>
+        <div class="meta">Dao, Gu · ICML 2024</div>
+        <p>State space duality connects SSMs and attention through structured semiseparable matrices; Mamba-2's core layer is a faster selective SSM.</p><div class="num">Remember: 2–8× faster than Mamba's layer</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2305.13048" target="_blank" rel="noopener">RWKV: Reinventing RNNs for the Transformer Era</a>
+        <div class="meta">Peng et al. · arXiv 2023</div>
+        <p>A linear-attention-style RNN that trains in parallel like a transformer and infers like an RNN.</p><div class="num">Remember: models up to 14B parameters</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2307.08621" target="_blank" rel="noopener">Retentive Network: A Successor to Transformer for Large Language Models</a>
+        <div class="meta">Sun et al. · arXiv 2023</div>
+        <p>Retention supports parallel training, O(1) recurrent inference and chunkwise recurrence for long sequences.</p><div class="num">Remember: O(1) inference per token</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2412.06464" target="_blank" rel="noopener">Gated Delta Networks: Improving Mamba2 with Delta Rule</a>
+        <div class="meta">Yang, Kautz, Hatamizadeh · ICLR 2025</div>
+        <p>Combines gating (fast memory erasure) with the delta rule (targeted updates) in a hardware-efficient parallel algorithm; hybrids with sliding-window attention or Mamba-2 improve further.</p><div class="num">Remember: beats Mamba-2 and DeltaNet on LM (language model), retrieval and long context</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2312.04927" target="_blank" rel="noopener">Zoology: Measuring and Improving Recall in Efficient Language Models</a>
+        <div class="meta">Arora et al. · arXiv 2023</div>
+        <p>Gated-convolution models trail attention mainly on associative recall; multi-query associative recall (MQAR) captures it; sparse attention hybrids close most of the gap.</p><div class="num">Remember: 82% of the gap from recall; 70M attention beats 1.4B gated convolution on recall; hybrids close 97.4%</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2402.01032" target="_blank" rel="noopener">Repeat After Me: Transformers are Better than State Space Models at Copying</a>
+        <div class="meta">Jelassi, Brandfonbrener, Kakade, Malach · arXiv 2024</div>
+        <p>A two-layer transformer can copy strings of exponential length; fixed-state models are fundamentally limited; empirical gaps on copying and retrieval.</p><div class="num">Remember: copying needs state that grows with the string</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2406.07887" target="_blank" rel="noopener">An Empirical Study of Mamba-based Language Models</a>
+        <div class="meta">Waleffe et al. (NVIDIA) · arXiv 2024</div>
+        <p>8B Mamba, Mamba-2, transformer and hybrid models on the same 3.5T tokens: pure SSMs lag on copying and in-context learning; the hybrid wins.</p><div class="num">Remember: Mamba-2-Hybrid (24 Mamba-2, 4 attention, 28 MLP): +2.65 points on 12 tasks, up to 8× faster generation (predicted)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2403.19887" target="_blank" rel="noopener">Jamba: A Hybrid Transformer-Mamba Language Model</a>
+        <div class="meta">Lieber et al. (AI21) · arXiv 2024</div>
+        <p>Interleaves Transformer and Mamba layers with MoE; fits on a single 80GB GPU.</p><div class="num">Remember: 1 : 7 attention-to-Mamba layers; up to 256K context</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2501.08313" target="_blank" rel="noopener">MiniMax-01: Scaling Foundation Models with Lightning Attention</a>
+        <div class="meta">MiniMax · arXiv 2025</div>
+        <p>Lightning (I/O-aware linear) attention with one softmax-attention block after every seven, plus MoE.</p><div class="num">Remember: 456B total, 45.9B active; 1M-token training context, 4M at inference</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2504.03624" target="_blank" rel="noopener">Nemotron-H: A Family of Accurate and Efficient Hybrid Mamba-Transformer Models</a>
+        <div class="meta">NVIDIA · arXiv 2025</div>
+        <p>Replaces most self-attention layers with Mamba-2 layers (about 8% attention, evenly spaced); comparable accuracy to similarly sized transformers.</p><div class="num">Remember: up to 3× faster inference; 4 of 52 layers are attention in 8B</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2510.26692" target="_blank" rel="noopener">Kimi Linear: An Expressive, Efficient Attention Architecture</a>
+        <div class="meta">Kimi Team · arXiv 2025</div>
+        <p>Kimi Delta Attention (finer-grained gating on Gated DeltaNet) interleaved 3:1 with MLA; outperforms full MLA under the same training recipe.</p><div class="num">Remember: KV cache up to 75% smaller; up to 6× decoding throughput at 1M context</div></div>
+      <div class="paper-item"><a href="https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct" target="_blank" rel="noopener">Qwen3-Next-80B-A3B-Instruct model card</a>
+        <div class="meta">Qwen Team · Hugging Face 2025</div>
+        <p>Hybrid layout 12 × (3 × Gated DeltaNet + 1 × gated attention), each followed by a high-sparsity MoE; 80B total, 3B active.</p><div class="num">Remember: 48 layers; 10× throughput beyond 32K tokens vs Qwen3-32B; 262,144-token native context</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const L = 48;
+  Deck.bind(['baN', 'baR'], () => {
+    const n = Math.round(Math.pow(2, Deck.val('baN'))), r = Deck.val('baR');
+    const att = r === 0 ? 0 : Math.round(L / r), lin = L - att;
+    Deck.out('baNo', n >= 1048576 ? (n / 1048576).toFixed(0) + 'M' : n >= 1024 ? Math.round(n / 1024) + 'K' : n);
+    Deck.out('baRo', r === 0 ? 'none' : r === 1 ? 'all' : '1 in ' + r);
+    const kv = 2 * 2 * 256 * 2, state = 32 * 128 * 128 * 2, GiB = 1024 ** 3;
+    const full = L * kv * n / GiB, hyb = (att * kv * n + lin * state) / GiB;
+    Deck.hbars(document.getElementById('baBars'), [
+      { label: 'all 48 layers full attention', value: full, color: 'var(--d)', text: full >= 1 ? full.toFixed(1) + ' GiB' : (full * 1024).toFixed(0) + ' MiB' },
+      { label: r === 0 ? 'no attention layers (pure linear)' : `${att} attention + ${lin} linear layers`, value: hyb, color: r === 0 ? 'var(--c)' : 'var(--e)', text: hyb >= 1 ? hyb.toFixed(1) + ' GiB' : (hyb * 1024).toFixed(0) + ' MiB' }], { max: Math.max(full, hyb) * 1.05 });
+    document.getElementById('baOut').innerHTML = `One sequence of ${n.toLocaleString()} tokens, BF16, attention layers with 2 KV heads × 256 and linear layers with a 32 × 128 × 128 state (the Qwen3-Next configuration). ` +
+      (r === 0 ? 'With no attention, memory is constant in context length, but exact recall suffers.' : `The hybrid needs <b>${(full / hyb).toFixed(1)}×</b> less memory; at long context the ratio approaches the attention fraction.`);
+  });
+})();
+</script>
+</body>
+</html>

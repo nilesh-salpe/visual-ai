@@ -911,6 +911,18 @@
   },
   "OPRO": {
    "exp": "Optimization by Prompting"
+  },
+  "SSM": {
+   "exp": "state space model"
+  },
+  "MQAR": {
+   "exp": "multi-query associative recall"
+  },
+  "GCG": {
+   "exp": "Greedy Coordinate Gradient"
+  },
+  "PAIR": {
+   "exp": "Prompt Automatic Iterative Refinement"
   }
  },
  "exempt": [
@@ -1347,6 +1359,15 @@
   "Minitron",
   "PubMed",
   "RULER",
-  "DSPy"
+  "DSPy",
+  "AI21",
+  "DeltaNet",
+  "MiniMax",
+  "RWKV",
+  "RetNet",
+  "HarmBench",
+  "JailbreakBench",
+  "LLM01",
+  "ASL"
  ]
 }

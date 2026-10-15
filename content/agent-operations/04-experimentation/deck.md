@@ -22,7 +22,7 @@ intro:
     Randomise <b>users</b> into arms, fix one <b>primary metric</b> (e.g. task success) and <b>guardrails</b> (cost per task, latency, safety, escalations), decide
     the <b>sample size</b> in advance or use <b>always-valid</b> sequential tests, check for <b>sample ratio mismatch</b>, reduce variance with pre-experiment data
     (<b>CUPED</b>), then ramp up. These are proven web-experimentation methods applied to LLM products.'
-  hint: 'Previous: [Cost and latency](../03-cost-and-latency/index.html) · [All decks](../index.html)'
+  hint: 'Previous: [Cost and latency](../03-cost-and-latency/index.html) · Next: [Jailbreaks and adversarial robustness →](../05-jailbreaks/index.html) · [All decks](../index.html)'
 papers:
 - kohavi_scale
 - bing_third

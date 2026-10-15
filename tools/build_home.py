@@ -20,7 +20,7 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
     ('The model', [
         ('transformer', 'Paper · 14 decks', 'Attention Is All You Need', 'The original Transformer paper, explained visually: the problem each piece solves and the core idea behind it, checked against arXiv v7.', ['self-attention', 'multi-head', 'positional encoding', 'results']),
         ('tokenization', 'Topic · 10 decks + playground', 'Tokenization for LLMs', 'How text becomes token ids: BPE, byte-level BPE, WordPiece, unigram LM and SentencePiece, plus vocabulary trade-offs, multilingual cost and quirks. Includes a live tokenizer playground.', ['BPE', 'tiktoken', 'SentencePiece', 'playground']),
-        ('architecture', 'Topic · 11 decks + 10 Colab notebooks', 'The Modern LLM Architecture', 'What changed after 2017: pre-norm and RMSNorm, RoPE, SwiGLU, MQA/GQA/MLA, decoder-only stacks, long context (RoPE scaling, sliding window), FlashAttention internals and Mixture of Experts.', ['RoPE', 'GQA', 'FlashAttention', 'MoE']),
+        ('architecture', 'Topic · 12 decks + 10 Colab notebooks', 'The Modern LLM Architecture', 'What changed after 2017: pre-norm and RMSNorm, RoPE, SwiGLU, MQA/GQA/MLA, decoder-only stacks, long context (RoPE scaling, sliding window), FlashAttention internals, Mixture of Experts, and SSM and linear-attention hybrids.', ['RoPE', 'GQA', 'FlashAttention', 'MoE']),
     ]),
     ('Data and training', [
         ('pretraining-data', 'Topic · 10 decks + 6 Colab notebooks', 'Web crawling and pretraining data', 'How crawlers work and stay polite, robots.txt and consent, text extraction, quality filtering, MinHash deduplication, PII and safety filtering, data mixtures and the C4 → FineWeb → Llama 3 pipelines.', ['crawler', 'robots.txt', 'MinHash', 'FineWeb']),
@@ -61,7 +61,7 @@ AGENT_SECTIONS = [  # same shape as LLM_SECTIONS
         ('system-design', 'Case studies · 4 decks + 4 design docs', 'System design case studies', 'End-to-end designs: serving a chat assistant, an enterprise RAG assistant, an autonomous coding agent, and planning a pretraining run.', ['RAG', 'sandboxes', 'durable execution', 'trade-offs']),
     ]),
     ('Running agents', [
-        ('agent-operations', 'Topic · 4 decks', 'Agent operations', 'Evaluating agents (pass^k), safety and reliability, cost and latency, and online experimentation for LLM products.', ['evals', 'prompt injection', 'prompt caching', 'A/B tests']),
+        ('agent-operations', 'Topic · 5 decks', 'Agent operations', 'Evaluating agents (pass^k), safety and reliability, cost and latency, online experimentation for LLM products, and jailbreaks and adversarial robustness.', ['evals', 'prompt injection', 'A/B tests', 'jailbreaks']),
     ]),
 ]
 AGENT_PLANNED = ['What an agent is: an LLM in a loop', 'Tool calling and function schemas', 'ReAct: interleaving reasoning and actions', 'Planning and task decomposition',

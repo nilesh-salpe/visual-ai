@@ -102,6 +102,7 @@ ARCH_CARDS = [
     ('09-flash-attention', 'FlashAttention internals', 'Tiling, online softmax, recompute; FA1 → FA2 → FA3.'),
     ('10-mixture-of-experts', 'Mixture of Experts', 'Top-k routing, load balancing, capacity; Mixtral and DeepSeek-V2.'),
     ('11-putting-it-together', 'Putting it together', 'The whole block, a size calculator, and a checklist for any model.'),
+    ('12-beyond-attention', 'Beyond attention: SSMs and hybrids', 'Linear attention, Mamba, Gated DeltaNet; why hybrids keep a few attention layers.'),
 ]
 
 
@@ -122,7 +123,7 @@ def arch_hub():
   <a class="brand" href="../llm/index.html">← Visual LLM</a>
   <div class="label" style="margin-top:28px">Visual guide · {len(ARCH_CARDS)} decks + {n_nb} Colab notebooks</div>
   <h1>The Modern LLM Architecture</h1>
-  <p class="lede">What changed after the 2017 Transformer, and why: pre-norm and RMSNorm, RoPE, SwiGLU, MQA/GQA/MLA, decoder-only stacks, long-context methods, FlashAttention and Mixture of Experts. Every deck follows the 9-beat template, numbers are checked against the source papers and model configs, and each concept has a hands-on Colab notebook. Start with the <a href="../transformer/index.html">Attention Is All You Need</a> guide if the 2017 block is new to you.</p>
+  <p class="lede">What changed after the 2017 Transformer, and why: pre-norm and RMSNorm, RoPE, SwiGLU, MQA/GQA/MLA, decoder-only stacks, long-context methods, FlashAttention, Mixture of Experts, and the state space and linear-attention hybrids that replace most attention layers. Every deck follows the 9-beat template, numbers are checked against the source papers and model configs, and each concept has a hands-on Colab notebook. Start with the <a href="../transformer/index.html">Attention Is All You Need</a> guide if the 2017 block is new to you.</p>
   <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
     <div><h3 style="margin:0 0 4px">🛠 Build it: {n_nb} Colab notebooks</h3><p class="caption" style="margin:0">Implement RMSNorm, RoPE, SwiGLU, MLA weight absorption, attention masks, PI/NTK/YaRN, a rolling KV cache, FlashAttention, an MoE router and a full Llama block in NumPy. Built-in tests, hidden solutions, no GPU needed.</p></div>
     <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
@@ -221,7 +222,7 @@ def evals_hub():
   <a class="brand" href="../llm/index.html">← Visual LLM</a>
   <div class="label" style="margin-top:28px">Visual guide · {len(EVAL_CARDS)} decks + {n_nb} Colab notebooks</div>
   <h1>Evaluating LLMs</h1>
-  <p class="lede">What an eval score really measures and how much to trust it: benchmark design and failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases, and arena ratings. Every deck follows the 9-beat template, numbers are checked against the source papers, and the statistics have hands-on Colab notebooks.</p>
+  <p class="lede">What an eval score really measures and how much to trust it: benchmark design and failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases, arena ratings, and hallucination and factuality. Every deck follows the 9-beat template, numbers are checked against the source papers, and the statistics have hands-on Colab notebooks.</p>
   <div class="visual" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;background:var(--e-soft);border-color:var(--e)">
     <div><h3 style="margin:0 0 4px">🛠 Build it: {n_nb} Colab notebooks</h3><p class="caption" style="margin:0">Implement the unbiased pass@k estimator, standard and clustered errors, paired tests and power analysis, an n-gram contamination detector, a judge position-swap test, Bradley-Terry ratings and online Elo in NumPy.</p></div>
     <a class="btn primary" href="../build-it/index.html">Open the notebooks →</a>
@@ -522,11 +523,12 @@ AGENT_HUBS = {
         ('01-multi-agent', 'Multi-agent systems', 'Orchestrator-workers, delegation, the 15× token cost.'),
         ('02-computer-use', 'Computer and browser use', 'Screenshot-action loops, grounding, sandboxing.'),
         ('03-durable-workflows', 'Durable workflows for agents', 'Temporal event history and replay; vs LangGraph, Airflow, Argo.')]),
-    'agent-operations': ('Agent operations', 'Running agents for real: evaluating them, keeping them safe and reliable, and controlling cost and latency.', [
+    'agent-operations': ('Agent operations', 'Running agents for real: evaluating them, keeping them safe and reliable, controlling cost and latency, experimenting safely, and defending against jailbreaks.', [
         ('01-evaluating-agents', 'Evaluating agents', 'End-state grading, pass^k, harnesses, benchmarks.'),
         ('02-safety-and-reliability', 'Safety and reliability', 'Prompt injection, least privilege, approvals, idempotency.'),
         ('03-cost-and-latency', 'Cost and latency', 'Quadratic context growth, prompt caching, routing, budgets.'),
-        ('04-experimentation', 'Experimentation for LLM products', 'Shadow traffic, A/B tests, guardrails, peeking, SRM, CUPED.')]),
+        ('04-experimentation', 'Experimentation for LLM products', 'Shadow traffic, A/B tests, guardrails, peeking, SRM, CUPED.'),
+        ('05-jailbreaks', 'Jailbreaks and adversarial robustness', 'Why jailbreaks work, GCG, PAIR, many-shot, Best-of-N; layered classifier defences.')]),
     'agent-frameworks': ('Agent frameworks', 'The agent loop and graph runtime in a widely used framework: LangChain\'s building blocks and create_agent, LangGraph\'s state graphs, and the persistence layer behind memory, approvals and recovery. Pinned to LangChain 1.4.6 and LangGraph 1.2.15.', [
         ('01-langchain-basics', 'LangChain basics', 'Chat models, messages, tools, create_agent, middleware.'),
         ('02-langgraph-core', 'LangGraph core', 'State, reducers, nodes, edges, super-steps.'),

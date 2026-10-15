@@ -11,7 +11,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="index.html">← The Modern LLM Architecture</a>
-  <div class="label" style="margin-top:28px">Reading list · 28 papers and docs</div>
+  <div class="label" style="margin-top:28px">Reading list · 43 papers and docs</div>
   <h1>The Modern LLM Architecture: key papers</h1>
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">
@@ -99,6 +99,51 @@
     <div class="paper-item"><a href="https://arxiv.org/abs/2307.09288" target="_blank" rel="noopener">Llama 2: Open Foundation and Fine-Tuned Chat Models</a>
       <div class="meta">Touvron et al. · arXiv 2023 · cited in <a href="11-putting-it-together/index.html" style="font-weight:500;color:var(--a)">Putting it together</a></div>
       <p>Adds grouped-query attention for the 34B and 70B models and documents the chat post-training: SFT (supervised fine-tuning), two reward models and iterative RLHF (reinforcement learning from human feedback) with rejection sampling and PPO (Proximal Policy Optimization).</p><div class="num">Remember: 27,540 SFT annotations; over 1M human comparisons</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2006.16236" target="_blank" rel="noopener">Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention</a>
+      <div class="meta">Katharopoulos, Vyas, Pappas, Fleuret · ICML 2020 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>Expresses attention as a dot product of kernel feature maps; associativity reduces cost from O(N²) to O(N) and turns autoregressive attention into an RNN.</p><div class="num">Remember: up to 4000× faster autoregressive prediction on very long sequences</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2111.00396" target="_blank" rel="noopener">Efficiently Modeling Long Sequences with Structured State Spaces (S4)</a>
+      <div class="meta">Gu, Goel, Ré · ICLR 2022 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>Structured state space sequence model with an efficient parameterisation; strong on long-range benchmarks.</p><div class="num">Remember: linear scaling in sequence length</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2312.00752" target="_blank" rel="noopener">Mamba: Linear-Time Sequence Modeling with Selective State Spaces</a>
+      <div class="meta">Gu, Dao · arXiv 2023 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>SSM parameters become functions of the input (selection), with a hardware-aware parallel scan; an attention-free, MLP-free block.</p><div class="num">Remember: 5× generation throughput; Mamba-3B matches transformers twice its size</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2405.21060" target="_blank" rel="noopener">Transformers are SSMs: Generalized Models and Efficient Algorithms Through Structured State Space Duality (Mamba-2)</a>
+      <div class="meta">Dao, Gu · ICML 2024 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>State space duality connects SSMs and attention through structured semiseparable matrices; Mamba-2's core layer is a faster selective SSM.</p><div class="num">Remember: 2–8× faster than Mamba's layer</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2305.13048" target="_blank" rel="noopener">RWKV: Reinventing RNNs for the Transformer Era</a>
+      <div class="meta">Peng et al. · arXiv 2023 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>A linear-attention-style RNN that trains in parallel like a transformer and infers like an RNN.</p><div class="num">Remember: models up to 14B parameters</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2307.08621" target="_blank" rel="noopener">Retentive Network: A Successor to Transformer for Large Language Models</a>
+      <div class="meta">Sun et al. · arXiv 2023 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>Retention supports parallel training, O(1) recurrent inference and chunkwise recurrence for long sequences.</p><div class="num">Remember: O(1) inference per token</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2412.06464" target="_blank" rel="noopener">Gated Delta Networks: Improving Mamba2 with Delta Rule</a>
+      <div class="meta">Yang, Kautz, Hatamizadeh · ICLR 2025 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>Combines gating (fast memory erasure) with the delta rule (targeted updates) in a hardware-efficient parallel algorithm; hybrids with sliding-window attention or Mamba-2 improve further.</p><div class="num">Remember: beats Mamba-2 and DeltaNet on LM (language model), retrieval and long context</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2312.04927" target="_blank" rel="noopener">Zoology: Measuring and Improving Recall in Efficient Language Models</a>
+      <div class="meta">Arora et al. · arXiv 2023 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>Gated-convolution models trail attention mainly on associative recall; multi-query associative recall (MQAR) captures it; sparse attention hybrids close most of the gap.</p><div class="num">Remember: 82% of the gap from recall; 70M attention beats 1.4B gated convolution on recall; hybrids close 97.4%</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2402.01032" target="_blank" rel="noopener">Repeat After Me: Transformers are Better than State Space Models at Copying</a>
+      <div class="meta">Jelassi, Brandfonbrener, Kakade, Malach · arXiv 2024 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>A two-layer transformer can copy strings of exponential length; fixed-state models are fundamentally limited; empirical gaps on copying and retrieval.</p><div class="num">Remember: copying needs state that grows with the string</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2406.07887" target="_blank" rel="noopener">An Empirical Study of Mamba-based Language Models</a>
+      <div class="meta">Waleffe et al. (NVIDIA) · arXiv 2024 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>8B Mamba, Mamba-2, transformer and hybrid models on the same 3.5T tokens: pure SSMs lag on copying and in-context learning; the hybrid wins.</p><div class="num">Remember: Mamba-2-Hybrid (24 Mamba-2, 4 attention, 28 MLP): +2.65 points on 12 tasks, up to 8× faster generation (predicted)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2403.19887" target="_blank" rel="noopener">Jamba: A Hybrid Transformer-Mamba Language Model</a>
+      <div class="meta">Lieber et al. (AI21) · arXiv 2024 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>Interleaves Transformer and Mamba layers with MoE; fits on a single 80GB GPU.</p><div class="num">Remember: 1 : 7 attention-to-Mamba layers; up to 256K context</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2501.08313" target="_blank" rel="noopener">MiniMax-01: Scaling Foundation Models with Lightning Attention</a>
+      <div class="meta">MiniMax · arXiv 2025 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>Lightning (I/O-aware linear) attention with one softmax-attention block after every seven, plus MoE.</p><div class="num">Remember: 456B total, 45.9B active; 1M-token training context, 4M at inference</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2504.03624" target="_blank" rel="noopener">Nemotron-H: A Family of Accurate and Efficient Hybrid Mamba-Transformer Models</a>
+      <div class="meta">NVIDIA · arXiv 2025 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>Replaces most self-attention layers with Mamba-2 layers (about 8% attention, evenly spaced); comparable accuracy to similarly sized transformers.</p><div class="num">Remember: up to 3× faster inference; 4 of 52 layers are attention in 8B</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2510.26692" target="_blank" rel="noopener">Kimi Linear: An Expressive, Efficient Attention Architecture</a>
+      <div class="meta">Kimi Team · arXiv 2025 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>Kimi Delta Attention (finer-grained gating on Gated DeltaNet) interleaved 3:1 with MLA; outperforms full MLA under the same training recipe.</p><div class="num">Remember: KV cache up to 75% smaller; up to 6× decoding throughput at 1M context</div></div>
+    <div class="paper-item"><a href="https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct" target="_blank" rel="noopener">Qwen3-Next-80B-A3B-Instruct model card</a>
+      <div class="meta">Qwen Team · Hugging Face 2025 · cited in <a href="12-beyond-attention/index.html" style="font-weight:500;color:var(--a)">Beyond attention: SSMs and hybrids</a></div>
+      <p>Hybrid layout 12 × (3 × Gated DeltaNet + 1 × gated attention), each followed by a high-sparsity MoE; 80B total, 3B active.</p><div class="num">Remember: 48 layers; 10× throughput beyond 32K tokens vs Qwen3-32B; 262,144-token native context</div></div>
   </div>
 </div>
 

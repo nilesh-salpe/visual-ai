@@ -3042,3 +3042,216 @@ claude_prompting:
   summary: Be clear and direct, explain the reasons for rules, use 3–5 examples in example tags, structure with XML tags, put long documents first and the query last;
     prefilled responses are not supported from Claude 4.6 models (use structured outputs).
   number: 'queries at the end: up to 30% better response quality on long, complex inputs'
+linear_attn:
+  title: 'Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention'
+  authors: Katharopoulos, Vyas, Pappas, Fleuret
+  venue: ICML
+  year: 2020
+  url: https://arxiv.org/abs/2006.16236
+  summary: Expresses attention as a dot product of kernel feature maps; associativity reduces cost from O(N²) to O(N) and turns autoregressive attention into an RNN.
+  number: up to 4000× faster autoregressive prediction on very long sequences
+s4:
+  title: Efficiently Modeling Long Sequences with Structured State Spaces (S4)
+  authors: Gu, Goel, Ré
+  venue: ICLR
+  year: 2022
+  url: https://arxiv.org/abs/2111.00396
+  summary: Structured state space sequence model with an efficient parameterisation; strong on long-range benchmarks.
+  number: linear scaling in sequence length
+mamba:
+  title: 'Mamba: Linear-Time Sequence Modeling with Selective State Spaces'
+  authors: Gu, Dao
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2312.00752
+  summary: SSM parameters become functions of the input (selection), with a hardware-aware parallel scan; an attention-free, MLP-free block.
+  number: 5× generation throughput; Mamba-3B matches transformers twice its size
+mamba2:
+  title: 'Transformers are SSMs: Generalized Models and Efficient Algorithms Through Structured State Space Duality (Mamba-2)'
+  authors: Dao, Gu
+  venue: ICML
+  year: 2024
+  url: https://arxiv.org/abs/2405.21060
+  summary: State space duality connects SSMs and attention through structured semiseparable matrices; Mamba-2's core layer is a faster selective SSM.
+  number: 2–8× faster than Mamba's layer
+rwkv:
+  title: 'RWKV: Reinventing RNNs for the Transformer Era'
+  authors: Peng et al.
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2305.13048
+  summary: A linear-attention-style RNN that trains in parallel like a transformer and infers like an RNN.
+  number: models up to 14B parameters
+retnet:
+  title: 'Retentive Network: A Successor to Transformer for Large Language Models'
+  authors: Sun et al.
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2307.08621
+  summary: Retention supports parallel training, O(1) recurrent inference and chunkwise recurrence for long sequences.
+  number: O(1) inference per token
+gated_deltanet:
+  title: 'Gated Delta Networks: Improving Mamba2 with Delta Rule'
+  authors: Yang, Kautz, Hatamizadeh
+  venue: ICLR
+  year: 2025
+  url: https://arxiv.org/abs/2412.06464
+  summary: Combines gating (fast memory erasure) with the delta rule (targeted updates) in a hardware-efficient parallel algorithm; hybrids with sliding-window attention
+    or Mamba-2 improve further.
+  number: beats Mamba-2 and DeltaNet on LM, retrieval and long context
+zoology:
+  title: 'Zoology: Measuring and Improving Recall in Efficient Language Models'
+  authors: Arora et al.
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2312.04927
+  summary: Gated-convolution models trail attention mainly on associative recall; multi-query associative recall (MQAR) captures it; sparse attention hybrids close
+    most of the gap.
+  number: 82% of the gap from recall; 70M attention beats 1.4B gated convolution on recall; hybrids close 97.4%
+repeat_after_me:
+  title: 'Repeat After Me: Transformers are Better than State Space Models at Copying'
+  authors: Jelassi, Brandfonbrener, Kakade, Malach
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2402.01032
+  summary: A two-layer transformer can copy strings of exponential length; fixed-state models are fundamentally limited; empirical gaps on copying and retrieval.
+  number: copying needs state that grows with the string
+mamba_hybrid:
+  title: An Empirical Study of Mamba-based Language Models
+  authors: Waleffe et al. (NVIDIA)
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2406.07887
+  summary: '8B Mamba, Mamba-2, transformer and hybrid models on the same 3.5T tokens: pure SSMs lag on copying and in-context learning; the hybrid wins.'
+  number: 'Mamba-2-Hybrid (24 Mamba-2, 4 attention, 28 MLP): +2.65 points on 12 tasks, up to 8× faster generation (predicted)'
+jamba:
+  title: 'Jamba: A Hybrid Transformer-Mamba Language Model'
+  authors: Lieber et al. (AI21)
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2403.19887
+  summary: Interleaves Transformer and Mamba layers with MoE; fits on a single 80GB GPU.
+  number: '1 : 7 attention-to-Mamba layers; up to 256K context'
+minimax01:
+  title: 'MiniMax-01: Scaling Foundation Models with Lightning Attention'
+  authors: MiniMax
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2501.08313
+  summary: Lightning (I/O-aware linear) attention with one softmax-attention block after every seven, plus MoE.
+  number: 456B total, 45.9B active; 1M-token training context, 4M at inference
+nemotronh:
+  title: 'Nemotron-H: A Family of Accurate and Efficient Hybrid Mamba-Transformer Models'
+  authors: NVIDIA
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2504.03624
+  summary: Replaces most self-attention layers with Mamba-2 layers (about 8% attention, evenly spaced); comparable accuracy to similarly sized transformers.
+  number: up to 3× faster inference; 4 of 52 layers are attention in 8B
+kimi_linear:
+  title: 'Kimi Linear: An Expressive, Efficient Attention Architecture'
+  authors: Kimi Team
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2510.26692
+  summary: Kimi Delta Attention (finer-grained gating on Gated DeltaNet) interleaved 3:1 with MLA; outperforms full MLA under the same training recipe.
+  number: KV cache up to 75% smaller; up to 6× decoding throughput at 1M context
+qwen3next_card:
+  title: Qwen3-Next-80B-A3B-Instruct model card
+  authors: Qwen Team
+  venue: Hugging Face
+  year: 2025
+  url: https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct
+  summary: Hybrid layout 12 × (3 × Gated DeltaNet + 1 × gated attention), each followed by a high-sparsity MoE; 80B total, 3B active.
+  number: 48 layers; 10× throughput beyond 32K tokens vs Qwen3-32B; 262,144-token native context
+jailbroken:
+  title: 'Jailbroken: How Does LLM Safety Training Fail?'
+  authors: Wei, Haghtalab, Steinhardt
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2307.02483
+  summary: Two failure modes of safety training, competing objectives and mismatched generalization, explain jailbreaks and guide new ones (e.g. prefix injection,
+    Base64).
+  number: new attacks succeeded on 100% of a curated set and over 96% of evaluated prompts (GPT-4, Claude v1.3)
+gcg:
+  title: Universal and Transferable Adversarial Attacks on Aligned Language Models (GCG)
+  authors: Zou, Wang, Carlini, Nasr, Kolter, Fredrikson
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2307.15043
+  summary: Greedy Coordinate Gradient search for an adversarial suffix that maximises the probability of an affirmative answer; suffixes transfer to black-box models.
+  number: up to 84% on GPT-3.5 and GPT-4, 66% PaLM-2, 2.1% Claude
+pair:
+  title: Jailbreaking Black Box Large Language Models in Twenty Queries (PAIR)
+  authors: Chao et al.
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2310.08419
+  summary: An attacker LLM iteratively refines a semantic jailbreak against a target using only black-box access.
+  number: often fewer than 20 queries
+manyshot_jb:
+  title: Many-shot jailbreaking
+  authors: Anil et al. (Anthropic)
+  venue: Anthropic research
+  year: 2024
+  url: https://www.anthropic.com/research/many-shot-jailbreaking
+  summary: Hundreds of faux dialogues in a long prompt jailbreak models; effectiveness follows the same power law as benign in-context learning.
+  number: up to 256 shots tested; a prompt-classification mitigation cut success from 61% to 2% in one case
+bon_jb:
+  title: Best-of-N Jailbreaking
+  authors: Hughes, Price, Lynch et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2412.03556
+  summary: Repeatedly sample augmented variations of a prompt (shuffling, capitalisation; image and audio augmentations) until one succeeds; success follows power-law-like
+    scaling in N.
+  number: 89% GPT-4o, 78% Claude 3.5 Sonnet with 10,000 samples
+const_classifiers:
+  title: 'Constitutional Classifiers: Defending against Universal Jailbreaks across Thousands of Hours of Red Teaming'
+  authors: Sharma et al. (Anthropic)
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2501.18837
+  summary: Input and streaming output classifiers trained on synthetic data generated from a constitution of permitted and restricted content.
+  number: 3,000+ hours of red teaming, no universal jailbreak; automated success 86% → <5%; +0.38% refusals; 23.7% overhead
+asl3:
+  title: Activating AI Safety Level 3 protections
+  authors: Anthropic
+  venue: Anthropic news
+  year: 2025
+  url: https://www.anthropic.com/news/activating-asl3-protections
+  summary: 'Deployment with Claude Opus 4: real-time Constitutional Classifiers on inputs and outputs, a bug bounty, offline monitoring and threat intelligence, iterated
+    over time.'
+  number: activated May 22, 2025
+llamaguard:
+  title: 'Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations'
+  authors: Inan et al. (Meta)
+  venue: arXiv
+  year: 2023
+  url: https://arxiv.org/abs/2312.06674
+  summary: An instruction-tuned Llama 2 7B that classifies both prompts and responses against a safety risk taxonomy.
+  number: prompt and response classification with one model
+circuit_breakers:
+  title: Improving Alignment and Robustness with Circuit Breakers
+  authors: Zou et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2406.04313
+  summary: Representation rerouting interrupts the internal representations responsible for harmful outputs, as an alternative to refusal and adversarial training.
+  number: attack-agnostic; also applied to agents
+harmbench:
+  title: 'HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal'
+  authors: Mazeika et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2402.04249
+  summary: Standardised evaluation of automated red-teaming methods and defences.
+  number: 18 red-teaming methods compared
+jailbreakbench:
+  title: 'JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models'
+  authors: Chao et al.
+  venue: NeurIPS Datasets and Benchmarks
+  year: 2024
+  url: https://arxiv.org/abs/2404.01318
+  summary: Open benchmark with a dataset of misuse behaviours, a leaderboard and a repository of jailbreak artifacts for reproducible evaluation.
+  number: standard threat model and scoring

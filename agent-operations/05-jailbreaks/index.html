@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jailbreaks and Adversarial Robustness</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Jailbreaks and adversarial robustness" data-home="../index.html" data-home-label="Operations">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual Agents · Operations · 05</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-15</span><span class="status-note">Written from primary sources 2026-10-15; layered classifier defences are in production (Anthropic ASL-3, Llama Guard).</span></div>
+    <h1>Jailbreaks and adversarial robustness</h1>
+    <p class="sub">How users get a model to do what its safety training forbids: why jailbreaks work, the main automated attack families (optimised suffixes, attacker LLMs (large language models), many-shot, best-of-N), and the layered defences used in production: safety training, input and output classifiers, monitoring and red teaming.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Safety training teaches a model to refuse harmful requests, but attackers rephrase, encode, role-play, pack hundreds of fake dialogues into the context, or simply retry random variations until one gets through. Every deployed model faces this, and agents with tools raise the stakes.</div>
+      <div class="c"><b>Core idea</b>Treat robustness as a property of the <b>whole system</b>, not of the model alone. Jailbreaks exploit <b>competing objectives</b> (being helpful vs being safe) and <b>mismatched generalization</b> (safety training did not cover a format the model still understands). Defend in layers: a <b>safety-trained model</b>, <b>input and output classifiers</b> trained from a written policy, <b>monitoring</b> across requests and accounts, and continuous <b>red teaming</b>. Measure attack success at a stated attacker budget, together with the false-refusal rate on real traffic.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint">Previous: <a href="../04-experimentation/index.html">Experimentation for LLM products</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-problem" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Refusals can be talked around</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Learned, not enforced</h3><p>Wei et al.: attacks designed from two failure modes succeeded on every prompt in a curated set of unsafe requests against GPT-4 and Claude v1.3, and on over 96% of all prompts evaluated (2023).</p></div>
+      <div class="card b"><h3>Automated attacks</h3><p>GCG (Greedy Coordinate Gradient) finds an adversarial suffix by gradient-guided search on open models that transferred to GPT-3.5 and GPT-4 (up to 84%) and PaLM-2 (66%), much less to Claude (2.1%). PAIR (Prompt Automatic Iterative Refinement) uses an attacker LLM and often needs fewer than 20 queries.</p></div>
+      <div class="card c"><h3>Retries add up</h3><p>Best-of-N: resample random variations of a prompt (shuffled, re-capitalised) until one works: 89% on GPT-4o and 78% on Claude 3.5 Sonnet with 10,000 samples, with success following a power law in N.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b2">2 · Core idea</span>
+    <h2>Why jailbreaks work, and what each family exploits</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Attack family</th>
+<th>Published example</th>
+<th>What it exploits</th>
+<th>Main defence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Role-play and persuasion</td>
+<td>PAIR (attacker LLM refines a scenario)</td>
+<td>competing objectives: helpfulness vs safety</td>
+<td>safety training; output classifier</td>
+</tr>
+<tr>
+<td>Encoding and obfuscation</td>
+<td>Base64 inputs; random capitalisation (Best-of-N)</td>
+<td>mismatched generalization: the model understands a format safety training missed</td>
+<td>classifiers that judge meaning, not surface form</td>
+</tr>
+<tr>
+<td>Optimised suffixes</td>
+<td>GCG</td>
+<td>brittle refusal behaviour under adversarial tokens</td>
+<td>output classifier; adversarial training</td>
+</tr>
+<tr>
+<td>Many-shot</td>
+<td>hundreds of faux dialogues in one prompt (up to 256 tested)</td>
+<td>in-context learning, which grows with context length</td>
+<td>classifying and modifying the prompt (61% → 2% success in one case)</td>
+</tr>
+<tr>
+<td>Multi-turn decomposition</td>
+<td>splitting a task into individually harmless steps</td>
+<td>checks that look at one request at a time</td>
+<td>conversation- and account-level monitoring</td>
+</tr>
+</tbody>
+</table></div>
+<p>A <strong>jailbreak</strong> is the user attacking the model's policy. <strong>Prompt injection</strong> is third-party content (a web page, a tool result) hijacking an agent; it is covered in Safety and reliability. OWASP (Open Worldwide Application Security Project) lists both under prompt injection (LLM01).</p>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b3">3 · High-level design</span>
+    <h2>Layered defence</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A request arrives tied to a user and an account.&quot;, &quot;An input classifier screens the prompt against a written policy, judging what is being asked for, not how it is phrased.&quot;, &quot;The model itself is safety-trained to refuse, the first line but not the only one.&quot;, &quot;An output classifier scores the response as it streams and can stop it mid-generation; blocking harmful output works even when the prompt looked harmless.&quot;, &quot;Classifier signals and request patterns feed account-level monitoring and rate limits, which catch repeated attempts and multi-turn decomposition.&quot;, &quot;Red teaming (automated attacks such as PAIR and Best-of-N, plus human testers and bug bounties) finds new attacks; they become training data for the classifiers, which retrain faster than the model.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="102.0" y1="148.0" x2="121.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="242.0" y1="148.0" x2="261.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="382.0" y1="148.0" x2="401.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="522.0" y1="148.0" x2="541.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="201.2" y1="178.0" x2="234.4" y2="231.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="406.2" y1="178.0" x2="306.9" y2="231.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="6"><line x1="231.5" y1="78.0" x2="204.9" y2="116.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="6"><line x1="315.5" y1="78.0" x2="401.0" y2="118.7" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="90" height="56" rx="10"/><text class="dg-text" x="55.0" y="146.0" text-anchor="middle">Request</text><text class="dg-sub" x="55.0" y="162.0" text-anchor="middle">user · account</text></g><g class="dg-node b" data-step="2"><rect x="125" y="120" width="115" height="56" rx="10"/><text class="dg-text" x="182.5" y="146.0" text-anchor="middle">Input classifier</text><text class="dg-sub" x="182.5" y="162.0" text-anchor="middle">policy · intent</text></g><g class="dg-node a" data-step="3"><rect x="265" y="120" width="115" height="56" rx="10"/><text class="dg-text" x="322.5" y="146.0" text-anchor="middle">Model</text><text class="dg-sub" x="322.5" y="162.0" text-anchor="middle">safety-trained</text></g><g class="dg-node b" data-step="4"><rect x="405" y="120" width="115" height="56" rx="10"/><text class="dg-text" x="462.5" y="146.0" text-anchor="middle">Output classifier</text><text class="dg-sub" x="462.5" y="162.0" text-anchor="middle">streaming · can halt</text></g><g class="dg-node e" data-step="4"><rect x="545" y="120" width="105" height="56" rx="10"/><text class="dg-text" x="597.5" y="153.0" text-anchor="middle">Reply</text></g><g class="dg-node c" data-step="5"><rect x="125" y="235" width="255" height="50" rx="10"/><text class="dg-text" x="252.5" y="258.0" text-anchor="middle">Account monitoring</text><text class="dg-sub" x="252.5" y="274.0" text-anchor="middle">patterns across requests · rate limits</text></g><g class="dg-node d" data-step="6"><rect x="125" y="20" width="255" height="56" rx="10"/><text class="dg-text" x="252.5" y="46.0" text-anchor="middle">Red teaming</text><text class="dg-sub" x="252.5" y="62.0" text-anchor="middle">automated attacks + human testers</text></g><g data-step="5"><text class="dg-label" x="217.8" y="199.5" text-anchor="middle">signals</text></g><g data-step="6"><text class="dg-label" x="218.2" y="92.0" text-anchor="middle">new attacks</text></g><g data-step="6"><text class="dg-label" x="358.2" y="93.4" text-anchor="middle">training data</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-lld" data-chapter="Low-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · Low-level design</span>
+    <h2>Constitutional classifiers</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Write natural-language rules (a constitution) for what is permitted and what is restricted.&quot;, &quot;Prompt an LLM to generate many harmful and harmless prompts and completions from the rules, then augment them (translations, known jailbreak styles).&quot;, &quot;Train an input classifier on whole prompts and a streaming output classifier that scores each token prefix and can halt generation.&quot;, &quot;Evaluate with human red teaming and production traffic: over 3,000 estimated hours of red teaming found no universal jailbreak; automated jailbreak success fell from 86% to under 5%; refusals on production traffic rose by 0.38% absolute; inference overhead 23.7%.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga2" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="162.0" y1="48.0" x2="186.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="2"><line x1="342.0" y1="48.0" x2="366.0" y2="48.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="392.3" y1="78.0" x2="315.9" y2="126.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="3"><line x1="440.0" y1="78.0" x2="440.0" y2="126.0" marker-end="url(#dga2)"/></g><g class="dg-edge dash" data-step="4"><line x1="290.0" y1="188.0" x2="325.8" y2="231.0" marker-end="url(#dga2)"/></g><g class="dg-edge" data-step="4"><line x1="413.5" y1="188.0" x2="375.6" y2="231.0" marker-end="url(#dga2)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="20" width="150" height="56" rx="10"/><text class="dg-text" x="85.0" y="46.0" text-anchor="middle">Constitution</text><text class="dg-sub" x="85.0" y="62.0" text-anchor="middle">allowed · restricted</text></g><g class="dg-node c" data-step="2"><rect x="190" y="20" width="150" height="56" rx="10"/><text class="dg-text" x="265.0" y="46.0" text-anchor="middle">Synthetic data</text><text class="dg-sub" x="265.0" y="62.0" text-anchor="middle">LLM-written examples</text></g><g class="dg-node c" data-step="2"><rect x="370" y="20" width="140" height="56" rx="10"/><text class="dg-text" x="440.0" y="46.0" text-anchor="middle">Augment</text><text class="dg-sub" x="440.0" y="62.0" text-anchor="middle">languages · styles</text></g><g class="dg-node b" data-step="3"><rect x="190" y="130" width="150" height="56" rx="10"/><text class="dg-text" x="265.0" y="156.0" text-anchor="middle">Input classifier</text><text class="dg-sub" x="265.0" y="172.0" text-anchor="middle">whole prompt</text></g><g class="dg-node b" data-step="3"><rect x="370" y="130" width="140" height="56" rx="10"/><text class="dg-text" x="440.0" y="156.0" text-anchor="middle">Output classifier</text><text class="dg-sub" x="440.0" y="172.0" text-anchor="middle">token by token</text></g><g class="dg-node d" data-step="4"><rect x="190" y="235" width="320" height="50" rx="10"/><text class="dg-text" x="350.0" y="258.0" text-anchor="middle">Evaluate</text><text class="dg-sub" x="350.0" y="274.0" text-anchor="middle">human red teaming · automated attacks · production traffic</text></g></svg><p class="readout dgcap"></p></div>
+<div class="visual"><div class="controls"><label class="ctl">success per attempt (log₁₀) <input type="range" id="jbP" min="-5" max="-1" step="0.1" value="-3"> <output id="jbPo"></output></label><label class="ctl">classifier catch rate <input type="range" id="jbC" min="0" max="99.9" step="0.1" value="95"> <output id="jbCo"></output></label><label class="ctl">attempts (log₁₀) <input type="range" id="jbN" min="0" max="5" step="0.1" value="3"> <output id="jbNo"></output></label></div><div class="bars"><div id="jbBars"></div></div><p class="readout" id="jbOut"></p></div>
+
+<p>The calculator treats attempts as independent, a simplification: Best-of-N measured a power law, which grows more slowly than independent retries but keeps rising with N.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b5">5 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Defence</th>
+<th>Strength</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Safety training (refusals)</td>
+<td>no extra latency; handles most plain requests</td>
+<td>can be argued around; too much causes over-refusal</td>
+</tr>
+<tr>
+<td>Input and output classifiers <span class="lbl lbl-current" title="widely used in production today">Current practice</span></td>
+<td>robust to many styles; retrain quickly; output check catches harmless-looking prompts</td>
+<td>compute overhead (23.7% in the paper); false positives (+0.38% refusals)</td>
+</tr>
+<tr>
+<td>Adversarial training on known attacks</td>
+<td>closes specific holes</td>
+<td>attack-specific; may not generalise to new attacks</td>
+</tr>
+<tr>
+<td>Circuit breakers (representation rerouting) <span class="lbl lbl-research" title="promising, not common in production">Research</span></td>
+<td>targets the internal representations of harmful output, attack-agnostic</td>
+<td>research-stage; Best-of-N still circumvented them</td>
+</tr>
+<tr>
+<td>Account monitoring and rate limits</td>
+<td>catches retries and multi-turn attacks</td>
+<td>needs identity; privacy and false-alarm handling</td>
+</tr>
+<tr>
+<td>Restricting risky features</td>
+<td>removes an attack surface (for example very long faux-dialogue prompts)</td>
+<td>can block legitimate uses</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-fail" data-chapter="Failure modes">
+  <div class="inner">
+    <span class="qtag b6">6 · Failure modes</span>
+    <h2>Failure modes</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Symptom</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Universal jailbreak shared publicly</td>
+<td>one template works across many harmful requests</td>
+<td>bug bounties, threat intelligence, fast classifier updates</td>
+</tr>
+<tr>
+<td>Single-attempt evaluation</td>
+<td>reported robustness collapses under retries</td>
+<td>report attack success at a stated budget N; use HarmBench or JailbreakBench plus your own policy</td>
+</tr>
+<tr>
+<td>Over-refusal</td>
+<td>legitimate users blocked; complaints rise</td>
+<td>measure false refusals on real traffic alongside attack success</td>
+</tr>
+<tr>
+<td>Obfuscated inputs</td>
+<td>encodings and odd formatting slip past filters</td>
+<td>classify meaning; check outputs, not only inputs</td>
+</tr>
+<tr>
+<td>Harm split across turns</td>
+<td>each turn looks harmless</td>
+<td>conversation-level classifiers; account monitoring</td>
+</tr>
+<tr>
+<td>Jailbroken agent with tools</td>
+<td>harmful actions, not just text</td>
+<td>least-privilege tools, approvals for risky actions (Safety and reliability deck)</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-prod" data-chapter="Production">
+  <div class="inner">
+    <span class="qtag b7">7 · Challenges in production</span>
+    <h2>In production</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Defence in depth</h3><p>No single layer is enough: Anthropic's AI (artificial intelligence) Safety Level 3 (ASL-3) deployment combines real-time constitutional classifiers, a bug bounty, offline monitoring and threat intelligence.</p></div>
+      <div class="card c"><h3>Write the policy first</h3><p>Classifiers, red-team tasks and evals all derive from a written statement of what is allowed and what is not.</p></div>
+      <div class="card b"><h3>Measure both errors</h3><p>Attack success at a budget, and false refusals on real traffic; a defence that blocks users is not a win.</p></div>
+      <div class="card e"><h3>Iterate fast</h3><p>Classifiers can be retrained in days from new red-team findings; model retraining takes much longer.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2307.02483" target="_blank" rel="noopener">Jailbroken: How Does LLM Safety Training Fail?</a>
+        <div class="meta">Wei, Haghtalab, Steinhardt · arXiv 2023</div>
+        <p>Two failure modes of safety training, competing objectives and mismatched generalization, explain jailbreaks and guide new ones (e.g. prefix injection, Base64).</p><div class="num">Remember: new attacks succeeded on 100% of a curated set and over 96% of evaluated prompts (GPT-4, Claude v1.3)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2307.15043" target="_blank" rel="noopener">Universal and Transferable Adversarial Attacks on Aligned Language Models (GCG)</a>
+        <div class="meta">Zou, Wang, Carlini, Nasr, Kolter, Fredrikson · arXiv 2023</div>
+        <p>Greedy Coordinate Gradient search for an adversarial suffix that maximises the probability of an affirmative answer; suffixes transfer to black-box models.</p><div class="num">Remember: up to 84% on GPT-3.5 and GPT-4, 66% PaLM-2, 2.1% Claude</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2310.08419" target="_blank" rel="noopener">Jailbreaking Black Box Large Language Models in Twenty Queries (PAIR)</a>
+        <div class="meta">Chao et al. · arXiv 2023</div>
+        <p>An attacker LLM iteratively refines a semantic jailbreak against a target using only black-box access.</p><div class="num">Remember: often fewer than 20 queries</div></div>
+      <div class="paper-item"><a href="https://www.anthropic.com/research/many-shot-jailbreaking" target="_blank" rel="noopener">Many-shot jailbreaking</a>
+        <div class="meta">Anil et al. (Anthropic) · Anthropic research 2024</div>
+        <p>Hundreds of faux dialogues in a long prompt jailbreak models; effectiveness follows the same power law as benign in-context learning.</p><div class="num">Remember: up to 256 shots tested; a prompt-classification mitigation cut success from 61% to 2% in one case</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2412.03556" target="_blank" rel="noopener">Best-of-N Jailbreaking</a>
+        <div class="meta">Hughes, Price, Lynch et al. · arXiv 2024</div>
+        <p>Repeatedly sample augmented variations of a prompt (shuffling, capitalisation; image and audio augmentations) until one succeeds; success follows power-law-like scaling in N.</p><div class="num">Remember: 89% GPT-4o, 78% Claude 3.5 Sonnet with 10,000 samples</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2501.18837" target="_blank" rel="noopener">Constitutional Classifiers: Defending against Universal Jailbreaks across Thousands of Hours of Red Teaming</a>
+        <div class="meta">Sharma et al. (Anthropic) · arXiv 2025</div>
+        <p>Input and streaming output classifiers trained on synthetic data generated from a constitution of permitted and restricted content.</p><div class="num">Remember: 3,000+ hours of red teaming, no universal jailbreak; automated success 86% → <5%; +0.38% refusals; 23.7% overhead</div></div>
+      <div class="paper-item"><a href="https://www.anthropic.com/news/activating-asl3-protections" target="_blank" rel="noopener">Activating AI Safety Level 3 protections</a>
+        <div class="meta">Anthropic · Anthropic news 2025</div>
+        <p>Deployment with Claude Opus 4: real-time Constitutional Classifiers on inputs and outputs, a bug bounty, offline monitoring and threat intelligence, iterated over time.</p><div class="num">Remember: activated May 22, 2025</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2312.06674" target="_blank" rel="noopener">Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations</a>
+        <div class="meta">Inan et al. (Meta) · arXiv 2023</div>
+        <p>An instruction-tuned Llama 2 7B that classifies both prompts and responses against a safety risk taxonomy.</p><div class="num">Remember: prompt and response classification with one model</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2406.04313" target="_blank" rel="noopener">Improving Alignment and Robustness with Circuit Breakers</a>
+        <div class="meta">Zou et al. · arXiv 2024</div>
+        <p>Representation rerouting interrupts the internal representations responsible for harmful outputs, as an alternative to refusal and adversarial training.</p><div class="num">Remember: attack-agnostic; also applied to agents</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2402.04249" target="_blank" rel="noopener">HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal</a>
+        <div class="meta">Mazeika et al. · arXiv 2024</div>
+        <p>Standardised evaluation of automated red-teaming methods and defences.</p><div class="num">Remember: 18 red-teaming methods compared</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2404.01318" target="_blank" rel="noopener">JailbreakBench: An Open Robustness Benchmark for Jailbreaking Large Language Models</a>
+        <div class="meta">Chao et al. · NeurIPS Datasets and Benchmarks 2024</div>
+        <p>Open benchmark with a dataset of misuse behaviours, a leaderboard and a repository of jailbreak artifacts for reproducible evaluation.</p><div class="num">Remember: standard threat model and scoring</div></div>
+      <div class="paper-item"><a href="https://genai.owasp.org/llmrisk/llm062025-excessive-agency/" target="_blank" rel="noopener">OWASP Top 10 for LLM Applications 2025</a>
+        <div class="meta">OWASP GenAI Security Project · genai.owasp.org 2025</div>
+        <p>LLM06:2025 Excessive Agency: root causes are excessive functionality, excessive permissions and excessive autonomy; mitigations include minimising extensions and their permissions, executing in the user's context, user approval and complete mediation.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+<script>
+(() => {
+Deck.bind(['jbP', 'jbC', 'jbN'], () => {
+  const p = Math.pow(10, Deck.val('jbP')), c = Deck.val('jbC') / 100, N = Math.round(Math.pow(10, Deck.val('jbN')));
+  Deck.out('jbPo', (100 * p < 0.1 ? (100 * p).toFixed(3) : (100 * p).toFixed(2)) + '%'); Deck.out('jbCo', (100 * c).toFixed(1) + '%'); Deck.out('jbNo', N.toLocaleString());
+  const q = p * (1 - c), b0 = 1 - Math.pow(1 - p, N), b1 = 1 - Math.pow(1 - q, N);
+  const med = x => (x > 0 ? Math.ceil(Math.log(0.5) / Math.log(1 - x)) : Infinity);
+  Deck.hbars(document.getElementById('jbBars'), [
+    { label: 'model only: P(at least one success)', value: b0, color: 'var(--d)', text: (100 * b0).toFixed(1) + '%' },
+    { label: 'model + output classifier', value: b1, color: 'var(--e)', text: (100 * b1).toFixed(1) + '%' }], { max: 1 });
+  document.getElementById('jbOut').innerHTML = `With ${N.toLocaleString()} attempts at ${(100 * p).toPrecision(2)}% per attempt, the attacker succeeds with probability <b>${(100 * b0).toFixed(1)}%</b>; half of attackers need about ${med(p).toLocaleString()} attempts. A classifier that blocks ${(100 * c).toFixed(1)}% of what slips past the model raises that to about <b>${med(q).toLocaleString()}</b> attempts. ` +
+    'Retries make any per-attempt rate add up, so rate limits and account monitoring matter as much as the model.';
+});
+})();
+</script>
+</body>
+</html>
