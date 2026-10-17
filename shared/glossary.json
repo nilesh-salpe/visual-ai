@@ -923,6 +923,18 @@
   },
   "PAIR": {
    "exp": "Prompt Automatic Iterative Refinement"
+  },
+  "LB": {
+   "exp": "load balancing"
+  },
+  "TCP": {
+   "exp": "Transmission Control Protocol"
+  },
+  "LWS": {
+   "exp": "LeaderWorkerSet"
+  },
+  "NIXL": {
+   "exp": "NVIDIA Inference Xfer Library"
   }
  },
  "exempt": [
@@ -1368,6 +1380,16 @@
   "HarmBench",
   "JailbreakBench",
   "LLM01",
-  "ASL"
+  "ASL",
+  "GDRDMA",
+  "NET",
+  "TRACE",
+  "KServe",
+  "KubeRay",
+  "LMCache",
+  "LeaderWorkerSet",
+  "MI300X",
+  "TPDS",
+  "WWW8"
  ]
 }

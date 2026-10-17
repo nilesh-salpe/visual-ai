@@ -11,7 +11,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="index.html">← vLLM</a>
-  <div class="label" style="margin-top:28px">Reading list · 20 papers and docs</div>
+  <div class="label" style="margin-top:28px">Reading list · 31 papers and docs</div>
   <h1>vLLM: key papers</h1>
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">
@@ -46,7 +46,7 @@
       <div class="meta">Yu et al. · OSDI 2022 · cited in <a href="04-scheduler/index.html" style="font-weight:500;color:var(--a)">The scheduler: continuous batching and chunked prefill</a></div>
       <p>Iteration-level scheduling (requests join and leave the batch after every decode step) plus selective batching (batch the matmuls, run attention per request).</p><div class="num">Remember: 36.9× throughput over FasterTransformer at the same latency (GPT-3 175B)</div></div>
     <div class="paper-item"><a href="https://arxiv.org/abs/2312.07104" target="_blank" rel="noopener">SGLang: Efficient Execution of Structured Language Model Programs</a>
-      <div class="meta">Zheng et al. · NeurIPS 2024 · cited in <a href="05-prefix-caching/index.html" style="font-weight:500;color:var(--a)">Automatic prefix caching</a></div>
+      <div class="meta">Zheng et al. · NeurIPS 2024 · cited in <a href="05-prefix-caching/index.html" style="font-weight:500;color:var(--a)">Automatic prefix caching</a>, <a href="10-router/index.html" style="font-weight:500;color:var(--a)">vLLM Router</a></div>
       <p>A runtime and frontend for multi-call LLM (large language model) programs; RadixAttention keeps KV caches in a radix tree so shared prefixes are reused across requests automatically.</p><div class="num">Remember: up to 6.4× higher throughput</div></div>
     <div class="paper-item"><a href="https://arxiv.org/abs/2211.17192" target="_blank" rel="noopener">Fast Inference from Transformers via Speculative Decoding</a>
       <div class="meta">Leviathan et al. · ICML 2023 · cited in <a href="06-speculative-decoding/index.html" style="font-weight:500;color:var(--a)">Speculative decoding in vLLM</a></div>
@@ -55,13 +55,13 @@
       <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="06-speculative-decoding/index.html" style="font-weight:500;color:var(--a)">Speculative decoding in vLLM</a></div>
       <p>Configuring speculative decoding with --speculative-config: n-gram (prompt lookup), draft models, EAGLE/EAGLE-3, MTP heads, Medusa and suffix decoding.</p></div>
     <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/serving/parallelism_scaling.html" target="_blank" rel="noopener">Parallelism and Scaling</a>
-      <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="07-parallelism-and-quantization/index.html" style="font-weight:500;color:var(--a)">Parallelism and quantization</a></div>
+      <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="07-parallelism-and-quantization/index.html" style="font-weight:500;color:var(--a)">Parallelism and quantization</a>, <a href="09-deployment/index.html" style="font-weight:500;color:var(--a)">Deploying vLLM: one GPU to many nodes</a></div>
       <p>Single-node tensor parallelism, multi-node pipeline parallelism, data parallelism and expert parallelism for MoE models, and how to choose sizes.</p></div>
     <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/features/quantization/index.html" target="_blank" rel="noopener">Quantization</a>
       <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="07-parallelism-and-quantization/index.html" style="font-weight:500;color:var(--a)">Parallelism and quantization</a></div>
       <p>Supported weight/activation quantization (FP8, AWQ, GPTQ, compressed-tensors, MXFP4 (microscaling 4-bit floating point), NVFP4 (NVIDIA's block-scaled 4-bit floating point) and more) and quantized KV caches, with hardware support tables.</p></div>
     <div class="paper-item"><a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener">Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism</a>
-      <div class="meta">Shoeybi et al. · arXiv 2019 · cited in <a href="07-parallelism-and-quantization/index.html" style="font-weight:500;color:var(--a)">Parallelism and quantization</a></div>
+      <div class="meta">Shoeybi et al. · arXiv 2019 · cited in <a href="07-parallelism-and-quantization/index.html" style="font-weight:500;color:var(--a)">Parallelism and quantization</a>, <a href="09-deployment/index.html" style="font-weight:500;color:var(--a)">Deploying vLLM: one GPU to many nodes</a></div>
       <p>Intra-layer (tensor) model parallelism that splits each attention and MLP (multilayer perceptron) block across GPUs with only a few all-reduce operations, implemented in plain PyTorch.</p><div class="num">Remember: 2 all-reduces per transformer block in the forward pass; 76% scaling efficiency on 512 GPUs</div></div>
     <div class="paper-item"><a href="https://arxiv.org/abs/2306.00978" target="_blank" rel="noopener">AWQ: Activation-aware Weight Quantization for LLM (large language model) Compression and Acceleration</a>
       <div class="meta">Lin et al. · MLSys 2024 · cited in <a href="07-parallelism-and-quantization/index.html" style="font-weight:500;color:var(--a)">Parallelism and quantization</a></div>
@@ -75,6 +75,39 @@
     <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html" target="_blank" rel="noopener">OpenAI-Compatible Server</a>
       <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="08-running-and-tuning/index.html" style="font-weight:500;color:var(--a)">Running and tuning vLLM</a></div>
       <p>vllm serve exposes /v1/completions, /v1/chat/completions and more with OpenAI-compatible request formats, plus /metrics for Prometheus.</p></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/serving/data_parallel_deployment.md" target="_blank" rel="noopener">Data Parallel Deployment (vLLM documentation, v0.31.0)</a>
+      <div class="meta">vLLM project · vLLM docs 2026 · cited in <a href="09-deployment/index.html" style="font-weight:500;color:var(--a)">Deploying vLLM: one GPU to many nodes</a>, <a href="10-router/index.html" style="font-weight:500;color:var(--a)">vLLM Router</a></div>
+      <p>Data-parallel engines behind internal, hybrid or external load balancing; MoE data-parallel attention with expert or tensor parallel experts and a DP coordinator for dummy passes.</p><div class="num">Remember: --data-parallel-size, --data-parallel-hybrid-lb, --api-server-count; max_num_seqs per rank</div></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/deployment/k8s.md" target="_blank" rel="noopener">Using Kubernetes (vLLM documentation, v0.31.0)</a>
+      <div class="meta">vLLM project · vLLM docs 2026 · cited in <a href="09-deployment/index.html" style="font-weight:500;color:var(--a)">Deploying vLLM: one GPU to many nodes</a></div>
+      <p>Deploying vLLM on Kubernetes with GPU pods, probes and persistent model storage; pointers to production stack, llm-d, KServe and others.</p><div class="num">Remember: one Deployment + Service per model</div></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/deployment/frameworks/lws.md" target="_blank" rel="noopener">LWS: LeaderWorkerSet deployment (vLLM documentation, v0.31.0)</a>
+      <div class="meta">vLLM project · vLLM docs 2026 · cited in <a href="09-deployment/index.html" style="font-weight:500;color:var(--a)">Deploying vLLM: one GPU to many nodes</a></div>
+      <p>Multi-node vLLM replicas on Kubernetes as a leader pod plus worker pods, with multiprocessing or Ray.</p><div class="num">Remember: example: 2 nodes × 8 GPUs per replica</div></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/production-stack" target="_blank" rel="noopener">vLLM production stack</a>
+      <div class="meta">vLLM project · GitHub 2026 · cited in <a href="09-deployment/index.html" style="font-weight:500;color:var(--a)">Deploying vLLM: one GPU to many nodes</a>, <a href="10-router/index.html" style="font-weight:500;color:var(--a)">vLLM Router</a></div>
+      <p>Helm-based Kubernetes deployment of vLLM with model- and prefix-aware routing, Grafana observability and LMCache KV offloading.</p><div class="num">Remember: wraps upstream vLLM without modifying it</div></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/deployment/integrations/llm-d.md" target="_blank" rel="noopener">llm-d (vLLM documentation integration page, v0.31.0)</a>
+      <div class="meta">vLLM project · vLLM docs 2026 · cited in <a href="09-deployment/index.html" style="font-weight:500;color:var(--a)">Deploying vLLM: one GPU to many nodes</a>, <a href="10-router/index.html" style="font-weight:500;color:var(--a)">vLLM Router</a></div>
+      <p>Kubernetes-native distributed inference over vLLM: precise prefix-aware routing from KV-cache events, tiered KV offloading, P/D disaggregation, wide expert parallelism, SLO-aware autoscaling; a CNCF Sandbox project.</p><div class="num">Remember: 3× output throughput and 2× faster TTFT (time to first token) from prefix-aware routing vs round robin (Llama 3.1 70B, MI300X)</div></div>
+    <div class="paper-item"><a href="https://vllm.ai/blog/2025-12-13-vllm-router-release" target="_blank" rel="noopener">vLLM Router: A High-Performance and Prefill/Decode Aware Load Balancer for Large-scale Serving</a>
+      <div class="meta">vLLM Team · vLLM blog 2025 · cited in <a href="09-deployment/index.html" style="font-weight:500;color:var(--a)">Deploying vLLM: one GPU to many nodes</a>, <a href="10-router/index.html" style="font-weight:500;color:var(--a)">vLLM Router</a></div>
+      <p>Rust load balancer forked from the SGLang model gateway: consistent hashing, power of two, round robin and random; native P/D routing (NIXL (NVIDIA Inference Xfer Library), NCCL); retries, circuit breakers, Kubernetes discovery, Prometheus metrics.</p><div class="num">Remember: Llama 3.1 8B (8P/8D): +25% throughput vs llm-d, 2× a round-robin K8s Service</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
+      <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024 · cited in <a href="09-deployment/index.html" style="font-weight:500;color:var(--a)">Deploying vLLM: one GPU to many nodes</a></div>
+      <p>Dense Transformer with GQA (8 KV heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/router" target="_blank" rel="noopener">vllm-project/router (v0.1.16)</a>
+      <div class="meta">vLLM project · GitHub 2026 · cited in <a href="10-router/index.html" style="font-weight:500;color:var(--a)">vLLM Router</a></div>
+      <p>Policies round_robin, random, consistent_hash (160 virtual nodes), power_of_two, cache_aware (radix tree; thresholds 0.5, 32, 1.1); Mooncake and gRPC workers; retry and circuit-breaker defaults.</p><div class="num">Remember: retries 3, backoff 100 ms → 10 s; breaker opens after 5 failures, 30 s timeout</div></div>
+    <div class="paper-item"><a href="https://cs.brown.edu/courses/csci2950-u/papers/chash99www.pdf" target="_blank" rel="noopener">Web caching with consistent hashing</a>
+      <div class="meta">Karger et al. · Computer Networks (WWW8) 1999 · cited in <a href="10-router/index.html" style="font-weight:500;color:var(--a)">vLLM Router</a></div>
+      <p>Consistent hashing assigns objects to caches so that adding or removing a cache moves only that cache's share of objects; applied to web caching for load balancing and fault tolerance.</p><div class="num">Remember: only the changed cache's objects move</div></div>
+    <div class="paper-item"><a href="https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf" target="_blank" rel="noopener">The Power of Two Choices in Randomized Load Balancing</a>
+      <div class="meta">Mitzenmacher · IEEE TPDS 2001 · cited in <a href="10-router/index.html" style="font-weight:500;color:var(--a)">vLLM Router</a></div>
+      <p>In the supermarket model, letting each arriving customer pick the shorter of d ≥ 2 randomly chosen queues gives an exponential improvement in expected time in the system over one random choice.</p><div class="num">Remember: exponential improvement from d = 2</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2401.09670" target="_blank" rel="noopener">DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving</a>
+      <div class="meta">Zhong et al. · OSDI 2024 · cited in <a href="10-router/index.html" style="font-weight:500;color:var(--a)">vLLM Router</a></div>
+      <p>Defines serving quality as goodput, the request rate served within both TTFT and TPOT (time per output token) targets, and runs prefill and decode on separate GPUs (graphics processing units) so they stop interfering.</p><div class="num">Remember: 7.4× more requests or 12.6× tighter SLO than colocated systems</div></div>
   </div>
 </div>
 

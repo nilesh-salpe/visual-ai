@@ -29,7 +29,7 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
     ]),
     ('Frameworks', [
         ('pytorch', 'Framework · 9 decks + 9 Colab notebooks', 'PyTorch for LLMs', 'Tensors and views, autograd, nn.Module, the training loop, data pipelines, mixed precision, torch.compile and SDPA, DDP and FSDP2, and a tiny GPT. Checked against PyTorch 2.14.1.', ['autograd', 'SDPA', 'torch.compile', 'FSDP2']),
-        ('vllm', 'Framework · 8 decks + 5 Colab notebooks', 'vLLM internals and operation', 'How the vLLM engine works and how to run it: process architecture, paged KV cache, the token-budget scheduler, prefix caching, speculative decoding, parallelism, quantization and tuning. Checked against vLLM v0.31.0.', ['PagedAttention', 'scheduler', 'prefix cache', 'vllm serve']),
+        ('vllm', 'Framework · 10 decks + 6 Colab notebooks', 'vLLM internals and operation', 'How the vLLM engine works and how to run it: process architecture, paged KV cache, the token-budget scheduler, prefix caching, speculative decoding, parallelism, quantization, tuning, single- and multi-node deployment, and the vLLM Router. Checked against vLLM v0.31.0.', ['PagedAttention', 'scheduler', 'deployment', 'router']),
     ]),
     ('Frontier topics', [
         ('reasoning', 'Topic · 4 decks + 1 Colab notebook', 'Reasoning and test-time compute', 'Chain of thought, self-consistency and coverage, verifiers and process reward models, compute-optimal search, and reasoning models (RL on verifiable rewards, budget forcing, thinking budgets, faithfulness).', ['chain of thought', 'best-of-N', 'PRM', 'R1']),

@@ -432,14 +432,16 @@ VLLM_CARDS = [
     ('06-speculative-decoding', 'Speculative decoding in vLLM', 'n-gram, draft, EAGLE, MTP proposers; rejection sampling.'),
     ('07-parallelism-and-quantization', 'Parallelism and quantization', '-tp, -pp, -dp, expert parallelism, FP8 weights and KV.'),
     ('08-running-and-tuning', 'Running and tuning vLLM', 'Flags, OpenAI endpoints, /metrics, vllm bench, fixing preemptions.'),
+    ('09-deployment', 'Deploying vLLM: one GPU to many nodes', 'TP in a node, TP × PP across nodes, replicas, Ray vs --nnodes, Kubernetes.'),
+    ('10-router', 'vLLM Router', 'Consistent hash, cache-aware and power-of-two routing; P/D; retries, breakers.'),
 ]
 
 if __name__ == '__main__':
     _write(os.path.join(REPO, 'vllm', 'index.html'), topic_hub(
         'vllm', 'vLLM internals and operation', 'vLLM',
-        'How the vLLM serving engine works inside and how to run it: the process architecture, the paged KV cache manager, the unified token-budget scheduler, automatic prefix caching, speculative decoding, parallelism and quantization, and tuning with metrics. Checked against the vLLM v0.31.0 source and documentation; the concepts are introduced in the LLM Inference topic.',
+        'How the vLLM serving engine works inside and how to run it: the process architecture, the paged KV cache manager, the unified token-budget scheduler, automatic prefix caching, speculative decoding, parallelism and quantization, tuning with metrics, single- and multi-node deployment, and load balancing a fleet with the vLLM Router. Checked against the vLLM v0.31.0 source and documentation; the concepts are introduced in the LLM Inference topic.',
         'index_vllm.json', 'Re-implement vLLM\'s block pool with ref counts and LRU, chained-hash prefix caching, the token-budget scheduler with chunked prefill and preemption, a GPU memory and concurrency planner, and n-gram speculative decoding, all as CPU simulations.',
-        VLLM_CARDS, 'Kwon et al. 2023 (PagedAttention / vLLM); vLLM V1 blog 2025; vLLM v0.31.0 source (vllm/v1/core, vllm/config, vllm/engine) and documentation (architecture overview, automatic prefix caching design, optimization and tuning, OpenAI-compatible server, parallelism and scaling, speculative decoding, quantization); Yu et al. 2022 (Orca); Agrawal et al. 2024 (Sarathi-Serve); Leviathan et al. 2023; Zheng et al. 2024 (SGLang).'))
+        VLLM_CARDS, 'Kwon et al. 2023 (PagedAttention / vLLM); vLLM V1 blog 2025; vLLM v0.31.0 source (vllm/v1/core, vllm/config, vllm/engine) and documentation (architecture overview, automatic prefix caching design, optimization and tuning, OpenAI-compatible server, parallelism and scaling, speculative decoding, quantization); Yu et al. 2022 (Orca); Agrawal et al. 2024 (Sarathi-Serve); Leviathan et al. 2023; Zheng et al. 2024 (SGLang); vLLM deployment docs (data parallel, Kubernetes, LWS, llm-d); vLLM Router blog and repository (v0.1.16).'))
     print('wrote vllm/index.html')
 
 

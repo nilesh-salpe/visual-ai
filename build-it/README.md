@@ -146,6 +146,7 @@ Concept decks: https://nilesh-salpe.github.io/visual-ai/pytorch/
 | [03 · The unified token-budget scheduler](vllm/03_token_budget_scheduler.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/03_token_budget_scheduler.ipynb) |
 | [04 · Planning GPU memory: weights, KV cache and concurrency](vllm/04_memory_planner.ipynb) | 25 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/04_memory_planner.ipynb) |
 | [05 · N-gram speculative decoding](vllm/05_ngram_speculation.ipynb) | 30 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/05_ngram_speculation.ipynb) |
+| [06 · Routing requests across vLLM replicas](vllm/06_router_policies.ipynb) | 40 min | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/06_router_policies.ipynb) |
 
 Concept decks: https://nilesh-salpe.github.io/visual-ai/vllm/
 

@@ -38,5 +38,13 @@
   "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/05_ngram_speculation.ipynb",
   "deck": "vllm/06-speculative-decoding/",
   "minutes": 30
+ },
+ {
+  "slug": "06_router_policies",
+  "title": "06 \u00b7 Routing requests across vLLM replicas",
+  "path": "build-it/vllm/06_router_policies.ipynb",
+  "colab": "https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/06_router_policies.ipynb",
+  "deck": "vllm/10-router/",
+  "minutes": 40
  }
 ]

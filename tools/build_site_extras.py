@@ -15,7 +15,7 @@ TOPICS = {  # folder: (title, [(stage, [slug, ...]), ...])
     'pytorch': ('PyTorch for LLMs', [('Core', ['01-tensors', '02-autograd', '03-nn-module']), ('Training', ['04-training-loop', '05-data', '06-mixed-precision']),
                                      ('Scaling up', ['07-performance', '08-distributed']), ('Together', ['09-putting-it-together'])]),
     'vllm': ('vLLM', [('The engine', ['01-what-is-vllm', '02-engine-architecture']), ('Memory and scheduling', ['03-kv-cache-manager', '04-scheduler', '05-prefix-caching']),
-                      ('Speed and scale', ['06-speculative-decoding', '07-parallelism-and-quantization']), ('Operating it', ['08-running-and-tuning'])]),
+                      ('Speed and scale', ['06-speculative-decoding', '07-parallelism-and-quantization']), ('Operating it', ['08-running-and-tuning']), ('Deploying it', ['09-deployment', '10-router'])]),
     'agent-foundations': ('Agent foundations', [('Basics', ['01-what-is-an-agent', '02-tool-calling']), ('Control', ['03-react-loop', '04-planning']), ('Instructions', ['05-prompting'])]),
     'agent-context': ('Agent context', [('Memory', ['01-memory']), ('Knowledge and tools', ['02-agentic-rag', '03-mcp']), ('Other agents', ['04-a2a']), ('Choosing an approach', ['05-rag-vs-finetuning'])]),
     'agent-systems': ('Agent systems', [('Architectures', ['01-multi-agent', '02-computer-use']), ('Reliability', ['03-durable-workflows'])]),

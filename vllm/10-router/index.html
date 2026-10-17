@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vLLM Router</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="vLLM Router" data-home="../index.html" data-home-label="vLLM">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">vLLM · 10</div><div class="status-row"><span class="lbl lbl-trend" title="new and gaining adoption; details may change">Recent trend</span><span class="reviewed">Reviewed 2026-10-16</span><span class="status-note">Released December 2025; v0.1.16 (October 2026) is still pre-1.0 and may merge into vLLM or the SGLang gateway.</span></div>
+    <h1>vLLM Router: load balancing a fleet of replicas</h1>
+    <p class="sub">Why LLM (large language model) traffic needs a state-aware load balancer, and how the vLLM Router does it: consistent hashing for session affinity, power of two choices, cache-aware routing, prefill/decode disaggregation, retries and circuit breakers, Kubernetes discovery, and how it compares with llm-d and a plain Kubernetes Service.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>A fleet of vLLM replicas each holds its own KV (key-value) cache. A generic load balancer spreads a conversation's turns over different replicas, so each turn recomputes the whole history, and it cannot orchestrate prefill/decode disaggregation, where one request visits two kinds of worker.</div>
+      <div class="c"><b>Core idea</b>Put a lightweight <b>LLM-aware router</b> in front of the replicas. Route a session to the <b>same replica</b> (consistent hashing on a session or user id) or to the replica with the <b>longest cached prefix</b> (cache-aware), but fall back to the <b>least-loaded</b> replica when load is skewed. For <b>prefill/decode disaggregation</b>, send each request to a prefill worker, then to a decode worker that receives its KV cache. Add <b>retries</b>, <b>circuit breakers</b>, <b>Kubernetes discovery</b> and <b>metrics</b>.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-p1" data-chapter="Problem">
+  <div class="inner">
+    <span class="qtag b1">1 · Problem</span>
+    <h2>Replicas are not interchangeable</h2>
+    <hr>
+<p class="lede">Each vLLM replica keeps its own KV cache and its own queue. Which replica a request reaches decides how much of its prompt must be recomputed and how long it waits.</p>
+<div class="grid3">
+      <div class="card d"><h3>Multi-turn chat</h3><p>Every turn resends the whole conversation; only the replica that served the last turn has it cached.</p></div>
+      <div class="card b"><h3>Shared prefixes</h3><p>System prompts and few-shot examples repeat across users; concentrating them on a few replicas raises the prefix-cache hit rate.</p></div>
+      <div class="card c"><h3>Two kinds of worker</h3><p>With prefill/decode disaggregation a request is prefilled on one pool and decoded on another; something must coordinate the hand-off.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-lim" data-chapter="Limitation">
+  <div class="inner">
+    <span class="qtag b2">2 · Limitation</span>
+    <h2>Why a generic load balancer falls short</h2>
+    <hr>
+<div class="grid3">
+      <div class="card d"><h3>Round robin ignores state</h3><p>A Kubernetes Service spreads turns evenly and so scatters each conversation over replicas.</p></div>
+      <div class="card b"><h3>Stickiness ignores load</h3><p>Pinning a session forever overloads the replica that holds a few long, busy sessions.</p></div>
+      <div class="card c"><h3>No P/D awareness</h3><p>Treating prefill and decode pods as identical replicas sends work to the wrong pool.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-turn" data-chapter="Your turn">
+  <div class="inner">
+    <span class="qtag b3">3 · Your turn</span>
+    <h2>Which policy?</h2>
+    <hr>
+<p class="lede">Pick an answer before moving on. Committing to a guess, even a wrong one, makes the real answer stick.</p>
+<div class="quiz">
+      <p class="qq">A chat product sends each conversation's turns with an X-Session-ID header. Which router policy maximises KV-cache reuse across turns?</p>
+      <div class="opts">
+      <button>A. round_robin</button>
+      <button>B. random</button>
+      <button data-ok>C. consistent_hash</button>
+      <button>D. power_of_two</button>
+      </div>
+      <div class="why"><strong>C.</strong> Consistent hashing maps the same session id to the same replica every time, so each turn finds the previous turn's KV cache. Power of two balances load but ignores where the cache is.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-core" data-chapter="Core idea">
+  <div class="inner">
+    <span class="qtag b4">4 · Core idea</span>
+    <h2>Route on cache and load</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>consistent_hash</h3><p>Hash a key (X-Session-ID, then X-User-ID, X-Tenant-ID, request and trace ids, or the OpenAI "user" field) onto a ring with 160 virtual nodes per worker: sticky sessions, and removing a worker only moves its own keys.</p></div>
+      <div class="card a"><h3>cache_aware</h3><p>Keep an approximate radix tree of prefixes per worker. While load is balanced, send a request to the worker with the longest prefix match if it covers more than 50% of the prompt, else to the worker with the smallest tree; when load is imbalanced, send it to the least-loaded worker.</p></div>
+      <div class="card b"><h3>power_of_two</h3><p>Sample two workers, pick the one with fewer pending requests: near-optimal balance with almost no coordination.</p></div>
+      <div class="card c"><h3>round_robin and random</h3><p>Stateless spreading, for stateless or single-turn traffic.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Policies on multi-turn traffic <span class="ill">simulation</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">replicas <input type="range" id="rtW" min="2" max="8" step="1" value="4"> <output id="rtWo"></output></label><label class="ctl">active sessions <input type="range" id="rtS" min="20" max="400" step="20" value="200"> <output id="rtSo"></output></label><label class="ctl">traffic from hot sessions <input type="range" id="rtH" min="0" max="60" step="5" value="20"> <output id="rtHo"></output></label></div><div class="bars"><div id="rtBars"></div></div><p class="readout" id="rtOut"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how2" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Prefill/decode routing and operations</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;The client calls the router&#x27;s OpenAI-compatible endpoint.&quot;, &quot;In P/D mode the router sends a new request to a prefill worker, chosen by the prefill policy.&quot;, &quot;The KV cache moves to a decode worker over the configured connector (NIXL, NCCL with ZMQ discovery, or Mooncake), and the router directs the request state there for token generation.&quot;, &quot;In Kubernetes mode the router watches pods by label selector, adding healthy workers and removing failing ones.&quot;, &quot;It exports per-worker request volume, latency, errors and health on /metrics.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 290" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="1"><line x1="102.0" y1="143.0" x2="126.0" y2="143.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="2"><line x1="239.5" y1="113.0" x2="292.3" y2="84.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="2"><line x1="242.0" y1="134.8" x2="276.0" y2="129.9" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="412.0" y1="55.0" x2="466.0" y2="55.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="412.0" y1="120.0" x2="466.0" y2="120.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="4"><line x1="248.6" y1="223.0" x2="210.4" y2="175.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="242.0" y1="159.3" x2="466.0" y2="223.2" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="115" width="90" height="56" rx="10"/><text class="dg-text" x="55.0" y="148.0" text-anchor="middle">Client</text></g><g class="dg-node b" data-step="1"><rect x="130" y="115" width="110" height="56" rx="10"/><text class="dg-text" x="185.0" y="141.0" text-anchor="middle">vLLM Router</text><text class="dg-sub" x="185.0" y="157.0" text-anchor="middle">Rust · P/D mode</text></g><g class="dg-node a" data-step="2"><rect x="280" y="30" width="130" height="50" rx="10"/><text class="dg-text" x="345.0" y="53.0" text-anchor="middle">Prefill worker</text><text class="dg-sub" x="345.0" y="69.0" text-anchor="middle">compute-bound</text></g><g class="dg-node a" data-step="2"><rect x="280" y="95" width="130" height="50" rx="10"/><text class="dg-text" x="345.0" y="125.0" text-anchor="middle">Prefill worker</text></g><g class="dg-node c" data-step="3"><rect x="470" y="30" width="180" height="50" rx="10"/><text class="dg-text" x="560.0" y="53.0" text-anchor="middle">Decode worker</text><text class="dg-sub" x="560.0" y="69.0" text-anchor="middle">memory-bound</text></g><g class="dg-node c" data-step="3"><rect x="470" y="95" width="180" height="50" rx="10"/><text class="dg-text" x="560.0" y="125.0" text-anchor="middle">Decode worker</text></g><g class="dg-node e" data-step="4"><rect x="130" y="225" width="280" height="50" rx="10"/><text class="dg-text" x="270.0" y="248.0" text-anchor="middle">Kubernetes API</text><text class="dg-sub" x="270.0" y="264.0" text-anchor="middle">discover pods by label</text></g><g class="dg-node e" data-step="5"><rect x="470" y="225" width="180" height="50" rx="10"/><text class="dg-text" x="560.0" y="248.0" text-anchor="middle">/metrics</text><text class="dg-sub" x="560.0" y="264.0" text-anchor="middle">Prometheus</text></g><g data-step="2"><text class="dg-label" x="265.9" y="93.5" text-anchor="middle">new request</text></g><g data-step="3"><text class="dg-label" x="439.0" y="50.0" text-anchor="middle">KV cache (NIXL)</text></g><g data-step="4"><text class="dg-label" x="229.5" y="194.0" text-anchor="middle">workers</text></g></svg><p class="readout dgcap"></p></div>
+<p>Resilience is on by default: up to 3 retries with exponential backoff (100 ms initial, 10 s maximum, ×2, 10% jitter) on HTTP (Hypertext Transfer Protocol) 408, 429 and 5xx; a circuit breaker opens after 5 consecutive failures, half-opens after 30 s and closes after 2 successes.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-example" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Worked example: a cache-aware routing decision</h2>
+    <hr>
+    <p class="lede">Defaults: cache_threshold 0.5, balance_abs_threshold 32, balance_rel_threshold 1.1. Three replicas have 40, 42 and 45 requests in flight. A prompt of 2,000 characters shares a 1,500-character prefix with something replica 2 served earlier.</p>
+    <div class="example"><h4>Worked example</h4><ol><li>Imbalance test: max − min = 45 − 40 = 5, not above 32, so the system is balanced (both conditions are required).</li><li>Best match ratio: 1,500 / 2,000 = 0.75 &gt; 0.5, so route to <b>replica 2</b> and reuse its cached prefix.</li><li>Later the loads are 10, 80 and 30: 80 − 10 = 70 &gt; 32 and 80 &gt; 1.1 × 10, so the system is imbalanced.</li><li>Now the request goes to the least-loaded replica (<b>replica 1</b>) even though replica 2 holds the prefix; the radix tree still records it.</li></ol><div class="result">Cache affinity wins while load is even; load balance wins once it is not.</div></div>
+  </div>
+</section>
+
+<section class="slide" id="s-why" data-chapter="Why">
+  <div class="inner">
+    <span class="qtag b6">6 · Why it works</span>
+    <h2>Why it works, and the evidence</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Prefill is the expensive part to repeat</h3><p>A cache hit skips recomputing the shared prefix, cutting time to first token and freeing compute.</p></div>
+      <div class="card c"><h3>Thresholds arbitrate</h3><p>Two simple tests (absolute and relative load gaps) decide when balance overrides affinity.</p></div>
+      <div class="card b"><h3>Benchmarks (vLLM team, Dec 2025)</h3><p>Llama 3.1 8B with 8 prefill and 8 decode pods: 25% more requests/s than llm-d and twice a round-robin Kubernetes Service, with TTFT 1,200 ms lower than llm-d. DeepSeek V3 (1 prefill and 1 decode pod, TP (tensor parallelism) 8 each): throughput close to llm-d, TTFT 2,000 ms lower than both.</p></div>
+      <div class="card e"><h3>One of several options</h3><p>llm-d reads vLLM KV-cache events for precise prefix-aware routing and reports 3× output throughput vs round robin (Llama 3.1 70B, MI300X); the production stack bundles its own router. Pick by platform.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-myth" data-chapter="Myths">
+  <div class="inner">
+    <span class="qtag b7">7 · Misconceptions</span>
+    <h2>Common misconceptions</h2>
+    <hr>
+<p class="lede">Each statement below is a mental model people often get wrong. Decide why it is wrong, then reveal.</p>
+<div class="quiz myth">
+      <p class="qq">"Sticky sessions solve LLM load balancing."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They maximise cache reuse but ignore load; hot sessions overload a replica. Cache-aware routing falls back to the least-loaded worker when load is skewed.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"The router does the inference."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">It only forwards requests (or tokenised gRPC requests); the vLLM workers do all model work. Built in Rust to keep its overhead small.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Any router works with P/D disaggregation."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">P/D needs a router that knows which workers prefill and which decode and how KV transfer is configured (NIXL (NVIDIA Inference Xfer Library), NCCL (NVIDIA Collective Communications Library), Mooncake).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-traps" data-chapter="Traps">
+  <div class="inner">
+    <span class="qtag b7">7 · Tricks and traps</span>
+    <h2>Tricks and traps</h2>
+    <hr>
+    <p class="lede">Rules of thumb that make this topic quick to reason about, and the mistakes people most often make with it.</p>
+    <div class="tt-grid">
+      <div class="tt tricks"><h3>✓ Tricks</h3><ul><li><b>Send a session header.</b> X-Session-ID (then X-User-ID, X-Tenant-ID, …) is the consistent-hash key; without one, requests may not stick.</li><li><b>Cache-aware for shared prefixes.</b> Repeated system prompts and few-shot examples benefit even across users.</li><li><b>Watch the router's /metrics.</b> Per-worker latency, errors and health show hot spots and tripped circuit breakers.</li></ul></div>
+      <div class="tt traps"><h3>⚠ Traps</h3><ul><li><b>Treating it as a mature component.</b> It is v0.1.x, forked from the SGLang model gateway; flags may change.</li><li><b>Hash affinity without capacity.</b> A few heavy sessions can overload one replica; consistent hashing does not look at load.</li><li><b>Comparing with a broken baseline.</b> The blog excluded vLLM's built-in DP (data parallelism) coordinator, which then had a known throughput issue (1/8 of the others).</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-check" data-chapter="Check">
+  <div class="inner">
+    <span class="qtag b8">8 · Check yourself</span>
+    <h2>Check yourself</h2>
+    <hr>
+<p class="lede">Answer from memory. If you can't, revisit the slide named in the answer.</p>
+<div class="quiz">
+      <p class="qq">Loads are 10, 80 and 30 requests with the default thresholds (32 absolute, 1.1 relative). What does cache_aware do?</p>
+      <div class="opts">
+      <button>A. Routes to the best prefix match</button>
+      <button data-ok>B. Routes to the least-loaded worker</button>
+      <button>C. Round robin</button>
+      <button>D. Rejects the request</button>
+      </div>
+      <div class="why"><strong>B.</strong> 80 − 10 = 70 &gt; 32 and 80 &gt; 1.1 × 10, so the system is imbalanced and load wins over cache affinity.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Why does consistent hashing use virtual nodes?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">With 160 points per worker on the ring, keys spread evenly across workers, and removing one worker redistributes only its keys among all the others.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Name two resilience features of the vLLM Router.</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Retries with exponential backoff and jitter on 408/429/5xx; circuit breakers that remove failing workers; health checks via Kubernetes discovery (any two).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-take" data-chapter="Takeaway">
+  <div class="inner">
+    <span class="qtag b9">9 · Key takeaway</span>
+    <h2>Key takeaway</h2>
+    <hr>
+    <div class="take-line">An LLM router sends each request to the replica that already holds its context, unless that replica is overloaded, and orchestrates prefill and decode pools.</div>
+    <div class="explain"><b>Say it in 30 seconds</b><p>Each vLLM replica has its own KV cache, so where a request lands decides whether its prefix is reused. The vLLM Router, a Rust load balancer released in December 2025 and forked from the SGLang model gateway, offers consistent hashing on a session or user id (160 virtual nodes per worker), cache-aware routing that follows prefix matches while load is balanced and falls back to the least-loaded worker otherwise, power of two choices, and round robin. It also routes prefill/decode disaggregated deployments, retries with backoff, trips circuit breakers on failing workers, discovers pods in Kubernetes and exports Prometheus metrics. In the team's benchmark it delivered 25% more throughput than llm-d and twice a round-robin Kubernetes Service for Llama 3.1 8B.</p></div>
+    <div class="recap"><div><span><b>Problem:</b> per-replica KV caches; P/D needs orchestration</span></div><div><span><b>Policies:</b> consistent hash, cache-aware, power of two, round robin</span></div><div><span><b>P/D:</b> prefill pool → decode pool (NIXL, NCCL, Mooncake)</span></div><div><span><b>Operations:</b> retries, circuit breakers, K8s discovery, metrics</span></div></div>
+    <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/vllm/06_router_policies.ipynb" target="_blank" rel="noopener">06 · Routing requests across vLLM replicas</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/vllm/06_router_policies.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
+    <p class="start-hint">You've finished the series. <a href="../../build-it/index.html">See all Build-it notebooks →</a> · Previous: <a href="../09-deployment/index.html">← 09</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://vllm.ai/blog/2025-12-13-vllm-router-release" target="_blank" rel="noopener">vLLM Router: A High-Performance and Prefill/Decode Aware Load Balancer for Large-scale Serving</a>
+        <div class="meta">vLLM Team · vLLM blog 2025</div>
+        <p>Rust load balancer forked from the SGLang model gateway: consistent hashing, power of two, round robin and random; native P/D routing (NIXL, NCCL); retries, circuit breakers, Kubernetes discovery, Prometheus metrics.</p><div class="num">Remember: Llama 3.1 8B (8P/8D): +25% throughput vs llm-d, 2× a round-robin K8s Service</div></div>
+      <div class="paper-item"><a href="https://github.com/vllm-project/router" target="_blank" rel="noopener">vllm-project/router (v0.1.16)</a>
+        <div class="meta">vLLM project · GitHub 2026</div>
+        <p>Policies round_robin, random, consistent_hash (160 virtual nodes), power_of_two, cache_aware (radix tree; thresholds 0.5, 32, 1.1); Mooncake and gRPC workers; retry and circuit-breaker defaults.</p><div class="num">Remember: retries 3, backoff 100 ms → 10 s; breaker opens after 5 failures, 30 s timeout</div></div>
+      <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/serving/data_parallel_deployment.md" target="_blank" rel="noopener">Data Parallel Deployment (vLLM documentation, v0.31.0)</a>
+        <div class="meta">vLLM project · vLLM docs 2026</div>
+        <p>Data-parallel engines behind internal, hybrid or external load balancing; MoE (Mixture of Experts) data-parallel attention with expert or tensor parallel experts and a DP coordinator for dummy passes.</p><div class="num">Remember: --data-parallel-size, --data-parallel-hybrid-lb, --api-server-count; max_num_seqs per rank</div></div>
+      <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/deployment/integrations/llm-d.md" target="_blank" rel="noopener">llm-d (vLLM documentation integration page, v0.31.0)</a>
+        <div class="meta">vLLM project · vLLM docs 2026</div>
+        <p>Kubernetes-native distributed inference over vLLM: precise prefix-aware routing from KV-cache events, tiered KV offloading, P/D disaggregation, wide expert parallelism, SLO-aware (SLO = service-level objective) autoscaling; a CNCF Sandbox project.</p><div class="num">Remember: 3× output throughput and 2× faster TTFT from prefix-aware routing vs round robin (Llama 3.1 70B, MI300X)</div></div>
+      <div class="paper-item"><a href="https://github.com/vllm-project/production-stack" target="_blank" rel="noopener">vLLM production stack</a>
+        <div class="meta">vLLM project · GitHub 2026</div>
+        <p>Helm-based Kubernetes deployment of vLLM with model- and prefix-aware routing, Grafana observability and LMCache KV offloading.</p><div class="num">Remember: wraps upstream vLLM without modifying it</div></div>
+      <div class="paper-item"><a href="https://cs.brown.edu/courses/csci2950-u/papers/chash99www.pdf" target="_blank" rel="noopener">Web caching with consistent hashing</a>
+        <div class="meta">Karger et al. · Computer Networks (WWW8) 1999</div>
+        <p>Consistent hashing assigns objects to caches so that adding or removing a cache moves only that cache's share of objects; applied to web caching for load balancing and fault tolerance.</p><div class="num">Remember: only the changed cache's objects move</div></div>
+      <div class="paper-item"><a href="https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf" target="_blank" rel="noopener">The Power of Two Choices in Randomized Load Balancing</a>
+        <div class="meta">Mitzenmacher · IEEE TPDS 2001</div>
+        <p>In the supermarket model, letting each arriving customer pick the shorter of d ≥ 2 randomly chosen queues gives an exponential improvement in expected time in the system over one random choice.</p><div class="num">Remember: exponential improvement from d = 2</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2312.07104" target="_blank" rel="noopener">SGLang: Efficient Execution of Structured Language Model Programs</a>
+        <div class="meta">Zheng et al. · NeurIPS 2024</div>
+        <p>A runtime and frontend for multi-call LLM programs; RadixAttention keeps KV caches in a radix tree so shared prefixes are reused across requests automatically.</p><div class="num">Remember: up to 6.4× higher throughput</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2401.09670" target="_blank" rel="noopener">DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving</a>
+        <div class="meta">Zhong et al. · OSDI 2024</div>
+        <p>Defines serving quality as goodput, the request rate served within both TTFT and TPOT (time per output token) targets, and runs prefill and decode on separate GPUs (graphics processing units) so they stop interfering.</p><div class="num">Remember: 7.4× more requests or 12.6× tighter SLO than colocated systems</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  const rnd = seed => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const POL = ['round robin', 'power of two', 'consistent hash', 'cache-aware'];
+  Deck.bind(['rtW', 'rtS', 'rtH'], () => {
+    const W = Deck.val('rtW'), S = Deck.val('rtS'), hot = Deck.val('rtH') / 100;
+    Deck.out('rtWo', W); Deck.out('rtSo', S); Deck.out('rtHo', Math.round(hot * 100) + '%');
+    const res = POL.map((p, pi) => {
+      const r = rnd(7), r2 = rnd(11), last = {}, served = new Array(W).fill(0), load = new Array(W).fill(0);
+      const home = s => { let x = s * 2654435761 % 4294967296; return Math.floor((x / 4294967296) * W); };
+      let hits = 0, follow = 0, rr = 0;
+      for (let n = 0; n < 3000; n++) {
+        const s = r() < hot ? Math.floor(r() * Math.max(1, S * 0.05)) : Math.floor(r() * S);
+        let w;
+        if (p === 'round robin') w = rr++ % W;
+        else if (p === 'power of two') { const a = Math.floor(r2() * W); let b = Math.floor(r2() * (W - 1)); if (b >= a) b++; w = load[a] <= load[b] ? a : b; }
+        else if (p === 'consistent hash') w = home(s);
+        else { const mx = Math.max(...load), mn = Math.min(...load); w = (mx - mn > 32 && mx > 1.1 * mn) ? load.indexOf(mn) : (last[s] !== undefined ? last[s] : load.indexOf(mn)); }
+        if (last[s] !== undefined) { follow++; if (last[s] === w) hits++; }
+        last[s] = w; served[w]++; load[w] += 1;
+        if (n % 4 === 3) for (let k = 0; k < W; k++) load[k] = Math.max(0, load[k] - 1);
+      }
+      return { reuse: hits / Math.max(1, follow), spread: Math.max(...served) / (3000 / W) };
+    });
+    Deck.hbars(document.getElementById('rtBars'), res.flatMap((x, i) => [
+      { label: POL[i] + ': prefix reuse', value: x.reuse, color: 'var(--e)', text: Math.round(100 * x.reuse) + '%' },
+      { label: POL[i] + ': busiest vs even', value: x.spread / 3, color: 'var(--d)', text: x.spread.toFixed(2) + '×' }]), { max: 1 });
+    document.getElementById('rtOut').innerHTML = `${W} replicas, ${S} active sessions, ${Math.round(hot * 100)}% of requests from a few hot sessions. Prefix reuse = later turns that land where the session\'s previous turn ran. Consistent hashing reuses everything but piles hot sessions on one replica as the hot share grows; cache-aware gives up some reuse to stay balanced. (Illustrative simulation; the notebook builds the real policies.)`;
+  });
+})();
+</script>
+</body>
+</html>

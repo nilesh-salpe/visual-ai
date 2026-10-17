@@ -486,3 +486,138 @@ CODE = "def add(a, b): return a + b . def sub(a, b): return a - b . def mul(a, b
         * vLLM's n-gram method needs no draft model: it copies continuations of earlier matching n-grams from the context.
         * Speed-up depends on acceptance: (1 − α^(k+1)) / (1 − α) tokens per pass, minus the proposer and verification overhead.''',
 ))
+
+
+# ------------------------------------------------------------------ 06
+NBS.append(dict(
+    slug='06_router_policies', title='06 · Routing requests across vLLM replicas', deck='vllm/10-router/', deck_name='vLLM Router', minutes=40,
+    goals='the load-balancing policies of the vLLM Router (vllm-project/router v0.1.16): a consistent-hash ring with virtual nodes, power of two choices, and cache-aware routing with balanced and imbalanced modes, then a simulation of multi-turn chat traffic that compares their prefix-cache reuse and load balance.',
+    setup=r'''
+import hashlib, random
+def h(s):
+    """Stable 64-bit hash of a string (Python's hash() is salted per process)."""
+    return int.from_bytes(hashlib.sha256(s.encode()).digest()[:8], 'big')
+print('helper h(s) -> stable 64-bit hash')''',
+    tasks=[
+        dict(fn='HashRing', title='A consistent-hash ring with virtual nodes', md=r'''
+            Implement `HashRing(workers, vnodes=160)` (the router uses 160 virtual nodes per worker). Place `h(f"{w}#{i}")` for each worker `w` and `i < vnodes` on a ring of sorted points.
+            `route(key)` returns the worker owning the first point clockwise from `h(key)` (wrap around at the end). `remove(w)` deletes a worker's points.
+            Same key → same worker, and removing a worker should only move the keys that worker owned.''',
+             starter=r'''
+            import bisect
+            class HashRing:
+                def __init__(self, workers, vnodes=160):
+                    # TODO
+                    raise NotImplementedError
+                def route(self, key):
+                    raise NotImplementedError
+                def remove(self, w):
+                    raise NotImplementedError''',
+             test=r'''
+            def _test_HashRing(C):
+                ws = [f'w{i}' for i in range(4)]
+                r = C(ws)
+                keys = [f'session-{i}' for i in range(4000)]
+                before = {k: r.route(k) for k in keys}
+                assert all(r.route(k) == before[k] for k in keys[:200]), "the same key must always go to the same worker"
+                share = {w: sum(v == w for v in before.values()) / len(keys) for w in ws}
+                assert all(0.15 < s < 0.35 for s in share.values()), f"160 virtual nodes should spread keys roughly evenly, got {share}"
+                r.remove('w2')
+                moved = sum(r.route(k) != before[k] for k in keys)
+                owned = sum(v == 'w2' for v in before.values())
+                assert moved == owned, f"only w2's {owned} keys should move, but {moved} moved"''',
+             solution=r'''
+            import bisect
+            class HashRing_solution:
+                def __init__(self, workers, vnodes=160):
+                    self.vnodes = vnodes
+                    self.points = sorted((h(f'{w}#{i}'), w) for w in workers for i in range(vnodes))
+                def route(self, key):
+                    i = bisect.bisect(self.points, (h(key), ''))
+                    return self.points[i % len(self.points)][1]
+                def remove(self, w):
+                    self.points = [p for p in self.points if p[1] != w]'''),
+        dict(fn='power_of_two', title='Power of two choices', md=r'''
+            Pick two **different** workers at random with `rng.sample`, and return the one with the lower load (`loads` is a dict worker → pending requests). Ties go to the first sampled.''',
+             starter=r'''
+            def power_of_two(loads, rng):
+                # TODO
+                raise NotImplementedError''',
+             test=r'''
+            def _test_power_of_two(f):
+                rng = random.Random(0)
+                loads = {'a': 0, 'b': 10, 'c': 10, 'd': 10}
+                picks = [f(loads, rng) for _ in range(3000)]
+                pa = picks.count('a') / len(picks)
+                assert abs(pa - 0.5) < 0.05, f"'a' is lightest, so it wins whenever sampled: about 1/2 of the time with 4 workers, got {pa:.2f}"
+                assert all(f({'x': 3, 'y': 1}, rng) == 'y' for _ in range(20)), "with two workers, always the lighter one"''',
+             solution=r'''
+            def power_of_two_solution(loads, rng):
+                a, b = rng.sample(sorted(loads), 2)
+                return a if loads[a] <= loads[b] else b'''),
+        dict(fn='cache_aware', title='Cache-aware routing', md=r'''
+            Each worker keeps the prompts it has served (`seen[w]`, a list of strings; the router uses an approximate radix tree). Implement `cache_aware(prompt, seen, loads, cache_threshold=0.5, abs_t=32, rel_t=1.1)`:
+            1. **Imbalanced** if `max(load) - min(load) > abs_t` **and** `max(load) > rel_t * min(load)` → route to the least-loaded worker.
+            2. Otherwise compute each worker's **match ratio**: the longest common prefix (in characters) between `prompt` and any prompt it has seen, divided by `len(prompt)`. If the best ratio exceeds `cache_threshold`, route to that worker.
+            3. Otherwise route to the worker that has seen the **fewest characters** in total (most cache room).
+            Break ties by worker name. Return the chosen worker.''',
+             starter=r'''
+            import os
+            def cache_aware(prompt, seen, loads, cache_threshold=0.5, abs_t=32, rel_t=1.1):
+                # TODO
+                raise NotImplementedError''',
+             test=r'''
+            def _test_cache_aware(f):
+                seen = {'a': ['SYS: you are helpful. Q1'], 'b': ['other prompt'], 'c': []}
+                even = {'a': 5, 'b': 5, 'c': 5}
+                assert f('SYS: you are helpful. Q2', seen, even) == 'a', "a long shared prefix should go to the worker that has it"
+                assert f('zzz new', seen, even) == 'c', "no good match: route to the worker with the smallest cache (c)"
+                skew = {'a': 100, 'b': 2, 'c': 50}
+                assert f('SYS: you are helpful. Q2', seen, skew) == 'b', "imbalanced load: route to the least-loaded worker"''',
+             solution=r'''
+            import os
+            def cache_aware_solution(prompt, seen, loads, cache_threshold=0.5, abs_t=32, rel_t=1.1):
+                hi, lo = max(loads.values()), min(loads.values())
+                if hi - lo > abs_t and hi > rel_t * lo:
+                    return min(sorted(loads), key=lambda w: loads[w])
+                ratio = {w: max([len(os.path.commonprefix([prompt, p])) for p in seen[w]] or [0]) / len(prompt) for w in sorted(seen)}
+                best = max(sorted(ratio), key=lambda w: ratio[w])
+                if ratio[best] > cache_threshold:
+                    return best
+                return min(sorted(seen), key=lambda w: sum(map(len, seen[w])))'''),
+    ],
+    explore_md='''
+        Multi-turn chat traffic: 200 sessions, each sending 6 turns; every turn's prompt is the whole conversation so far, so a turn can reuse the KV cache of the previous turn only if it lands on the same worker. We count the **prefix-reuse rate** (turns that land where their previous turn was served) and the **load spread** (busiest worker's share vs an even share).''',
+    explore=r'''
+rng = random.Random(1)
+W = [f'w{i}' for i in range(4)]
+sessions = [f's{i}' for i in range(200)]
+events = [(s, t) for t in range(6) for s in rng.sample(sessions, len(sessions))]   # turns interleave across sessions
+
+def run(policy):
+    ring = HashRing_solution(W); seen = {w: [] for w in W}; loads = {w: 0 for w in W}; last = {}
+    hits = 0; rr = 0; prng = random.Random(2)
+    for n, (s, t) in enumerate(events):
+        prompt = f'SYSTEM PROMPT. session {s}: ' + ' '.join(f'turn{k}' for k in range(t + 1))
+        if policy == 'round_robin': w = W[rr % len(W)]; rr += 1
+        elif policy == 'random': w = prng.choice(W)
+        elif policy == 'power_of_two': w = power_of_two_solution(loads, prng)
+        elif policy == 'consistent_hash': w = ring.route(s)
+        else: w = cache_aware_solution(prompt, seen, loads)
+        hits += t > 0 and last.get(s) == w
+        last[s] = w; seen[w].append(prompt); loads[w] += 1
+        if n % 8 == 7:                                   # requests finish over time
+            for x in W: loads[x] = max(0, loads[x] - 2)
+    served = {w: len(seen[w]) for w in W}
+    return hits / (len(events) - len(sessions)), max(served.values()) / (len(events) / len(W))
+
+print(f"{'policy':16} prefix reuse   busiest worker vs even")
+for p in ['round_robin', 'random', 'power_of_two', 'consistent_hash', 'cache_aware']:
+    reuse, spread = run(p)
+    print(f"{p:16} {reuse:10.0%}   {spread:8.2f}x")''',
+    takeaways='''
+    - **Consistent hashing** keeps a session on one worker, so each turn reuses the previous turn's KV cache; virtual nodes spread keys evenly and a removed worker only moves its own keys.
+    - **Power of two choices** balances load almost as well as checking every worker, but ignores cache locality.
+    - **Cache-aware** routing chases prefix matches while load is even and falls back to the least-loaded worker when it is not: the two goals trade off through the thresholds.
+    - Round robin and random spread load but reuse almost nothing in multi-turn traffic: the reason a plain Kubernetes Service is a poor LLM load balancer.''',
+))

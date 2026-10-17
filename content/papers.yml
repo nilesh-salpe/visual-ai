@@ -3255,3 +3255,81 @@ jailbreakbench:
   url: https://arxiv.org/abs/2404.01318
   summary: Open benchmark with a dataset of misuse behaviours, a leaderboard and a repository of jailbreak artifacts for reproducible evaluation.
   number: standard threat model and scoring
+vllm_dp_deploy:
+  title: Data Parallel Deployment (vLLM documentation, v0.31.0)
+  authors: vLLM project
+  venue: vLLM docs
+  year: 2026
+  url: https://github.com/vllm-project/vllm/blob/v0.31.0/docs/serving/data_parallel_deployment.md
+  summary: Data-parallel engines behind internal, hybrid or external load balancing; MoE data-parallel attention with expert or tensor parallel experts and a DP coordinator
+    for dummy passes.
+  number: --data-parallel-size, --data-parallel-hybrid-lb, --api-server-count; max_num_seqs per rank
+vllm_k8s:
+  title: Using Kubernetes (vLLM documentation, v0.31.0)
+  authors: vLLM project
+  venue: vLLM docs
+  year: 2026
+  url: https://github.com/vllm-project/vllm/blob/v0.31.0/docs/deployment/k8s.md
+  summary: Deploying vLLM on Kubernetes with GPU pods, probes and persistent model storage; pointers to production stack, llm-d, KServe and others.
+  number: one Deployment + Service per model
+vllm_lws:
+  title: 'LWS: LeaderWorkerSet deployment (vLLM documentation, v0.31.0)'
+  authors: vLLM project
+  venue: vLLM docs
+  year: 2026
+  url: https://github.com/vllm-project/vllm/blob/v0.31.0/docs/deployment/frameworks/lws.md
+  summary: Multi-node vLLM replicas on Kubernetes as a leader pod plus worker pods, with multiprocessing or Ray.
+  number: 'example: 2 nodes × 8 GPUs per replica'
+vllm_prodstack:
+  title: vLLM production stack
+  authors: vLLM project
+  venue: GitHub
+  year: 2026
+  url: https://github.com/vllm-project/production-stack
+  summary: Helm-based Kubernetes deployment of vLLM with model- and prefix-aware routing, Grafana observability and LMCache KV offloading.
+  number: wraps upstream vLLM without modifying it
+vllm_llmd:
+  title: llm-d (vLLM documentation integration page, v0.31.0)
+  authors: vLLM project
+  venue: vLLM docs
+  year: 2026
+  url: https://github.com/vllm-project/vllm/blob/v0.31.0/docs/deployment/integrations/llm-d.md
+  summary: 'Kubernetes-native distributed inference over vLLM: precise prefix-aware routing from KV-cache events, tiered KV offloading, P/D disaggregation, wide expert
+    parallelism, SLO-aware autoscaling; a CNCF Sandbox project.'
+  number: 3× output throughput and 2× faster TTFT from prefix-aware routing vs round robin (Llama 3.1 70B, MI300X)
+vllm_router_blog:
+  title: 'vLLM Router: A High-Performance and Prefill/Decode Aware Load Balancer for Large-scale Serving'
+  authors: vLLM Team
+  venue: vLLM blog
+  year: 2025
+  url: https://vllm.ai/blog/2025-12-13-vllm-router-release
+  summary: 'Rust load balancer forked from the SGLang model gateway: consistent hashing, power of two, round robin and random; native P/D routing (NIXL, NCCL); retries,
+    circuit breakers, Kubernetes discovery, Prometheus metrics.'
+  number: 'Llama 3.1 8B (8P/8D): +25% throughput vs llm-d, 2× a round-robin K8s Service'
+vllm_router_repo:
+  title: vllm-project/router (v0.1.16)
+  authors: vLLM project
+  venue: GitHub
+  year: 2026
+  url: https://github.com/vllm-project/router
+  summary: Policies round_robin, random, consistent_hash (160 virtual nodes), power_of_two, cache_aware (radix tree; thresholds 0.5, 32, 1.1); Mooncake and gRPC workers;
+    retry and circuit-breaker defaults.
+  number: retries 3, backoff 100 ms → 10 s; breaker opens after 5 failures, 30 s timeout
+consistent_hash:
+  title: Web caching with consistent hashing
+  authors: Karger et al.
+  venue: Computer Networks (WWW8)
+  year: 1999
+  url: https://cs.brown.edu/courses/csci2950-u/papers/chash99www.pdf
+  summary: Consistent hashing assigns objects to caches so that adding or removing a cache moves only that cache's share of objects; applied to web caching for load
+    balancing and fault tolerance.
+  number: only the changed cache's objects move
+p2c:
+  title: The Power of Two Choices in Randomized Load Balancing
+  authors: Mitzenmacher
+  venue: IEEE TPDS
+  year: 2001
+  url: https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf
+  summary: In the supermarket model, letting each arriving customer pick the shorter of d ≥ 2 randomly chosen queues gives an exponential improvement in expected
+    time in the system over one random choice.
+  number: exponential improvement from d = 2
