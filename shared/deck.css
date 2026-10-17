@@ -256,3 +256,16 @@ body.doc-page { overflow-y: auto; background: var(--bg); }
 .status-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--muted); }
 .status-row .status-note { font-style: italic; }
 .hub-card .lbl { margin-top: 6px; }
+
+/* Side-by-side explorer: animation on the left, description on the right (distributed/01 axes explorer) */
+.explorer .seg { flex-wrap: wrap; margin-bottom: 14px; }
+.explorer-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.explorer-body svg { width: 100%; height: auto; background: var(--panel-2); border-radius: 10px; }
+.explorer-panel h3 { margin: 0 0 6px; font-size: 18px; }
+.explorer-panel p { margin: 0 0 8px; }
+.explorer-panel ul { margin: 2px 0 10px; padding-left: 18px; }
+.explorer-panel li { margin: 2px 0; }
+.explorer-panel .pros { color: var(--e); font-weight: 700; }
+.explorer-panel .cons { color: var(--d); font-weight: 700; }
+.explorer-panel .prod { border-left: 3px solid var(--a); background: var(--a-soft); padding: 8px 12px; border-radius: 0 8px 8px 0; font-size: 14px; }
+@media (max-width: 820px) { .explorer-body { grid-template-columns: 1fr; } }

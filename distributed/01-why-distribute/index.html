@@ -90,6 +90,95 @@
   </div>
 </section>
 
+<section class="slide" id="s-axes" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>All the axes, side by side <span class="ill">animation</span></h2>
+    <hr>
+<p class="lede">Pick an axis. The animation shows four GPUs and what moves between them; the panel says what it splits, its pros and cons, and who uses it.</p>
+<div class="visual explorer">
+<div class="seg" id="axSeg"><button data-v="dp" class="on">Data</button><button data-v="fsdp">Sharded data</button><button data-v="tp">Tensor</button><button data-v="pp">Pipeline</button><button data-v="cp">Context</button><button data-v="ep">Expert</button></div>
+<div class="explorer-body">
+<svg id="axSvg" viewBox="0 0 320 300" role="img" aria-label="Animation of four GPUs for the selected parallelism axis"></svg>
+<div>
+<div class="explorer-panel" data-axis="dp"><h3>Data parallelism (DDP)</h3><p>Every GPU holds a full copy of the model and processes different examples. After the backward pass, gradients are averaged with one all-reduce, so all copies stay identical.</p><span class="pros">Pros</span><ul><li>Simplest: no change to the model code</li><li>Throughput scales almost linearly with GPUs</li><li>The gradient all-reduce overlaps with the backward pass</li></ul><span class="cons">Cons</span><ul><li>Does not help the model fit: every GPU keeps all 16 bytes per parameter</li><li>The global batch grows with the number of GPUs</li><li>Every step all-reduces every gradient</li></ul><p class="prod"><b>In production:</b> Every large run uses a data axis, usually outermost, across nodes. On its own it is enough only for models that fit on one GPU.</p></div>
+<div class="explorer-panel" data-axis="fsdp" hidden><h3>Sharded data parallelism (ZeRO, FSDP)</h3><p>Data parallelism where each GPU stores only a 1/N shard of the parameters, gradients and optimizer state. A layer's full weights are all-gathered just before it runs and freed after; gradients are reduce-scattered.</p><span class="pros">Pros</span><ul><li>Model states shrink N-fold, so much larger models fit</li><li>Same programming model as data parallelism</li><li>Communication can be prefetched and overlapped</li></ul><span class="cons">Cons</span><ul><li>About 1.5× the traffic of plain data parallelism</li><li>Needs enough compute per GPU to hide the all-gathers</li><li>At the largest scale it still has to be combined with other axes</li></ul><p class="prod"><b>In production:</b> Llama 3 405B uses FSDP as its data axis (64 to 128 ways). DeepSeek-V3 uses ZeRO-1 (only optimizer state sharded). PyTorch FSDP2 is the standard implementation.</p></div>
+<div class="explorer-panel" data-axis="tp" hidden><h3>Tensor parallelism (TP)</h3><p>Every weight matrix is split across GPUs (by columns, then by rows). All GPUs see the same input; each computes part of every layer, and partial results are summed with all-reduces inside each layer.</p><span class="pros">Pros</span><ul><li>Splits both weights and compute of every layer</li><li>No pipeline bubble; works at any batch size</li><li>Also cuts activation memory when combined with sequence parallelism</li></ul><span class="cons">Cons</span><ul><li>Two all-reduces per layer in the forward pass (two more in backward), on the critical path</li><li>Needs NVLink-class bandwidth, so it rarely goes beyond one 8-GPU node</li><li>Matmuls get smaller and less efficient as the TP (tensor parallelism) degree grows</li></ul><p class="prod"><b>In production:</b> Inside a node. Llama 3 405B: TP 8. DeepSeek-V3 trained without tensor parallelism by saving memory elsewhere.</p></div>
+<div class="explorer-panel" data-axis="pp" hidden><h3>Pipeline parallelism (PP)</h3><p>The layers are split into stages, one per GPU group. Each batch is cut into micro-batches that flow stage to stage; only the activations at stage boundaries move between GPUs.</p><span class="pros">Pros</span><ul><li>Only point-to-point transfers at stage boundaries, so slower inter-node links are fine</li><li>Splits the weights by layers</li><li>Scales to many nodes for the largest dense models</li></ul><span class="cons">Cons</span><ul><li>Pipeline bubble: idle time of about (p − 1)/m of the ideal step time</li><li>Needs many micro-batches, which constrains the batch size</li><li>Stages must be balanced (embedding and loss layers are uneven); schedules (1F1B, interleaved, DualPipe) are complex</li></ul><p class="prod"><b>In production:</b> Llama 3 405B: PP (pipeline parallelism) 16. DeepSeek-V3: 16-way PP with its DualPipe schedule, which overlaps communication with compute.</p></div>
+<div class="explorer-panel" data-axis="cp" hidden><h3>Context parallelism (CP)</h3><p>The sequence is split into chunks, one per GPU. Everything except attention is local; for attention, keys and values are exchanged (in a ring or by all-gather) so each GPU's queries see the whole context.</p><span class="pros">Pros</span><ul><li>Splits activations along the sequence, enabling 100K+ token training</li><li>Attention compute is split too</li><li>Can be combined with all other axes</li></ul><span class="cons">Cons</span><ul><li>Keys and values exchanged in every attention layer</li><li>Causal masks need load balancing across chunks</li><li>Only worth it for long sequences</li></ul><p class="prod"><b>In production:</b> Llama 3 405B: CP (context parallelism) 16 for its 131,072-token long-context stage, CP 1 (off) for the 8,192-token stage.</p></div>
+<div class="explorer-panel" data-axis="ep" hidden><h3>Expert parallelism (EP)</h3><p>For Mixture of Experts models: experts are spread over GPUs. A router sends each token to its experts on other GPUs (all-to-all dispatch), the experts run, and results come back (all-to-all combine).</p><span class="pros">Pros</span><ul><li>Total parameters grow without growing compute per token</li><li>Each expert sees a larger batch, so its matmuls stay efficient</li><li>Combines with data parallelism for the non-expert layers</li></ul><span class="cons">Cons</span><ul><li>Two all-to-alls per MoE layer in the forward pass, two more in backward, often across nodes</li><li>Load imbalance: popular experts become stragglers</li><li>Communication can equal compute (DeepSeek-V3 reports about 1:1), so overlap is essential</li></ul><p class="prod"><b>In production:</b> DeepSeek-V3: 64-way EP spanning 8 nodes. Needed by every large MoE model.</p></div>
+</div>
+</div>
+</div>
+  </div>
+</section>
+
+<section class="slide" id="s-axes-prod" data-chapter="How">
+  <div class="inner">
+    <span class="qtag b5">5 · How it works</span>
+    <h2>Which axes are used in production</h2>
+    <hr>
+<p class="lede">Large runs combine several axes <span class="lbl lbl-current" title="widely used in production today">Current practice</span>. The chattiest axis goes on the fastest links: Llama 3 orders its groups [TP, CP, PP, DP (data parallelism)] from innermost (inside a server) to outermost (across the network).</p>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Run</th>
+<th>Data</th>
+<th>Tensor</th>
+<th>Pipeline</th>
+<th>Context</th>
+<th>Expert</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Llama 3 405B, 8K sequences, 16,384 H100s</td>
+<td>128 (FSDP)</td>
+<td>8</td>
+<td>16</td>
+<td>1</td>
+<td>none (dense)</td>
+<td>41% MFU</td>
+</tr>
+<tr>
+<td>Llama 3 405B, 131K sequences, 16,384 H100s</td>
+<td>8 (FSDP)</td>
+<td>8</td>
+<td>16</td>
+<td>16</td>
+<td>none (dense)</td>
+<td>38% MFU</td>
+</tr>
+<tr>
+<td>DeepSeek-V3, 671B MoE (37B active)</td>
+<td>ZeRO-1</td>
+<td>none</td>
+<td>16 (DualPipe)</td>
+<td>none</td>
+<td>64, across 8 nodes</td>
+<td>no tensor parallelism needed</td>
+</tr>
+<tr>
+<td>MegaScale 175B, 12,288 GPUs</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+<td>sequence parallel</td>
+<td>none</td>
+<td>55.2% MFU</td>
+</tr>
+</tbody>
+</table></div>
+<div class="grid2">
+      <div class="card a"><h3>Dense models</h3><p>Tensor parallelism inside the node, pipeline across nodes, sharded data parallelism outermost; add context parallelism only for long-context training.</p></div>
+      <div class="card b"><h3>MoE models</h3><p>Expert parallelism replaces most of the need for tensor parallelism; DeepSeek-V3 used pipeline + expert + ZeRO-1 data parallelism.</p></div>
+      <div class="card c"><h3>Smaller models</h3><p>If the model fits with sharding, FSDP alone is simplest and is what most fine-tuning and sub-70B runs use.</p></div>
+      <div class="card e"><h3>Pick by bottleneck</h3><p>Doesn't fit: shard (FSDP), then TP or PP. Too slow: add data parallel replicas. Sequence too long: CP. MoE: EP.</p></div>
+    </div>
+  </div>
+</section>
+
 <section class="slide" id="s-how" data-chapter="How">
   <div class="inner">
     <span class="qtag b5">5 · How it works</span>
@@ -124,8 +213,8 @@
     <h2>Why combining axes works</h2>
     <hr>
 <div class="grid2">
-      <div class="card a"><h3>Each axis has a different cost</h3><p>TP (tensor parallelism) communicates most and needs NVLink; DP (data parallelism) communicates least per FLOP and tolerates the network; PP (pipeline parallelism) sits in between.</p></div>
-      <div class="card e"><h3>Memory and speed are separate knobs</h3><p>Sharding and TP/PP make it fit; DP and CP (context parallelism) add throughput; recomputation trades compute for memory.</p></div>
+      <div class="card a"><h3>Each axis has a different cost</h3><p>TP communicates most and needs NVLink; DP communicates least per FLOP and tolerates the network; PP sits in between.</p></div>
+      <div class="card e"><h3>Memory and speed are separate knobs</h3><p>Sharding and TP/PP make it fit; DP and CP add throughput; recomputation trades compute for memory.</p></div>
       <div class="card b"><h3>Overlap hides traffic</h3><p>Gradient all-reduce overlaps the backward pass; pipeline sends overlap compute; ring attention overlaps K/V passing.</p></div>
       <div class="card c"><h3>Real systems prove it</h3><p>Llama 3 405B trained on 16,384 H100s with TP, CP, PP and FSDP-style DP at 38–43% MFU.</p></div>
     </div>
@@ -226,6 +315,12 @@
       <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
         <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
         <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2412.19437" target="_blank" rel="noopener">DeepSeek-V3 Technical Report</a>
+        <div class="meta">DeepSeek-AI · arXiv 2024</div>
+        <p>671B-parameter MoE trained with FP8 (8-bit floating point) mixed precision (fine-grained 1×128 and 128×128 scaling), DualPipe pipeline scheduling and 64-way expert parallelism with cross-node all-to-all kernels.</p><div class="num">Remember: 2.788M H800 GPU-hours; no irrecoverable loss spikes or rollbacks</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2402.15627" target="_blank" rel="noopener">MegaScale: Scaling Large Language Model Training to More Than 10,000 GPUs</a>
+        <div class="meta">Jiang et al. · NSDI 2024</div>
+        <p>Production training system at ByteDance: algorithm-system co-design plus diagnosis tools for stragglers and failures at 10,000+ GPU scale.</p><div class="num">Remember: 55.2% MFU on 12,288 GPUs (175B model), 1.34× Megatron-LM</div></div>
     </div>
   </div>
 </section>
@@ -245,6 +340,111 @@
     const days = 6 * N * D / (989e12 * 0.4 * G) / 86400;
     Deck.out('wT', days > 3650 ? (days / 365).toFixed(0) + ' years' : days.toFixed(days < 10 ? 1 : 0));
   });
+})();
+(() => {
+  // Axes explorer: one animation per parallelism axis on four GPUs; text panels live in deck.md
+  const { svg, clear } = Deck;
+  const s = document.getElementById('axSvg');
+  if (!s) return;
+  const COL = ['var(--a)', 'var(--b)', 'var(--c)', 'var(--e)'];
+  const GX = i => 12 + i * 76, GW = 68;
+  let mode = 'dp', t0 = 0;
+  const T = (x, y, txt, o = {}) => svg('text', { x, y, text: txt, 'text-anchor': o.anchor || 'middle', style: `font:${o.w || 600} ${o.size || 11}px Inter, sans-serif;fill:${o.fill || 'var(--ink)'}` }, s);
+  const R = (x, y, w, h, fill, o = {}) => svg('rect', { x, y, width: w, height: h, rx: o.rx ?? 4, style: `fill:${fill};opacity:${o.op ?? 1};stroke:${o.stroke || 'none'};stroke-width:${o.sw || 1}` + (o.dash ? ';stroke-dasharray:4 3' : '') }, s);
+  const L = (x1, y1, x2, y2, col, o = {}) => svg('line', { x1, y1, x2, y2, style: `stroke:${col};stroke-width:${o.w || 2}` + (o.dash ? `;stroke-dasharray:5 4;stroke-dashoffset:${o.off || 0}` : '') }, s);
+  const C = (x, y, r, fill) => svg('circle', { cx: x, cy: y, r, style: `fill:${fill}` }, s);
+  const gpus = (top = 34, h = 180) => { for (let i = 0; i < 4; i++) { R(GX(i), top, GW, h, 'var(--panel)', { stroke: 'var(--line)', rx: 8 }); T(GX(i) + GW / 2, top + 14, 'GPU ' + (i + 1), { size: 10, fill: 'var(--muted)' }); } };
+  const caption = txt => T(160, 288, txt, { size: 11, w: 500, fill: 'var(--muted)' });
+  const LY = k => 72 + k * 34;   // layer rows
+
+  const draw = {
+    dp(t) {
+      const p = t % 4; gpus();
+      for (let i = 0; i < 4; i++) {
+        R(GX(i) + 6, 52, GW - 12, 12, 'var(--f-soft, var(--panel-2))', { stroke: 'var(--line)' }); T(GX(i) + GW / 2, 62, 'batch ' + (i + 1), { size: 9, w: 500 });
+        for (let k = 0; k < 4; k++) R(GX(i) + 8, LY(k), GW - 16, 22, COL[k], { op: 0.85 });
+        if (p < 2) { const y = p < 1 ? 72 + p * 124 : 196 - (p - 1) * 124; C(GX(i) + GW / 2, y + 11, 6, p < 1 ? 'var(--ink)' : 'var(--d)'); }
+      }
+      if (p >= 2) { L(GX(0) + GW / 2, 230, GX(3) + GW / 2, 230, 'var(--d)', { w: 3, dash: 1, off: -t * 30 }); T(160, 250, 'all-reduce: average gradients', { size: 10, fill: 'var(--d)' }); }
+      T(160, 18, 'Full model on every GPU, different data', { size: 12 });
+      caption(p < 1 ? 'forward pass on each GPU\'s own batch' : p < 2 ? 'backward pass computes local gradients' : 'one all-reduce, then identical updates');
+    },
+    fsdp(t) {
+      const p = t % 4, act = p < 2 ? Math.floor(p * 2) : 3 - Math.floor((p - 2) * 2);
+      gpus();
+      for (let i = 0; i < 4; i++) for (let k = 0; k < 4; k++) for (let j = 0; j < 4; j++) {
+        const own = j === i, live = k === act && p < 3;
+        R(GX(i) + 8 + j * 13, LY(k), 12, 22, COL[k], { op: own ? 0.9 : live ? 0.55 : 0.08, stroke: own ? 'var(--ink)' : 'none', rx: 2 });
+      }
+      if (p < 3) T(160, 236, (p < 2 ? 'all-gather layer ' : 're-gather layer ') + (act + 1) + ', use it, free it', { size: 10, fill: 'var(--b)' });
+      else { L(GX(0) + GW / 2, 230, GX(3) + GW / 2, 230, 'var(--d)', { w: 3, dash: 1, off: -t * 30 }); T(160, 250, 'reduce-scatter gradients into shards', { size: 10, fill: 'var(--d)' }); }
+      T(160, 18, 'Each GPU stores 1/4 of each layer', { size: 12 });
+      caption(p < 2 ? 'forward: gather one layer at a time' : p < 3 ? 'backward: gather again, layer by layer' : 'each GPU updates only its own shard');
+    },
+    tp(t) {
+      const p = t % 4, layer = Math.min(3, Math.floor(p));
+      gpus();
+      for (let i = 0; i < 4; i++) for (let k = 0; k < 4; k++) { R(GX(i) + 8, LY(k), 51, 22, 'none', { stroke: 'var(--line)', dash: 1, rx: 2 }); R(GX(i) + 8 + i * 13, LY(k), 12, 22, COL[k], { op: k <= layer ? 0.95 : 0.35, rx: 2 }); }
+      for (let i = 0; i < 4; i++) T(GX(i) + GW / 2, 207, 'slice ' + (i + 1), { size: 9, w: 500, fill: 'var(--muted)' });
+      const frac = p - layer, y = LY(layer) + 26;
+      if (frac > 0.5) { L(GX(0) + 10, y, GX(3) + GW - 10, y, 'var(--d)', { w: 3, dash: 1, off: -t * 40 }); }
+      T(160, 18, 'Each layer split; same input on all', { size: 12 });
+      caption(frac > 0.5 ? 'all-reduce after layer ' + (layer + 1) + ' (NVLink)' : 'each GPU computes its slice of layer ' + (layer + 1));
+    },
+    pp(t) {
+      const P = 4, M = 4, S = 2 * (M + P - 1), cur = Math.floor((t % 5) / 4 * S);
+      const x0 = 56, w = (310 - x0) / S;
+      T(160, 18, '4 stages; micro-batches flow through', { size: 12 });
+      for (let st = 0; st < P; st++) {
+        const y = 44 + st * 46; T(28, y + 22, 'GPU ' + (st + 1), { size: 10, fill: 'var(--muted)' });
+        for (let sl = 0; sl < S; sl++) R(x0 + sl * w + 1, y, w - 2, 34, 'var(--panel)', { stroke: 'var(--line)', rx: 2 });
+        for (let j = 0; j < M; j++) {
+          const f = st + j, b = (M + P - 1) + (P - 1 - st) + (M - 1 - j);
+          if (f <= cur) { R(x0 + f * w + 1, y, w - 2, 34, COL[j], { op: 0.85, rx: 2 }); T(x0 + f * w + w / 2, y + 21, 'F' + (j + 1), { size: 8, fill: '#fff' }); }
+          if (b <= cur) { R(x0 + b * w + 1, y, w - 2, 34, COL[j], { op: 0.45, rx: 2 }); T(x0 + b * w + w / 2, y + 21, 'B' + (j + 1), { size: 8 }); }
+        }
+      }
+      L(x0 + (cur + 1) * w, 38, x0 + (cur + 1) * w, 228, 'var(--ink)', { w: 1 });
+      T(160, 250, 'empty cells = idle bubble: 3 of 7 slots per GPU here', { size: 10, fill: 'var(--d)' });
+      caption('F1–F4 flow down, then B4–B1 flow back');
+    },
+    cp(t) {
+      const step = Math.floor(t % 4);
+      T(160, 18, 'The sequence is split into 4 chunks', { size: 12 });
+      for (let k = 0; k < 16; k++) R(14 + k * 18.5, 28, 16, 12, COL[Math.floor(k / 4)], { op: 0.9, rx: 2 });
+      gpus(52, 170);
+      for (let i = 0; i < 4; i++) {
+        R(GX(i) + 8, 84, GW - 16, 30, COL[i], { op: 0.9 }); T(GX(i) + GW / 2, 103, 'Q chunk ' + (i + 1), { size: 9, fill: '#fff' });
+        const kv = (i - step + 4) % 4;
+        R(GX(i) + 8, 140, GW - 16, 30, COL[kv], { op: 0.55 }); T(GX(i) + GW / 2, 159, 'K/V ' + (kv + 1), { size: 9 });
+      }
+      for (let i = 0; i < 3; i++) L(GX(i) + GW - 8, 155, GX(i + 1) + 8, 155, 'var(--d)', { w: 2, dash: 1, off: -t * 30 });
+      L(GX(3) + GW / 2, 222, GX(3) + GW / 2, 234, 'var(--d)', { w: 2 }); L(GX(3) + GW / 2, 234, GX(0) + GW / 2, 234, 'var(--d)', { w: 2, dash: 1, off: -t * 30 }); L(GX(0) + GW / 2, 234, GX(0) + GW / 2, 222, 'var(--d)', { w: 2 });
+      T(160, 254, 'ring: pass K/V blocks to the next GPU', { size: 10, fill: 'var(--d)' });
+      caption('step ' + (step + 1) + '/4: queries attend to the K/V held now');
+    },
+    ep(t) {
+      const p = t % 4; gpus();
+      const route = [5, 2, 7, 0, 3, 6, 1, 4];            // token → expert (2 experts per GPU)
+      for (let e = 0; e < 8; e++) { const g = Math.floor(e / 2); R(GX(g) + 6 + (e % 2) * 30, 150, 26, 40, 'var(--c)', { op: p > 1.4 && p < 2.6 ? 0.9 : 0.35 }); T(GX(g) + 19 + (e % 2) * 30, 174, 'E' + (e + 1), { size: 9, fill: '#fff' }); }
+      for (let k = 0; k < 8; k++) {
+        const home = Math.floor(k / 2), e = route[k], dst = Math.floor(e / 2);
+        const hx = GX(home) + 20 + (k % 2) * 28, hy = 70, ex = GX(dst) + 19 + (e % 2) * 30, ey = 140;
+        const a = p < 1.4 ? p / 1.4 : p < 2.6 ? 1 : p < 4 ? 1 - (p - 2.6) / 1.4 : 0;
+        C(hx + (ex - hx) * a, hy + (ey - hy) * a, 6, COL[home]);
+      }
+      T(160, 18, '8 experts on 4 GPUs; tokens routed', { size: 12 });
+      T(160, 236, p < 1.4 ? 'all-to-all dispatch' : p < 2.6 ? 'experts compute' : 'all-to-all combine', { size: 10, fill: 'var(--d)' });
+      caption('tokens go to their expert\'s GPU and back');
+    },
+  };
+  const render = t => { clear(s); draw[mode](t); };
+  Deck.seg('axSeg', v => {
+    mode = v; t0 = performance.now();
+    Deck.$$('.explorer-panel').forEach(el => { el.hidden = el.dataset.axis !== v; });
+    render(0);
+  });
+  Deck.enter('s-axes', () => Deck.loop(() => render((performance.now() - t0) / 1000 * 0.8)));
 })();
 </script>
 </body>

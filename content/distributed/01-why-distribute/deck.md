@@ -40,6 +40,8 @@ papers:
 - megatron21
 - zero
 - llama3
+- dsv3
+- megascale
 ---
 
 <!-- slide raw -->
@@ -122,6 +124,56 @@ Split a long sequence across GPUs; attention exchanges keys and values. MoE mode
 :::
 
 {{glance}}
+
+<!-- slide id="s-axes" chapter="How" tag="5 · How it works" tagclass="b5" -->
+## All the axes, side by side <span class="ill">animation</span>
+
+Pick an axis. The animation shows four GPUs and what moves between them; the panel says what it splits, its pros and cons, and who uses it.
+{: .lede}
+
+<div class="visual explorer">
+<div class="seg" id="axSeg"><button data-v="dp" class="on">Data</button><button data-v="fsdp">Sharded data</button><button data-v="tp">Tensor</button><button data-v="pp">Pipeline</button><button data-v="cp">Context</button><button data-v="ep">Expert</button></div>
+<div class="explorer-body">
+<svg id="axSvg" viewBox="0 0 320 300" role="img" aria-label="Animation of four GPUs for the selected parallelism axis"></svg>
+<div>
+<div class="explorer-panel" data-axis="dp"><h3>Data parallelism (DDP)</h3><p>Every GPU holds a full copy of the model and processes different examples. After the backward pass, gradients are averaged with one all-reduce, so all copies stay identical.</p><span class="pros">Pros</span><ul><li>Simplest: no change to the model code</li><li>Throughput scales almost linearly with GPUs</li><li>The gradient all-reduce overlaps with the backward pass</li></ul><span class="cons">Cons</span><ul><li>Does not help the model fit: every GPU keeps all 16 bytes per parameter</li><li>The global batch grows with the number of GPUs</li><li>Every step all-reduces every gradient</li></ul><p class="prod"><b>In production:</b> Every large run uses a data axis, usually outermost, across nodes. On its own it is enough only for models that fit on one GPU.</p></div>
+<div class="explorer-panel" data-axis="fsdp" hidden><h3>Sharded data parallelism (ZeRO, FSDP)</h3><p>Data parallelism where each GPU stores only a 1/N shard of the parameters, gradients and optimizer state. A layer's full weights are all-gathered just before it runs and freed after; gradients are reduce-scattered.</p><span class="pros">Pros</span><ul><li>Model states shrink N-fold, so much larger models fit</li><li>Same programming model as data parallelism</li><li>Communication can be prefetched and overlapped</li></ul><span class="cons">Cons</span><ul><li>About 1.5× the traffic of plain data parallelism</li><li>Needs enough compute per GPU to hide the all-gathers</li><li>At the largest scale it still has to be combined with other axes</li></ul><p class="prod"><b>In production:</b> Llama 3 405B uses FSDP as its data axis (64 to 128 ways). DeepSeek-V3 uses ZeRO-1 (only optimizer state sharded). PyTorch FSDP2 is the standard implementation.</p></div>
+<div class="explorer-panel" data-axis="tp" hidden><h3>Tensor parallelism (TP)</h3><p>Every weight matrix is split across GPUs (by columns, then by rows). All GPUs see the same input; each computes part of every layer, and partial results are summed with all-reduces inside each layer.</p><span class="pros">Pros</span><ul><li>Splits both weights and compute of every layer</li><li>No pipeline bubble; works at any batch size</li><li>Also cuts activation memory when combined with sequence parallelism</li></ul><span class="cons">Cons</span><ul><li>Two all-reduces per layer in the forward pass (two more in backward), on the critical path</li><li>Needs NVLink-class bandwidth, so it rarely goes beyond one 8-GPU node</li><li>Matmuls get smaller and less efficient as the TP degree grows</li></ul><p class="prod"><b>In production:</b> Inside a node. Llama 3 405B: TP 8. DeepSeek-V3 trained without tensor parallelism by saving memory elsewhere.</p></div>
+<div class="explorer-panel" data-axis="pp" hidden><h3>Pipeline parallelism (PP)</h3><p>The layers are split into stages, one per GPU group. Each batch is cut into micro-batches that flow stage to stage; only the activations at stage boundaries move between GPUs.</p><span class="pros">Pros</span><ul><li>Only point-to-point transfers at stage boundaries, so slower inter-node links are fine</li><li>Splits the weights by layers</li><li>Scales to many nodes for the largest dense models</li></ul><span class="cons">Cons</span><ul><li>Pipeline bubble: idle time of about (p − 1)/m of the ideal step time</li><li>Needs many micro-batches, which constrains the batch size</li><li>Stages must be balanced (embedding and loss layers are uneven); schedules (1F1B, interleaved, DualPipe) are complex</li></ul><p class="prod"><b>In production:</b> Llama 3 405B: PP 16. DeepSeek-V3: 16-way PP with its DualPipe schedule, which overlaps communication with compute.</p></div>
+<div class="explorer-panel" data-axis="cp" hidden><h3>Context parallelism (CP)</h3><p>The sequence is split into chunks, one per GPU. Everything except attention is local; for attention, keys and values are exchanged (in a ring or by all-gather) so each GPU's queries see the whole context.</p><span class="pros">Pros</span><ul><li>Splits activations along the sequence, enabling 100K+ token training</li><li>Attention compute is split too</li><li>Can be combined with all other axes</li></ul><span class="cons">Cons</span><ul><li>Keys and values exchanged in every attention layer</li><li>Causal masks need load balancing across chunks</li><li>Only worth it for long sequences</li></ul><p class="prod"><b>In production:</b> Llama 3 405B: CP 16 for its 131,072-token long-context stage, CP 1 (off) for the 8,192-token stage.</p></div>
+<div class="explorer-panel" data-axis="ep" hidden><h3>Expert parallelism (EP)</h3><p>For Mixture of Experts models: experts are spread over GPUs. A router sends each token to its experts on other GPUs (all-to-all dispatch), the experts run, and results come back (all-to-all combine).</p><span class="pros">Pros</span><ul><li>Total parameters grow without growing compute per token</li><li>Each expert sees a larger batch, so its matmuls stay efficient</li><li>Combines with data parallelism for the non-expert layers</li></ul><span class="cons">Cons</span><ul><li>Two all-to-alls per MoE layer in the forward pass, two more in backward, often across nodes</li><li>Load imbalance: popular experts become stragglers</li><li>Communication can equal compute (DeepSeek-V3 reports about 1:1), so overlap is essential</li></ul><p class="prod"><b>In production:</b> DeepSeek-V3: 64-way EP spanning 8 nodes. Needed by every large MoE model.</p></div>
+</div>
+</div>
+</div>
+
+<!-- slide id="s-axes-prod" chapter="How" tag="5 · How it works" tagclass="b5" -->
+## Which axes are used in production
+
+Large runs combine several axes [[current]]. The chattiest axis goes on the fastest links: Llama 3 orders its groups [TP, CP, PP, DP] from innermost (inside a server) to outermost (across the network).
+{: .lede}
+
+::: table
+| Run | Data | Tensor | Pipeline | Context | Expert | Result |
+|---|---|---|---|---|---|---|
+| Llama 3 405B, 8K sequences, 16,384 H100s | 128 (FSDP) | 8 | 16 | 1 | none (dense) | 41% MFU |
+| Llama 3 405B, 131K sequences, 16,384 H100s | 8 (FSDP) | 8 | 16 | 16 | none (dense) | 38% MFU |
+| DeepSeek-V3, 671B MoE (37B active) | ZeRO-1 | none | 16 (DualPipe) | none | 64, across 8 nodes | no tensor parallelism needed |
+| MegaScale 175B, 12,288 GPUs | yes | yes | yes | sequence parallel | none | 55.2% MFU |
+:::
+
+::: cards grid2
+### [a] Dense models
+Tensor parallelism inside the node, pipeline across nodes, sharded data parallelism outermost; add context parallelism only for long-context training.
+
+### [b] MoE models
+Expert parallelism replaces most of the need for tensor parallelism; DeepSeek-V3 used pipeline + expert + ZeRO-1 data parallelism.
+
+### [c] Smaller models
+If the model fits with sharding, FSDP alone is simplest and is what most fine-tuning and sub-70B runs use.
+
+### [e] Pick by bottleneck
+Doesn't fit: shard (FSDP), then TP or PP. Too slow: add data parallel replicas. Sequence too long: CP. MoE: EP.
+:::
 
 <!-- slide id="s-how" chapter="How" tag="5 · How it works" tagclass="b5" -->
 ## What each axis splits, and what it costs
