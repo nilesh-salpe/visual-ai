@@ -81,7 +81,7 @@ nodes:
   mn: {at: [170, 120, 160, 56], text: model node, sub: chat model + tools, color: a, step: 2}
   tn: {at: [380, 120, 140, 56], text: tools node, sub: runs tool calls, color: c, step: 3}
   pv: {at: [380, 20, 140, 56], text: Provider API, sub: via integration, color: b, step: 2}
-  fn: {at: [560, 120, 90, 56], text: Your functions, color: e, step: 3}
+  fn: {at: [550, 120, 105, 56], text: Your tools, color: e, step: 3}
   cp: {at: [170, 235, 160, 56], text: Checkpointer, sub: optional memory, color: f, step: 5}
 edges:
   - {from: app, to: mn, label: messages, step: 1}

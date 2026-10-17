@@ -1,17 +1,17 @@
 (() => {
   const { svg, clear, fmt } = Deck;
   Deck.seg('oSeg', v => {
-    const ov = v === '1', s = clear(document.getElementById('oSvg')), X = t => 60 + t * 55;
+    const ov = v === '1', s = clear(document.getElementById('oSvg')), U = 38, X = t => 70 + t * U;
     svg('text', { x: 10, y: 50, class: 'tm', text: 'compute' }, s); svg('text', { x: 10, y: 120, class: 'tm', text: 'network' }, s);
-    svg('rect', { x: X(0), y: 35, width: 55 * 3, height: 26, rx: 4, style: 'fill:var(--a)' }, s); svg('text', { x: X(1.5), y: 53, 'text-anchor': 'middle', class: 't', style: 'fill:#fff', text: 'forward' }, s);
-    for (let b = 0; b < 4; b++) svg('rect', { x: X(3 + b * 1.5), y: 35, width: 55 * 1.5 - 3, height: 26, rx: 4, style: 'fill:var(--b)' }, s);
-    svg('text', { x: X(6), y: 53, 'text-anchor': 'middle', class: 't', style: 'fill:#fff', text: 'backward (4 buckets)' }, s);
+    svg('rect', { x: X(0), y: 35, width: U * 3, height: 26, rx: 4, style: 'fill:var(--a)' }, s); svg('text', { x: X(1.5), y: 53, 'text-anchor': 'middle', class: 't', style: 'fill:#fff', text: 'forward' }, s);
+    for (let b = 0; b < 4; b++) svg('rect', { x: X(3 + b * 1.5), y: 35, width: U * 1.5 - 3, height: 26, rx: 4, style: 'fill:var(--b)' }, s);
+    svg('text', { x: X(6), y: 27, 'text-anchor': 'middle', class: 'tm', text: 'backward: 4 gradient buckets' }, s);
     let end;
-    if (ov) { for (let b = 0; b < 4; b++) svg('rect', { x: X(4.5 + b * 1.5), y: 105, width: 55 * 1.5 - 3, height: 26, rx: 4, style: 'fill:var(--c)' }, s); end = 10.5; }
-    else { svg('rect', { x: X(9), y: 105, width: 55 * 6 - 3, height: 26, rx: 4, style: 'fill:var(--c)' }, s); end = 15; }
+    if (ov) { for (let b = 0; b < 4; b++) svg('rect', { x: X(4.5 + b * 1.5), y: 105, width: U * 1.5 - 3, height: 26, rx: 4, style: 'fill:var(--c)' }, s); end = 10.5; }
+    else { svg('rect', { x: X(9), y: 105, width: U * 6 - 3, height: 26, rx: 4, style: 'fill:var(--c)' }, s); end = 15; }
     svg('text', { x: ov ? X(7.5) : X(12), y: 123, 'text-anchor': 'middle', class: 't', style: 'fill:#fff', text: 'all-reduce' }, s);
-    svg('line', { x1: X(Math.min(end, 10.8)), x2: X(Math.min(end, 10.8)), y1: 20, y2: 150, style: 'stroke:var(--d);stroke-dasharray:4 3' }, s);
-    svg('text', { x: X(Math.min(end, 10.8)), y: 170, 'text-anchor': 'middle', class: 'tm', text: 'step ends' }, s);
+    svg('line', { x1: X(end), x2: X(end), y1: 20, y2: 150, style: 'stroke:var(--d);stroke-dasharray:4 3' }, s);
+    svg('text', { x: X(end) - 4, y: 170, 'text-anchor': 'end', class: 'tm', text: 'step ends' }, s);
     document.getElementById('oOut').innerHTML = ov ? 'Each bucket\'s all-reduce starts as soon as its gradients exist; only the last bucket\'s communication is exposed.' : 'Communication waits for the whole backward pass, then the GPUs sit idle while the network works: the step takes far longer.';
   });
   const N = 4; let st = 0; const val = [...Array(N)].map((_, r) => [...Array(N)].map((_, c) => [r === 0 ? 1 : 0, r === 1 ? 1 : 0, r === 2 ? 1 : 0, r === 3 ? 1 : 0]));

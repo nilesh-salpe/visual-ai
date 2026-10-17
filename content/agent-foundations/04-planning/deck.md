@@ -67,11 +67,11 @@ Treat the plan as a hypothesis: revise it when observations disagree.
 ::: diagram 660x300
 nodes:
   g: {at: [20, 120, 120, 56], text: Goal, color: f, step: 1}
-  pl: {at: [190, 120, 140, 56], text: Planner, sub: LLM, color: a, step: 2}
-  pq: {at: [380, 30, 150, 56], text: Plan, sub: subtasks + deps, color: e, step: 3}
-  ex: {at: [380, 140, 150, 56], text: Executor, sub: agent loop / workers, color: c, step: 4}
-  mon: {at: [380, 240, 150, 50], text: Monitor, sub: check progress, color: d, step: 5}
-  out: {at: [570, 140, 80, 56], text: Result, color: b, step: 6}
+  pl: {at: [170, 120, 140, 56], text: Planner, sub: LLM, color: a, step: 2}
+  pq: {at: [360, 30, 150, 56], text: Plan, sub: subtasks + deps, color: e, step: 3}
+  ex: {at: [360, 140, 150, 56], text: Executor, sub: agent loop / workers, color: c, step: 4}
+  mon: {at: [360, 240, 150, 50], text: Monitor, sub: check progress, color: d, step: 5}
+  out: {at: [575, 140, 75, 56], text: Result, color: b, step: 6}
 edges:
   - {from: g, to: pl, step: 2}
   - {from: pl, to: pq, label: write plan, step: 3}

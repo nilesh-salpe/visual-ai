@@ -69,20 +69,20 @@ Inspect how the agent succeeded: policy violations, wasted steps, risky actions.
 
 ::: diagram 660x300
 nodes:
-  ts: {at: [20, 120, 130, 56], text: Task set, sub: goal + initial state, color: f, step: 1}
-  env: {at: [200, 120, 150, 56], text: Sandbox env, sub: reset per trial, color: c, step: 2}
+  ts: {at: [10, 120, 130, 56], text: Task set, sub: goal + initial state, color: f, step: 1}
+  env: {at: [180, 120, 140, 56], text: Sandbox env, sub: reset per trial, color: c, step: 2}
   ag: {at: [400, 30, 130, 56], text: Agent, sub: under test, color: a, step: 3}
-  us: {at: [580, 30, 70, 56], text: User sim, color: b, step: 3}
+  us: {at: [570, 30, 85, 56], text: User sim, color: b, step: 3}
   gr: {at: [400, 150, 130, 56], text: Grader, sub: end state / tests, color: d, step: 4}
-  tr: {at: [200, 250, 150, 44], text: Trace store, color: e, step: 5}
-  rep: {at: [580, 150, 70, 56], text: Report, color: e, step: 6}
+  tr: {at: [180, 250, 140, 44], text: Trace store, color: e, step: 5}
+  rep: {at: [570, 150, 85, 56], text: Report, color: e, step: 6}
 edges:
   - {from: ts, to: env, step: 2}
   - {from: env, to: ag, label: observations, step: 3}
   - {from: us, to: ag, label: dialogue, step: 3, style: dash}
   - {from: ag, to: env, label: actions, step: 3, style: back}
   - {from: env, to: gr, label: final state, step: 4}
-  - {from: ag, to: tr, label: log, step: 5, style: dash}
+  - {from: env, to: tr, label: trace, step: 5, style: dash}
   - {from: gr, to: rep, step: 6}
 steps:
   - Each task defines a goal and an initial environment state.

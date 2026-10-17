@@ -59,6 +59,7 @@ Every `legacy`, `trend` or `research` label needs evidence: a primary source (pa
    python3 tools/decks/acronyms.py lint */[0-9][0-9]-*/index.html
    python3 tools/check_papers.py
    ```
+   Check layout in a real browser: `python3 tools/audit_layout.py /tmp/audit.jsonl "<topic>/[0-9][0-9]-*" 1280 390` (needs `pip install playwright`; uses the installed Chrome). It reports text wider than its box, overlapping text, arrows through labels, text outside a drawing and content spilling past the slide, at desktop and phone width. Rotated axis titles show up as `svg_outside`; check those by eye.
    The build fails on leaked Markdown (`:::` text, accidental code blocks) and duplicate paper keys. Open changed slides at phone width (headless Chrome screenshots) and check for errors and overflow. If a deck has a Colab notebook whose facts changed, update and re-validate it (`tools/notebooks/build_<topic>.py`).
 
 6. **Report and commit.** Summarise per deck: what was outdated, what changed, labels added (with the evidence), and anything you could not verify. Commit on `main` with a message listing the reviewed decks, ending with the co-author line the session specifies, and push only when the user has asked for it.

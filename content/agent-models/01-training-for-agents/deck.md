@@ -100,11 +100,11 @@ steps:
 
 ::: diagram 660x240
 nodes:
-  p: {at: [10, 20, 150, 56], text: Task + tools, sub: from the gym, color: f, step: 1}
-  ro: {at: [190, 20, 150, 56], text: Rollouts, sub: G attempts each, color: a, step: 2}
-  sb: {at: [370, 20, 140, 56], text: Sandbox, sub: executes tool calls, color: c, step: 2}
-  rw: {at: [540, 20, 110, 56], text: Reward, sub: end of episode, color: e, step: 3}
-  ad: {at: [540, 160, 110, 56], text: Advantage, sub: vs group mean, color: b, step: 4}
+  p: {at: [10, 20, 130, 56], text: Task + tools, sub: from the gym, color: f, step: 1}
+  ro: {at: [175, 20, 135, 56], text: Rollouts, sub: G attempts each, color: a, step: 2}
+  sb: {at: [385, 20, 145, 56], text: Sandbox, sub: executes tool calls, color: c, step: 2}
+  rw: {at: [575, 20, 80, 56], text: Reward, sub: per episode, color: e, step: 3}
+  ad: {at: [545, 160, 110, 56], text: Advantage, sub: vs group mean, color: b, step: 4}
   mk: {at: [330, 160, 180, 56], text: Loss mask, sub: model tokens only, color: d, step: 5}
   up: {at: [120, 160, 180, 56], text: Policy update, sub: KL-regularised, color: a, step: 6}
 edges:

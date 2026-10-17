@@ -32,7 +32,7 @@
       TX.arrow(s, p.x, 118, p.x, 76, 'ta', 'var(--muted)', 1.5);
       svg('text', { x: p.x, y: 62, 'text-anchor': 'middle', class: 'tm tc', style: 'font-size:10px', text: `loss${i + 1}` }, s);
     });
-    svg('text', { x: 355, y: 102, 'text-anchor': 'middle', class: 't', style: 'font-size:12px;font-weight:600;fill:var(--e)', text: 'total loss = Σ loss_i, and one backward pass updates everything' }, s);
+    svg('text', { x: 355, y: 102, 'text-anchor': 'middle', class: 't', style: 'font-size:12px;font-weight:600;fill:var(--e);paint-order:stroke;stroke:var(--panel);stroke-width:5px;stroke-linejoin:round;', text: 'total loss = Σ loss_i, and one backward pass updates everything' }, s);
   })();
 
   /* generation stepper */

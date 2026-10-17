@@ -8,7 +8,7 @@
     ['Positional encoding', '#c9a227', [3], '<b>Sinusoidal PE</b> gives the order-blind attention mechanism information about token positions. Learned embeddings performed the same (Table 3E: 25.7 vs 25.8).', '07-positional-encoding'],
     ['Stacked layers: residual + LN + FFN', 'var(--e)', [4], '<b>N = 6 layers</b>, each LayerNorm(x + Sublayer(x)), with a position-wise FFN for per-token transformation. Depth matters: N = 2 drops to 23.7 BLEU and N = 8 reaches 25.5 (Table 3C); a wider FFN helps (26.2).', '10-residual-layernorm'],
   ];
-  const PROB = ['Sequential computation', 'Long paths between distant tokens', 'Averaging blurs relationships', 'No sense of word order', 'Need for depth and per-token processing'];
+  const PROB = ['Sequential computation', 'Long paths between distant tokens', 'Averaging blurs relationships', 'No sense of word order', 'Needs depth and per-token work'];
   let sel = 0;
   const drawMap = () => {
     const s = clear(document.getElementById('mapSvg'));

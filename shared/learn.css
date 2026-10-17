@@ -96,3 +96,4 @@ pre.code { font: 13px/1.6 'JetBrains Mono', monospace; background: var(--panel-2
 .lvl-basic { background: var(--e-soft); color: var(--e); }
 .lvl-deeper { background: var(--b-soft); color: var(--b); }
 .lvl-expert { background: var(--c-soft); color: var(--c); }
+.tt, .tt li { overflow-wrap: anywhere; }   /* long identifiers in tricks and traps must wrap on phones */

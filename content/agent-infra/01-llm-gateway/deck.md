@@ -101,14 +101,14 @@ steps:
 
 ::: diagram 660x300
 nodes:
-  au: {at: [10, 20, 150, 56], text: Authenticate, sub: virtual key → policy, color: f, step: 1}
-  li: {at: [175, 20, 150, 56], text: Check limits, sub: budget · token bucket, color: d, step: 2}
-  ca: {at: [340, 20, 150, 56], text: Cache lookup, sub: exact or semantic, color: e, step: 3}
-  pk: {at: [505, 20, 150, 56], text: Pick deployment, sub: routing strategy, color: a, step: 4}
-  cl: {at: [505, 150, 150, 56], text: Call provider, sub: stream back, color: c, step: 5}
-  rt: {at: [340, 150, 150, 56], text: Retry, sub: backoff · cooldown, color: b, step: 6}
-  fb: {at: [175, 150, 150, 56], text: Fallback group, sub: next model, color: b, step: 7}
-  lg: {at: [505, 250, 150, 46], text: Meter and log, sub: usage · cost, color: e, step: 8}
+  au: {at: [10, 15, 140, 50], text: Authenticate, sub: virtual key → policy, color: f, step: 1}
+  li: {at: [175, 15, 145, 50], text: Check limits, sub: budget · token bucket, color: d, step: 2}
+  ca: {at: [345, 15, 135, 50], text: Cache lookup, sub: exact or semantic, color: e, step: 3}
+  pk: {at: [520, 15, 135, 50], text: Pick deployment, sub: routing strategy, color: a, step: 4}
+  cl: {at: [520, 140, 135, 56], text: Call provider, sub: stream back, color: c, step: 5}
+  rt: {at: [300, 140, 150, 56], text: Retry, sub: backoff · cooldown, color: b, step: 6}
+  fb: {at: [40, 140, 160, 56], text: Fallback group, sub: next model, color: b, step: 7}
+  lg: {at: [520, 250, 135, 46], text: Meter and log, sub: usage · cost, color: e, step: 8}
 edges:
   - {from: au, to: li, step: 2}
   - {from: li, to: ca, step: 3}

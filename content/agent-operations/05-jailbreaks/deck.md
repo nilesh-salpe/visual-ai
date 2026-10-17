@@ -78,13 +78,13 @@ A **jailbreak** is the user attacking the model's policy. **Prompt injection** i
 
 ::: diagram 660x300
 nodes:
-  u: {at: [10, 120, 90, 56], text: Request, sub: user · account, color: f, step: 1}
-  ic: {at: [125, 120, 115, 56], text: Input classifier, sub: policy · intent, color: b, step: 2}
-  m: {at: [265, 120, 115, 56], text: Model, sub: safety-trained, color: a, step: 3}
-  oc: {at: [405, 120, 115, 56], text: Output classifier, sub: streaming · can halt, color: b, step: 4}
-  out: {at: [545, 120, 105, 56], text: Reply, color: e, step: 4}
-  mon: {at: [125, 235, 255, 50], text: Account monitoring, sub: patterns across requests · rate limits, color: c, step: 5}
-  rt: {at: [125, 20, 255, 56], text: Red teaming, sub: automated attacks + human testers, color: d, step: 6}
+  u: {at: [10, 128, 90, 56], text: Request, sub: user · account, color: f, step: 1}
+  ic: {at: [125, 128, 115, 56], text: Input classifier, sub: policy · intent, color: b, step: 2}
+  m: {at: [265, 128, 115, 56], text: Model, sub: safety-trained, color: a, step: 3}
+  oc: {at: [405, 128, 115, 56], text: Output classifier, sub: streaming · can halt, color: b, step: 4}
+  out: {at: [545, 128, 105, 56], text: Reply, color: e, step: 4}
+  mon: {at: [125, 245, 255, 50], text: Account monitoring, sub: patterns across requests · rate limits, color: c, step: 5}
+  rt: {at: [125, 8, 255, 52], text: Red teaming, sub: automated attacks + human testers, color: d, step: 6}
 edges:
   - {from: u, to: ic, step: 2}
   - {from: ic, to: m, step: 3}

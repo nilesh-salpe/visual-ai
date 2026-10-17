@@ -95,7 +95,7 @@ steps:
 
 ::: diagram 660x300
 nodes:
-  spec: {at: [20, 20, 200, 120], text: Task spec, sub: objective · output format · tools · boundaries · effort, color: a, step: 1}
+  spec: {at: [20, 20, 200, 120], text: Task spec, sub: goal · format · tools · limits, color: a, step: 1}
   run: {at: [260, 20, 160, 56], text: Subagent loop, sub: 'search, read, think', color: c, step: 2}
   cond: {at: [460, 20, 180, 56], text: Condensed result, sub: facts + sources, color: e, step: 3}
   syn: {at: [460, 130, 180, 56], text: Lead synthesises, sub: dedupe · resolve conflicts, color: a, step: 4}

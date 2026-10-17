@@ -36,7 +36,7 @@
     let pts = ''; for (let e = 0; e <= 8.001; e += 0.05) { const m = Math.pow(2, e); pts += `${X(m)},${Y((p - 1) / (vv * m))} `; }
     svg('polyline', { points: pts, fill: 'none', style: 'stroke:var(--a);stroke-width:3' }, s);
     const need = Math.ceil((p - 1) / (vv * 0.1));
-    svg('text', { x: 620, y: 30, 'text-anchor': 'end', class: 't', text: `need m ≥ ${need} micro-batches for ≤ 10% bubble` }, s);
+    svg('text', { x: 72, y: 54, class: 't', style: 'paint-order:stroke;stroke:var(--panel);stroke-width:5px;stroke-linejoin:round;', text: `need m ≥ ${need} micro-batches for ≤ 10% bubble` }, s);
   };
   Deck.bind(['bP'], bdraw); Deck.seg('bV', v => { vv = +v; bdraw(); });
 })();

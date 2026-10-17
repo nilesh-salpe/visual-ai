@@ -79,7 +79,7 @@ nodes:
   as: {at: [370, 120, 140, 56], text: Assignment, sub: hash(user) → arm, color: a, step: 4}
   ar: {at: [550, 40, 100, 56], text: A / B arms, sub: pinned versions, color: c, step: 4}
   lg: {at: [550, 150, 100, 56], text: Logs, sub: events · cost, color: e, step: 5}
-  an: {at: [370, 240, 280, 50], text: 'Analysis: SRM check · primary metric · guardrails', color: d, step: 6}
+  an: {at: [370, 240, 280, 50], text: Analysis, sub: SRM check · primary metric · guardrails, color: d, step: 6}
 edges:
   - {from: ch, to: 'off', step: 2}
   - {from: ch, to: sh, step: 3}

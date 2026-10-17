@@ -94,7 +94,7 @@
     svg('circle', { cx: x2, cy: y2, r: 7, class: 'f-b' }, s);
     svg('text', { x: x1 + 10, y: y1 - 8, class: 't', style: 'fill:var(--a);font-weight:700;font-size:12px', text: `PE(${p})` }, s);
     svg('text', { x: x2 + 10, y: y2 + 16, class: 't', style: 'fill:var(--b);font-weight:700;font-size:12px', text: `PE(${p + k})` }, s);
-    svg('text', { x: 160, y: 250, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: `rotation angle ω·k = ${(w * k * 180 / Math.PI).toFixed(1)}°, the same for any p (dims 8, 9 of d = 64)` }, s);
+    svg('text', { x: 160, y: 246, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: `rotation angle ω·k = ${(w * k * 180 / Math.PI).toFixed(1)}°, the same for any p` }, s); svg('text', { x: 160, y: 260, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: '(dimensions 8 and 9 of d = 64)' }, s);
     const cv = document.getElementById('simCanvas'), ctx = cv.getContext('2d'), img = ctx.createImageData(64, 64);
     const col = hex(css('--a')), bg = hex(css('--panel'));
     const vec = q => [...Array(64)].map((_, i) => TX.pe(q, i, 64));

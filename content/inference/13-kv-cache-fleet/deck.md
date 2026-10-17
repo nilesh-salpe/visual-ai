@@ -49,14 +49,14 @@ status:
 nodes:
   rq: {at: [10, 120, 100, 50], text: Request, sub: prompt prefix, color: f, step: 1}
   rt: {at: [140, 120, 110, 50], text: Router, sub: 'where is my prefix?', color: b, step: 2}
-  ix: {at: [140, 230, 110, 56], text: Prefix index, sub: KV events from engines, color: b, step: 2}
+  ix: {at: [140, 230, 110, 56], text: Prefix index, sub: from KV events, color: b, step: 2}
   g: {at: [290, 15, 170, 50], text: GPU memory, sub: 'hot blocks · 3,350 GB/s', color: a, step: 3}
   c: {at: [290, 90, 170, 50], text: CPU memory, sub: PCIe Gen5 · 64 GB/s, color: c, step: 3}
   ss: {at: [290, 165, 170, 50], text: Local NVMe SSD, sub: about 7 GB/s, color: c, step: 4}
   sh: {at: [290, 240, 170, 50], text: Shared store, sub: over the network · 50 GB/s, color: e, step: 4}
   pf: {at: [495, 15, 155, 50], text: Prefill worker, sub: computes new KV, color: a, step: 5}
   dc: {at: [495, 105, 155, 50], text: Decode worker, sub: receives KV, color: a, step: 5}
-  cp: {at: [495, 200, 155, 60], text: Long prompt, sub: split across GPUs (context parallel), color: d, step: 6}
+  cp: {at: [495, 200, 155, 60], text: Long prompt, sub: context parallel, color: d, step: 6}
 edges:
   - {from: rq, to: rt, step: 2}
   - {from: ix, to: rt, label: locations, step: 2, style: dash}

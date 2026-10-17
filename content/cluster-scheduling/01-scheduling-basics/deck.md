@@ -73,12 +73,12 @@ Build FIFO and EASY backfill schedulers and measure mean wait and utilisation. O
 ::: diagram 660x300
 nodes:
   sub: {at: [10, 120, 120, 56], text: Submit, sub: GPUs · time limit, color: f, step: 1}
-  q: {at: [170, 120, 140, 56], text: Queue, sub: sorted by priority, color: a, step: 2}
-  qt: {at: [170, 10, 140, 56], text: Quotas, sub: shares · limits, color: b, step: 3}
-  pl: {at: [360, 120, 140, 56], text: Placement, sub: gang · topology, color: c, step: 4}
-  bf: {at: [360, 230, 140, 56], text: Backfill, sub: fill gaps, color: e, step: 5}
-  pr: {at: [540, 230, 110, 56], text: Preempt, sub: requeue / cancel, color: d, step: 6}
-  cl: {at: [540, 120, 110, 56], text: Nodes, sub: run job, color: f, step: 4}
+  q: {at: [160, 120, 135, 56], text: Queue, sub: sorted by priority, color: a, step: 2}
+  qt: {at: [160, 10, 135, 56], text: Quotas, sub: shares · limits, color: b, step: 3}
+  pl: {at: [375, 120, 135, 56], text: Placement, sub: gang · topology, color: c, step: 4}
+  bf: {at: [300, 235, 140, 56], text: Backfill, sub: fill gaps, color: e, step: 5}
+  pr: {at: [545, 235, 110, 56], text: Preempt, sub: requeue / cancel, color: d, step: 6}
+  cl: {at: [560, 120, 95, 56], text: Nodes, sub: run job, color: f, step: 4}
 edges:
   - {from: sub, to: q, step: 2}
   - {from: qt, to: q, label: 'admit?', step: 3}

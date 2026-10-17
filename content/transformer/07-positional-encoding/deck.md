@@ -146,7 +146,7 @@ For each frequency ω, the pair (sin ωp, cos ωp) is a point on a circle. Movin
     <label class="ctl">Offset k <input type="range" id="rK" min="0" max="20" step="1" value="4"> <output id="rKo"></output></label>
   </div>
   <div class="grid2" style="margin-top:10px;align-items:center">
-    <svg id="circSvg" viewBox="0 0 320 260" role="img" aria-label="Rotation on a circle"></svg>
+    <svg id="circSvg" viewBox="0 0 320 272" role="img" aria-label="Rotation on a circle"></svg>
     <div><h3>Similarity PE(p)·PE(q), positions 0–63</h3><canvas id="simCanvas" width="64" height="64" style="max-width:280px"></canvas><p class="caption">The dot product depends only on the distance |p − q|: the same pattern along every diagonal.</p></div>
   </div>
 </div>

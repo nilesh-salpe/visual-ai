@@ -120,7 +120,7 @@ kbd { font: 500 12px 'JetBrains Mono', monospace; border: 1px solid var(--line);
 .visual { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin: 18px 0 0; box-shadow: var(--shadow); }
 .visual svg { display: block; width: 100%; height: auto; max-height: 60vh; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 @media (max-width: 820px) { .grid2, .grid3 { grid-template-columns: 1fr; } .grid4 { grid-template-columns: 1fr 1fr; } }
 .card { background: var(--panel-2); border-radius: 10px; padding: 14px; }
@@ -129,7 +129,7 @@ kbd { font: 500 12px 'JetBrains Mono', monospace; border: 1px solid var(--line);
 .card.c { border-top: 3px solid var(--c); } .card.d { border-top: 3px solid var(--d); } .card.e { border-top: 3px solid var(--e); }
 .stat { text-align: left; }
 .stat .num { font: 700 28px/1.1 'JetBrains Mono', monospace; letter-spacing: -.02em; }
-.stat .lbl { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.stat .lbl { display: block; font: 400 13px/1.4 Inter, sans-serif; color: var(--muted); margin: 4px 0 0; padding: 0; white-space: normal; text-transform: none; letter-spacing: normal; border-radius: 0; background: none; vertical-align: baseline; }   /* reset: .lbl is also the status-badge class */
 
 .controls { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; margin-top: 14px; }
 .ctl { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
@@ -276,3 +276,16 @@ svg.anim-lg .t { font-size: 15px; }
 /* topic hubs split into parts */
 .hub h2.hub-part { margin: 34px 0 6px; font-size: 22px; }
 .hub .hub-part-sub { margin: 0 0 4px; color: var(--muted); font-size: 14px; }
+
+/* Phones: controls, stats and segmented buttons must wrap instead of spilling past the slide */
+@media (max-width: 600px) {
+  .stat .num { font-size: 22px; overflow-wrap: anywhere; }
+  .stat .lbl { overflow-wrap: anywhere; }
+  .controls { gap: 10px 14px; }
+  .ctl { flex-wrap: wrap; max-width: 100%; gap: 6px 10px; }
+  .ctl input[type=range] { min-width: 0; flex: 1 1 140px; max-width: 100%; }
+  .ctl output { min-width: 0; }
+  .seg { flex-wrap: wrap; max-width: 100%; }
+  .seg button { flex: 1 1 auto; }
+}
+.ctl input[type=range] { min-width: 0; }

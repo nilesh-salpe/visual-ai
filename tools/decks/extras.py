@@ -17,7 +17,13 @@ def _wrap(text, width):
     lines = []
     for part in text.split('\n'):
         cur = ''
-        for w in part.split():
+        words = []
+        for w in part.split():                         # break over-long identifiers after underscores so they fit the box
+            while len(w) > width and '_' in w[1:width]:
+                k = w.rindex('_', 1, width) + 1
+                words.append(w[:k]); w = w[k:]
+            words.append(w)
+        for w in words:
             if cur and len(cur) + 1 + len(w) > width:
                 lines.append(cur); cur = w
             else:
@@ -42,10 +48,13 @@ def flow(steps, loop=None, caption=''):
         x = 10 + i * (bw + gap); xs.append(x)
         c = COLORS.get(col, col)
         out.append(f'<rect x="{x:.1f}" y="{top}" width="{bw:.1f}" height="{h}" rx="10" style="fill:{c}"/>')
-        lines = label.split('\n')
+        fs = 13 if n <= 4 else 12
+        lines = _wrap(label, max(6, int((bw - 12) / (fs * 0.6))))     # keep bold labels inside the box (≈0.6 em per character)
+        if len(lines) > 3:
+            fs = 11; lines = _wrap(label, max(6, int((bw - 10) / (fs * 0.6))))
         for j, ln in enumerate(lines):
-            y = top + h / 2 + 5 + (j - (len(lines) - 1) / 2) * 16
-            out.append(f'<text x="{x + bw / 2:.1f}" y="{y:.1f}" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:{13 if n <= 4 else 12}px">{escape(ln)}</text>')
+            y = top + h / 2 + 5 + (j - (len(lines) - 1) / 2) * (fs + 3)
+            out.append(f'<text x="{x + bw / 2:.1f}" y="{y:.1f}" text-anchor="middle" class="t" style="fill:#fff;font-weight:700;font-size:{fs}px">{escape(ln)}</text>')
         if sub:
             for j, ln in enumerate(_wrap(sub, max(10, int(bw / 6.3)))):
                 out.append(f'<text x="{x + bw / 2:.1f}" y="{top + h + 17 + j * 14:.1f}" text-anchor="middle" class="tm" style="font-size:11px">{escape(ln)}</text>')

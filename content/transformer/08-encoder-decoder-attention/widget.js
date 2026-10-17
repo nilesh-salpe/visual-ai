@@ -70,7 +70,7 @@
     const src = TX.tokens(s, SRC, { y: 20, h: 30, width: 380, font: 12, color: () => 'var(--a)', textColor: () => '#fff' });
     const tgt = TX.tokens(s, TGT, { y: 170, h: 30, width: 380, font: 12, click: true, color: i => i === sel ? 'var(--c)' : 'var(--c-soft)', textColor: i => i === sel ? '#fff' : 'var(--c)' });
     A[sel].forEach((w, j) => svg('line', { x1: tgt[sel].x, y1: 168, x2: src[j].x, y2: 52, style: `stroke:var(--b);stroke-width:${1 + 10 * w};opacity:${.2 + .8 * w}` }, s));
-    svg('text', { x: 6, y: 112, class: 'tm', style: 'font-size:10.5px', text: 'K, V (source)  ↑   Q (target) ↓' }, s);
+    svg('text', { x: 6, y: 112, class: 'tm', style: 'font-size:10.5px;paint-order:stroke;stroke:var(--panel);stroke-width:5px;stroke-linejoin:round;', text: 'K, V (source)  ↑   Q (target) ↓' }, s);
     const h = clear(document.getElementById('hSvg'));
     TX.heat(h, A, { x: 70, y: 70, cell: 40, rows: TGT, cols: SRC, rotate: true, fmt: v => (v * 100).toFixed(0), color: 'var(--b)' });
     svg('rect', { x: 69, y: 70 + sel * 40 - 1, width: 6 * 40 + 1, height: 40, style: 'fill:none;stroke:var(--ink);stroke-width:2' }, h);

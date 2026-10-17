@@ -20,7 +20,7 @@
       TX.box(s, 450, y, 180, 50, c, `Value: content of "${n}"`);
       TX.arrow(s, 172, 115, 286, y + 25, 'la', i === 0 ? 'var(--c)' : 'var(--line)', i === 0 ? 3 : 1.5);
     });
-    svg('text', { x: 230, y: 70, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'compare' }, s);
+    svg('text', { x: 215, y: 62, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px;paint-order:stroke;stroke:var(--panel);stroke-width:5px;stroke-linejoin:round;', text: 'compare' }, s);
     svg('text', { x: 540, y: 222, 'text-anchor': 'middle', class: 'tm', style: 'font-size:11px', text: 'take a blend, mostly from the best match' }, s);
   })();
 
@@ -76,7 +76,7 @@
       svg('text', { x, y: 170, class: 'tm tc', style: 'font-size:11px', text: sh }, s);
       T.forEach((t, i) => b === 0 && svg('text', { x: x - 4, y: 52 + i * 30, 'text-anchor': 'end', class: 'tm', style: 'font-size:10px', text: '' }, s));
     });
-    svg('text', { x: 20, y: 205, class: 't', text: 'rows = tokens (animal, street, it, tired). One matrix product QKᵀ scores every query against every key at once.' }, s);
+    svg('text', { x: 20, y: 200, class: 't', text: 'rows = tokens (animal, street, it, tired).' }, s); svg('text', { x: 20, y: 218, class: 't', text: 'One matrix product QKᵀ scores every query against every key at once.' }, s);
   })();
 })();
 (() => {

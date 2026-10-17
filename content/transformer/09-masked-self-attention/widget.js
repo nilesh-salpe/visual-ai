@@ -55,9 +55,9 @@
   const pickN = k => {
     Deck.$$('button', nst).forEach(b => b.classList.toggle('on', +b.dataset.i === k));
     const [M, lab, c, neg, txt] = NS[k], s = clear(document.getElementById('nSvg'));
-    svg('text', { x: 220, y: 20, class: 't tc', style: `font-weight:700;fill:${c}`, text: lab }, s);
-    TX.heat(s, M, { x: 220, y: 40, cell: 42, rows: toks, cols: toks, color: c, neg, fmt: v => k === 2 ? v.toFixed(2) : v.toFixed(1) });
-    if (k === 2) P.forEach((row, i) => svg('text', { x: 220 + n * 42 + 8, y: 40 + i * 42 + 25, class: 'tm tc', style: 'font-size:10.5px', text: 'Σ = ' + row.reduce((a, b) => a + b, 0).toFixed(2) }, s));
+    svg('text', { x: 220, y: 12, class: 't tc', style: `font-weight:700;fill:${c}`, text: lab }, s);
+    TX.heat(s, M, { x: 220, y: 46, cell: 42, rows: toks, cols: toks, color: c, neg, fmt: v => k === 2 ? v.toFixed(2) : v.toFixed(1) });
+    if (k === 2) P.forEach((row, i) => svg('text', { x: 220 + n * 42 + 8, y: 46 + i * 42 + 25, class: 'tm tc', style: 'font-size:10.5px', text: 'Σ = ' + row.reduce((a, b) => a + b, 0).toFixed(2) }, s));
     document.getElementById('nInfo').innerHTML = txt;
   };
   nst.addEventListener('click', e => { const b = e.target.closest('button'); if (b) pickN(+b.dataset.i); });
