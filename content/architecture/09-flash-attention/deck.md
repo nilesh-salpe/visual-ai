@@ -95,7 +95,7 @@ Pick an answer before moving on. Committing to a guess, even a wrong one, makes 
 - [x] Reads and writes to HBM
 - [ ] The precision of the softmax
 - [ ] The sequence length
-> <b>B.</b> It is IO-aware (IO = input/output, memory reads and writes): tiling keeps S and P in SRAM, so HBM traffic drops. GPT-2 medium (N = 1,024), forward + backward on an A100: standard 66.6 GFLOPs (billion floating-point operationss), <b>40.3 GB</b> HBM, 41.7 ms; FlashAttention 75.2 GFLOPs, <b>4.4 GB</b>, <b>7.3 ms</b>.
+> <b>B.</b> It is IO-aware (IO = input/output, memory reads and writes): tiling keeps S and P in SRAM, so HBM traffic drops. GPT-2 medium (N = 1,024), forward + backward on an A100: standard 66.6 GFLOPs (billion floating-point operations), <b>40.3 GB</b> HBM, 41.7 ms; FlashAttention 75.2 GFLOPs, <b>4.4 GB</b>, <b>7.3 ms</b>.
 :::
 
 <!-- slide id="s-core" chapter="Core idea" tag="4 · Core idea" tagclass="b4" -->
@@ -146,8 +146,8 @@ FlashAttention-2 order: for each Q block (outer loop, run in parallel across thr
 <div class="visual scroll-x" style="margin-top:12px"><table class="tbl">
   <tr><th></th><th>Key change</th><th>Reported result</th></tr>
   <tr><td>FlashAttention (2022)</td><td>Tiling + online softmax + recompute; IO-aware, exact</td><td>15% faster BERT-large (BERT = Bidirectional Encoder Representations from Transformers) training vs MLPerf 1.1 record; 3× GPT-2 (1K); 2.4× Long Range Arena</td></tr>
-  <tr><td>FlashAttention-2 (2023)</td><td>Fewer non-matmul FLOPs; parallelize over sequence (outer loop over Q blocks); split work across warps; rescale the output once at the end</td><td>~2× FA1; 50–73% of peak FLOPs on A100 (FA1: 25–40%); up to 225 TFLOPs (trillion floating-point operationss)/s training GPT models</td></tr>
-  <tr><td>FlashAttention-3 (2024)</td><td>Hopper features: asynchronous Tensor Cores and TMA (Tensor Memory Accelerator), warp specialization, interleaved matmul + softmax, FP8 (8-bit floating point) with block quantization</td><td>1.5–2.0× on H100; up to 740 TFLOPs/s FP16 (~75%); ~1.2 PFLOPs (quadrillion floating-point operationss)/s FP8 with 2.6× lower error than a baseline FP8 attention</td></tr>
+  <tr><td>FlashAttention-2 (2023)</td><td>Fewer non-matmul FLOPs; parallelize over sequence (outer loop over Q blocks); split work across warps; rescale the output once at the end</td><td>~2× FA1; 50–73% of peak FLOPs on A100 (FA1: 25–40%); up to 225 TFLOPs (trillion floating-point operations)/s training GPT models</td></tr>
+  <tr><td>FlashAttention-3 (2024)</td><td>Hopper features: asynchronous Tensor Cores and TMA (Tensor Memory Accelerator), warp specialization, interleaved matmul + softmax, FP8 (8-bit floating point) with block quantization</td><td>1.5–2.0× on H100; up to 740 TFLOPs/s FP16 (~75%); ~1.2 PFLOPs (quadrillion floating-point operations)/s FP8 with 2.6× lower error than a baseline FP8 attention</td></tr>
 </table></div>
 
 <!-- slide id="s-myth" chapter="Myths" tag="7 · Misconceptions" tagclass="b7" -->

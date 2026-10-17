@@ -207,7 +207,8 @@
    "exp": "general matrix multiplication"
   },
   "GFLOP": {
-   "exp": "billion floating-point operations"
+   "exp": "billion floating-point operations",
+   "plural": "billion floating-point operations"
   },
   "GLU": {
    "exp": "gated linear unit"
@@ -460,7 +461,8 @@
    "exp": "priority flow control"
   },
   "PFLOP": {
-   "exp": "quadrillion floating-point operations"
+   "exp": "quadrillion floating-point operations",
+   "plural": "quadrillion floating-point operations"
   },
   "PI": {
    "exp": "Position Interpolation"
@@ -642,7 +644,8 @@
    "exp": "TensorFloat-32"
   },
   "TFLOP": {
-   "exp": "trillion floating-point operations"
+   "exp": "trillion floating-point operations",
+   "plural": "trillion floating-point operations"
   },
   "TFLOPS": {
    "exp": "trillion floating-point operations per second"
