@@ -3333,3 +3333,98 @@ p2c:
   summary: In the supermarket model, letting each arriving customer pick the shorter of d ≥ 2 randomly chosen queues gives an exponential improvement in expected
     time in the system over one random choice.
   number: exponential improvement from d = 2
+ds_infer:
+  title: DeepSeek-V3/R1 Inference System Overview (Open Source Week, day 6)
+  authors: DeepSeek-AI
+  venue: GitHub (open-infra-index)
+  year: 2025
+  url: https://github.com/deepseek-ai/open-infra-index/blob/main/202502OpenSourceWeek/day_6_one_more_thing_deepseekV3R1_inference_system_overview.md
+  summary: Prefill/decode disaggregation with cross-node EP (prefill EP32 on 4 nodes, decode EP144 on 18 nodes, 32 redundant experts), dual-batch overlap, prefill,
+    decode and expert load balancers; H800 fleet statistics.
+  number: ~73.7K input tok/s per node (prefill), ~14.8K output tok/s per node (decode); 56.3% of input tokens hit the on-disk KV cache; peak 278 nodes
+deepep:
+  title: 'DeepEP: an efficient expert-parallel communication library'
+  authors: DeepSeek-AI
+  venue: GitHub
+  year: 2026
+  url: https://github.com/deepseek-ai/DeepEP
+  summary: High-throughput and low-latency all-to-all GPU kernels for MoE dispatch and combine (FP8 dispatch), unified in one EPBuffer API in V2; weight exchange
+    for redundant experts.
+  number: NVLink within nodes, RDMA across nodes
+eplb:
+  title: Expert Parallelism Load Balancer (EPLB)
+  authors: DeepSeek-AI
+  venue: GitHub
+  year: 2025
+  url: https://github.com/deepseek-ai/EPLB
+  summary: Redundant experts plus heuristic packing onto GPUs; hierarchical policy (groups to nodes, then GPUs) for prefill, global policy for decode.
+  number: replicate heavy experts, balance per-GPU load
+vllm_ep:
+  title: Expert Parallel Deployment (vLLM documentation, v0.31.0)
+  authors: vLLM project
+  venue: vLLM docs
+  year: 2026
+  url: https://github.com/vllm-project/vllm/blob/v0.31.0/docs/serving/expert_parallel_deployment.md
+  summary: EP size = TP × DP; attention replicated (TP 1) or sharded; all2all backends allgather_reducescatter, deepep_high_throughput (prefill), deepep_low_latency
+    (decode, CUDA graphs); EPLB.
+  number: 'EPLB defaults: window 1,000 steps, rebalance every 3,000 steps'
+sglang_ep:
+  title: Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism on 96 H100 GPUs
+  authors: SGLang Team
+  venue: LMSYS blog
+  year: 2025
+  url: https://lmsys.org/blog/2025-05-05-large-scale-ep/
+  summary: DP attention, DeepEP, DeepGEMM, two-batch overlap and EPLB with prefill/decode disaggregation on 12 nodes of 8 H100s.
+  number: 52.3K input / 22.3K output tok/s per node; decode EP72 5.2× a TP16 baseline
+vllm_offload:
+  title: KV Offloading Usage Guide (vLLM documentation, v0.31.0)
+  authors: vLLM project
+  venue: vLLM docs
+  year: 2026
+  url: https://github.com/vllm-project/vllm/blob/v0.31.0/docs/features/kv_offloading_usage.md
+  summary: 'OffloadingConnector: completed KV blocks copied to pinned CPU memory (DMA, asynchronous) and optional secondary tiers (filesystem, object store, P2P over
+    NIXL) staged through CPU; hits promoted back to GPU.'
+  number: 'per-request caps: max_load_tokens, max_offload_tokens'
+vllm_disagg:
+  title: Disaggregated Prefilling (vLLM documentation, v0.31.0)
+  authors: vLLM project
+  venue: vLLM docs
+  year: 2026
+  url: https://github.com/vllm-project/vllm/blob/v0.31.0/docs/features/disagg_prefill.md
+  summary: Separate prefill and decode instances to tune TTFT and ITL independently and control tail ITL; connectors include NIXL, Mooncake, LMCache, Offloading,
+    FlexKV and Multi.
+  number: does not improve throughput by itself
+nixl:
+  title: NVIDIA Inference Xfer Library (NIXL)
+  authors: NVIDIA (ai-dynamo)
+  venue: GitHub
+  year: 2026
+  url: https://github.com/ai-dynamo/nixl
+  summary: Point-to-point transfer library for inference frameworks such as Dynamo and vLLM, abstracting memory types (GPU, CPU, storage) and backends (UCX, GPUDirect
+    Storage).
+  number: v1.5.0
+lmcache:
+  title: 'LMCache: An Efficient KV Cache Layer for Enterprise-Scale LLM Inference'
+  authors: Liu et al.
+  venue: arXiv
+  year: 2025
+  url: https://arxiv.org/abs/2510.09665
+  summary: Stores KV caches from vLLM and SGLang outside GPU memory and shares them across engines and queries, for offloading and prefill/decode transfer; batched
+    movement, pipelining, a connector layer and a control API.
+  number: up to 15× throughput with vLLM
+cachedattn:
+  title: Cost-Efficient Large Language Model Serving for Multi-turn Conversations with CachedAttention
+  authors: Gao et al.
+  venue: arXiv
+  year: 2024
+  url: https://arxiv.org/abs/2403.19708
+  summary: Hierarchical KV caching across HBM, host memory and disk for multi-turn chat, with layer-wise pre-loading, asynchronous saving and scheduler-aware eviction.
+  number: TTFT −87%, prefill throughput 7.8×, cost −70% (up to)
+cp_infer:
+  title: Context Parallelism for Scalable Million-Token Inference
+  authors: Yang et al. (Meta)
+  venue: MLSys
+  year: 2025
+  url: https://arxiv.org/abs/2411.01783
+  summary: Ring-attention variants (pass-KV, pass-Q) for long-context prefill and decode; near-linear scaling to 128 H100s over RDMA or TCP.
+  number: 1M-token prefill of Llama 3 405B in 77 s (93% parallel efficiency); 128K in 3.8 s

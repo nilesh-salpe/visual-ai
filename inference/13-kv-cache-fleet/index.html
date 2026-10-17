@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KV Cache Across the Fleet</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="The KV cache across the fleet" data-home="../index.html" data-home-label="Inference">
+
+<section class="slide title-slide" id="s-title" data-chapter="Short answer">
+  <div class="inner">
+    <div class="kicker">LLM Inference &amp; Serving · 13</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-16</span><span class="status-note">Checked against vLLM v0.31.0 KV (key-value) offloading and connector docs, Mooncake, LMCache, CachedAttention and DeepSeek (2026-10-16).</span></div>
+    <h1>The KV cache across the fleet</h1>
+    <p class="sub">Treating the KV cache as data with a memory hierarchy: spilling to CPU (central processing unit) memory, SSD (solid-state drive) and shared stores, loading instead of recomputing, routing requests to where their prefix lives, moving KV between prefill and decode workers, and splitting very long prompts across GPUs (graphics processing units).</p>
+    <div class="ps">
+      <div class="p"><b>The question</b>Prompts and conversations repeat across requests and replicas. How do you stop recomputing their KV cache at fleet scale?</div>
+      <div class="c"><b>Short answer</b>Treat the KV cache as <b>data in a memory hierarchy</b>. Keep hot blocks in GPU memory, copy finished blocks to <b>CPU memory</b>, then <b>SSD or a shared store</b>, and <b>load them back on a hit</b>: for long prefixes, loading is much faster than recomputing. <b>Route</b> each request to where its prefix lives, move KV between prefill and decode workers over <b>RDMA (remote direct memory access)</b> (NIXL (NVIDIA Inference Xfer Library), Mooncake), and split very long prompts across GPUs with <b>context parallelism</b>. DeepSeek served 56.3% of its input tokens from an on-disk KV cache.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-draw" data-chapter="Draw it">
+  <div class="inner">
+    <span class="qtag b5">1 · Draw it</span>
+    <h2>The picture to draw</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;A request arrives; what matters is the prefix it shares with earlier requests.&quot;, &quot;The router asks a prefix index (built from the engines&#x27; KV-cache events) which replica or tier already holds that prefix, and sends the request there.&quot;, &quot;KV blocks live in a hierarchy. Finished blocks are copied from GPU memory to pinned CPU memory and loaded back on a hit, instead of being recomputed.&quot;, &quot;Colder blocks spill further: local NVMe and shared storage hold far more, but are slower; loads from them pass through CPU memory.&quot;, &quot;With prefill/decode disaggregation, the prefill worker&#x27;s new KV moves to a decode worker over RDMA (NIXL, Mooncake).&quot;, &quot;A prompt too long for one GPU&#x27;s prefill is split across GPUs with context parallelism; each holds part of the KV.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="112.0" y1="145.0" x2="136.0" y2="145.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="2"><line x1="195.0" y1="228.0" x2="195.0" y2="174.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="252.0" y1="135.5" x2="286.0" y2="129.8" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="375.0" y1="67.0" x2="375.0" y2="86.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="375.0" y1="142.0" x2="375.0" y2="161.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="375.0" y1="217.0" x2="375.0" y2="236.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="572.5" y1="67.0" x2="572.5" y2="101.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="100" height="50" rx="10"/><text class="dg-text" x="60.0" y="143.0" text-anchor="middle">Request</text><text class="dg-sub" x="60.0" y="159.0" text-anchor="middle">prompt prefix</text></g><g class="dg-node b" data-step="2"><rect x="140" y="120" width="110" height="50" rx="10"/><text class="dg-text" x="195.0" y="143.0" text-anchor="middle">Router</text><text class="dg-sub" x="195.0" y="159.0" text-anchor="middle">where is my prefix?</text></g><g class="dg-node b" data-step="2"><rect x="140" y="230" width="110" height="56" rx="10"/><text class="dg-text" x="195.0" y="256.0" text-anchor="middle">Prefix index</text><text class="dg-sub" x="195.0" y="272.0" text-anchor="middle">KV events from engines</text></g><g class="dg-node a" data-step="3"><rect x="290" y="15" width="170" height="50" rx="10"/><text class="dg-text" x="375.0" y="38.0" text-anchor="middle">GPU memory</text><text class="dg-sub" x="375.0" y="54.0" text-anchor="middle">hot blocks · 3,350 GB/s</text></g><g class="dg-node c" data-step="3"><rect x="290" y="90" width="170" height="50" rx="10"/><text class="dg-text" x="375.0" y="113.0" text-anchor="middle">CPU memory</text><text class="dg-sub" x="375.0" y="129.0" text-anchor="middle">PCIe Gen5 · 64 GB/s</text></g><g class="dg-node c" data-step="4"><rect x="290" y="165" width="170" height="50" rx="10"/><text class="dg-text" x="375.0" y="188.0" text-anchor="middle">Local NVMe SSD</text><text class="dg-sub" x="375.0" y="204.0" text-anchor="middle">about 7 GB/s</text></g><g class="dg-node e" data-step="4"><rect x="290" y="240" width="170" height="50" rx="10"/><text class="dg-text" x="375.0" y="263.0" text-anchor="middle">Shared store</text><text class="dg-sub" x="375.0" y="279.0" text-anchor="middle">over the network · 50 GB/s</text></g><g class="dg-node a" data-step="5"><rect x="495" y="15" width="155" height="50" rx="10"/><text class="dg-text" x="572.5" y="38.0" text-anchor="middle">Prefill worker</text><text class="dg-sub" x="572.5" y="54.0" text-anchor="middle">computes new KV</text></g><g class="dg-node a" data-step="5"><rect x="495" y="105" width="155" height="50" rx="10"/><text class="dg-text" x="572.5" y="128.0" text-anchor="middle">Decode worker</text><text class="dg-sub" x="572.5" y="144.0" text-anchor="middle">receives KV</text></g><g class="dg-node d" data-step="6"><rect x="495" y="200" width="155" height="60" rx="10"/><text class="dg-text" x="572.5" y="228.0" text-anchor="middle">Long prompt</text><text class="dg-sub" x="572.5" y="244.0" text-anchor="middle">split across GPUs (context parallel)</text></g><g data-step="2"><text class="dg-label" x="195.0" y="196.0" text-anchor="middle">locations</text></g><g data-step="3"><text class="dg-label" x="269.0" y="127.7" text-anchor="middle">look up</text></g><g data-step="3"><text class="dg-label" x="375.0" y="71.5" text-anchor="middle">evict / load</text></g><g data-step="5"><text class="dg-label" x="572.5" y="79.0" text-anchor="middle">KV over RDMA (NIXL)</text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How it works">
+  <div class="inner">
+    <span class="qtag b4">2 · How it works</span>
+    <h2>A tiered cache at work <span class="ill">animation</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><div class="seg" id="kvSeg"><button data-v="on" class="on">Offloading on</button><button data-v="off">GPU only</button></div><button class="btn" id="kvNext">next request</button></div><svg id="kvSvg" class="anim-lg" viewBox="0 0 660 300" role="img" aria-label="Prefix blocks moving between GPU, CPU and SSD tiers as requests arrive"></svg><p class="readout" id="kvOut"></p></div>
+
+<p>Each letter is one conversation's prefix. Least recently used blocks move down a tier when the tier above is full; a hit promotes the block back to the GPU. In vLLM v0.31.0 this is the OffloadingConnector: a CPU tier, plus optional filesystem, object-store or peer (NIXL) tiers that always stage through CPU memory.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-numbers" data-chapter="Numbers">
+  <div class="inner">
+    <span class="qtag b6">3 · Numbers to know</span>
+    <h2>Numbers to know <span class="ill">calculator</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">prefix length (K tokens) <input type="range" id="lL" min="1" max="128" step="1" value="32"> <output id="lLo"></output></label><label class="ctl">GPUs per replica (log₂) <input type="range" id="lG" min="0" max="3" step="1" value="3"> <output id="lGo"></output></label><label class="ctl">where the KV is <input type="range" id="lT" min="0" max="2" step="1" value="0"> <output id="lTo"></output></label><label class="ctl">prefill MFU <input type="range" id="lM" min="20" max="70" step="5" value="50"> <output id="lMo"></output></label></div><div class="bars"><div id="lBars"></div></div><p class="readout" id="lOut"></p></div>
+
+<p>Recompute ≈ 2 × 70B × tokens FLOPs (floating-point operations) on H100s at 989 TFLOP (trillion floating-point operations)/s BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats) times the MFU (attention cost ignored, so long prefixes cost even more). Loading divides the KV across the replica's GPUs for CPU and network tiers; a node's SSD is shared. Bandwidths are the H100-system figures from the GPU decks.</p>
+<div class="grid2">
+      <div class="card a"><h3>KV per token</h3><p>Llama-3-70B shape (80 layers, 8 KV heads × 128, BF16): 320 KiB. A 32K-token conversation: about 10.7 GB.</p></div>
+      <div class="card c"><h3>Production hit rates</h3><p>DeepSeek: 56.3% of 608B input tokens in one day hit its on-disk KV cache. Mooncake (Kimi): 75% more requests handled on real workloads.</p></div>
+      <div class="card b"><h3>Multi-turn reuse</h3><p>CachedAttention: up to 87% lower time to first token and 70% lower cost by keeping conversations' KV in host memory and disk. LMCache with vLLM: up to 15× throughput.</p></div>
+      <div class="card e"><h3>Million-token prefill</h3><p>Context parallelism: 1M tokens of Llama 3 405B prefilled in 77 s on 128 H100s (16 nodes), 93% parallel efficiency; 128K in 3.8 s.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b2">4 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Choice</th>
+<th>Gains</th>
+<th>Costs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU-only prefix cache</td>
+<td>fastest hits; no extra system</td>
+<td>only the GPU memory left after weights; evicted prefixes are recomputed</td>
+</tr>
+<tr>
+<td>CPU offload</td>
+<td>adds host memory as cache capacity; copies overlap with compute</td>
+<td>uses host memory and PCIe (Peripheral Component Interconnect Express, the standard expansion bus) bandwidth; another layer to run</td>
+</tr>
+<tr>
+<td>SSD or shared store</td>
+<td>huge capacity; survives restarts; shared across replicas</td>
+<td>slower loads (staged through CPU); can lose to recompute on short prefixes</td>
+</tr>
+<tr>
+<td>Prefix-aware routing</td>
+<td>hits without moving data</td>
+<td>load imbalance (hot prefixes); needs a prefix index or hashing</td>
+</tr>
+<tr>
+<td>Prefill/decode disaggregation with KV transfer</td>
+<td>prefill and decode tuned separately; steadier inter-token latency</td>
+<td>KV transfer over RDMA every request; vLLM docs: does not improve throughput by itself</td>
+</tr>
+<tr>
+<td>Context parallelism for long prompts</td>
+<td>near-linear prefill speed-up on long prompts</td>
+<td>K/V exchange between GPUs; only worth it for very long prompts</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-follow" data-chapter="Follow-ups">
+  <div class="inner">
+    <span class="qtag b3">5 · Follow-ups</span>
+    <h2>Follow-ups</h2>
+    <hr>
+<div class="quiz">
+      <p class="qq"><span class="lvl lvl-basic">Basic</span> Why is loading cached KV faster than recomputing it?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Recomputing a prefix costs about 2 × parameters FLOPs per token; loading costs only its KV bytes. For a 70B model, 32K tokens is 10.7 GB of KV: tens of milliseconds over PCIe split across 8 GPUs, versus about a second of 8-GPU compute.</div>
+    </div>
+<div class="quiz">
+      <p class="qq"><span class="lvl lvl-basic">Basic</span> What goes wrong with round-robin load balancing here?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">A conversation's turns land on different replicas, each without the previous turn's cache, so every turn recomputes its history. Route by prefix or session instead (vLLM Router deck).</div>
+    </div>
+<div class="quiz">
+      <p class="qq"><span class="lvl lvl-deeper">Deeper</span> When is SSD offload not worth it?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">When loading takes longer than recomputing: short prefixes, a single drive shared by a whole node (about 7 GB/s), or wide tensor parallelism that makes recompute fast. Measure both; vLLM lets a request cap loads with max_load_tokens.</div>
+    </div>
+<div class="quiz">
+      <p class="qq"><span class="lvl lvl-deeper">Deeper</span> How does KV move from a prefill worker to a decode worker?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Through a KV connector: vLLM's NixlConnector uses NIXL (UCX (Unified Communication X) over RDMA, or GPUDirect Storage) for asynchronous GPU-to-GPU transfer; Mooncake and LMCache are alternatives. The decode worker reads the blocks from the prefill worker by RDMA (a pull) while the prefill worker holds them under a lease; for multi-turn chat, vLLM can also pull earlier turns' KV back from decode to prefill.</div>
+    </div>
+<div class="quiz">
+      <p class="qq"><span class="lvl lvl-expert">Expert</span> How does a router know where each prefix lives?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Engines publish KV-cache events (blocks stored and removed); llm-d builds a global index from them for precise prefix-aware routing. The vLLM Router instead keeps an approximate radix tree of prompts it sent to each worker. A stale index only costs a miss and a recompute.</div>
+    </div>
+<div class="quiz">
+      <p class="qq"><span class="lvl lvl-expert">Expert</span> A user sends a 1M-token prompt. What changes?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">One GPU cannot prefill it in time, so split the sequence across GPUs with context parallelism (ring attention passing K/V or Q). Meta prefilled 1M tokens of Llama 3 405B in 77 s on 128 H100s; the resulting KV is spread across those GPUs for decoding.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-wrong" data-chapter="Wrong answers">
+  <div class="inner">
+    <span class="qtag b1">6 · Wrong answers to avoid</span>
+    <h2>Wrong answers to avoid</h2>
+    <hr>
+<div class="quiz myth">
+      <p class="qq">"Prefill/decode disaggregation increases throughput."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">vLLM's docs state it does not improve throughput; it lets you tune time to first token and inter-token latency separately and controls tail latency.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Keep the whole cache in GPU memory; it is the fastest."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">GPU memory is the scarcest resource. LMCache reports users' stored KV growing far beyond GPU capacity; offloading turns misses into cheap loads.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Any cache tier beats recomputing."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">A slow tier can be slower than recomputation for short prefixes or highly parallel replicas; check with the bandwidth arithmetic.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Prefix caching only helps identical requests."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Blocks are matched by prefix, so any shared start (system prompt, documents, earlier turns) is reused even when the rest differs.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-system" data-chapter="In a system">
+  <div class="inner">
+    <span class="qtag b9">7 · In a system</span>
+    <h2>In a real system</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>DeepSeek</h3><p>On-disk KV cache across the service: 342B of 608B input tokens in a day were cache hits, priced lower for users ($0.14 vs $0.55 per million tokens for R1).</p></div>
+      <div class="card c"><h3>Kimi (Mooncake)</h3><p>Separate prefill and decode clusters around a disaggregated KV cache pool built from CPU memory, DRAM (dynamic random-access memory) and SSD across the cluster.</p></div>
+      <div class="card b"><h3>vLLM v0.31.0</h3><p>OffloadingConnector tiers (CPU, filesystem, object store, peer over NIXL); NixlConnector, MooncakeConnector, LMCacheConnectorV1 for transfer and sharing.</p></div>
+      <div class="card e"><h3>Kubernetes fleets</h3><p>llm-d: prefix-aware routing from KV events and tiered offloading (13.9× throughput vs GPU-only at high concurrency on H100).</p></div>
+    </div>
+<p>See also: <a href="../05-paged-attention/index.html">PagedAttention and prefix caching</a> (one server) and the <a href="../../vllm/10-router/index.html">vLLM Router</a>.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-practice" data-chapter="Practice">
+  <div class="inner">
+    <span class="qtag b8">8 · Practice</span>
+    <h2>Practice</h2>
+    <hr>
+<ol>
+<li><strong>Explain in 60 seconds</strong> why offloading KV to CPU memory raises throughput for multi-turn chat.
+            2. <strong>Draw</strong> the four tiers with their bandwidths, and where a router and a prefix index sit.
+            3. <strong>Compute</strong> the KV size of a 16K-token prefix for a 70B model with 320 KiB per token: 16,384 × 327,680 B ≈ <strong>5.4 GB</strong>.</li>
+</ol>
+<div class="quiz">
+      <p class="qq">A 32K-token prefix of a 70B model is cached in CPU memory; the replica has 8 GPUs, each loading its share over PCIe Gen5 (64 GB/s). Roughly how long does the load take?</p>
+      <div class="opts">
+      <button>A. About 2 ms</button>
+      <button data-ok>B. About 20 ms</button>
+      <button>C. About 2 s</button>
+      <button>D. About 20 s</button>
+      </div>
+      <div class="why"><strong>B.</strong> 10.7 GB ÷ 8 GPUs ≈ 1.34 GB each; 1.34 GB ÷ 64 GB/s ≈ 21 ms, versus about a second to recompute.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">Which tier can a GPU read KV from directly in vLLM's OffloadingConnector?</p>
+      <div class="opts">
+      <button>A. Any tier</button>
+      <button data-ok>B. Only the CPU primary tier; secondary tiers stage through it</button>
+      <button>C. Only SSD</button>
+      <button>D. None: KV is always recomputed</button>
+      </div>
+      <div class="why"><strong>B.</strong> Secondary tiers (filesystem, object store, peers) cannot read or write GPU memory directly; transfers go through pinned CPU memory.</div>
+    </div>
+<p class="start-hint">Next: <a href="../10-putting-it-together/index.html">10 · Putting it together →</a> · Previous: <a href="../12-moe-serving/index.html">← 12 · Serving large MoE models</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/features/kv_offloading_usage.md" target="_blank" rel="noopener">KV Offloading Usage Guide (vLLM documentation, v0.31.0)</a>
+        <div class="meta">vLLM project · vLLM docs 2026</div>
+        <p>OffloadingConnector: completed KV blocks copied to pinned CPU memory (DMA (direct memory access), asynchronous) and optional secondary tiers (filesystem, object store, P2P over NIXL) staged through CPU; hits promoted back to GPU.</p><div class="num">Remember: per-request caps: max_load_tokens, max_offload_tokens</div></div>
+      <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/features/disagg_prefill.md" target="_blank" rel="noopener">Disaggregated Prefilling (vLLM documentation, v0.31.0)</a>
+        <div class="meta">vLLM project · vLLM docs 2026</div>
+        <p>Separate prefill and decode instances to tune TTFT (time to first token) and ITL (inter-token latency) independently and control tail ITL; connectors include NIXL, Mooncake, LMCache, Offloading, FlexKV and Multi.</p><div class="num">Remember: does not improve throughput by itself</div></div>
+      <div class="paper-item"><a href="https://github.com/ai-dynamo/nixl" target="_blank" rel="noopener">NVIDIA Inference Xfer Library (NIXL)</a>
+        <div class="meta">NVIDIA (ai-dynamo) · GitHub 2026</div>
+        <p>Point-to-point transfer library for inference frameworks such as Dynamo and vLLM, abstracting memory types (GPU, CPU, storage) and backends (UCX, GPUDirect Storage).</p><div class="num">Remember: v1.5.0</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.00079" target="_blank" rel="noopener">Mooncake: A KVCache-centric Disaggregated Architecture for LLM (large language model) Serving</a>
+        <div class="meta">Qin et al. · arXiv 2024</div>
+        <p>Kimi's serving platform: separate prefill and decode clusters with a disaggregated KV cache pool built from CPU, DRAM and SSD resources.</p><div class="num">Remember: 75% more requests on real workloads</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2510.09665" target="_blank" rel="noopener">LMCache: An Efficient KV Cache Layer for Enterprise-Scale LLM Inference</a>
+        <div class="meta">Liu et al. · arXiv 2025</div>
+        <p>Stores KV caches from vLLM and SGLang outside GPU memory and shares them across engines and queries, for offloading and prefill/decode transfer; batched movement, pipelining, a connector layer and a control API (application programming interface).</p><div class="num">Remember: up to 15× throughput with vLLM</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2403.19708" target="_blank" rel="noopener">Cost-Efficient Large Language Model Serving for Multi-turn Conversations with CachedAttention</a>
+        <div class="meta">Gao et al. · arXiv 2024</div>
+        <p>Hierarchical KV caching across HBM (high-bandwidth memory), host memory and disk for multi-turn chat, with layer-wise pre-loading, asynchronous saving and scheduler-aware eviction.</p><div class="num">Remember: TTFT −87%, prefill throughput 7.8×, cost −70% (up to)</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2411.01783" target="_blank" rel="noopener">Context Parallelism for Scalable Million-Token Inference</a>
+        <div class="meta">Yang et al. (Meta) · MLSys 2025</div>
+        <p>Ring-attention variants (pass-KV, pass-Q) for long-context prefill and decode; near-linear scaling to 128 H100s over RDMA or TCP (Transmission Control Protocol).</p><div class="num">Remember: 1M-token prefill of Llama 3 405B in 77 s (93% parallel efficiency); 128K in 3.8 s</div></div>
+      <div class="paper-item"><a href="https://github.com/deepseek-ai/open-infra-index/blob/main/202502OpenSourceWeek/day_6_one_more_thing_deepseekV3R1_inference_system_overview.md" target="_blank" rel="noopener">DeepSeek-V3/R1 Inference System Overview (Open Source Week, day 6)</a>
+        <div class="meta">DeepSeek-AI · GitHub (open-infra-index) 2025</div>
+        <p>Prefill/decode disaggregation with cross-node EP (prefill EP32 on 4 nodes, decode EP144 on 18 nodes, 32 redundant experts), dual-batch overlap, prefill, decode and expert load balancers; H800 fleet statistics.</p><div class="num">Remember: ~73.7K input tok/s per node (prefill), ~14.8K output tok/s per node (decode); 56.3% of input tokens hit the on-disk KV cache; peak 278 nodes</div></div>
+      <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/deployment/integrations/llm-d.md" target="_blank" rel="noopener">llm-d (vLLM documentation integration page, v0.31.0)</a>
+        <div class="meta">vLLM project · vLLM docs 2026</div>
+        <p>Kubernetes-native distributed inference over vLLM: precise prefix-aware routing from KV-cache events, tiered KV offloading, P/D disaggregation, wide expert parallelism, SLO-aware (SLO = service-level objective) autoscaling; a CNCF Sandbox project.</p><div class="num">Remember: 3× output throughput and 2× faster TTFT from prefix-aware routing vs round robin (Llama 3.1 70B, MI300X)</div></div>
+      <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/design/prefix_caching.html" target="_blank" rel="noopener">Automatic Prefix Caching (design)</a>
+        <div class="meta">vLLM documentation · docs.vllm.ai 2026</div>
+        <p>Each KV block is hashed with its tokens and the prefix before it; blocks are reference-counted, freed blocks are evicted in LRU (least recently used) order, and cache hits skip prefill.</p></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  // ---- How it works: a tiered KV cache serving a stream of conversations
+  const s = document.getElementById('kvSvg');
+  const TIERS = [['GPU', 3, 'var(--a)', 0], ['CPU', 5, 'var(--c)', 1], ['SSD', 8, 'var(--b)', 4]];   // name, slots, colour, load cost
+  const SEQ = ['A', 'B', 'C', 'D', 'A', 'E', 'B', 'F', 'C', 'A', 'G', 'D'];
+  let off = true, step = 0, last = 0, log = [];
+  function run(n) {   // replay the first n requests from scratch; return tiers, outcome of the last one
+    const t = [[], [], []]; let out = null; const cost = { hit: 0, miss: 0 };
+    for (let k = 0; k < n; k++) {
+      const x = SEQ[k]; let found = -1;
+      for (let i = 0; i < 3; i++) { const j = t[i].indexOf(x); if (j >= 0) { found = i; t[i].splice(j, 1); break; } }
+      if (found > 0 && !off) found = -1;
+      t[0].unshift(x);
+      for (let i = 0; i < 3; i++) while (t[i].length > TIERS[i][1]) { const v = t[i].pop(); if (off && i < 2) t[i + 1].unshift(v); }
+      out = { x, found }; found >= 0 ? cost.hit++ : cost.miss++;
+    }
+    return { t, out, cost };
+  }
+  function draw() {
+    const { t, out, cost } = run(step); clear(s);
+    TIERS.forEach(([name, cap, col], i) => {
+      const y = 40 + i * 78;
+      svg('text', { x: 14, y: y + 30, class: 't', style: 'font-weight:700', text: name }, s);
+      for (let k = 0; k < cap; k++) {
+        const v = (t[i] || [])[k], x = 70 + k * 64;
+        svg('rect', { x, y, width: 56, height: 46, rx: 8, style: `fill:${v ? col : 'var(--panel-2)'};opacity:${v ? 0.85 : 1};stroke:${out && v === out.x && i === 0 ? 'var(--ink)' : 'none'};stroke-width:2.5` }, s);
+        if (v) svg('text', { x: x + 28, y: y + 29, 'text-anchor': 'middle', class: 't', style: 'fill:#fff;font-weight:700', text: v }, s);
+      }
+      if (i > 0 && !off) svg('text', { x: 72, y: y + 29, class: 't', style: 'fill:var(--muted)', text: 'not used: evicted blocks are dropped' }, s);
+    });
+    svg('text', { x: 14, y: 22, class: 't', text: 'requests: ' + SEQ.map((x, k) => (k === step - 1 ? '[' + x + ']' : x)).join(' ') }, s);
+    const msg = !out ? 'press "next request"' : out.found === 0 ? `prefix ${out.x}: hit in GPU memory, no work` : out.found > 0 ? `prefix ${out.x}: hit in ${TIERS[out.found][0]}, loaded back to the GPU` : `prefix ${out.x}: miss, the whole prefix is recomputed`;
+    svg('text', { x: 14, y: 285, class: 't', style: `font-weight:700;fill:${out && out.found < 0 ? 'var(--d)' : 'var(--e)'}`, text: msg }, s);
+    document.getElementById('kvOut').innerHTML = `${cost.hit} hits, ${cost.miss} recomputes after ${step} requests. ` + (off ? 'Blocks evicted from the GPU drop to CPU memory and then SSD, so returning conversations (A, B, C, D) are loaded instead of recomputed.' : 'Without offloading, anything pushed out of the 3 GPU slots is gone, so returning conversations pay the full prefill again.');
+  }
+  Deck.seg('kvSeg', v => { off = v === 'on'; draw(); });
+  document.getElementById('kvNext').addEventListener('click', () => { step = step >= SEQ.length ? 0 : step + 1; draw(); });
+  Deck.enter('s-how', () => { step = 1; draw(); return Deck.loop(t => { if (t - last > 1.6) { last = t; step = step >= SEQ.length ? 0 : step + 1; draw(); } }); });
+
+  // ---- Numbers: load vs recompute
+  const TIER = [['CPU memory (PCIe Gen5)', 64], ['network store (one 50 GB/s NIC per GPU)', 50], ['local NVMe SSD (shared by the node)', 7]];
+  Deck.bind(['lL', 'lG', 'lT', 'lM'], () => {
+    const L = Deck.val('lL') * 1024, G = Math.pow(2, Deck.val('lG')), [tn, bw] = TIER[Deck.val('lT')], mfu = Deck.val('lM') / 100;
+    Deck.out('lLo', (L / 1024) + 'K'); Deck.out('lGo', G); Deck.out('lTo', tn.split(' (')[0]); Deck.out('lMo', Math.round(mfu * 100) + '%');
+    const kvGB = L * 327680 / 1e9, flops = 2 * 70e9 * L, recompute = flops / (989e12 * mfu * G);
+    const load = Deck.val('lT') === 2 ? kvGB / bw : kvGB / G / bw;
+    Deck.hbars(document.getElementById('lBars'), [
+      { label: 'recompute the prefix', value: recompute, color: 'var(--d)', text: recompute < 1 ? (recompute * 1000).toFixed(0) + ' ms' : recompute.toFixed(2) + ' s' },
+      { label: 'load it from ' + tn.split(' (')[0], value: load, color: load < recompute ? 'var(--e)' : 'var(--b)', text: load < 1 ? (load * 1000).toFixed(0) + ' ms' : load.toFixed(2) + ' s' }], { max: Math.max(recompute, load) * 1.05 });
+    document.getElementById('lOut').innerHTML = `A ${(L / 1024)}K-token prefix of a Llama-3-70B-shaped model has <b>${kvGB.toFixed(1)} GB</b> of KV (320 KiB per token). ` +
+      (load < recompute ? `Loading it is <b>${(recompute / load).toFixed(0)}× faster</b> than recomputing on ${G} GPU${G > 1 ? 's' : ''}.` : `Here recomputing on ${G} GPUs beats loading from one ${tn.split(' (')[0]}: offload to faster tiers or spread the reads.`);
+  });
+})();
+</script>
+</body>
+</html>

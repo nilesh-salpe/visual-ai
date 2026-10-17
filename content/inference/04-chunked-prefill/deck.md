@@ -206,6 +206,6 @@ Answer from memory. If you can't, revisit the slide named in the answer.
 
 <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/06_chunked_prefill.ipynb" target="_blank" rel="noopener">06 · Chunked prefill with a token budget</a> <span style="color:var(--faint)">· 40 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/06_chunked_prefill.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
 
-<p class="start-hint">Next: <a href="../05-paged-attention/index.html">05 · PagedAttention and prefix caching →</a> · Previous: <a href="../03-batching/index.html">← 03</a> · <a href="../index.html">All decks</a></p>
+<p class="start-hint">Next: <a href="../06-speculative-decoding/index.html">06 · Speculative decoding →</a> · Previous: <a href="../03-batching/index.html">← 03 · Continuous batching</a> · <a href="../index.html">All decks</a></p>
 
 <!-- slide id="s-papers" from="papers" -->

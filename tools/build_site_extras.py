@@ -42,8 +42,9 @@ TOPICS = {  # folder: (title, [(stage, [slug, ...]), ...])
                                                   ('Evidence', ['13-why-it-works', '14-experimental-results'])]),
     'tokenization': ('Tokenization for LLMs', [('Why', ['01-why-tokenize']), ('Algorithms', ['02-bpe-from-scratch', '03-byte-level-bpe', '04-wordpiece-unigram', '05-sentencepiece']),
                                                ('Design choices', ['06-many-tokenizations', '07-vocabulary-size']), ('In practice', ['08-tokenizers-in-llms', '09-multilingual-cost', '10-tokenization-quirks'])]),
-    'inference': ('LLM Inference and Serving', [('The workload', ['01-inference-workload']), ('Memory', ['02-kv-cache', '05-paged-attention']), ('Scheduling', ['03-batching', '04-chunked-prefill']),
-                                                ('Speed', ['06-speculative-decoding', '07-quantization', '08-parallelism']), ('The system', ['09-disaggregated-serving', '10-putting-it-together']), ('Output', ['11-decoding'])]),
+    'inference': ('LLM Inference and Serving', [('The workload', ['01-inference-workload', '11-decoding']), ('Memory', ['02-kv-cache', '05-paged-attention']), ('Scheduling', ['03-batching', '04-chunked-prefill']),
+                                                ('Speed', ['06-speculative-decoding', '07-quantization']), ('Splitting a model', ['08-parallelism', '09-disaggregated-serving']),
+                                                ('At scale', ['12-moe-serving', '13-kv-cache-fleet']), ('Together', ['10-putting-it-together'])]),
     'architecture': ('The Modern LLM Architecture', [('Overview', ['01-what-changed']), ('Inside the block', ['02-normalization', '03-rope', '04-swiglu', '05-attention-variants']),
                                                      ('The stack', ['06-decoder-only']), ('Long context', ['07-rope-scaling', '08-sliding-window']),
                                                      ('Efficiency', ['09-flash-attention', '10-mixture-of-experts']), ('Together', ['11-putting-it-together']), ('Next', ['12-beyond-attention'])]),
@@ -149,7 +150,7 @@ def patch_hub(folder):
     f = os.path.join(REPO, folder, 'index.html')
     s = open(f).read()
     s = re.sub(r'<!--x:map-->.*?<!--/x:map-->\n?', '', s, flags=re.S)
-    i = s.index('<div class="hub-grid">')
+    i = s.index('<h2 class="hub-part"') if '<h2 class="hub-part"' in s else s.index('<div class="hub-grid">')   # hubs split into parts: map goes above Part 1
     i = s.rindex('\n', 0, i) + 1
     s = s[:i] + hub_block(folder) + s[i:]
     open(f, 'w').write(s)

@@ -11,7 +11,7 @@
 <body>
 <div class="hub">
   <a class="brand" href="index.html">← LLM Inference and Serving</a>
-  <div class="label" style="margin-top:28px">Reading list · 29 papers and docs</div>
+  <div class="label" style="margin-top:28px">Reading list · 46 papers and docs</div>
   <h1>LLM Inference and Serving: key papers</h1>
   <p class="lede">Every paper cited on the decks' Key papers slides, in the order the guide introduces them. Each entry links to the paper and to the decks that use it.</p>
   <div class="papers" style="margin-top:18px">
@@ -24,6 +24,36 @@
     <div class="paper-item"><a href="https://arxiv.org/abs/2311.18677" target="_blank" rel="noopener">Splitwise: Efficient Generative LLM Inference Using Phase Splitting</a>
       <div class="meta">Patel et al. · ISCA 2024 · cited in <a href="01-inference-workload/index.html" style="font-weight:500;color:var(--a)">The inference workload</a>, <a href="09-disaggregated-serving/index.html" style="font-weight:500;color:var(--a)">Disaggregated serving</a></div>
       <p>Characterizes prompt computation as compute-intensive and token generation as memory-intensive, and splits them onto separate machines, possibly of different GPU types.</p><div class="num">Remember: 1.4× throughput at 20% lower cost, or 2.35× throughput at the same cost and power</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1904.09751" target="_blank" rel="noopener">The Curious Case of Neural Text Degeneration</a>
+      <div class="meta">Holtzman et al. · ICLR 2020 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Maximizing likelihood when decoding gives bland, repetitive text; nucleus (top-p) sampling samples from the smallest set of tokens holding probability p.</p></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1805.04833" target="_blank" rel="noopener">Hierarchical Neural Story Generation</a>
+      <div class="meta">Fan, Lewis, Dauphin · ACL 2018 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Story generation with top-k random sampling: at each step sample from the k most likely tokens.</p><div class="num">Remember: k = 10</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/1909.05858" target="_blank" rel="noopener">CTRL: A Conditional Transformer Language Model for Controllable Generation</a>
+      <div class="meta">Keskar et al. · arXiv (Salesforce) 2019 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Introduced penalized sampling (the repetition penalty): discount the scores of previously generated tokens.</p><div class="num">Remember: greedy decoding with θ ≈ 1.2</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.01082" target="_blank" rel="noopener">Turning Up the Heat: Min-p Sampling for Creative and Coherent LLM (large language model) Outputs</a>
+      <div class="meta">Nguyen et al. · ICLR 2025 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Min-p keeps tokens whose probability is at least a fraction of the top token's; reports better quality and diversity at high temperature.</p><div class="num">Remember: threshold = min_p × p_max</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2506.13681" target="_blank" rel="noopener">Min-p, Max Exaggeration: A Critical Analysis of Min-p Sampling in Language Models</a>
+      <div class="meta">Schaeffer et al. · arXiv 2025 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Re-analysis of the min-p paper's human, benchmark and LLM-judge evidence: min-p does not outperform baseline samplers when hyperparameters are controlled.</p><div class="num">Remember: no improvement over top-p, top-k or basic sampling</div></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/vllm/v1/sample/sampler.py" target="_blank" rel="noopener">vLLM SamplingParams and Sampler (v0.31.0 source)</a>
+      <div class="meta">vLLM project · GitHub 2026 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Sampler order: allowed tokens, bad words, logit bias and min tokens, penalties (repetition, frequency, presence), temperature, min-p, top-k/top-p, sample; temperature below 1e-5 is greedy.</p><div class="num">Remember: defaults: temperature 1.0, top_p 1.0, top_k 0, min_p 0.0, repetition_penalty 1.0</div></div>
+    <div class="paper-item"><a href="https://platform.claude.com/docs/en/api/messages/create" target="_blank" rel="noopener">Messages API reference: temperature, top_p, top_k (Claude documentation)</a>
+      <div class="meta">Anthropic · Claude platform docs 2026 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Sampling parameters are deprecated; models released after Claude Opus 4.6 reject non-default temperature, any top_k and top_p below 0.99. Even temperature 0.0 is not fully deterministic.</p><div class="num">Remember: temperature default 1.0, range 0–1</div></div>
+    <div class="paper-item"><a href="https://developers.openai.com/api/docs/guides/latest-model" target="_blank" rel="noopener">Using the latest model (OpenAI API documentation)</a>
+      <div class="meta">OpenAI · OpenAI developer docs 2026 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>With reasoning effort other than none, remove temperature, top_p and top_logprobs from requests.</p><div class="num">Remember: unsupported with reasoning: temperature, top_p</div></div>
+    <div class="paper-item"><a href="https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/" target="_blank" rel="noopener">Defeating Nondeterminism in LLM Inference</a>
+      <div class="meta">He and Thinking Machines Lab · Thinking Machines (Connectionism) 2025 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Temperature-0 outputs vary because kernels are not batch-invariant (floating-point reduction order depends on batch size); batch-invariant kernels make completions identical.</p><div class="num">Remember: 1,000 completions at T = 0: 80 unique; first divergence at token 103; all identical with batch-invariant kernels</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2411.15100" target="_blank" rel="noopener">XGrammar: Flexible and Efficient Structured Generation Engine for Large Language Models</a>
+      <div class="meta">Dong et al. · MLSys 2025 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
+      <p>Constrained decoding with context-free grammars: context-independent tokens are prechecked into masks, only context-dependent tokens are checked at runtime with a persistent stack, and mask computation overlaps GPU (graphics processing unit) work.</p><div class="num">Remember: up to 100× faster grammar execution; near-zero overhead end to end</div></div>
     <div class="paper-item"><a href="https://arxiv.org/abs/1911.02150" target="_blank" rel="noopener">Fast Transformer Decoding: One Write-Head is All You Need</a>
       <div class="meta">Shazeer · arXiv 2019 · cited in <a href="02-kv-cache/index.html" style="font-weight:500;color:var(--a)">KV cache</a></div>
       <p>Introduces multi-query attention: all heads share one key/value head, cutting the memory bandwidth of incremental decoding with only minor quality loss.</p><div class="num">Remember: 1 K/V head instead of h</div></div>
@@ -72,36 +102,57 @@
     <div class="paper-item"><a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener">Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism</a>
       <div class="meta">Shoeybi et al. · arXiv 2019 · cited in <a href="08-parallelism/index.html" style="font-weight:500;color:var(--a)">Parallelism for inference</a></div>
       <p>Intra-layer (tensor) model parallelism that splits each attention and MLP block across GPUs with only a few all-reduce operations, implemented in plain PyTorch.</p><div class="num">Remember: 2 all-reduces per transformer block in the forward pass; 76% scaling efficiency on 512 GPUs</div></div>
-    <div class="paper-item"><a href="https://arxiv.org/abs/1904.09751" target="_blank" rel="noopener">The Curious Case of Neural Text Degeneration</a>
-      <div class="meta">Holtzman et al. · ICLR 2020 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
-      <p>Maximizing likelihood when decoding gives bland, repetitive text; nucleus (top-p) sampling samples from the smallest set of tokens holding probability p.</p></div>
-    <div class="paper-item"><a href="https://arxiv.org/abs/1805.04833" target="_blank" rel="noopener">Hierarchical Neural Story Generation</a>
-      <div class="meta">Fan, Lewis, Dauphin · ACL 2018 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
-      <p>Story generation with top-k random sampling: at each step sample from the k most likely tokens.</p><div class="num">Remember: k = 10</div></div>
-    <div class="paper-item"><a href="https://arxiv.org/abs/1909.05858" target="_blank" rel="noopener">CTRL: A Conditional Transformer Language Model for Controllable Generation</a>
-      <div class="meta">Keskar et al. · arXiv (Salesforce) 2019 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
-      <p>Introduced penalized sampling (the repetition penalty): discount the scores of previously generated tokens.</p><div class="num">Remember: greedy decoding with θ ≈ 1.2</div></div>
-    <div class="paper-item"><a href="https://arxiv.org/abs/2407.01082" target="_blank" rel="noopener">Turning Up the Heat: Min-p Sampling for Creative and Coherent LLM (large language model) Outputs</a>
-      <div class="meta">Nguyen et al. · ICLR 2025 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
-      <p>Min-p keeps tokens whose probability is at least a fraction of the top token's; reports better quality and diversity at high temperature.</p><div class="num">Remember: threshold = min_p × p_max</div></div>
-    <div class="paper-item"><a href="https://arxiv.org/abs/2506.13681" target="_blank" rel="noopener">Min-p, Max Exaggeration: A Critical Analysis of Min-p Sampling in Language Models</a>
-      <div class="meta">Schaeffer et al. · arXiv 2025 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
-      <p>Re-analysis of the min-p paper's human, benchmark and LLM-judge evidence: min-p does not outperform baseline samplers when hyperparameters are controlled.</p><div class="num">Remember: no improvement over top-p, top-k or basic sampling</div></div>
-    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/vllm/v1/sample/sampler.py" target="_blank" rel="noopener">vLLM SamplingParams and Sampler (v0.31.0 source)</a>
-      <div class="meta">vLLM project · GitHub 2026 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
-      <p>Sampler order: allowed tokens, bad words, logit bias and min tokens, penalties (repetition, frequency, presence), temperature, min-p, top-k/top-p, sample; temperature below 1e-5 is greedy.</p><div class="num">Remember: defaults: temperature 1.0, top_p 1.0, top_k 0, min_p 0.0, repetition_penalty 1.0</div></div>
-    <div class="paper-item"><a href="https://platform.claude.com/docs/en/api/messages/create" target="_blank" rel="noopener">Messages API reference: temperature, top_p, top_k (Claude documentation)</a>
-      <div class="meta">Anthropic · Claude platform docs 2026 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
-      <p>Sampling parameters are deprecated; models released after Claude Opus 4.6 reject non-default temperature, any top_k and top_p below 0.99. Even temperature 0.0 is not fully deterministic.</p><div class="num">Remember: temperature default 1.0, range 0–1</div></div>
-    <div class="paper-item"><a href="https://developers.openai.com/api/docs/guides/latest-model" target="_blank" rel="noopener">Using the latest model (OpenAI API documentation)</a>
-      <div class="meta">OpenAI · OpenAI developer docs 2026 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
-      <p>With reasoning effort other than none, remove temperature, top_p and top_logprobs from requests.</p><div class="num">Remember: unsupported with reasoning: temperature, top_p</div></div>
-    <div class="paper-item"><a href="https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/" target="_blank" rel="noopener">Defeating Nondeterminism in LLM Inference</a>
-      <div class="meta">He and Thinking Machines Lab · Thinking Machines (Connectionism) 2025 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
-      <p>Temperature-0 outputs vary because kernels are not batch-invariant (floating-point reduction order depends on batch size); batch-invariant kernels make completions identical.</p><div class="num">Remember: 1,000 completions at T = 0: 80 unique; first divergence at token 103; all identical with batch-invariant kernels</div></div>
-    <div class="paper-item"><a href="https://arxiv.org/abs/2411.15100" target="_blank" rel="noopener">XGrammar: Flexible and Efficient Structured Generation Engine for Large Language Models</a>
-      <div class="meta">Dong et al. · MLSys 2025 · cited in <a href="11-decoding/index.html" style="font-weight:500;color:var(--a)">Decoding strategies</a></div>
-      <p>Constrained decoding with context-free grammars: context-independent tokens are prechecked into masks, only context-dependent tokens are checked at runtime with a persistent stack, and mask computation overlaps GPU (graphics processing unit) work.</p><div class="num">Remember: up to 100× faster grammar execution; near-zero overhead end to end</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2412.19437" target="_blank" rel="noopener">DeepSeek-V3 Technical Report</a>
+      <div class="meta">DeepSeek-AI · arXiv 2024 · cited in <a href="12-moe-serving/index.html" style="font-weight:500;color:var(--a)">Serving large MoE models</a></div>
+      <p>671B-parameter MoE trained with FP8 mixed precision (fine-grained 1×128 and 128×128 scaling), DualPipe pipeline scheduling and 64-way expert parallelism with cross-node all-to-all kernels.</p><div class="num">Remember: 2.788M H800 GPU-hours; no irrecoverable loss spikes or rollbacks</div></div>
+    <div class="paper-item"><a href="https://github.com/deepseek-ai/open-infra-index/blob/main/202502OpenSourceWeek/day_6_one_more_thing_deepseekV3R1_inference_system_overview.md" target="_blank" rel="noopener">DeepSeek-V3/R1 Inference System Overview (Open Source Week, day 6)</a>
+      <div class="meta">DeepSeek-AI · GitHub (open-infra-index) 2025 · cited in <a href="12-moe-serving/index.html" style="font-weight:500;color:var(--a)">Serving large MoE models</a>, <a href="13-kv-cache-fleet/index.html" style="font-weight:500;color:var(--a)">The KV cache across the fleet</a></div>
+      <p>Prefill/decode disaggregation with cross-node EP (prefill EP32 on 4 nodes, decode EP144 on 18 nodes, 32 redundant experts), dual-batch overlap, prefill, decode and expert load balancers; H800 fleet statistics.</p><div class="num">Remember: ~73.7K input tok/s per node (prefill), ~14.8K output tok/s per node (decode); 56.3% of input tokens hit the on-disk KV cache; peak 278 nodes</div></div>
+    <div class="paper-item"><a href="https://github.com/deepseek-ai/DeepEP" target="_blank" rel="noopener">DeepEP: an efficient expert-parallel communication library</a>
+      <div class="meta">DeepSeek-AI · GitHub 2026 · cited in <a href="12-moe-serving/index.html" style="font-weight:500;color:var(--a)">Serving large MoE models</a></div>
+      <p>High-throughput and low-latency all-to-all GPU kernels for MoE dispatch and combine (FP8 dispatch), unified in one EPBuffer API (application programming interface) in V2; weight exchange for redundant experts.</p><div class="num">Remember: NVLink within nodes, RDMA across nodes</div></div>
+    <div class="paper-item"><a href="https://github.com/deepseek-ai/EPLB" target="_blank" rel="noopener">Expert Parallelism Load Balancer (EPLB)</a>
+      <div class="meta">DeepSeek-AI · GitHub 2025 · cited in <a href="12-moe-serving/index.html" style="font-weight:500;color:var(--a)">Serving large MoE models</a></div>
+      <p>Redundant experts plus heuristic packing onto GPUs; hierarchical policy (groups to nodes, then GPUs) for prefill, global policy for decode.</p><div class="num">Remember: replicate heavy experts, balance per-GPU load</div></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/serving/expert_parallel_deployment.md" target="_blank" rel="noopener">Expert Parallel Deployment (vLLM documentation, v0.31.0)</a>
+      <div class="meta">vLLM project · vLLM docs 2026 · cited in <a href="12-moe-serving/index.html" style="font-weight:500;color:var(--a)">Serving large MoE models</a></div>
+      <p>EP size = TP × DP; attention replicated (TP 1) or sharded; all2all backends allgather_reducescatter, deepep_high_throughput (prefill), deepep_low_latency (decode, CUDA graphs); EPLB.</p><div class="num">Remember: EPLB defaults: window 1,000 steps, rebalance every 3,000 steps</div></div>
+    <div class="paper-item"><a href="https://lmsys.org/blog/2025-05-05-large-scale-ep/" target="_blank" rel="noopener">Deploying DeepSeek with PD (prefill/decode) Disaggregation and Large-Scale Expert Parallelism on 96 H100 GPUs</a>
+      <div class="meta">SGLang Team · LMSYS blog 2025 · cited in <a href="12-moe-serving/index.html" style="font-weight:500;color:var(--a)">Serving large MoE models</a></div>
+      <p>DP attention, DeepEP, DeepGEMM, two-batch overlap and EPLB with prefill/decode disaggregation on 12 nodes of 8 H100s.</p><div class="num">Remember: 52.3K input / 22.3K output tok/s per node; decode EP72 5.2× a TP16 baseline</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2006.16668" target="_blank" rel="noopener">GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding</a>
+      <div class="meta">Lepikhin et al. · ICLR 2021 · cited in <a href="12-moe-serving/index.html" style="font-weight:500;color:var(--a)">Serving large MoE models</a></div>
+      <p>Expert parallelism with all-to-all dispatch and automatic sharding annotations for a sparsely gated MoE translation model.</p><div class="num">Remember: 600B+ parameters on 2,048 TPU (tensor processing unit) v3 in 4 days</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2401.04088" target="_blank" rel="noopener">Mixtral of Experts</a>
+      <div class="meta">Jiang et al. · arXiv 2024 · cited in <a href="12-moe-serving/index.html" style="font-weight:500;color:var(--a)">Serving large MoE models</a></div>
+      <p>A sparse MoE with 8 SwiGLU (Swish-gated linear unit) experts per layer and top-2 routing on the Mistral 7B architecture, with dense 32K context.</p><div class="num">Remember: 47B total, 13B active parameters</div></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/features/kv_offloading_usage.md" target="_blank" rel="noopener">KV Offloading Usage Guide (vLLM documentation, v0.31.0)</a>
+      <div class="meta">vLLM project · vLLM docs 2026 · cited in <a href="13-kv-cache-fleet/index.html" style="font-weight:500;color:var(--a)">The KV cache across the fleet</a></div>
+      <p>OffloadingConnector: completed KV blocks copied to pinned CPU memory (DMA (direct memory access), asynchronous) and optional secondary tiers (filesystem, object store, P2P over NIXL) staged through CPU; hits promoted back to GPU.</p><div class="num">Remember: per-request caps: max_load_tokens, max_offload_tokens</div></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/features/disagg_prefill.md" target="_blank" rel="noopener">Disaggregated Prefilling (vLLM documentation, v0.31.0)</a>
+      <div class="meta">vLLM project · vLLM docs 2026 · cited in <a href="13-kv-cache-fleet/index.html" style="font-weight:500;color:var(--a)">The KV cache across the fleet</a></div>
+      <p>Separate prefill and decode instances to tune TTFT (time to first token) and ITL (inter-token latency) independently and control tail ITL; connectors include NIXL, Mooncake, LMCache, Offloading, FlexKV and Multi.</p><div class="num">Remember: does not improve throughput by itself</div></div>
+    <div class="paper-item"><a href="https://github.com/ai-dynamo/nixl" target="_blank" rel="noopener">NVIDIA Inference Xfer Library (NIXL)</a>
+      <div class="meta">NVIDIA (ai-dynamo) · GitHub 2026 · cited in <a href="13-kv-cache-fleet/index.html" style="font-weight:500;color:var(--a)">The KV cache across the fleet</a></div>
+      <p>Point-to-point transfer library for inference frameworks such as Dynamo and vLLM, abstracting memory types (GPU, CPU, storage) and backends (UCX, GPUDirect Storage).</p><div class="num">Remember: v1.5.0</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2407.00079" target="_blank" rel="noopener">Mooncake: A KVCache-centric Disaggregated Architecture for LLM (large language model) Serving</a>
+      <div class="meta">Qin et al. · arXiv 2024 · cited in <a href="13-kv-cache-fleet/index.html" style="font-weight:500;color:var(--a)">The KV cache across the fleet</a></div>
+      <p>Kimi's serving platform: separate prefill and decode clusters with a disaggregated KV cache pool built from CPU, DRAM and SSD resources.</p><div class="num">Remember: 75% more requests on real workloads</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2510.09665" target="_blank" rel="noopener">LMCache: An Efficient KV Cache Layer for Enterprise-Scale LLM Inference</a>
+      <div class="meta">Liu et al. · arXiv 2025 · cited in <a href="13-kv-cache-fleet/index.html" style="font-weight:500;color:var(--a)">The KV cache across the fleet</a></div>
+      <p>Stores KV caches from vLLM and SGLang outside GPU memory and shares them across engines and queries, for offloading and prefill/decode transfer; batched movement, pipelining, a connector layer and a control API (application programming interface).</p><div class="num">Remember: up to 15× throughput with vLLM</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2403.19708" target="_blank" rel="noopener">Cost-Efficient Large Language Model Serving for Multi-turn Conversations with CachedAttention</a>
+      <div class="meta">Gao et al. · arXiv 2024 · cited in <a href="13-kv-cache-fleet/index.html" style="font-weight:500;color:var(--a)">The KV cache across the fleet</a></div>
+      <p>Hierarchical KV caching across HBM (high-bandwidth memory), host memory and disk for multi-turn chat, with layer-wise pre-loading, asynchronous saving and scheduler-aware eviction.</p><div class="num">Remember: TTFT −87%, prefill throughput 7.8×, cost −70% (up to)</div></div>
+    <div class="paper-item"><a href="https://arxiv.org/abs/2411.01783" target="_blank" rel="noopener">Context Parallelism for Scalable Million-Token Inference</a>
+      <div class="meta">Yang et al. (Meta) · MLSys 2025 · cited in <a href="13-kv-cache-fleet/index.html" style="font-weight:500;color:var(--a)">The KV cache across the fleet</a></div>
+      <p>Ring-attention variants (pass-KV, pass-Q) for long-context prefill and decode; near-linear scaling to 128 H100s over RDMA or TCP (Transmission Control Protocol).</p><div class="num">Remember: 1M-token prefill of Llama 3 405B in 77 s (93% parallel efficiency); 128K in 3.8 s</div></div>
+    <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/deployment/integrations/llm-d.md" target="_blank" rel="noopener">llm-d (vLLM documentation integration page, v0.31.0)</a>
+      <div class="meta">vLLM project · vLLM docs 2026 · cited in <a href="13-kv-cache-fleet/index.html" style="font-weight:500;color:var(--a)">The KV cache across the fleet</a></div>
+      <p>Kubernetes-native distributed inference over vLLM: precise prefix-aware routing from KV-cache events, tiered KV offloading, P/D disaggregation, wide expert parallelism, SLO-aware (SLO = service-level objective) autoscaling; a CNCF Sandbox project.</p><div class="num">Remember: 3× output throughput and 2× faster TTFT from prefix-aware routing vs round robin (Llama 3.1 70B, MI300X)</div></div>
+    <div class="paper-item"><a href="https://docs.vllm.ai/en/latest/design/prefix_caching.html" target="_blank" rel="noopener">Automatic Prefix Caching (design)</a>
+      <div class="meta">vLLM documentation · docs.vllm.ai 2026 · cited in <a href="13-kv-cache-fleet/index.html" style="font-weight:500;color:var(--a)">The KV cache across the fleet</a></div>
+      <p>Each KV block is hashed with its tokens and the prefix before it; blocks are reference-counted, freed blocks are evicted in LRU (least recently used) order, and cache hits skip prefill.</p></div>
   </div>
 </div>
 

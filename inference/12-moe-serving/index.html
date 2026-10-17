@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Serving Large MoE Models</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Serving large MoE models" data-home="../index.html" data-home-label="Inference">
+
+<section class="slide title-slide" id="s-title" data-chapter="Short answer">
+  <div class="inner">
+    <div class="kicker">LLM Inference &amp; Serving · 12</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-16</span><span class="status-note">Checked against DeepSeek&#x27;s V3 report and inference-system write-up, DeepEP, the EP (expert parallelism) load balancer, vLLM v0.31.0 and SGLang docs (2026-10-16).</span></div>
+    <h1>Serving large Mixture-of-Experts models</h1>
+    <p class="sub">How models like DeepSeek-V3 (671B parameters, 37B active) are served across dozens to hundreds of GPUs (graphics processing units): data-parallel attention, wide expert parallelism, all-to-all dispatch and combine, redundant experts for load balance, and overlapping communication with computation.</p>
+    <div class="ps">
+      <div class="p"><b>The question</b>How would you serve a 671B-parameter MoE (Mixture of Experts) model with high throughput and low latency?</div>
+      <div class="c"><b>Short answer</b>Split by layer type. Attention runs <b>data-parallel</b>: each GPU serves its own requests and keeps their KV (key-value) cache. Experts are spread across <b>many GPUs</b> (wide expert parallelism), so each GPU stores only a few experts and each expert receives a large batch. Tokens reach their experts and return through <b>two all-to-alls per MoE layer</b>, hidden by overlapping <b>two micro-batches</b>. <b>Copy the busiest experts</b> to balance load, and run prefill and decode as separate units, with decode spread wider.</div>
+    </div>
+    <div class="toc" data-auto></div>
+  </div>
+</section>
+
+<section class="slide" id="s-draw" data-chapter="Draw it">
+  <div class="inner">
+    <span class="qtag b5">1 · Draw it</span>
+    <h2>The picture to draw</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Requests arrive at a router that balances them across data-parallel attention ranks.&quot;, &quot;Prefill runs on its own unit: 4 nodes, attention data-parallel, the 256 routed experts plus 32 redundant copies spread over 32 GPUs (9 per GPU).&quot;, &quot;The KV cache moves to a decode unit: 18 nodes, experts spread over 144 GPUs (2 routed experts and the shared expert per GPU). Decode needs the wider spread to give each expert enough tokens.&quot;, &quot;Inside every MoE layer, each token is sent to the GPUs holding its 8 chosen experts (dispatch), processed, and sent back (combine): two all-to-alls per layer.&quot;, &quot;The batch is split into two micro-batches so one computes while the other communicates.&quot;, &quot;An expert load balancer copies the busiest experts and re-places them using recent load statistics.&quot;]"><div class="controls"><button class="btn primary" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 280" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="102.0" y1="126.9" x2="161.3" y2="94.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="222.5" y1="92.0" x2="222.5" y2="196.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="312.0" y1="230.0" x2="351.0" y2="230.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="502.5" y1="203.0" x2="502.5" y2="169.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="6"><line x1="353.0" y1="55.3" x2="314.0" y2="56.7" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="125" width="90" height="56" rx="10"/><text class="dg-text" x="55.0" y="151.0" text-anchor="middle">Requests</text><text class="dg-sub" x="55.0" y="167.0" text-anchor="middle">router</text></g><g class="dg-node c" data-step="2"><rect x="135" y="30" width="175" height="60" rx="10"/><text class="dg-text" x="222.5" y="58.0" text-anchor="middle">Prefill unit</text><text class="dg-sub" x="222.5" y="74.0" text-anchor="middle">DP attention · EP32 · 32 GPUs</text></g><g class="dg-node a" data-step="3"><rect x="135" y="200" width="175" height="60" rx="10"/><text class="dg-text" x="222.5" y="228.0" text-anchor="middle">Decode unit</text><text class="dg-sub" x="222.5" y="244.0" text-anchor="middle">DP attention · EP144 · 144 GPUs</text></g><g class="dg-node d" data-step="6"><rect x="355" y="25" width="295" height="50" rx="10"/><text class="dg-text" x="502.5" y="48.0" text-anchor="middle">Expert load balancer</text><text class="dg-sub" x="502.5" y="64.0" text-anchor="middle">copy hot experts, re-place about every 10 min</text></g><g class="dg-node e" data-step="5"><rect x="355" y="115" width="295" height="50" rx="10"/><text class="dg-text" x="502.5" y="138.0" text-anchor="middle">Two micro-batches</text><text class="dg-sub" x="502.5" y="154.0" text-anchor="middle">one computes while the other communicates</text></g><g class="dg-node b" data-step="4"><rect x="355" y="205" width="295" height="50" rx="10"/><text class="dg-text" x="502.5" y="228.0" text-anchor="middle">Every MoE layer</text><text class="dg-sub" x="502.5" y="244.0" text-anchor="middle">dispatch (all-to-all) → experts → combine</text></g><g data-step="3"><text class="dg-label" x="222.5" y="139.0" text-anchor="middle">KV cache</text></g><g data-step="6"><text class="dg-label" x="333.5" y="51.0" text-anchor="middle">placement</text></g></svg><p class="readout dgcap"></p></div>
+<p>The layouts are from DeepSeek's February 2025 inference-system write-up. Its V3 technical report describes a larger decode unit, 40 nodes with experts over 320 GPUs (one expert per GPU, 64 GPUs for redundant and shared experts): the deployment changed, and both are valid answers when you say which.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-chapter="How it works">
+  <div class="inner">
+    <span class="qtag b4">2 · How it works</span>
+    <h2>One MoE layer, step by step <span class="ill">animation</span></h2>
+    <hr>
+<div class="visual"><div class="seg" id="moeSeg"><button data-v="off" class="on">Without expert copies</button><button data-v="on">With copies of the hot expert</button></div><svg id="moeSvg" class="anim-lg" viewBox="0 0 660 330" role="img" aria-label="Tokens on four GPUs travel to their experts and back; load bars show the busiest GPU"></svg><p class="readout" id="moeOut"></p></div>
+
+<p>Simplified: each token picks one expert here; DeepSeek-V3 picks 8 of 256 routed experts plus a shared expert, and limits each token to experts on at most 4 nodes in training.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-numbers" data-chapter="Numbers">
+  <div class="inner">
+    <span class="qtag b6">3 · Numbers to know</span>
+    <h2>Numbers to know <span class="ill">calculator</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">expert parallel size <input type="range" id="nEP" min="0" max="7" step="1" value="5"> <output id="nEPo"></output></label><label class="ctl">decode sequences per GPU <input type="range" id="nB" min="1" max="256" step="1" value="64"> <output id="nBo"></output></label><label class="ctl">redundant expert copies <input type="range" id="nR" min="0" max="64" step="8" value="32"> <output id="nRo"></output></label></div><div class="bars"><div id="nBars"></div></div><p class="readout" id="nOut"></p></div>
+<div class="grid2">
+      <div class="card a"><h3>DeepSeek-V3 shape</h3><p>256 routed experts + 1 shared per MoE layer, 8 routed chosen per token, 58 MoE layers of 61; 671B parameters, 37B active.</p></div>
+      <div class="card c"><h3>One expert ≈ 2.55 GB</h3><p>3 × 7,168 × 2,048 weights per layer × 58 layers ≈ 2.55B parameters, 2.55 GB in FP8 (8-bit floating point). All routed experts: about 654 GB.</p></div>
+      <div class="card b"><h3>Tokens per expert</h3><p>tokens per step × 8 ÷ expert instances. Wide EP multiplies the tokens per step: with b sequences on each of EP GPUs, each instance sees b · EP · 8 ÷ (256 + copies).</p></div>
+      <div class="card e"><h3>Measured throughput</h3><p>DeepSeek (H800): about 73.7K input tokens/s per node in prefill and 14.8K output tokens/s per node in decode. SGLang (96 H100s): 52.3K and 22.3K per node for 2K-token inputs.</p></div>
+    </div>
+<p>Roofline: with FP8 weights an expert matmul does about 2 FLOPs (floating-point operations) per weight byte per token, so it reaches H100 FP8 peak (1,979 TFLOP (trillion floating-point operations)/s over 3.35 TB/s) only with roughly 300 tokens per expert. Attention and communication time are not modelled.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-trade" data-chapter="Trade-offs">
+  <div class="inner">
+    <span class="qtag b2">4 · Trade-offs</span>
+    <h2>Trade-offs</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Choice</th>
+<th>Gains</th>
+<th>Costs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tensor-parallel experts (vLLM's default without <code>--enable-expert-parallel</code>)</td>
+<td>simple; works on one node</td>
+<td>every GPU computes a slice of every expert; small matmuls and all-reduces</td>
+</tr>
+<tr>
+<td>Expert parallelism, one node (EP 8)</td>
+<td>whole experts local; no cross-node traffic</td>
+<td>all routed experts must fit in 8 GPUs (about 654 GB for DeepSeek-V3: H200-class); few tokens per expert</td>
+</tr>
+<tr>
+<td>Wide expert parallelism (EP 32 to 320)</td>
+<td>large batch per expert, few experts per GPU, more KV memory free</td>
+<td>all-to-all across nodes on every layer; a larger failure domain; needs RDMA (remote direct memory access) kernels (DeepEP)</td>
+</tr>
+<tr>
+<td>Data-parallel attention</td>
+<td>each GPU keeps its requests' KV cache; no KV duplication for MLA (multi-head latent attention)</td>
+<td>ranks must step together, so idle ranks run dummy passes</td>
+</tr>
+<tr>
+<td>Redundant experts</td>
+<td>balances hot experts; can cut cross-node traffic</td>
+<td>extra memory; re-placement moves weights</td>
+</tr>
+<tr>
+<td>Two micro-batch overlap</td>
+<td>hides much of the all-to-all time</td>
+<td>needs enough batch to split; more complex scheduling</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-follow" data-chapter="Follow-ups">
+  <div class="inner">
+    <span class="qtag b3">5 · Follow-ups</span>
+    <h2>Follow-ups</h2>
+    <hr>
+<div class="quiz">
+      <p class="qq"><span class="lvl lvl-basic">Basic</span> Why not just tensor-parallelise the experts?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Every GPU would hold a slice of every expert, so each matmul shrinks and each layer needs an all-reduce. Expert parallelism keeps whole experts local and batches all of an expert's tokens together. SGLang measured 5.2× higher decode throughput with EP 72 than a TP (tensor parallelism) 16 baseline, mostly from 4× larger batches.</div>
+    </div>
+<div class="quiz">
+      <p class="qq"><span class="lvl lvl-basic">Basic</span> MoE activates only 37B of 671B parameters. Why is it still expensive to serve?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">All 671B parameters must sit in GPU memory, and each step reads the weights of every expert that any token chose. Cheap compute per token does not mean cheap memory.</div>
+    </div>
+<div class="quiz">
+      <p class="qq"><span class="lvl lvl-deeper">Deeper</span> Why does decode use a wider expert parallelism than prefill?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">A decode step produces one token per sequence, so a GPU contributes few tokens; gathering tokens from many GPUs gives each expert a useful batch. Prefill already has thousands of tokens per request. DeepSeek: EP 32 for prefill, EP 144 for decode (EP 320 in its V3 report).</div>
+    </div>
+<div class="quiz">
+      <p class="qq"><span class="lvl lvl-deeper">Deeper</span> One expert gets far more tokens than the rest. What happens and what do you do?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Its GPU becomes the straggler and every other GPU waits each layer. Copy hot experts onto other GPUs and re-place them from recent load statistics: DeepSeek re-places about every 10 minutes; vLLM's --enable-eplb rebalances every 3,000 engine steps over a 1,000-step window by default.</div>
+    </div>
+<div class="quiz">
+      <p class="qq"><span class="lvl lvl-expert">Expert</span> How do you hide the all-to-all communication?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">Split the batch into two micro-batches and alternate: one runs attention and experts while the other dispatches or combines. DeepSeek's decode splits attention into two steps for a 5-stage pipeline. Use low-latency RDMA kernels with CUDA (Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors) graphs for decode (vLLM deepep_low_latency) and high-throughput kernels for prefill (deepep_high_throughput).</div>
+    </div>
+<div class="quiz">
+      <p class="qq"><span class="lvl lvl-expert">Expert</span> Why data-parallel attention for MLA models?</p>
+      <button class="reveal">Think first, then reveal</button>
+      <div class="why">MLA stores one compressed latent per token shared by all heads, so splitting heads across GPUs would duplicate that cache on every GPU. Data-parallel attention keeps each request's cache on one GPU (SGLang's "DP (data parallelism) attention" removes the duplication).</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-wrong" data-chapter="Wrong answers">
+  <div class="inner">
+    <span class="qtag b1">6 · Wrong answers to avoid</span>
+    <h2>Wrong answers to avoid</h2>
+    <hr>
+<div class="quiz myth">
+      <p class="qq">"Only 37B parameters are active, so serving costs like a 37B dense model."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Memory and weight reads cover all experts in use; DeepSeek-V3's routed experts alone are about 654 GB in FP8.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Wider expert parallelism is always better."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Each extra node adds all-to-all traffic and another failure point. DeepSeek itself moved from EP 320 (report) to EP 144 (production write-up) for decode.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Balanced training means balanced serving."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">Real traffic routes unevenly; vLLM's docs note the token distribution across experts can be highly skewed in practice, which is why EPLB (Expert Parallelism Load Balancer) exists.</div>
+    </div>
+<div class="quiz myth">
+      <p class="qq">"Prefill and decode should share one layout."</p>
+      <button class="reveal">Why is this wrong?</button>
+      <div class="why">They have different bottlenecks: prefill is compute-bound with large batches, decode needs many GPUs' tokens per expert, so DeepSeek runs them as separate units.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-system" data-chapter="In a system">
+  <div class="inner">
+    <span class="qtag b9">7 · In a system</span>
+    <h2>In a real system</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Fleet size</h3><p>DeepSeek's V3 and R1 service peaked at 278 nodes (8 H800 each) and averaged 226.75 over one day, about $87K/day at an assumed $2 per GPU-hour.</p></div>
+      <div class="card c"><h3>Elastic capacity</h3><p>At night, when traffic is low, DeepSeek shrinks inference and gives the nodes to research and training.</p></div>
+      <div class="card b"><h3>Precision</h3><p>FP8 matmuls and FP8 dispatch, BF16 (bfloat16, a 16-bit floating-point format with the exponent range of 32-bit floats) for MLA attention and combine, matching training.</p></div>
+      <div class="card e"><h3>Open-source path</h3><p>vLLM: --enable-expert-parallel with --all2all-backend deepep_low_latency or deepep_high_throughput and --enable-eplb; SGLang: DP attention, DeepEP, EPLB and two-batch overlap.</p></div>
+    </div>
+<p>See also: <a href="../09-disaggregated-serving/index.html">Disaggregated serving</a> for the prefill/decode split, and <a href="../../distributed/07-expert-parallelism/index.html">Expert parallelism in training</a>.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-practice" data-chapter="Practice">
+  <div class="inner">
+    <span class="qtag b8">8 · Practice</span>
+    <h2>Practice</h2>
+    <hr>
+<ol>
+<li><strong>Explain in 60 seconds</strong> why decode uses wider expert parallelism than prefill.
+            2. <strong>Draw</strong> a decode unit: DP attention ranks, the dispatch and combine all-to-alls, experts with one copied hot expert.
+            3. <strong>Compute</strong> tokens per expert for EP 144, 64 sequences per GPU, 32 copies: 64 × 144 × 8 ÷ 288 = <strong>256</strong>.</li>
+</ol>
+<div class="quiz">
+      <p class="qq">With EP 8 on one 8-GPU node and 64 decode sequences per GPU, about how many tokens does each DeepSeek-V3 expert see per step?</p>
+      <div class="opts">
+      <button>A. About 2</button>
+      <button data-ok>B. About 16</button>
+      <button>C. About 256</button>
+      <button>D. About 2,000</button>
+      </div>
+      <div class="why"><strong>B.</strong> 64 × 8 GPUs × 8 experts per token ÷ 256 experts = 16: far below the roughly 300 needed for compute-bound FP8 matmuls.</div>
+    </div>
+<div class="quiz">
+      <p class="qq">What does an expert load balancer do?</p>
+      <div class="opts">
+      <button>A. Drops tokens for busy experts</button>
+      <button data-ok>B. Copies frequently used experts to more GPUs and re-places them from load statistics</button>
+      <button>C. Moves attention to the CPU</button>
+      <button>D. Retrains the router</button>
+      </div>
+      <div class="why"><strong>B.</strong> Redundant copies spread the hot experts' tokens so no GPU becomes the straggler.</div>
+    </div>
+<p class="start-hint">Next: <a href="../13-kv-cache-fleet/index.html">13 · The KV cache across the fleet →</a> · Previous: <a href="../09-disaggregated-serving/index.html">← 09 · Disaggregated serving</a> · <a href="../index.html">All decks</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2412.19437" target="_blank" rel="noopener">DeepSeek-V3 Technical Report</a>
+        <div class="meta">DeepSeek-AI · arXiv 2024</div>
+        <p>671B-parameter MoE trained with FP8 mixed precision (fine-grained 1×128 and 128×128 scaling), DualPipe pipeline scheduling and 64-way expert parallelism with cross-node all-to-all kernels.</p><div class="num">Remember: 2.788M H800 GPU-hours; no irrecoverable loss spikes or rollbacks</div></div>
+      <div class="paper-item"><a href="https://github.com/deepseek-ai/open-infra-index/blob/main/202502OpenSourceWeek/day_6_one_more_thing_deepseekV3R1_inference_system_overview.md" target="_blank" rel="noopener">DeepSeek-V3/R1 Inference System Overview (Open Source Week, day 6)</a>
+        <div class="meta">DeepSeek-AI · GitHub (open-infra-index) 2025</div>
+        <p>Prefill/decode disaggregation with cross-node EP (prefill EP32 on 4 nodes, decode EP144 on 18 nodes, 32 redundant experts), dual-batch overlap, prefill, decode and expert load balancers; H800 fleet statistics.</p><div class="num">Remember: ~73.7K input tok/s per node (prefill), ~14.8K output tok/s per node (decode); 56.3% of input tokens hit the on-disk KV cache; peak 278 nodes</div></div>
+      <div class="paper-item"><a href="https://github.com/deepseek-ai/DeepEP" target="_blank" rel="noopener">DeepEP: an efficient expert-parallel communication library</a>
+        <div class="meta">DeepSeek-AI · GitHub 2026</div>
+        <p>High-throughput and low-latency all-to-all GPU kernels for MoE dispatch and combine (FP8 dispatch), unified in one EPBuffer API (application programming interface) in V2; weight exchange for redundant experts.</p><div class="num">Remember: NVLink within nodes, RDMA across nodes</div></div>
+      <div class="paper-item"><a href="https://github.com/deepseek-ai/EPLB" target="_blank" rel="noopener">Expert Parallelism Load Balancer (EPLB)</a>
+        <div class="meta">DeepSeek-AI · GitHub 2025</div>
+        <p>Redundant experts plus heuristic packing onto GPUs; hierarchical policy (groups to nodes, then GPUs) for prefill, global policy for decode.</p><div class="num">Remember: replicate heavy experts, balance per-GPU load</div></div>
+      <div class="paper-item"><a href="https://github.com/vllm-project/vllm/blob/v0.31.0/docs/serving/expert_parallel_deployment.md" target="_blank" rel="noopener">Expert Parallel Deployment (vLLM documentation, v0.31.0)</a>
+        <div class="meta">vLLM project · vLLM docs 2026</div>
+        <p>EP size = TP × DP; attention replicated (TP 1) or sharded; all2all backends allgather_reducescatter, deepep_high_throughput (prefill), deepep_low_latency (decode, CUDA graphs); EPLB.</p><div class="num">Remember: EPLB defaults: window 1,000 steps, rebalance every 3,000 steps</div></div>
+      <div class="paper-item"><a href="https://lmsys.org/blog/2025-05-05-large-scale-ep/" target="_blank" rel="noopener">Deploying DeepSeek with PD (prefill/decode) Disaggregation and Large-Scale Expert Parallelism on 96 H100 GPUs</a>
+        <div class="meta">SGLang Team · LMSYS blog 2025</div>
+        <p>DP attention, DeepEP, DeepGEMM, two-batch overlap and EPLB with prefill/decode disaggregation on 12 nodes of 8 H100s.</p><div class="num">Remember: 52.3K input / 22.3K output tok/s per node; decode EP72 5.2× a TP16 baseline</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2006.16668" target="_blank" rel="noopener">GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding</a>
+        <div class="meta">Lepikhin et al. · ICLR 2021</div>
+        <p>Expert parallelism with all-to-all dispatch and automatic sharding annotations for a sparsely gated MoE translation model.</p><div class="num">Remember: 600B+ parameters on 2,048 TPU (tensor processing unit) v3 in 4 days</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2401.04088" target="_blank" rel="noopener">Mixtral of Experts</a>
+        <div class="meta">Jiang et al. · arXiv 2024</div>
+        <p>A sparse MoE with 8 SwiGLU (Swish-gated linear unit) experts per layer and top-2 routing on the Mistral 7B architecture, with dense 32K context.</p><div class="num">Remember: 47B total, 13B active parameters</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+<script>
+(() => {
+  const { svg, clear, fmt } = Deck;
+  // ---- How it works: one MoE layer on four GPUs
+  const s = document.getElementById('moeSvg'), COL = ['var(--a)', 'var(--b)', 'var(--c)', 'var(--e)'];
+  const TOK = [[1, 3, 2], [3, 4, 3], [5, 3, 6], [7, 3, 8]];
+  const gx = i => 15 + i * 160;
+  let red = false, t0 = performance.now();
+  const slotC = (g, k) => [gx(g) + 30 + k * 45, 190];
+  function plan() {
+    const fill = {}, dest = [], load = [0, 0, 0, 0];
+    TOK.forEach((row, i) => row.forEach((e, j) => {
+      let g = Math.floor((e - 1) / 2), k = (e - 1) % 2;
+      if (red && e === 3 && i !== 1) { g = i; k = 2; }
+      const key = g + ':' + k, n = fill[key] = (fill[key] || 0) + 1;
+      const [cx, cy] = slotC(g, k); dest.push([i, j, cx, cy - 22 + (n - 1) * 11]); load[g]++;
+    }));
+    return { dest, load };
+  }
+  function draw(t) {
+    const p = t % 6, { dest, load } = plan(); clear(s);
+    const phase = p < 1 ? 'attention: each GPU runs its own requests (data parallel)' : p < 2.2 ? 'dispatch: all-to-all sends each token to its expert' : p < 3.8 ? 'experts compute: the layer waits for the busiest GPU' : p < 5 ? 'combine: all-to-all returns results to each token\'s GPU' : 'next layer';
+    svg('text', { x: 330, y: 18, 'text-anchor': 'middle', class: 't', style: 'font-weight:700', text: phase }, s);
+    for (let i = 0; i < 4; i++) {
+      svg('rect', { x: gx(i), y: 30, width: 150, height: 210, rx: 10, style: 'fill:var(--panel);stroke:var(--line)' }, s);
+      svg('text', { x: gx(i) + 75, y: 46, 'text-anchor': 'middle', class: 't', style: 'fill:var(--muted)', text: 'GPU ' + (i + 1) }, s);
+      svg('rect', { x: gx(i) + 10, y: 54, width: 130, height: 44, rx: 6, style: `fill:${COL[i]};opacity:${p < 1 ? 0.25 : 0.1}` }, s);
+      svg('text', { x: gx(i) + 75, y: 112, 'text-anchor': 'middle', class: 't', style: 'fill:var(--muted)', text: 'attention (DP)' }, s);
+      for (let k = 0; k < 3; k++) {
+        if (k === 2 && !(red && i !== 1)) continue;
+        const e = k < 2 ? 2 * i + k + 1 : 3, busy = p >= 2.2 && p < 3.8;
+        svg('rect', { x: gx(i) + 10 + k * 45, y: 160, width: 40, height: 62, rx: 6, style: `fill:${k === 2 ? 'var(--d)' : 'var(--c)'};opacity:${busy ? 0.5 : 0.22};stroke:${k === 2 ? 'var(--d)' : 'none'}` }, s);
+        svg('text', { x: gx(i) + 30 + k * 45, y: 236, 'text-anchor': 'middle', class: 't', text: 'E' + e + (k === 2 ? ' copy' : '') }, s);
+      }
+      const w = 130 * Math.min(1, (p < 2.2 ? 0 : Math.min(1, (p - 2.2) / 1.6)) * load[i] / 6);
+      svg('rect', { x: gx(i) + 10, y: 258, width: 130, height: 14, rx: 4, style: 'fill:var(--panel-2)' }, s);
+      svg('rect', { x: gx(i) + 10, y: 258, width: w, height: 14, rx: 4, style: `fill:${load[i] === Math.max(...load) && !red ? 'var(--d)' : 'var(--e)'}` }, s);
+      svg('text', { x: gx(i) + 75, y: 290, 'text-anchor': 'middle', class: 't', text: load[i] + ' tokens' }, s);
+    }
+    dest.forEach(([i, j, cx, cy]) => {
+      const hx = gx(i) + 30 + j * 45, hy = 76;
+      const a = p < 1 ? 0 : p < 2.2 ? (p - 1) / 1.2 : p < 3.8 ? 1 : p < 5 ? 1 - (p - 3.8) / 1.2 : 0;
+      svg('circle', { cx: hx + (cx - hx) * a, cy: hy + (cy - hy) * a, r: 6, style: `fill:${COL[i]};stroke:#fff;stroke-width:1.5` }, s);
+    });
+    svg('text', { x: 330, y: 318, 'text-anchor': 'middle', class: 't', style: 'fill:var(--muted)', text: 'expert compute time per layer ∝ busiest GPU' }, s);
+  }
+  Deck.seg('moeSeg', v => {
+    red = v === 'on'; t0 = performance.now(); draw(0);
+    const { load } = plan(), mx = Math.max(...load), avg = load.reduce((a, b) => a + b, 0) / 4;
+    document.getElementById('moeOut').innerHTML = red
+      ? `Copies of the hot expert E3 on GPUs 1, 3 and 4 take their local E3 tokens. Loads ${load.join(', ')}: every GPU finishes together (<b>${Math.round(100 * avg / mx)}%</b> balanced), and fewer tokens cross between GPUs.`
+      : `E3 is hot: 5 of 12 tokens choose it. Loads ${load.join(', ')}: the layer takes as long as GPU 2, so the GPUs are only <b>${Math.round(100 * avg / mx)}%</b> balanced and the others wait.`;
+  });
+  Deck.enter('s-how', () => Deck.loop(() => draw((performance.now() - t0) / 1000)));
+
+  // ---- Numbers: tokens per expert and memory per GPU
+  const EPS = [8, 16, 32, 64, 72, 144, 256, 320], EXPERT_GB = 2.554, RIDGE = 1979 / 3.35;
+  Deck.bind(['nEP', 'nB', 'nR'], () => {
+    const ep = EPS[Deck.val('nEP')], b = Deck.val('nB'), r = Deck.val('nR');
+    Deck.out('nEPo', ep); Deck.out('nBo', b); Deck.out('nRo', r);
+    const inst = 256 + r, per = Math.ceil(inst / ep), mem = per * EXPERT_GB, tok = b * ep * 8 / inst, util = Math.min(1, 2 * tok / RIDGE);
+    Deck.hbars(document.getElementById('nBars'), [
+      { label: 'routed experts per GPU', value: per, color: 'var(--c)', text: per + '' },
+      { label: 'expert weights per GPU (FP8)', value: mem / 80, color: mem > 80 ? 'var(--d)' : 'var(--a)', text: mem.toFixed(0) + ' GB' },
+      { label: 'tokens per expert per step', value: Math.min(1, tok / 300), color: tok < 100 ? 'var(--d)' : 'var(--e)', text: tok.toFixed(0) },
+      { label: 'expert matmul: share of FP8 peak (roofline)', value: util, color: 'var(--b)', text: Math.round(100 * util) + '%' }], { max: 1 });
+    document.getElementById('nOut').innerHTML = `EP ${ep} with ${b} decode sequences per GPU: each of the ${inst} expert instances sees about <b>${tok.toFixed(0)} tokens</b> per step. ` +
+      (mem > 80 ? `Expert weights alone (${mem.toFixed(0)} GB) exceed an 80 GB H100. ` : '') +
+      (tok < 150 ? 'Too few tokens: expert matmuls just stream weights from memory. Spread experts wider or batch more.' : 'Enough tokens per expert to approach compute-bound matmuls.');
+  });
+})();
+</script>
+</body>
+</html>

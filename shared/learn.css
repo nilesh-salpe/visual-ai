@@ -90,3 +90,9 @@ pre.code { font: 13px/1.6 'JetBrains Mono', monospace; background: var(--panel-2
 .paper-item .meta { font-size: 12.5px; color: var(--faint); margin-top: 2px; }
 .paper-item p { margin: 6px 0 0; font-size: 14.5px; color: var(--muted); }
 .paper-item .num { margin-top: 6px; font-size: 13.5px; font-weight: 600; color: var(--c); }
+
+/* answer-first decks: difficulty chips on follow-up questions */
+.lvl { display: inline-block; font: 700 10px 'JetBrains Mono', monospace; letter-spacing: .05em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; margin-right: 6px; vertical-align: middle; }
+.lvl-basic { background: var(--e-soft); color: var(--e); }
+.lvl-deeper { background: var(--b-soft); color: var(--b); }
+.lvl-expert { background: var(--c-soft); color: var(--c); }

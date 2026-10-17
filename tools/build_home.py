@@ -40,7 +40,7 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
         ('system-design', 'Case studies · 4 decks + 4 design docs', 'System design case studies', 'End-to-end designs: serving a chat assistant, an enterprise RAG assistant, an autonomous coding agent, and planning a pretraining run.', ['capacity', 'KV cache', 'checkpoints', 'trade-offs']),
     ]),
     ('Serving and evaluation', [
-        ('inference', 'Topic · 11 decks + 13 Colab notebooks', 'LLM Inference and Serving', 'Prefill vs decode, KV cache, continuous batching, chunked prefill, PagedAttention, speculative decoding, quantization, tensor parallelism, disaggregation, decoding strategies, with hands-on notebooks.', ['KV cache', 'vLLM', 'speculative', 'Colab']),
+        ('inference', 'Topic · 13 decks + 13 Colab notebooks', 'LLM Inference and Serving', 'Prefill vs decode, KV cache, continuous batching, chunked prefill, PagedAttention, speculative decoding, quantization, tensor parallelism, disaggregation, decoding strategies, and serving at scale (large MoE models, the KV cache across a fleet), with hands-on notebooks.', ['KV cache', 'vLLM', 'speculative', 'Colab']),
         ('evals', 'Topic · 9 decks + 5 Colab notebooks', 'Evaluating LLMs', 'What a score measures, benchmark failure modes, pass@k, error bars and paired comparisons, contamination, LLM-as-judge biases, arena ratings, experiments in LLM training (seed noise, small-to-large decisions), and hallucination and factuality.', ['pass@k', 'error bars', 'LLM judge', 'Arena']),
     ]),
 ]

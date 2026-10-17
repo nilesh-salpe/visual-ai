@@ -938,6 +938,21 @@
   },
   "NIXL": {
    "exp": "NVIDIA Inference Xfer Library"
+  },
+  "EPLB": {
+   "exp": "Expert Parallelism Load Balancer"
+  },
+  "PD": {
+   "exp": "prefill/decode"
+  },
+  "DMA": {
+   "exp": "direct memory access"
+  },
+  "ITL": {
+   "exp": "inter-token latency"
+  },
+  "UCX": {
+   "exp": "Unified Communication X"
   }
  },
  "exempt": [
@@ -1393,6 +1408,22 @@
   "LeaderWorkerSet",
   "MI300X",
   "TPDS",
-  "WWW8"
+  "WWW8",
+  "DeepGEMM",
+  "EP144",
+  "EP32",
+  "EP72",
+  "EP320",
+  "EP8",
+  "TP16",
+  "TP4",
+  "EPBuffer",
+  "LMSYS",
+  "CachedAttention",
+  "FlexKV",
+  "LMCacheConnectorV1",
+  "MooncakeConnector",
+  "NixlConnector",
+  "OffloadingConnector"
  ]
 }

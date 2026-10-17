@@ -209,6 +209,6 @@ Answer from memory. If you can't, revisit the slide named in the answer.
 
 <div class="paper" style="border-left-color:var(--e);background:var(--e-soft)"><b style="color:var(--e)">🛠 Build it (Colab notebook)</b><ul style="margin:6px 0 0;padding-left:20px"><li><a href="https://colab.research.google.com/github/nilesh-salpe/visual-ai/blob/main/build-it/inference/12_tensor_parallel.ipynb" target="_blank" rel="noopener">12 · Tensor-parallel linear layers (Megatron-style)</a> <span style="color:var(--faint)">· 35 min · <a href="https://github.com/nilesh-salpe/visual-ai/blob/main/build-it/inference/12_tensor_parallel.ipynb" target="_blank" rel="noopener">view on GitHub</a></span></li></ul></div>
 
-<p class="start-hint">Next: <a href="../09-disaggregated-serving/index.html">09 · Disaggregated serving →</a> · Previous: <a href="../07-quantization/index.html">← 07</a> · <a href="../index.html">All decks</a></p>
+<p class="start-hint">Next: <a href="../09-disaggregated-serving/index.html">09 · Disaggregated serving →</a> · Previous: <a href="../07-quantization/index.html">← 07 · Quantization</a> · <a href="../index.html">All decks</a></p>
 
 <!-- slide id="s-papers" from="papers" -->
