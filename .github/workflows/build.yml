@@ -25,6 +25,7 @@ jobs:
           python tools/build_home.py
           python tools/build_site_extras.py
           python tools/review_status.py --write > /dev/null
+          python tools/add_analytics.py
       - name: Acronym lint
         run: python tools/decks/acronyms.py lint */[0-9][0-9]-*/index.html
       - name: Commit generated pages
