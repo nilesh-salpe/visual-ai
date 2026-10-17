@@ -120,6 +120,7 @@
     top.className = 'topbar';
     top.innerHTML = `<a class="brand" href="${home}">← ${homeLabel} · <span>${deckTitle}</span></a>
       <nav class="chapters">${chapters.map((c, i) => `<button data-i="${c.first}">${num(i)}${c.name}</button>`).join('')}</nav>
+      ${document.body.dataset.doc ? `<a class="doc-btn" href="${document.body.dataset.doc}" title="Read the detailed design document">Design doc ↗</a>` : ''}
       <button class="icon-btn" id="themeBtn" title="Toggle theme">◐</button>`;
     document.body.prepend(top);
 

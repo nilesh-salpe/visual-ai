@@ -139,6 +139,48 @@
 </ul>
 <h2 id="12-rollout">12. Rollout</h2>
 <p>Load-test a single replica to measure throughput at the latency target; launch to internal users; ramp external traffic 1% → 10% → 50% → 100% with canaries; add the routing tier and disaggregation only when metrics show the need.</p>
+<h2 id="13-data-model">13. Data model</h2>
+<table>
+<thead>
+<tr>
+<th>Record</th>
+<th>Store</th>
+<th>Key</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Conversation</td>
+<td>relational or key-value store</td>
+<td>conversation id</td>
+<td>owner, product, created, retention policy</td>
+</tr>
+<tr>
+<td>Message</td>
+<td>same store, partitioned by conversation</td>
+<td>(conversation id, sequence)</td>
+<td>role, text, token counts, safety flags</td>
+</tr>
+<tr>
+<td>Usage event</td>
+<td>append-only log → warehouse</td>
+<td>request id</td>
+<td>input, cached and output tokens, latency, model, replica</td>
+</tr>
+<tr>
+<td>Quota counters</td>
+<td>in-memory token buckets</td>
+<td>user or org id</td>
+<td>rebuilt from usage events if lost</td>
+</tr>
+</tbody>
+</table>
+<p>Prompts are assembled from these records in a fixed order (system prompt, history, new message) so that the prefix cache hits across turns.</p>
+<h2 id="14-cost-model">14. Cost model</h2>
+<p>Fleet cost per hour = replicas × 8 GPUs × GPU price. Cost per request = fleet cost per hour ÷ requests per hour. Example with assumptions: a fleet of 10 replicas (80 GPUs) at $2 per GPU-hour costs $160/hour; at the average 231 requests/s (832K/hour) that is about <strong>$0.0002 per request</strong> (about $0.19 per 1,000), rising off-peak as utilisation falls. The biggest levers: prefix caching (the shared 1,000-token system prompt is two-thirds of each prompt), routing simple requests to a smaller model, FP8 weights and KV cache, and scaling down outside the daily peak.</p>
+<h2 id="15-risks-and-open-questions">15. Risks and open questions</h2>
+<p>Replica throughput at the latency target is unknown until load-tested; prompt lengths drift upward as conversations grow; a new model version can change both quality and cost; safety-filter latency adds to time to first token.</p>
 <h2 id="references">References</h2>
 <p>Kwon et al. 2023 (PagedAttention / vLLM); vLLM automatic prefix caching design; Yu et al. 2022 (Orca); Agrawal et al. 2024 (Sarathi-Serve); Zhong et al. 2024 (DistServe); Llama 3 model card shapes via the Llama 3 report; Anthropic rate-limit documentation (token buckets, 429 and retry-after). Related decks: KV cache, continuous batching, vLLM scheduler and prefix caching, LLM (large language model) gateway.</p>
 </article>

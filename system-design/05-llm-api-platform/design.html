@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--x:ga--><!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-67CZB0CXVD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-67CZB0CXVD');
+</script><!--/x:ga-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-tenant LLM API platform: design document</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body class="doc-page">
+<article class="doc">
+  <a class="brand" href="index.html">← Overview deck</a>
+<h1 id="multi-tenant-llm-api-platform">Multi-tenant LLM API platform</h1>
+<blockquote>
+<p><strong>Design question.</strong> Design the backend of a public LLM (large language model) API (or "ChatGPT's backend"): thousands of organisations call several models over HTTP (Hypertext Transfer Protocol) with streaming responses. Keep latency low, stop one tenant from consuming all GPU (graphics processing unit) capacity, cap the cost of free users, and bill everyone accurately.</p>
+</blockquote>
+<p>This document expands the overview deck. Numbers marked <em>assumption</em> are inputs to choose for your setting; everything else is computed from them or cited.</p>
+<h2 id="1-context-goals-and-non-goals">1. Context, goals and non-goals</h2>
+<p><strong>Goals:</strong> one API for several models (a small, a large and fine-tuned variants); streaming responses with a predictable time to first token; isolation between tenants (rate limits, fair scheduling, quotas); accurate usage metering; high GPU utilisation including an asynchronous batch tier.</p>
+<p><strong>Non-goals (v1):</strong> training or fine-tuning jobs (only serving of fine-tunes), multi-region active-active writes for conversation state (the API is stateless), agents and tool execution on the server side.</p>
+<h2 id="2-requirements">2. Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Functional</td>
+<td>create a response (streaming or not); choose model; system prompt; prompt caching; batch jobs; usage reporting; per-key and per-org limits</td>
+</tr>
+<tr>
+<td>Tenancy</td>
+<td>10,000 organisations (<em>assumption</em>); tiers: free, paid, enterprise; enterprise may reserve capacity</td>
+</tr>
+<tr>
+<td>Scale</td>
+<td>peak 5,000 requests/s (<em>assumption</em>), 2,000 input tokens per request of which 40% cached, 400 output tokens</td>
+</tr>
+<tr>
+<td>Latency</td>
+<td>time to first token p95 &lt; 1 s for paid tiers (<em>target</em>); 40+ output tokens/s per stream</td>
+</tr>
+<tr>
+<td>Availability</td>
+<td>99.9% monthly for the synchronous API (<em>target</em>)</td>
+</tr>
+<tr>
+<td>Isolation</td>
+<td>no tenant can push another tenant's p95 latency above target while the other stays within its limits</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>free users capped per day; batch tier at a discount (the Claude API charges 50% less for Message Batches)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Clarifying questions to ask first:</strong> how many models and how big; streaming or not; is conversation state server-side (here: no, clients send full history); expected tenant skew (a few large tenants usually dominate); what does "fair" mean (equal share, or weighted by tier).</p>
+<h2 id="3-capacity-estimates">3. Capacity estimates</h2>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Formula</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Output tokens at peak</td>
+<td>5,000 × 400</td>
+<td><strong>2.0M tokens/s</strong></td>
+</tr>
+<tr>
+<td>Uncached input tokens at peak</td>
+<td>5,000 × 2,000 × 60%</td>
+<td><strong>6.0M tokens/s</strong></td>
+</tr>
+<tr>
+<td>Streams in flight (Little's law)</td>
+<td>5,000 × (400 ÷ 40 tokens/s)</td>
+<td><strong>50,000 concurrent streams</strong></td>
+</tr>
+<tr>
+<td>Large-model replicas</td>
+<td>2.0M × (share to large) ÷ replica throughput</td>
+<td>with 50% routed to the small model and 10K output tokens/s per 8-GPU replica (<em>assumption, measure it</em>): <strong>100 replicas = 800 GPUs</strong></td>
+</tr>
+<tr>
+<td>Small-model replicas</td>
+<td>1.0M ÷ 40K tokens/s per replica (<em>assumption</em>)</td>
+<td><strong>25 replicas</strong></td>
+</tr>
+<tr>
+<td>GPU cost</td>
+<td>GPUs × $/GPU-hour</td>
+<td>at $2/GPU-hour (<em>assumption</em>): 800 × $2 = $1,600/hour for the large pool</td>
+</tr>
+<tr>
+<td>Cost per million output tokens (large)</td>
+<td>$/hour ÷ (tokens/hour ÷ 10⁶)</td>
+<td>$16 ÷ (10K × 3,600 ÷ 10⁶) ≈ <strong>$0.44</strong> per million at full utilisation</td>
+</tr>
+</tbody>
+</table>
+<p>Replica throughput at the latency target is the number that must come from a load test; every other row follows from it. Plan for peak plus headroom (failures, deploys, bursts), and fill the trough with batch jobs.</p>
+<h2 id="4-api-and-data-model">4. API and data model</h2>
+<pre><code>POST /v1/responses
+  { &quot;model&quot;: &quot;large&quot;, &quot;stream&quot;: true, &quot;max_tokens&quot;: 1024,
+    &quot;system&quot;: &quot;...&quot;, &quot;messages&quot;: [...], &quot;metadata&quot;: {&quot;user_id&quot;: &quot;...&quot;} }
+→ 200 text/event-stream  ... deltas ...
+  final event: {&quot;usage&quot;: {&quot;input&quot;: 812, &quot;cache_read&quot;: 1200, &quot;cache_write&quot;: 0, &quot;output&quot;: 391}}
+→ 429 {&quot;error&quot;: &quot;rate_limit&quot;, &quot;limit&quot;: &quot;output_tokens_per_minute&quot;}  + retry-after: 7
+POST /v1/batches        { &quot;requests&quot;: [ {custom_id, params}, ... up to 100,000 ] } → batch id
+GET  /v1/batches/{id}   → status; results file when done (within 24 h)
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Record</th>
+<th>Store</th>
+<th>Key</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API key</td>
+<td>key-value store, cached at the gateway</td>
+<td>key hash</td>
+<td>org id, tier, scopes, per-key limits</td>
+</tr>
+<tr>
+<td>Org limits</td>
+<td>config store</td>
+<td>org id</td>
+<td>RPM (requests per minute), ITPM (input tokens per minute), OTPM (output tokens per minute), daily budget, reserved capacity</td>
+</tr>
+<tr>
+<td>Token buckets</td>
+<td>in-memory, sharded by org</td>
+<td>org id + limit</td>
+<td>counters only; the source of truth for billing is usage events</td>
+</tr>
+<tr>
+<td>Usage events</td>
+<td>append-only log → warehouse</td>
+<td>request id</td>
+<td>input, cached, output tokens, model, latency, tier</td>
+</tr>
+<tr>
+<td>Batch jobs</td>
+<td>object store + job table</td>
+<td>batch id</td>
+<td>requests file, per-request status, results file</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-high-level-architecture">5. High-level architecture</h2>
+<div class="visual dgm" data-steps="[&quot;Tenants call one HTTPS API with an API key; responses stream as server-sent events.&quot;, &quot;The gateway authenticates the key, validates the request (model, max tokens, context length) and assigns a request id for idempotent retries.&quot;, &quot;A distributed rate limiter checks the organisation&#x27;s token buckets for requests, input tokens and output tokens per minute; over the limit returns 429 with retry-after.&quot;, &quot;Admission decides who runs now when capacity is tight: priority classes, then fair share by tokens across tenants, so one tenant cannot fill the queue.&quot;, &quot;The router picks the model pool (or LoRA adapter) and a replica, preferring the replica that already caches this prompt&#x27;s prefix.&quot;, &quot;Model pools: replicas of each model with continuous batching and prefix caching; fine-tunes served as LoRA adapters on shared base models.&quot;, &quot;Asynchronous batch jobs wait in a separate queue and are admitted only into spare capacity, at a discount.&quot;, &quot;Every response reports input, cached and output tokens; metering aggregates them per tenant for billing and for the rate limiter.&quot;]"><div class="controls"><button class="btn primary" data-dg="play">▶ play</button><button class="btn" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="1"><line x1="107.0" y1="153.0" x2="124.0" y2="153.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="3"><line x1="185.5" y1="123.0" x2="185.5" y2="75.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="245.0" y1="153.0" x2="262.0" y2="153.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="388.0" y1="153.0" x2="405.0" y2="153.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="511.0" y1="153.0" x2="528.0" y2="153.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="7"><line x1="326.0" y1="238.0" x2="326.0" y2="185.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="8"><line x1="530.0" y1="205.9" x2="493.8" y2="236.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="125" width="95" height="56" rx="10"/><text class="dg-text" x="57.5" y="151.0" text-anchor="middle">Tenants</text><text class="dg-sub" x="57.5" y="167.0" text-anchor="middle">keys · SDKs</text></g><g class="dg-node a" data-step="2"><rect x="128" y="125" width="115" height="56" rx="10"/><text class="dg-text" x="185.5" y="151.0" text-anchor="middle">API gateway</text><text class="dg-sub" x="185.5" y="167.0" text-anchor="middle">auth · validate</text></g><g class="dg-node d" data-step="3"><rect x="128" y="15" width="115" height="56" rx="10"/><text class="dg-text" x="185.5" y="41.0" text-anchor="middle">Rate limiter</text><text class="dg-sub" x="185.5" y="57.0" text-anchor="middle">RPM · ITPM · OTPM</text></g><g class="dg-node b" data-step="4"><rect x="266" y="125" width="120" height="56" rx="10"/><text class="dg-text" x="326.0" y="151.0" text-anchor="middle">Admission</text><text class="dg-sub" x="326.0" y="167.0" text-anchor="middle">priority · fairness</text></g><g class="dg-node c" data-step="5"><rect x="409" y="125" width="100" height="56" rx="10"/><text class="dg-text" x="459.0" y="151.0" text-anchor="middle">Router</text><text class="dg-sub" x="459.0" y="167.0" text-anchor="middle">model · prefix</text></g><g class="dg-node e" data-step="6"><rect x="532" y="60" width="123" height="186" rx="10"/><text class="dg-text" x="593.5" y="151.0" text-anchor="middle">Model pools</text><text class="dg-sub" x="593.5" y="167.0" text-anchor="middle">small · large · LoRA</text></g><g class="dg-node b" data-step="7"><rect x="266" y="240" width="120" height="50" rx="10"/><text class="dg-text" x="326.0" y="263.0" text-anchor="middle">Batch queue</text><text class="dg-sub" x="326.0" y="279.0" text-anchor="middle">fills idle GPUs</text></g><g class="dg-node f" data-step="8"><rect x="409" y="240" width="100" height="50" rx="10"/><text class="dg-text" x="459.0" y="263.0" text-anchor="middle">Metering</text><text class="dg-sub" x="459.0" y="279.0" text-anchor="middle">usage · billing</text></g><g data-step="1"><text class="dg-label" x="115.5" y="145.0" text-anchor="middle"><tspan x="115.5" y="145.0">HTTPS</tspan></text></g><g data-step="7"><text class="dg-label" x="358.4" y="208.5" text-anchor="middle"><tspan x="358.4" y="208.5">low</tspan><tspan x="358.4" y="221.5">priority</tspan></text></g><g data-step="8"><text class="dg-label" x="496.7" y="206.2" text-anchor="middle"><tspan x="496.7" y="206.2">tokens</tspan></text></g></svg><p class="readout dgcap"></p></div>
+
+<h2 id="6-detailed-design">6. Detailed design</h2>
+<h3 id="61-rate-limiting">6.1 Rate limiting</h3>
+<p>Three token buckets per organisation and model class, as on the Claude API: <strong>requests per minute, input tokens per minute and output tokens per minute</strong>. Buckets refill continuously rather than resetting each minute. Input tokens are counted at admission from the request; output tokens are reserved as <code>max_tokens</code> and refunded with the actual count when the response ends. Cached input tokens can be exempt from the input limit (Claude does not count cache reads toward ITPM for most models), which rewards prompt caching.</p>
+<p>Implementation: buckets live in memory on a rate-limit service sharded by org id, with each gateway holding a small local allowance it refills in batches, so most checks need no network call. Over limit → 429 with <code>retry-after</code>. Add an <strong>acceleration limit</strong> for sudden ramps of a single org, which protects the fleet from a tenant going from 0 to 100% overnight.</p>
+<h3 id="62-admission-and-fair-scheduling">6.2 Admission and fair scheduling</h3>
+<p>Rate limits cap each tenant, but when the whole fleet is busy, first-come-first-served lets a heavy tenant still dominate within its limits. Two layers:
+- <strong>Priority classes:</strong> enterprise reserved &gt; paid &gt; free &gt; batch. Lower classes are admitted only when higher queues are below a target.
+- <strong>Fair share within a class:</strong> schedule by tokens served, not requests. The Virtual Token Counter (VTC) keeps a counter per client of weighted input and output tokens and always serves the backlogged client with the smallest counter; it is work-conserving (no idle capacity while anyone waits) and bounds the service difference between two backlogged clients (proved 2× tight bound). Weights express tiers.</p>
+<h3 id="63-routing">6.3 Routing</h3>
+<ol>
+<li><strong>Model pool:</strong> from the requested model; optionally a router sends easy requests to the small model when the tenant opted in (see the model-routing deck).</li>
+<li><strong>LoRA (Low-Rank Adaptation) adapters:</strong> fine-tunes run as adapters on a shared base model (S-LoRA, Punica), so thousands of fine-tunes do not need thousands of replicas.</li>
+<li><strong>Replica:</strong> prefix-aware routing (consistent hashing on org + prompt-prefix hash, with a load cap) so repeated system prompts hit the prefix cache; fall back to the least-loaded replica when the preferred one is saturated (see the vLLM Router deck).</li>
+</ol>
+<h3 id="64-free-user-cost-caps">6.4 Free-user cost caps</h3>
+<p>Daily token budget per free account; small model by default; lower <code>max_tokens</code>; lowest priority class; and shorter retained context. The free tier is admitted only into capacity the paid tiers are not using.</p>
+<h3 id="65-batch-tier">6.5 Batch tier</h3>
+<p>Batch jobs are split into requests and fed into the lowest priority class, so they soak up idle capacity at night and between peaks. The Claude API caps a batch at 100,000 requests or 256 MB, completes within 24 hours (most within an hour) and charges 50% less: the discount pays for flexibility in when the work runs.</p>
+<h3 id="66-metering-and-billing">6.6 Metering and billing</h3>
+<p>Every response emits a usage event with a request id. Events are idempotent (dedupe by request id), aggregated per org per hour, and reconciled daily against the rate-limiter counters. Billing reads only the event log.</p>
+<h2 id="7-scaling">7. Scaling</h2>
+<table>
+<thead>
+<tr>
+<th>Bottleneck</th>
+<th>Symptom</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU capacity at the daily peak</td>
+<td>queueing, time to first token rises</td>
+<td>autoscale on queue depth and KV-cache (KV = key-value) use with scheduled pre-scaling; move work to the batch tier</td>
+</tr>
+<tr>
+<td>One huge tenant</td>
+<td>its share starves others</td>
+<td>weighted fair share; reserved capacity for that tenant in a dedicated pool</td>
+</tr>
+<tr>
+<td>Rate-limit service</td>
+<td>hot org shard</td>
+<td>local allowances at gateways; shard by org; read replicas for config</td>
+</tr>
+<tr>
+<td>Long prompts</td>
+<td>prefill stalls decodes</td>
+<td>chunked prefill; prefill/decode disaggregation for the large model</td>
+</tr>
+<tr>
+<td>Many fine-tunes</td>
+<td>GPU memory for weights</td>
+<td>LoRA adapters on shared base models, adapter caching by popularity</td>
+</tr>
+<tr>
+<td>Regions</td>
+<td>latency, region outages</td>
+<td>stateless API in several regions; route by latency and capacity</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-reliability">8. Reliability</h2>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Detection</th>
+<th>Handling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU or replica fails mid-stream</td>
+<td>health checks; stream error</td>
+<td>client retries with the same request id; server deduplicates billing; idempotent non-streaming requests retried transparently</td>
+</tr>
+<tr>
+<td>Overload</td>
+<td>queue depth, admission rejects</td>
+<td>429 with retry-after (or 529 "overloaded" style), shed lowest priority first, never drop admitted streams</td>
+</tr>
+<tr>
+<td>Rate-limit service down</td>
+<td>error rate</td>
+<td>fail open for paid tiers with a local per-gateway cap; fail closed for free tier</td>
+</tr>
+<tr>
+<td>Bad model or deploy</td>
+<td>canary error and latency SLOs (service-level objectives), eval regressions</td>
+<td>automatic rollback; per-model version pinning for tenants</td>
+</tr>
+<tr>
+<td>Prefix-cache stampede after deploy</td>
+<td>time to first token spike</td>
+<td>warm caches on new replicas with common system prompts before routing traffic</td>
+</tr>
+</tbody>
+</table>
+<h2 id="9-security-and-isolation">9. Security and isolation</h2>
+<p>API keys hashed at rest, scoped per workspace; prompt caches are keyed by org so no tenant can read another's cached prefix; logs redact or sample prompts; data retention per tenant; per-tenant encryption keys for enterprise.</p>
+<h2 id="10-observability">10. Observability</h2>
+<p>Per tenant and model: requests, tokens (input, cached, output), time to first token, inter-token latency, 429s by limit type, queue time, cost. Per replica: batch size, KV-cache use, preemptions. SLO dashboards per tier; alerts on burn rate.</p>
+<h2 id="11-cost-model">11. Cost model</h2>
+<p>Cost per million output tokens ≈ (GPU $/hour × GPUs per replica) ÷ (output tokens/s per replica × 3,600 ÷ 10⁶) ÷ utilisation. Levers: utilisation (fill troughs with batch), prompt caching (cuts prefill work), routing to smaller models, quantisation (more replicas per GPU budget), and prefill/decode tuning. The overview deck's calculator implements this formula.</p>
+<h2 id="12-alternatives-and-trade-offs">12. Alternatives and trade-offs</h2>
+<table>
+<thead>
+<tr>
+<th>Choice</th>
+<th>Benefit</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rate limits only (no fair scheduler)</td>
+<td>simple, predictable</td>
+<td>idle capacity when one tenant is limited; FCFS (first-come, first-served) unfairness inside limits</td>
+</tr>
+<tr>
+<td>Token-based fairness (VTC)</td>
+<td>isolation with full utilisation</td>
+<td>scheduler change inside the serving engine</td>
+</tr>
+<tr>
+<td>Dedicated pool per big tenant</td>
+<td>strongest isolation, predictable latency</td>
+<td>lower utilisation; capacity planning per tenant</td>
+</tr>
+<tr>
+<td>Request-count limits</td>
+<td>easy</td>
+<td>ignores that a 100K-token request costs far more than a 100-token one</td>
+</tr>
+</tbody>
+</table>
+<h2 id="13-rollout">13. Rollout</h2>
+<p>Shadow traffic on the new gateway and limiter; ramp tenants by tier (internal → free → paid → enterprise); enable fair scheduling first in log-only mode to compare decisions; publish limits and 429 semantics before enforcing.</p>
+<h2 id="14-risks-and-open-questions">14. Risks and open questions</h2>
+<p>How to price cached tokens; how much capacity to reserve for enterprise vs share; how to forecast replica throughput for new models before launch; whether to expose priority explicitly (the Claude API's Priority Tier capacity commitments are no longer sold, an example of how such offers change).</p>
+<h2 id="references">References</h2>
+<p>Anthropic: rate limits (token buckets, RPM/ITPM/OTPM, cache-aware ITPM, acceleration limits), batch processing (50% cost, 100,000 requests or 256 MB, 24 h), service tiers. Sheng et al. 2024 (VTC, fairness in LLM serving). Sheng et al. 2023 (S-LoRA); Chen et al. 2023 (Punica). Kwon et al. 2023 (vLLM); vLLM Router. Related decks: LLM gateway, model routing, vLLM Router, KV cache across the fleet, cost and latency.</p>
+</article>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>

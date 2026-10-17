@@ -133,7 +133,7 @@ def render(args, body, where=''):
         container = any(_inside(m, n) for j, m in nodes.items() if j != k)   # boxes drawn inside this one: title goes at the top
         ty = y + 18 if container else y + (h / 2 - 2 if sub else h / 2 + 5)
         sy = y + 32 if container else y + h / 2 + 14
-        for label, size in ((n['text'], 7.6), (sub or '', 6.2)):              # warn when a label is wider than its box
+        for label, size in ((n["text"], 7.4), (sub or "", 5.7)):              # warn when a label is wider than its box
             if label and len(str(label)) * size > w - 8:
                 print(f'  LAYOUT {where}: text "{str(label)[:40]}" is wider than box {k} ({w}px)', file=sys.stderr)
         out.append(f'<g class="dg-node {n.get("color", "f")}" data-step="{n.get("step", 0)}"><rect x="{x}" y="{y}" width="{w}" height="{h}" rx="10"/>'

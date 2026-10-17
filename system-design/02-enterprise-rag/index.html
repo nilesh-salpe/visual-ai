@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="../../shared/deck.css">
 <link rel="stylesheet" href="../../shared/learn.css">
 </head>
-<body data-deck="Enterprise RAG assistant" data-home="../index.html" data-home-label="System design">
+<body data-deck="Enterprise RAG assistant" data-home="../index.html" data-home-label="System design" data-doc="design.html">
 
 <section class="slide title-slide" id="s-title" data-chapter="Start">
   <div class="inner">
@@ -133,6 +133,23 @@
   </div>
 </section>
 
+<section class="slide" id="s-web" data-chapter="Web scale">
+  <div class="inner">
+    <span class="qtag b6">6 · Scaling: web scale</span>
+    <h2>At web scale: a billion documents, a million queries a second <span class="ill">calculator</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">documents (billions) <input type="range" id="wsD" min="0.1" max="5" step="0.1" value="1"> <output id="wsDo"></output></label><label class="ctl">queries/s <input type="range" id="wsQ" min="10000" max="2000000" step="10000" value="1000000"> <output id="wsQo"></output></label><label class="ctl">cache hit rate <input type="range" id="wsC" min="0" max="90" step="5" value="50"> <output id="wsCo"></output></label><label class="ctl">queries that get an LLM answer <input type="range" id="wsL" min="0" max="100" step="1" value="5"> <output id="wsLo"></output></label></div><div class="bars"><div id="wsBars"></div></div><p class="readout" id="wsOut"></p></div>
+
+<p>Assumptions: 3 chunks per document; vectors compressed with product quantization to 64 bytes plus 64 bytes of graph and ids; 50 million vectors per shard; 2,000 queries/s per shard replica; 300 output tokens per LLM (large language model) answer at 10,000 tokens/s per 8-GPU replica.</p>
+<div class="grid2">
+      <div class="card d"><h3>Fan-out sets the tail</h3><p>A query that touches every shard waits for the slowest. If each shard is slow 1% of the time, a 60-shard query is slow 1 − 0.99⁶⁰ ≈ 45% of the time. Send hedged requests to a second replica after the expected latency, and cut fan-out by partitioning (by tenant, language or topic).</p></div>
+      <div class="card a"><h3>Index layout</h3><p>Shard the vectors, replicate each shard for throughput, and keep the compressed index in RAM (or on SSD with DiskANN-style indexes); fetch full text only for the final top-k.</p></div>
+      <div class="card b"><h3>Cache first</h3><p>Popular queries repeat: cache retrieval results and generated answers by normalised query, with short TTLs (time to lives) and invalidation on index updates.</p></div>
+      <div class="card e"><h3>The LLM is the expensive part</h3><p>Generating an answer for every query at a million per second would need hundreds of thousands of GPUs. Generate for a fraction (an answer box), cache answers, and use a small model where quality allows.</p></div>
+    </div>
+  </div>
+</section>
+
 <section class="slide" id="s-fail" data-chapter="Failures">
   <div class="inner">
     <span class="qtag b7">7 · Failures and operations</span>
@@ -170,7 +187,7 @@
 </tr>
 <tr>
 <td>Chunks</td>
-<td>contextual chunks (LLM-written (LLM = large language model) context)</td>
+<td>contextual chunks (LLM-written context)</td>
 <td>plain chunks or late chunking</td>
 <td>Anthropic: failures −49% with BM25, −67% with reranking</td>
 </tr>
@@ -239,6 +256,12 @@
       <div class="paper-item"><a href="https://arxiv.org/abs/2104.08663" target="_blank" rel="noopener">BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models</a>
         <div class="meta">Thakur et al. · NeurIPS Datasets and Benchmarks 2021</div>
         <p>18 retrieval datasets for zero-shot evaluation; BM25 is a robust baseline, and re-ranking and late-interaction models score best on average at higher compute cost.</p></div>
+      <div class="paper-item"><a href="https://inria.hal.science/inria-00514462" target="_blank" rel="noopener">Product Quantization for Nearest Neighbor Search</a>
+        <div class="meta">Jégou, Douze & Schmid · IEEE TPAMI 2011</div>
+        <p>Split each vector into m subvectors and quantize each with its own small codebook, so a vector is stored as m short codes; distances are estimated from per-query lookup tables (asymmetric distance computation), combined with an inverted file (IVFADC).</p></div>
+      <div class="paper-item"><a href="https://research.google/pubs/the-tail-at-scale/" target="_blank" rel="noopener">The Tail at Scale</a>
+        <div class="meta">Dean, Barroso · Communications of the ACM 2013</div>
+        <p>In large fan-out services, rare slow responses from individual servers dominate overall latency; techniques such as hedged and tied requests tolerate them.</p><div class="num">Remember: interactive responses within about 100 ms</div></div>
     </div>
   </div>
 </section>
@@ -257,6 +280,22 @@ Deck.bind(['rD', 'rT', 'rC', 'rM', 'rB'], () => {
     { label: 'IVF-PQ (64 B codes + id)', value: pq, color: 'var(--e)', text: pq.toFixed(1) + ' GB' }], { max: hnsw * 1.08 });
   document.getElementById('rOut').innerHTML = `${(docs / 1e6)}M documents × ${tpd.toLocaleString()} tokens = ${(tokens / 1e9).toFixed(0)}B tokens → <b>${(chunks / 1e6).toFixed(0)}M chunks</b> of ${ch} tokens. One-time contextual-chunk cost at Anthropic\'s estimate of $1.02 per million document tokens: <b>$${Math.round(ctx).toLocaleString()}</b> (their assumptions: 8K-token documents, 800-token chunks).`;
 });
+})();
+(() => {
+  // web-scale estimates: index size, shards, replicas, fan-out tail, LLM GPUs
+  Deck.bind(['wsD', 'wsQ', 'wsC', 'wsL'], () => {
+    const D = Deck.val('wsD') * 1e9, Q = Deck.val('wsQ'), hit = Deck.val('wsC') / 100, llm = Deck.val('wsL') / 100;
+    Deck.out('wsDo', (D / 1e9).toFixed(1) + 'B'); Deck.out('wsQo', Q.toLocaleString()); Deck.out('wsCo', Math.round(hit * 100) + '%'); Deck.out('wsLo', Math.round(llm * 100) + '%');
+    const vecs = D * 3, bytes = vecs * 128, shards = Math.ceil(vecs / 50e6), miss = Q * (1 - hit), reps = Math.ceil(miss / 2000), slowP = 1 - Math.pow(0.99, shards);
+    const llmGpus = Math.ceil(Q * (1 - hit) * llm * 300 / 10000) * 8;
+    Deck.hbars(document.getElementById('wsBars'), [
+      { label: 'index in RAM (compressed)', value: 1, color: 'var(--a)', text: (bytes / 1e12).toFixed(2) + ' TB' },
+      { label: 'shards (50M vectors each)', value: 1, color: 'var(--c)', text: shards.toLocaleString() },
+      { label: 'shard servers (all shards × replicas)', value: 1, color: 'var(--b)', text: (shards * reps).toLocaleString() },
+      { label: 'queries hitting a slow shard (1% each)', value: slowP, color: 'var(--d)', text: Math.round(100 * slowP) + '%' },
+      { label: 'GPUs for LLM answers', value: 1, color: 'var(--e)', text: llmGpus.toLocaleString() }], { max: 1 });
+    document.getElementById('wsOut').innerHTML = `${(vecs / 1e9).toFixed(1)}B vectors in ${shards} shards. Every uncached query fans out to all shards, so each shard needs ${reps.toLocaleString()} replicas for ${Math.round(miss).toLocaleString()} queries/s: <b>${(shards * reps).toLocaleString()} shard servers</b>. Partitioning so a query touches fewer shards cuts this proportionally. LLM answers for ${Math.round(llm * 100)}% of uncached queries need about <b>${llmGpus.toLocaleString()} GPUs</b>.`;
+  });
 })();
 </script>
 </body>

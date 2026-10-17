@@ -494,7 +494,10 @@ CASE_CARDS = [
     ('01-chat-assistant', 'Serving a chat assistant', '1M daily users on a 70B model: KV-cache sizing, prefix caching, routing.'),
     ('02-enterprise-rag', 'Enterprise RAG assistant', '10M documents: permission-aware hybrid retrieval, reranking, citations.'),
     ('03-coding-agent', 'Autonomous coding agent', '10K tasks a day: durable loop, microVM sandboxes, verification, review.'),
-    ('04-pretraining-run', 'Planning a pretraining run', '70B on 15T tokens: compute, 4D layout, checkpoints vs failures.'),
+    ('04-pretraining-run', 'Planning a pretraining run', '70B on 15T tokens: compute, 4D layout, checkpoints vs failures, fast recovery.'),
+    ('05-llm-api-platform', 'Multi-tenant LLM API platform', 'Rate limits on tokens, fair scheduling across tenants, metering, priority tiers.'),
+    ('06-batched-inference', 'Batched inference service', 'Dynamic batching vs latency, a 24-hour batch API, filling idle GPUs.'),
+    ('07-weight-distribution', 'Model weight distribution', 'Loading 140 GB on thousands of GPUs fast: peer-to-peer, streaming, cold starts.'),
 ]
 
 

@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--x:ga--><!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-67CZB0CXVD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-67CZB0CXVD');
+</script><!--/x:ga-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Batched inference service</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Batched inference service" data-home="../index.html" data-home-label="System design" data-doc="design.html">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual AI · System design · 06</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-17</span><span class="status-note">Batch-cost model and load are labelled assumptions; batcher design from Triton and Clipper, checked 2026-10-17.</span></div>
+    <h1>Batched inference service</h1>
+    <p class="sub">Clients call a model synchronously; a GPU (graphics processing unit) processes up to 100 inputs per batch in almost the time it takes for one. How requests become batches, the latency-throughput trade-off, back-pressure and deadlines, and why generative LLMs (large language models) batch differently.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Clients send single inputs and wait for their own answer. A GPU runs a batch of up to 100 inputs in about the time it takes for one. Design the service.</div>
+      <div class="c"><b>Core idea</b>Put requests in a <b>bounded queue per model</b> and let a <b>batcher</b> dispatch to the next free GPU when the batch is <b>full or the oldest request has waited a maximum delay</b>. Each request waits on a <b>future</b> completed by its output. Size the delay from the <b>latency budget</b>, reject early when a <b>deadline</b> cannot be met, and use <b>continuous batching</b> instead for generative LLMs.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint"><a href="design.html">Read the detailed design document →</a> · Previous: <a href="../05-llm-api-platform/index.html">Multi-tenant LLM API platform</a> · Next: <a href="../07-weight-distribution/index.html">Distributing model weights →</a> · <a href="../index.html">All case studies</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-req" data-chapter="Requirements">
+  <div class="inner">
+    <span class="qtag b1">1 · Clarify requirements</span>
+    <h2>Clarify before you design</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Ask first</h3><p>Are inputs similar in size? Can one call carry several inputs? Priorities? One model or many? What do clients do on timeout?</p></div>
+      <div class="card a"><h3>Functional</h3><p>predict(input) → output, synchronous, one input per call, optional deadline.</p></div>
+      <div class="card c"><h3>Non-functional (targets)</h3><p>p99 under 200 ms end to end; graceful behaviour under overload; high GPU utilisation.</p></div>
+      <div class="card e"><h3>GPU cost model (assumption)</h3><p>A batch of b inputs takes t(b) = 20 ms + 0.3 ms × b, so t(1) ≈ 20 ms and t(100) = 50 ms: batching is nearly free per input. Measure your own model.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-est" data-chapter="Estimates">
+  <div class="inner">
+    <span class="qtag b2">2 · Estimates</span>
+    <h2>Latency vs throughput <span class="ill">simulator</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">requests/s <input type="range" id="bL" min="200" max="16000" step="200" value="8000"> <output id="bLo"></output></label><label class="ctl">GPU workers <input type="range" id="bW" min="1" max="12" step="1" value="6"> <output id="bWo"></output></label><label class="ctl">max delay <input type="range" id="bD" min="0" max="60" step="2" value="10"> <output id="bDo"></output></label><label class="ctl">max batch <input type="range" id="bB" min="1" max="100" step="1" value="100"> <output id="bBo"></output></label></div><div class="bars"><div id="bBars"></div></div><p class="readout" id="bOut"></p></div>
+
+<p>Full batches give 100 ÷ 50 ms = 2,000 inputs/s per GPU; batch size 1 gives about 49/s. A discrete-event simulation of 3 seconds of Poisson arrivals.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-api" data-chapter="API">
+  <div class="inner">
+    <span class="qtag b3">3 · API and data</span>
+    <h2>API and per-request state</h2>
+    <hr>
+<div class="visual"><pre class="code">POST /v1/models/{model}/predict  {&quot;input&quot;: ..., &quot;deadline_ms&quot;: 200}
+→ 200 {&quot;output&quot;: ..., &quot;batch_size&quot;: 37,
+       &quot;queue_ms&quot;: 8, &quot;compute_ms&quot;: 31}
+→ 503 {&quot;error&quot;: &quot;overloaded&quot;, &quot;retry_after_ms&quot;: 50}
+→ 504 {&quot;error&quot;: &quot;deadline_exceeded&quot;}</pre></div>
+<p>In memory per request: id, input, arrival time, deadline and a future the request thread waits on. No durable state: a lost request is simply retried by the client with backoff.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · High-level design</span>
+    <h2>High-level design</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Clients call synchronously and wait for their own result, with a deadline (for example 200 ms).&quot;, &quot;The front end validates input, attaches the deadline and a future (a promise the request thread waits on), and rejects early if the queue is already too long to meet the deadline.&quot;, &quot;Requests wait in a bounded queue per model. A full queue means overload: reject with 503 or 429 instead of growing latency for everyone.&quot;, &quot;The batcher dispatches when it has the maximum batch (100) or when the oldest request has waited the maximum delay, whichever comes first, to the next idle GPU worker.&quot;, &quot;Workers run one batched forward pass each (pad or bucket inputs to similar lengths); several workers drain the same queue.&quot;, &quot;Each output is matched back to its request id; the front end completes the future and the client gets its answer.&quot;]"><div class="controls"><button class="btn primary" data-dg="play">▶ play</button><button class="btn" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="1"><line x1="104.0" y1="148.0" x2="146.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="3"><line x1="270.0" y1="148.0" x2="288.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="412.0" y1="148.0" x2="428.0" y2="148.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="527.6" y1="118.0" x2="564.9" y2="94.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="532.0" y1="146.8" x2="561.0" y2="146.1" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="531.3" y1="178.0" x2="561.4" y2="196.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="6"><line x1="563.0" y1="233.0" x2="504.0" y2="243.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="6"><line x1="336.7" y1="238.0" x2="254.4" y2="180.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="120" width="92" height="56" rx="10"/><text class="dg-text" x="56.0" y="146.0" text-anchor="middle">Clients</text><text class="dg-sub" x="56.0" y="162.0" text-anchor="middle">sync HTTP</text></g><g class="dg-node a" data-step="2"><rect x="150" y="120" width="118" height="56" rx="10"/><text class="dg-text" x="209.0" y="146.0" text-anchor="middle">Front end</text><text class="dg-sub" x="209.0" y="162.0" text-anchor="middle">validate · deadline</text></g><g class="dg-node b" data-step="3"><rect x="292" y="120" width="118" height="56" rx="10"/><text class="dg-text" x="351.0" y="146.0" text-anchor="middle">Model queue</text><text class="dg-sub" x="351.0" y="162.0" text-anchor="middle">bounded · per model</text></g><g class="dg-node c" data-step="4"><rect x="432" y="120" width="98" height="56" rx="10"/><text class="dg-text" x="481.0" y="146.0" text-anchor="middle">Batcher</text><text class="dg-sub" x="481.0" y="162.0" text-anchor="middle">full or timeout</text></g><g class="dg-node e" data-step="5"><rect x="565" y="40" width="90" height="50" rx="10"/><text class="dg-text" x="610.0" y="63.0" text-anchor="middle">Worker 1</text><text class="dg-sub" x="610.0" y="79.0" text-anchor="middle">GPU</text></g><g class="dg-node e" data-step="5"><rect x="565" y="120" width="90" height="50" rx="10"/><text class="dg-text" x="610.0" y="143.0" text-anchor="middle">Worker 2</text><text class="dg-sub" x="610.0" y="159.0" text-anchor="middle">GPU</text></g><g class="dg-node e" data-step="5"><rect x="565" y="200" width="90" height="50" rx="10"/><text class="dg-text" x="610.0" y="223.0" text-anchor="middle">Worker N</text><text class="dg-sub" x="610.0" y="239.0" text-anchor="middle">GPU</text></g><g class="dg-node d" data-step="6"><rect x="250" y="240" width="250" height="50" rx="10"/><text class="dg-text" x="375.0" y="263.0" text-anchor="middle">Response router</text><text class="dg-sub" x="375.0" y="279.0" text-anchor="middle">complete each request&#x27;s future</text></g><g data-step="1"><text class="dg-label" x="125.0" y="140.0" text-anchor="middle"><tspan x="125.0" y="140.0">request</tspan></text></g><g data-step="6"><text class="dg-label" x="530.9" y="226.1" text-anchor="middle"><tspan x="530.9" y="226.1">outputs</tspan></text></g><g data-step="6"><text class="dg-label" x="307.5" y="195.5" text-anchor="middle"><tspan x="307.5" y="195.5">reply</tspan></text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-deep1" data-chapter="Deep dive 1">
+  <div class="inner">
+    <span class="qtag b5">5 · Deep dive</span>
+    <h2>Deep dive: when does a batch leave? <span class="ill">animation</span></h2>
+    <hr>
+<div class="visual"><div class="seg" id="qSeg"><button data-v="low" class="on">Low traffic</button><button data-v="high">High traffic</button></div><svg id="qSvg" viewBox="0 0 660 160" class="anim-lg" role="img" aria-label="Requests queue up and leave as a batch when full or when the oldest waits too long"></svg></div>
+
+<p>Dispatch when the batch is <b>full</b> or the oldest request has waited <b>max delay</b>, whichever comes first. Triton's dynamic batcher does exactly this (max_queue_delay_microseconds). Clipper goes further and adapts the maximum batch with additive increase, multiplicative decrease to stay under a latency objective.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-deep2" data-chapter="Deep dive 2">
+  <div class="inner">
+    <span class="qtag b5">5 · Deep dive</span>
+    <h2>Deep dive: overload, deadlines and LLMs</h2>
+    <hr>
+<div class="grid2">
+      <div class="card d"><h3>Bounded queue</h3><p>Reject with 503 when full. An unbounded queue turns overload into timeouts for everyone.</p></div>
+      <div class="card b"><h3>Deadline-aware admission</h3><p>Estimate wait from queue length and recent batch times; reject immediately if the deadline is unreachable, and drop expired or cancelled requests before forming a batch.</p></div>
+      <div class="card c"><h3>Retries</h3><p>Clients back off exponentially with jitter and honour retry_after_ms, or retries synchronise into waves.</p></div>
+      <div class="card e"><h3>Generative LLMs</h3><p>Outputs differ in length, so a fixed batch runs until its longest sequence ends. LLM servers use continuous (iteration-level) batching: requests join and leave every decoding step (Orca).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-scale" data-chapter="Scaling">
+  <div class="inner">
+    <span class="qtag b6">6 · Bottlenecks and scaling</span>
+    <h2>Bottlenecks and scaling</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Bottleneck</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU throughput</td>
+<td>more workers; larger batches if latency allows; quantised or smaller model</td>
+</tr>
+<tr>
+<td>One batcher process</td>
+<td>shard queues by model or request hash; one batcher per shard</td>
+</tr>
+<tr>
+<td>Many models</td>
+<td>a queue per model; scale workers per model on queue depth; pack small models on one GPU</td>
+</tr>
+<tr>
+<td>Input-size skew</td>
+<td>bucket queues by length to cut padding; cap input size</td>
+</tr>
+<tr>
+<td>Bursts</td>
+<td>autoscale on queue depth and p99; keep warm spares (loading a model takes seconds to minutes)</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-ops" data-chapter="Failures and cost">
+  <div class="inner">
+    <span class="qtag b7">7 · Failures, monitoring, cost</span>
+    <h2>Failures, monitoring and cost</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Handling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Worker crashes mid-batch</td>
+<td>requeue its requests if deadlines allow; restart the worker</td>
+</tr>
+<tr>
+<td>Poison input crashes every batch it is in</td>
+<td>retry the batch split in halves to isolate it; reject it with 400</td>
+</tr>
+<tr>
+<td>GPU out of memory on large inputs</td>
+<td>cap and bucket input sizes; lower the maximum batch</td>
+</tr>
+<tr>
+<td>Overload</td>
+<td>bounded queue, early rejects, autoscaling</td>
+</tr>
+</tbody>
+</table></div>
+<p>Watch arrival rate, queue time, batch-size distribution, compute time per batch, p99 and rejects. Cost per million inputs = GPU $/hour ÷ (inputs/s per GPU × 3,600 ÷ 10⁶): 40× lower with full batches than with batch size 1 in this model.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-wrap" data-chapter="Wrap-up">
+  <div class="inner">
+    <span class="qtag b9">8 · Wrap-up</span>
+    <h2>Wrap-up</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Decisions</h3><p>Bounded per-model queues; full-or-timeout batching; futures for synchronous replies; deadline-aware admission; continuous batching for generative models.</p></div>
+      <div class="card b"><h3>Trade-off</h3><p>Max delay is the dial between latency and cost: the longest delay the latency budget allows is the cheapest setting.</p></div>
+      <div class="card c"><h3>Next steps</h3><p>Measure t(b) for the real model; load test with bursty arrivals; tune max delay from batch size and queue time; add adaptive (AIMD (additive increase, multiplicative decrease)) batch sizing if load varies a lot.</p></div>
+      <div class="card e"><h3>Risks</h3><p>Average-based sizing fails on bursts; padding waste with skewed inputs; client retry storms.</p></div>
+    </div>
+<p><a href="design.html">Read the detailed design document →</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/1612.03079" target="_blank" rel="noopener">Clipper: A Low-Latency Online Prediction Serving System</a>
+        <div class="meta">Crankshaw et al. · arXiv 2016</div>
+        <p>Prediction serving with a model abstraction layer, caching and adaptive batching; the maximum batch size is tuned with additive-increase, multiplicative-decrease to meet a latency objective.</p><div class="num">Remember: AIMD batch sizing per model container</div></div>
+      <div class="paper-item"><a href="https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/batcher.html" target="_blank" rel="noopener">Dynamic Batching and Concurrent Model Execution (Triton Inference Server documentation)</a>
+        <div class="meta">NVIDIA · NVIDIA docs 2026</div>
+        <p>The dynamic batcher combines individual requests into batches; it delays a batch up to max_queue_delay_microseconds when a maximum or preferred size cannot be formed.</p><div class="num">Remember: example: max_queue_delay_microseconds 100</div></div>
+      <div class="paper-item"><a href="https://www.usenix.org/conference/osdi22/presentation/yu" target="_blank" rel="noopener">Orca: A Distributed Serving System for Transformer-Based Generative Models</a>
+        <div class="meta">Yu et al. · OSDI 2022</div>
+        <p>Iteration-level scheduling (requests join and leave the batch after every decode step) plus selective batching (batch the matmuls, run attention per request).</p><div class="num">Remember: 36.9× throughput over FasterTransformer at the same latency (GPT-3 175B)</div></div>
+      <div class="paper-item"><a href="https://research.google/pubs/the-tail-at-scale/" target="_blank" rel="noopener">The Tail at Scale</a>
+        <div class="meta">Dean, Barroso · Communications of the ACM 2013</div>
+        <p>In large fan-out services, rare slow responses from individual servers dominate overall latency; techniques such as hedged and tied requests tolerate them.</p><div class="num">Remember: interactive responses within about 100 ms</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+// ---- discrete-event simulation of full-or-timeout batching
+function sim(lam, W, B, D, t0, c, seed) {
+  let r = seed; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+  const T = 3000, arr = []; let t = 0; while (t < T) { t += -Math.log(1 - rnd()) / lam * 1000; arr.push(t); }
+  const free = new Array(W).fill(0), lat = [], sizes = []; let i = 0, busy = 0;
+  while (i < arr.length) {
+    const g = free.indexOf(Math.min(...free));
+    const fullAt = i + B - 1 < arr.length ? arr[i + B - 1] : Infinity;      // when the batch would be full
+    const close = Math.max(free[g], arr[i], Math.min(fullAt, arr[i] + D));  // full or timeout, never before a worker is free
+    let n = 0; while (i + n < arr.length && n < B && arr[i + n] <= close) n++;
+    const dur = t0 + c * n, end = close + dur;
+    for (let k = 0; k < n; k++) lat.push(end - arr[i + k]);
+    sizes.push(n); busy += dur; free[g] = end; i += n;
+  }
+  lat.sort((a, b) => a - b);
+  return { p50: lat[Math.floor(lat.length * 0.5)], p99: lat[Math.floor(lat.length * 0.99)], avgB: sizes.reduce((a, b) => a + b, 0) / sizes.length, util: busy / (W * Math.max(...free)) };
+}
+Deck.bind(['bL', 'bW', 'bD', 'bB'], () => {
+  const lam = Deck.val('bL'), W = Deck.val('bW'), D = Deck.val('bD'), B = Deck.val('bB'), t0 = 20, c = 0.3;
+  Deck.out('bLo', lam.toLocaleString() + '/s'); Deck.out('bWo', W); Deck.out('bDo', D + ' ms'); Deck.out('bBo', B);
+  const cap = W * B / (t0 + c * B) * 1000;
+  if (lam >= cap * 0.98) {
+    Deck.hbars(document.getElementById('bBars'), [{ label: 'capacity at full batches', value: cap / lam, color: 'var(--d)', text: Math.round(cap).toLocaleString() + '/s' }], { max: 1 });
+    document.getElementById('bOut').innerHTML = `Overloaded: ${W} GPUs can do at most <b>${Math.round(cap).toLocaleString()} inputs/s</b> with batches of ${B}. The queue grows without bound: add GPUs, or reject early.`;
+    return;
+  }
+  const m = sim(lam, W, B, D, t0, c, 7);
+  Deck.hbars(document.getElementById('bBars'), [
+    { label: 'average batch size', value: m.avgB / B, color: 'var(--c)', text: m.avgB.toFixed(1) },
+    { label: 'GPU busy share', value: m.util, color: 'var(--b)', text: Math.round(100 * m.util) + '%' },
+    { label: 'p50 latency', value: Math.min(1, m.p50 / 200), color: 'var(--a)', text: m.p50.toFixed(0) + ' ms' },
+    { label: 'p99 latency (target 200 ms)', value: Math.min(1, m.p99 / 200), color: m.p99 > 200 ? 'var(--d)' : 'var(--e)', text: m.p99.toFixed(0) + ' ms' }], { max: 1 });
+  document.getElementById('bOut').innerHTML = `Batch time t(b) = 20 ms + 0.3 ms × b (assumption). ${W} GPUs at ${lam.toLocaleString()} requests/s with a ${D} ms maximum delay form batches of about <b>${m.avgB.toFixed(0)}</b>; p99 latency <b>${m.p99.toFixed(0)} ms</b>. Longer delays raise batch size and efficiency, and latency with them.`;
+});
+
+// ---- animation: requests fill a batch; dispatch on full or timeout
+const s = document.getElementById('qSvg'); let t0a = performance.now(), rate = 'low';
+function frame(now) {
+  clear(s);
+  const per = rate === 'low' ? 0.55 : 0.08, B = 8, D = 2.2;            // seconds between arrivals; batch size 8 shown for clarity; max delay 2.2 s
+  let t = 0, q = [], batches = [], arrivals = [];
+  while (t < now) { arrivals.push(t); t += per; }
+  let open = [];
+  arrivals.forEach(a => { open.push(a); if (open.length === B) { batches.push({ at: a, n: B, why: 'full' }); open = []; } else if (a - open[0] >= D) { batches.push({ at: open[0] + D, n: open.length, why: 'timeout' }); open = []; } });
+  if (open.length && now - open[0] >= D) { batches.push({ at: open[0] + D, n: open.length, why: 'timeout' }); open = []; }
+  svg('text', { x: 10, y: 22, class: 't', style: 'font-weight:700', text: 'queue (max batch 8 shown, max delay 2.2 s)' }, s);
+  svg('rect', { x: 10, y: 34, width: 330, height: 46, rx: 8, style: 'fill:var(--panel-2)' }, s);
+  open.forEach((a, k) => svg('circle', { cx: 32 + k * 40, cy: 57, r: 13, style: 'fill:var(--a)' }, s));
+  if (open.length) { const w = Math.min(1, (now - open[0]) / D); svg('rect', { x: 10, y: 88, width: 330 * w, height: 8, rx: 4, style: 'fill:var(--b)' }, s); svg('text', { x: 10, y: 114, class: 'tm', text: 'oldest request waiting: ' + (now - open[0]).toFixed(1) + ' s' }, s); }
+  svg('text', { x: 400, y: 22, class: 't', style: 'font-weight:700', text: 'GPU batches sent' }, s);
+  batches.slice(-5).forEach((b, k) => {
+    const y = 34 + k * 34;
+    svg('rect', { x: 400, y, width: 25 * b.n, height: 26, rx: 5, style: `fill:${b.why === 'full' ? 'var(--e)' : 'var(--c)'}` }, s);
+    svg('text', { x: 410 + 25 * b.n, y: y + 18, class: 't', text: `${b.n} · ${b.why}` }, s);
+  });
+  svg('text', { x: 10, y: 150, class: 'tm', text: rate === 'low' ? 'Low traffic: batches leave on the timer, small and fast.' : 'High traffic: batches fill before the timer, large and efficient.' }, s);
+}
+Deck.seg('qSeg', v => { rate = v; t0a = performance.now(); });
+Deck.enter('s-deep1', () => Deck.loop(() => frame(((performance.now() - t0a) / 1000) % 14)));
+})();
+</script>
+</body>
+</html>

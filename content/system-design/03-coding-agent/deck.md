@@ -4,6 +4,7 @@ body:
   data-deck: Autonomous coding agent
   data-home: ../index.html
   data-home-label: System design
+  data-doc: design.html
 styles:
 - ../../shared/deck.css
 - ../../shared/learn.css

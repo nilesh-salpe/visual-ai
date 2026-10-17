@@ -121,6 +121,77 @@
 <li><strong>Multi-agent orchestration:</strong> useful for broad parallel exploration; Anthropic reports multi-agent systems use about 15× the tokens of chat, too costly for most fixes.</li>
 <li><strong>Auto-merge on green tests:</strong> faster, but tests often miss intent; consider only for narrow, well-tested change classes.</li>
 </ul>
+<h2 id="10-api-and-data-model">10. API and data model</h2>
+<pre><code>POST /tasks              {&quot;repo&quot;: &quot;...&quot;, &quot;issue&quot;: &quot;...&quot;, &quot;budget&quot;: {&quot;steps&quot;: 60, &quot;minutes&quot;: 30}}
+GET  /tasks/{id}         → status, current step, cost so far, branch, pull request
+POST /tasks/{id}/cancel
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Record</th>
+<th>Store</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Task</td>
+<td>workflow engine (event history) + task table</td>
+<td>durable; replayable after crashes</td>
+</tr>
+<tr>
+<td>Step events</td>
+<td>event history</td>
+<td>model calls and tool results recorded as activity results</td>
+</tr>
+<tr>
+<td>Sandbox snapshot</td>
+<td>snapshot store</td>
+<td>repository + dependency caches per repository</td>
+</tr>
+<tr>
+<td>Audit log</td>
+<td>append-only</td>
+<td>every command, file write and network request</td>
+</tr>
+</tbody>
+</table>
+<h2 id="11-scaling">11. Scaling</h2>
+<table>
+<thead>
+<tr>
+<th>Bottleneck</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sandboxes at peak (~420)</td>
+<td>pre-warmed microVM pools per region, restored from snapshots</td>
+</tr>
+<tr>
+<td>Model tokens</td>
+<td>prompt caching with a stable prefix; compaction of long histories; cheaper model for simple steps</td>
+</tr>
+<tr>
+<td>Workflow engine</td>
+<td>shard by task id; it stores histories, not model state</td>
+</tr>
+<tr>
+<td>Test time</td>
+<td>run targeted tests during the loop and the full suite once at the end</td>
+</tr>
+</tbody>
+</table>
+<h2 id="12-observability">12. Observability</h2>
+<p>Per task: steps, tokens (input, cached, output), wall-clock time, tool errors, budget overruns, final outcome. Per fleet: resolved rate, pull-request acceptance and revert rates, cost per resolved task, sandbox start latency, egress-proxy denials (a signal of attempted exfiltration or broken allowlists).</p>
+<h2 id="13-cost-model">13. Cost model</h2>
+<p>Per task (assumptions): 2.36M input tokens uncached, about 15% of that cost with prompt caching; output about 40 steps × 500 tokens = 20K tokens; about 20 sandbox-minutes. Daily: 10,000 tasks × these numbers. The dominant term is input tokens, which is why stable prefixes and compaction matter more than anything else. Cost per <em>resolved</em> task (total cost ÷ resolved tasks) is the number to track.</p>
+<h2 id="14-rollout">14. Rollout</h2>
+<p>Internal repositories first with human review of every pull request; measure resolved and revert rates against a fixed task set; widen to more repositories and task types; consider auto-merge only for narrow, well-tested change classes.</p>
+<h2 id="15-risks-and-open-questions">15. Risks and open questions</h2>
+<p>Prompt injection through issues or fetched content; tests that pass without fixing the real problem; cost blow-ups on hard tasks (budgets must end tasks with a report, not silently); dependency on model quality changes between versions.</p>
 <h2 id="references">References</h2>
 <p>Anthropic, Beyond permission prompts (Claude Code sandboxing, 2025); Agache et al. 2020 (Firecracker); Temporal documentation (workflows, retries); Anthropic prompt caching documentation; Jimenez et al. 2024 (SWE-bench); Yao et al. (τ-bench, pass^k); Anthropic, Building effective agents. Related decks: sandboxing, durable workflows, tool calling, cost and latency, evaluating agents, safety and reliability.</p>
 </article>

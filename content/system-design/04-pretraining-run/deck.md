@@ -4,6 +4,7 @@ body:
   data-deck: Planning a pretraining run
   data-home: ../index.html
   data-home-label: System design
+  data-doc: design.html
 styles:
 - ../../shared/deck.css
 - ../../shared/learn.css
@@ -23,6 +24,8 @@ intro:
     drain → restart</b>; de-risk choices with <b>small-scale ablations</b> first.
   hint: '[Read the full design doc →](design.html) · Previous: [Autonomous coding agent](../03-coding-agent/index.html) · [All case studies](../index.html)'
 papers:
+- bytecheckpoint
+- pt_dcp_async
 - llama3
 - megatron
 - zero
@@ -122,6 +125,35 @@ Asynchronous, sharded checkpoints written in the background shrink δ, which sho
 
 ### [e] Resume exactly
 Checkpoint the optimizer state, RNG state and data-loader position too, so a resumed run is the same run.
+:::
+
+<!-- slide id="s-deep2" chapter="Recovery" tag="5 · Deep dive: recovery" tagclass="b5" -->
+## Deep dive: recovering fast when something breaks
+
+At Llama 3 scale (16,384 GPUs) Meta saw 419 unexpected interruptions in 54 days, about one every 3 hours. Goodput depends less on how rarely jobs fail than on how fast they come back.
+{: .lede}
+
+::: table
+| Stage | What it costs | How to shrink it |
+|---|---|---|
+| Detect | minutes if you wait for a collective-communication timeout | heartbeats, per-rank progress counters, GPU health checks; MegaScale-style diagnosis to find the bad node |
+| Decide | operator time | automation: cordon the node, pick a hot spare, restart without a human |
+| Reload state | a full read of the checkpoint from storage | keep the latest checkpoint in host or peer memory; load only each rank's shard |
+| Recompute | everything since the last checkpoint | checkpoint more often; asynchronous saves make that cheap |
+:::
+
+::: cards grid2
+### [a] Asynchronous checkpoints
+PyTorch Distributed Checkpoint `async_save` copies state into CPU buffers, then writes in the background while training continues; the price is CPU memory of about checkpoint size per rank × ranks per host.
+
+### [c] Checkpoint systems at scale
+ByteCheckpoint reports an average 54.20× reduction in checkpoint stalls compared with open-source baselines, and reshards checkpoints when the parallelism layout changes.
+
+### [b] Hot spares
+Keep a few healthy nodes reserved; on failure, swap one in rather than waiting for a repair or shrinking the job.
+
+### [e] Measure goodput
+Track effective training time ÷ wall-clock time, broken down into detection, restart, reload and lost work, so you know which stage to attack.
 :::
 
 <!-- slide id="s-scale" chapter="Scaling" tag="6 · Scaling" tagclass="b6" -->

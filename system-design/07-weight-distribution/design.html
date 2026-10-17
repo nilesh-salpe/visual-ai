@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--x:ga--><!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-67CZB0CXVD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-67CZB0CXVD');
+</script><!--/x:ga-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Distributing model weights: design document</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body class="doc-page">
+<article class="doc">
+  <a class="brand" href="index.html">← Overview deck</a>
+<h1 id="distributing-model-weights-to-a-large-gpu-fleet">Distributing model weights to a large GPU fleet</h1>
+<blockquote>
+<p><strong>Design question.</strong> A new 1 TB model checkpoint must reach 1,000+ GPU (graphics processing unit) workers (128 nodes × 8 GPUs) quickly, for a deploy or to scale out under load. Design the distribution: fan-out from storage, a chain, a tree or peer-to-peer; integrity, failures, and the last hop into GPU memory.</p>
+</blockquote>
+<p>Reported as an AI-lab (AI = artificial intelligence) design question (candidate reports on prep sites, comparing fan-out, pipeline and tree approaches). Numbers marked <em>assumption</em> are inputs; formulas show how the answers follow.</p>
+<h2 id="1-goals-and-non-goals">1. Goals and non-goals</h2>
+<p><strong>Goals:</strong> minimise time from "version published" to "all replicas serving"; do not overload the object store or the network core; survive node failures mid-transfer; verify every byte; roll forward and back safely.</p>
+<p><strong>Non-goals:</strong> training checkpoint saves (see the pretraining-run case), cross-region replication strategy beyond one region, model format conversion.</p>
+<h2 id="2-requirements">2. Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Size</td>
+<td>1 TB checkpoint (<em>assumption</em>, e.g. ~500B parameters in 16-bit)</td>
+</tr>
+<tr>
+<td>Fleet</td>
+<td>128 nodes × 8 GPUs (<em>assumption</em>)</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>25 GB/s per node on the storage/front-end network (<em>assumption</em>, 200 Gb/s); object store aggregate egress 200 GB/s (<em>assumption</em>)</td>
+</tr>
+<tr>
+<td>Target</td>
+<td>all nodes hold the bytes they need within about a minute; serving switches only after verification</td>
+</tr>
+<tr>
+<td>Integrity</td>
+<td>every chunk verified by hash before use</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Clarifying questions:</strong> does every node need the whole model, or only its shards; is this a planned deploy or an emergency scale-out; what other traffic shares the network; how often do versions change (incremental updates).</p>
+<h2 id="3-capacity-estimates">3. Capacity estimates</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Time formula</th>
+<th>1 TB to 128 nodes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fan-out from the object store</td>
+<td>max(N·S ÷ E_store, S ÷ B_node)</td>
+<td>max(128 TB ÷ 200 GB/s, 40 s) = <strong>640 s</strong></td>
+</tr>
+<tr>
+<td>Pipelined chain (64 MB chunks)</td>
+<td>S ÷ B + (N − 1) · chunk ÷ B</td>
+<td>40 s + 127 × 2.6 ms ≈ <strong>40 s</strong></td>
+</tr>
+<tr>
+<td>Binary tree, store-and-forward</td>
+<td>depth × S ÷ B</td>
+<td>7 × 40 s = <strong>280 s</strong></td>
+</tr>
+<tr>
+<td>Binary tree, pipelined</td>
+<td>S ÷ (B ÷ 2) + depth · chunk ÷ (B ÷ 2)</td>
+<td>≈ <strong>80 s</strong> (each node uploads to two children)</td>
+</tr>
+<tr>
+<td>Peer-to-peer swarm</td>
+<td>≈ S ÷ B × (1 + overhead)</td>
+<td>≈ <strong>44 s</strong> with 10% overhead (<em>assumption</em>)</td>
+</tr>
+<tr>
+<td>Shard-aware (each node needs half)</td>
+<td>multiply S by the fraction needed</td>
+<td>halves every row</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The last hop matters too.</strong> From local RAM (page cache) a GPU loads its 62.5 GB shard (1 TB ÷ 2 nodes per replica ÷ 8 GPUs) over PCIe (Peripheral Component Interconnect Express, the standard expansion bus) Gen5 at 64 GB/s in about 1 s; from a single NVMe (Non-Volatile Memory Express, the fast interface for flash storage) drive at about 7 GB/s, 500 GB per node takes over a minute. Keep weights in RAM or stripe across drives, and stream directly into GPU memory.</p>
+<h2 id="4-api-and-data-model">4. API and data model</h2>
+<pre><code>POST /models/{name}/versions          → upload manifest + chunks (content-addressed)
+GET  /models/{name}/versions/{v}/manifest
+     → {&quot;chunks&quot;: [{&quot;hash&quot;: &quot;sha256:...&quot;, &quot;size&quot;: 67108864, &quot;shard&quot;: &quot;tp3/pp0&quot;}, ...]}
+Node agent:  prefetch(name, v, shards=[...])   status → {have: 812/1024, verified: true}
+Controller:  rollout(name, v, waves=[1%, 10%, 50%, 100%])   abort()   rollback()
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Record</th>
+<th>Store</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Manifest</td>
+<td>registry database</td>
+<td>version, chunk list with hashes, shard mapping</td>
+</tr>
+<tr>
+<td>Chunks</td>
+<td>object store, key = hash</td>
+<td>immutable; dedupe across versions</td>
+</tr>
+<tr>
+<td>Chunk locations</td>
+<td>tracker (in memory, rebuilt from agent heartbeats)</td>
+<td>node → chunks held</td>
+</tr>
+<tr>
+<td>Node state</td>
+<td>agent, reported to controller</td>
+<td>per version: chunks present, verified, loaded</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-high-level-architecture">5. High-level architecture</h2>
+<div class="visual dgm" data-steps="[&quot;A new model version is registered with a manifest: the list of chunks (for example 64 MB each), their content hashes and which tensor shards they hold.&quot;, &quot;Chunks are uploaded once to an object store, addressed by hash, so identical chunks across versions are stored and moved once.&quot;, &quot;A tracker knows which nodes hold which chunks, so peers can find each other.&quot;, &quot;A few seed nodes pull from the object store first; after that the store is no longer the bottleneck.&quot;, &quot;Agents on every node fetch missing chunks from peers in parallel (a swarm), verify each hash and write to local NVMe or RAM. Each node serves what it has, so upload capacity grows with the fleet.&quot;, &quot;Each GPU loads only the tensor shards it will serve, streamed from local storage into GPU memory.&quot;, &quot;A rollout controller waits for verified copies, switches serving to the new version in waves and can roll back.&quot;]"><div class="controls"><button class="btn primary" data-dg="play">▶ play</button><button class="btn" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="2"><line x1="72.5" y1="78.0" x2="72.5" y2="121.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="137.0" y1="153.0" x2="171.0" y2="153.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="297.0" y1="63.0" x2="326.0" y2="70.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="297.0" y1="126.6" x2="326.0" y2="114.3" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="297.0" y1="158.1" x2="326.0" y2="160.5" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="5"><line x1="402.5" y1="114.0" x2="402.5" y2="136.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="457.0" y1="101.3" x2="496.0" y2="110.6" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="457.0" y1="153.4" x2="496.0" y2="145.9" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="7"><line x1="463.8" y1="233.0" x2="424.4" y2="196.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="20" width="125" height="56" rx="10"/><text class="dg-text" x="72.5" y="46.0" text-anchor="middle">Model registry</text><text class="dg-sub" x="72.5" y="62.0" text-anchor="middle">version · manifest</text></g><g class="dg-node a" data-step="2"><rect x="10" y="125" width="125" height="56" rx="10"/><text class="dg-text" x="72.5" y="151.0" text-anchor="middle">Object store</text><text class="dg-sub" x="72.5" y="167.0" text-anchor="middle">chunks by hash</text></g><g class="dg-node b" data-step="3"><rect x="175" y="20" width="120" height="56" rx="10"/><text class="dg-text" x="235.0" y="46.0" text-anchor="middle">Tracker</text><text class="dg-sub" x="235.0" y="62.0" text-anchor="middle">who has which chunk</text></g><g class="dg-node c" data-step="4"><rect x="175" y="125" width="120" height="56" rx="10"/><text class="dg-text" x="235.0" y="151.0" text-anchor="middle">Seed nodes</text><text class="dg-sub" x="235.0" y="167.0" text-anchor="middle">first copies</text></g><g class="dg-node e" data-step="5"><rect x="330" y="60" width="125" height="52" rx="10"/><text class="dg-text" x="392.5" y="84.0" text-anchor="middle">Node agent</text><text class="dg-sub" x="392.5" y="100.0" text-anchor="middle">chunks → NVMe/RAM</text></g><g class="dg-node e" data-step="5"><rect x="330" y="140" width="125" height="52" rx="10"/><text class="dg-text" x="392.5" y="164.0" text-anchor="middle">Node agent</text><text class="dg-sub" x="392.5" y="180.0" text-anchor="middle">swaps with peers</text></g><g class="dg-node d" data-step="6"><rect x="500" y="100" width="155" height="60" rx="10"/><text class="dg-text" x="577.5" y="128.0" text-anchor="middle">GPUs on the node</text><text class="dg-sub" x="577.5" y="144.0" text-anchor="middle">load only own shards</text></g><g class="dg-node b" data-step="7"><rect x="330" y="235" width="325" height="50" rx="10"/><text class="dg-text" x="492.5" y="258.0" text-anchor="middle">Rollout controller</text><text class="dg-sub" x="492.5" y="274.0" text-anchor="middle">verify · flip version · roll back</text></g><g data-step="2"><text class="dg-label" x="101.6" y="103.0" text-anchor="middle"><tspan x="101.6" y="103.0">publish</tspan></text></g><g data-step="5"><text class="dg-label" x="383.3" y="128.5" text-anchor="middle"><tspan x="383.3" y="128.5">peer</tspan></text></g><g data-step="7"><text class="dg-label" x="462.5" y="191.9" text-anchor="middle"><tspan x="462.5" y="191.9">go /</tspan><tspan x="462.5" y="204.9">abort</tspan></text></g></svg><p class="readout dgcap"></p></div>
+
+<h2 id="6-detailed-design">6. Detailed design</h2>
+<h3 id="61-why-not-just-read-from-the-object-store">6.1 Why not just read from the object store?</h3>
+<p>Every node pulling 1 TB means 128 TB through the store's egress: at 200 GB/s that is over 10 minutes, and it competes with everything else using the store. Peer-to-peer turns each node that already has a chunk into a source, so aggregate upload capacity grows with the fleet. Uber's Kraken, a peer-to-peer Docker registry built this way, distributes 20,000 blobs of 100 MB–1 GB in under 30 seconds at peak.</p>
+<h3 id="62-chain-tree-or-swarm">6.2 Chain, tree or swarm</h3>
+<ul>
+<li><strong>Chain</strong> (node k forwards chunks to node k+1 as soon as it has them): near-optimal time S ÷ B, but one slow or failed node stalls everyone after it; needs re-linking on failure.</li>
+<li><strong>Tree</strong>: depth log₂ N, robust to a single failure in one subtree, but each node uploads to several children, dividing its bandwidth.</li>
+<li><strong>Swarm</strong> (BitTorrent-style): chunks flow along many paths at once, slow nodes are routed around, and failures only remove one source among many. The usual production choice; the cost is a tracker and more connections.</li>
+</ul>
+<h3 id="63-shard-aware-distribution">6.3 Shard-aware distribution</h3>
+<p>A replica with tensor parallelism 8 × pipeline parallelism 2 spans 2 nodes; each node serves half the layers and each GPU one-eighth of those. The manifest maps chunks to shards, so each node fetches only its shards: half the bytes, half the time.</p>
+<h3 id="64-into-gpu-memory">6.4 Into GPU memory</h3>
+<p>Streaming loaders read tensors concurrently and copy them straight into GPU memory (vLLM supports the Run:ai Model Streamer, including directly from S3, GCS (Google Cloud Storage) or Azure storage). ServerlessLLM reports 3.6–8.2× faster checkpoint loading with a loading-optimised format and a multi-tier (SSD (solid-state drive), RAM, GPU) loader. For scale-out under load, BlitzScale loads parameters from GPUs that already hold them over the fast compute network and starts serving layer by layer before all parameters arrive, reporting up to 94% lower tail latency than ServerlessLLM.</p>
+<h3 id="65-integrity-and-versioning">6.5 Integrity and versioning</h3>
+<p>Content-addressed chunks (SHA-256 (SHA = Secure Hash Algorithm)); verify before marking a chunk present; a version is "ready" on a node only when every needed chunk is verified. Serving switches by flipping a pointer from version v to v+1, in waves; the old version stays on disk until the new one is healthy, so rollback is a pointer flip.</p>
+<h2 id="7-scaling">7. Scaling</h2>
+<table>
+<thead>
+<tr>
+<th>Bottleneck</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Object store egress</td>
+<td>seed a few nodes, then peer-to-peer</td>
+</tr>
+<tr>
+<td>Core network links</td>
+<td>rack-aware peer selection: prefer peers in the same rack or switch</td>
+</tr>
+<tr>
+<td>Tracker load</td>
+<td>shard by model version; agents gossip chunk availability</td>
+</tr>
+<tr>
+<td>Disk write speed</td>
+<td>write to RAM first; stripe across NVMe drives</td>
+</tr>
+<tr>
+<td>Very frequent versions</td>
+<td>chunk-level dedupe: only changed chunks move (fine-tunes, adapters)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-reliability">8. Reliability</h2>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Handling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Peer dies mid-transfer</td>
+<td>re-request the chunk from another holder; partial chunks discarded</td>
+</tr>
+<tr>
+<td>Corrupt chunk</td>
+<td>hash mismatch → discard, refetch from a different peer, report the source</td>
+</tr>
+<tr>
+<td>Seed or store slow</td>
+<td>more seeds; peers already holding chunks serve them</td>
+</tr>
+<tr>
+<td>Bad model version</td>
+<td>waves with health and quality checks; automatic rollback by pointer flip</td>
+</tr>
+<tr>
+<td>Node joins late (autoscaling)</td>
+<td>fetches from the whole swarm; BlitzScale-style loading from running GPUs for urgent scale-out</td>
+</tr>
+</tbody>
+</table>
+<h2 id="9-security">9. Security</h2>
+<p>Signed manifests; only chunks matching the signed hashes are accepted; mutual TLS (Transport Layer Security) between agents; weights encrypted at rest for restricted models; access control on who may publish versions.</p>
+<h2 id="10-observability">10. Observability</h2>
+<p>Per version: bytes moved per source (store vs peers), completion curve across nodes, slowest 1% of nodes, hash failures, time to ready and time to serving. Network: per-link utilisation to spot core congestion.</p>
+<h2 id="11-cost">11. Cost</h2>
+<p>Mostly network and storage egress; peer-to-peer cuts store egress from N × S to a few × S. The bigger cost is idle GPUs while waiting: 1,024 GPUs idle for 10 minutes is 170 GPU-hours per deploy, which pays for the distribution system quickly.</p>
+<h2 id="12-alternatives-and-trade-offs">12. Alternatives and trade-offs</h2>
+<table>
+<thead>
+<tr>
+<th>Choice</th>
+<th>Benefit</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Everyone reads the store</td>
+<td>simplest</td>
+<td>store egress bottleneck, slowest</td>
+</tr>
+<tr>
+<td>Chain</td>
+<td>best case S ÷ B</td>
+<td>fragile to slow or failed nodes</td>
+</tr>
+<tr>
+<td>Tree</td>
+<td>log N depth, simple</td>
+<td>uploads split bandwidth; interior failures cut subtrees</td>
+</tr>
+<tr>
+<td>Swarm</td>
+<td>fast and robust</td>
+<td>tracker, many connections, more complex agent</td>
+</tr>
+<tr>
+<td>Pre-stage on all nodes (keep last versions cached)</td>
+<td>instant scale-up</td>
+<td>disk and RAM cost on every node</td>
+</tr>
+<tr>
+<td>Load from running GPUs (BlitzScale)</td>
+<td>fastest scale-out</td>
+<td>needs a compute network path and coordination with serving</td>
+</tr>
+</tbody>
+</table>
+<h2 id="13-rollout">13. Rollout</h2>
+<p>Ship the agent with peer-to-peer off (store only) to validate integrity checks; enable peer-to-peer within racks, then across; measure completion curves on real deploys; then shard-aware fetching.</p>
+<h2 id="14-risks-and-open-questions">14. Risks and open questions</h2>
+<p>Network contention with live traffic during deploys (rate-limit transfer bandwidth); tracker as a dependency; how many old versions to keep cached for fast rollback.</p>
+<h2 id="references">References</h2>
+<p>Uber Kraken (peer-to-peer registry: 20K 100 MB–1 GB blobs in under 30 s); Fu et al. 2024 (ServerlessLLM, 3.6–8.2× faster checkpoint loading); Zhang et al. 2025 (BlitzScale, OSDI); vLLM Run:ai Model Streamer documentation. Bandwidth figures for H100 systems from the GPU decks (PCIe Gen5 64 GB/s, NVMe about 7 GB/s). Related decks: inside a GPU server, cluster topology, deploying vLLM.</p>
+</article>
+<script src="../../shared/diagram.js"></script>
+</body>
+</html>

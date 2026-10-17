@@ -119,6 +119,47 @@
 </tr>
 </tbody>
 </table>
+<h2 id="6b-fault-tolerance-in-depth">6b. Fault tolerance in depth</h2>
+<p>At 16,384 GPUs, Llama 3 training saw 419 unexpected interruptions in 54 days, roughly one every 3.1 hours. Lost time per failure = detection + decision + restart + reload + recomputation since the last checkpoint. Each term has its own fix:</p>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Typical cause of delay</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Detection</td>
+<td>waiting for a collective-communication timeout (often minutes)</td>
+<td>heartbeats and per-rank step counters; GPU and NIC (network interface card) health checks; automated localisation of the faulty node (MegaScale built diagnosis tooling for this)</td>
+</tr>
+<tr>
+<td>Decision</td>
+<td>a human in the loop</td>
+<td>policy: cordon the node, take a hot spare, restart automatically, page only on repeated failures</td>
+</tr>
+<tr>
+<td>Restart</td>
+<td>scheduling and process start-up, NCCL initialisation</td>
+<td>pre-warmed spares; persistent containers; topology-aware placement of the replacement</td>
+</tr>
+<tr>
+<td>Reload</td>
+<td>reading a multi-terabyte checkpoint from shared storage</td>
+<td>keep the latest checkpoint in host or peer memory; each rank loads only its shard</td>
+</tr>
+<tr>
+<td>Recompute</td>
+<td>work since the last checkpoint (half an interval on average)</td>
+<td>shorter intervals, made affordable by asynchronous saves</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Asynchronous checkpointing.</strong> PyTorch Distributed Checkpoint <code>async_save</code> first copies model and optimiser state into CPU (central processing unit) buffers and then writes in the background, so training resumes after the copy; it raises CPU memory by about checkpoint size per rank × ranks per host. Production systems go further: ByteCheckpoint reports an average 54.20× reduction in checkpoint stalls compared with open-source checkpointing and supports resharding when the parallelism layout changes.</p>
+<p><strong>Interval.</strong> With save cost δ and mean time between failures M, the Young/Daly interval τ* ≈ √(2 δ M) (section 3). Cutting the <em>blocking</em> part of δ with asynchronous saves shortens τ* and the recomputation term together.</p>
+<p><strong>Goodput accounting.</strong> Track the effective training time ratio (productive time ÷ wall-clock time) and attribute every lost minute to detection, restart, reload or recomputation; the largest bucket is the next thing to automate.</p>
 <h2 id="7-risks-and-de-risking">7. Risks and de-risking</h2>
 <ul>
 <li><strong>Data mixture wrong:</strong> run small-scale ablations with several seeds and low-noise metrics; DataDecide found 150M-parameter rankings predicted about 80% of 1B comparisons.</li>
@@ -131,6 +172,19 @@
 <li><strong>Synchronous rare checkpoints:</strong> lower overhead per save but much more lost work per failure.</li>
 <li><strong>Shared scheduler queue:</strong> cheaper utilisation, but restarts would wait behind other jobs.</li>
 </ul>
+<h2 id="9-data-and-checkpoint-storage">9. Data and checkpoint storage</h2>
+<ul>
+<li><strong>Checkpoint size:</strong> 70B parameters × 16 bytes (BF16 weights and gradients are not saved; FP32 (32-bit floating point) master weights and Adam moments plus BF16 weights) ≈ <strong>1.1 TB</strong> per full checkpoint.</li>
+<li><strong>Write bandwidth:</strong> saving 1.1 TB in the assumed 5 minutes needs ≈ <strong>3.7 GB/s</strong> aggregate to storage; asynchronous saves hide most of it.</li>
+<li><strong>Retention:</strong> keep the last few checkpoints for restarts plus periodic milestones for evaluation and ablations.</li>
+<li><strong>Data:</strong> the 15T-token mixture stored as pre-tokenised shards with a manifest (source, version, sampling weight); the data loader records its position in every checkpoint so restarts resume the exact data order.</li>
+</ul>
+<h2 id="10-observability">10. Observability</h2>
+<p>Training: loss, gradient norm, learning rate, tokens/s, MFU per step; loss spikes and NaNs (not a numbers). Fleet: per-node GPU errors (ECC (error-correcting code), XID (NVIDIA driver error code)), NIC errors, stragglers (slowest rank per step), temperature. Goodput: productive time ÷ wall-clock time, with lost time attributed to detection, restart, reload and recomputation (section 6b).</p>
+<h2 id="11-cost-model">11. Cost model</h2>
+<p>GPU-hours = 4,096 GPUs × 52 days × 24 h ≈ <strong>5.1M GPU-hours</strong>. At an assumed $2 per GPU-hour that is about <strong>$10M</strong>; every percentage point of goodput is worth about $100K. Add storage, networking, evaluation runs and the ablations that precede the main run.</p>
+<h2 id="12-rollout">12. Rollout</h2>
+<p>Staged: short runs at small scale to validate data, code and loss curves; a full-scale shakedown of a few hours to measure MFU, failure handling and checkpoint save and restore; then the main run with scheduled evaluation checkpoints.</p>
 <h2 id="references">References</h2>
 <p>Llama Team 2024 (The Llama 3 Herd of Models: compute, parallelism, interruptions); Shoeybi et al. / Narayanan et al. (Megatron-LM tensor and pipeline parallelism); Rajbhandari et al. 2020 (ZeRO); Zhao et al. 2023 (PyTorch FSDP); Penedo et al. 2024 (FineWeb); Magnusson et al. 2025 (DataDecide); Jiang et al. 2024 (MegaScale). Related decks: distributed training, GPU failures, cluster scheduling, pretraining data, experiments in LLM (large language model) training.</p>
 </article>

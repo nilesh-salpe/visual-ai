@@ -4,6 +4,7 @@ body:
   data-deck: Serving a chat assistant
   data-home: ../index.html
   data-home-label: System design
+  data-doc: design.html
 styles:
 - ../../shared/deck.css
 - ../../shared/learn.css

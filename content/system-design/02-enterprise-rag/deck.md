@@ -4,6 +4,7 @@ body:
   data-deck: Enterprise RAG assistant
   data-home: ../index.html
   data-home-label: System design
+  data-doc: design.html
 styles:
 - ../../shared/deck.css
 - ../../shared/learn.css
@@ -31,6 +32,8 @@ papers:
 - diskann
 - owasp_llm
 - beir
+- pq
+- tail_at_scale
 ---
 
 <!-- slide from="title" -->
@@ -148,6 +151,27 @@ Very selective filters can starve approximate search of candidates: partition in
 | Ingestion bursts | freshness lags after bulk imports | priority queues for edits and deletes, autoscaled workers |
 | Reranker latency | p99 grows with candidate count | cap candidates, GPU batching, time out to fused order |
 | Long documents | answer split across chunks | structure-aware chunking, neighbouring-chunk expansion |
+:::
+
+<!-- slide id="s-web" chapter="Web scale" tag="6 · Scaling: web scale" tagclass="b6" -->
+## At web scale: a billion documents, a million queries a second <span class="ill">calculator</span>
+
+<div class="visual"><div class="controls"><label class="ctl">documents (billions) <input type="range" id="wsD" min="0.1" max="5" step="0.1" value="1"> <output id="wsDo"></output></label><label class="ctl">queries/s <input type="range" id="wsQ" min="10000" max="2000000" step="10000" value="1000000"> <output id="wsQo"></output></label><label class="ctl">cache hit rate <input type="range" id="wsC" min="0" max="90" step="5" value="50"> <output id="wsCo"></output></label><label class="ctl">queries that get an LLM answer <input type="range" id="wsL" min="0" max="100" step="1" value="5"> <output id="wsLo"></output></label></div><div class="bars"><div id="wsBars"></div></div><p class="readout" id="wsOut"></p></div>
+
+Assumptions: 3 chunks per document; vectors compressed with product quantization to 64 bytes plus 64 bytes of graph and ids; 50 million vectors per shard; 2,000 queries/s per shard replica; 300 output tokens per LLM answer at 10,000 tokens/s per 8-GPU replica.
+
+::: cards grid2
+### [d] Fan-out sets the tail
+A query that touches every shard waits for the slowest. If each shard is slow 1% of the time, a 60-shard query is slow 1 − 0.99⁶⁰ ≈ 45% of the time. Send hedged requests to a second replica after the expected latency, and cut fan-out by partitioning (by tenant, language or topic).
+
+### [a] Index layout
+Shard the vectors, replicate each shard for throughput, and keep the compressed index in RAM (or on SSD with DiskANN-style indexes); fetch full text only for the final top-k.
+
+### [b] Cache first
+Popular queries repeat: cache retrieval results and generated answers by normalised query, with short TTLs and invalidation on index updates.
+
+### [e] The LLM is the expensive part
+Generating an answer for every query at a million per second would need hundreds of thousands of GPUs. Generate for a fraction (an answer box), cache answers, and use a small model where quality allows.
 :::
 
 <!-- slide id="s-fail" chapter="Failures" tag="7 · Failures and operations" tagclass="b7" -->

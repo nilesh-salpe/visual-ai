@@ -37,7 +37,7 @@ LLM_SECTIONS = [  # (section, [(folder, label, title, blurb, tags), ...])
         ('multimodal', 'Topic · 3 decks + 1 Colab notebook', 'Multimodal LLMs', 'ViT and CLIP, connecting a vision encoder to an LLM (LLaVA, Flamingo, BLIP-2, early fusion), and images as tokens in practice: cost, limits, evaluation and hallucination.', ['ViT', 'CLIP', 'LLaVA', 'visual tokens']),
     ]),
     ('Case studies', [
-        ('system-design', 'Case studies · 4 decks + 4 design docs', 'System design case studies', 'End-to-end designs: serving a chat assistant, an enterprise RAG assistant, an autonomous coding agent, and planning a pretraining run.', ['capacity', 'KV cache', 'checkpoints', 'trade-offs']),
+        ('system-design', 'Case studies · 7 decks + 7 design docs', 'System design case studies', 'End-to-end designs: a chat assistant, enterprise RAG, a coding agent, a pretraining run, a multi-tenant LLM API, batched inference, and model weight distribution.', ['capacity', 'KV cache', 'checkpoints', 'trade-offs']),
     ]),
     ('Serving and evaluation', [
         ('inference', 'Topic · 13 decks + 13 Colab notebooks', 'LLM Inference and Serving', 'Prefill vs decode, KV cache, continuous batching, chunked prefill, PagedAttention, speculative decoding, quantization, tensor parallelism, disaggregation, decoding strategies, and serving at scale (large MoE models, the KV cache across a fleet), with hands-on notebooks.', ['KV cache', 'vLLM', 'speculative', 'Colab']),
@@ -58,7 +58,7 @@ AGENT_SECTIONS = [  # same shape as LLM_SECTIONS
         ('agent-models', 'Topic · 2 decks', 'Models for agents', 'Training LLMs for tool use and agency, and serving LLMs for agent workloads.', ['tool-use SFT', 'agentic RL', 'prefix reuse', 'constrained decoding']),
     ]),
     ('Case studies', [
-        ('system-design', 'Case studies · 4 decks + 4 design docs', 'System design case studies', 'End-to-end designs: serving a chat assistant, an enterprise RAG assistant, an autonomous coding agent, and planning a pretraining run.', ['RAG', 'sandboxes', 'durable execution', 'trade-offs']),
+        ('system-design', 'Case studies · 7 decks + 7 design docs', 'System design case studies', 'End-to-end designs: a chat assistant, enterprise RAG, a coding agent, a pretraining run, a multi-tenant LLM API, batched inference, and model weight distribution.', ['RAG', 'sandboxes', 'durable execution', 'trade-offs']),
     ]),
     ('Running agents', [
         ('agent-operations', 'Topic · 5 decks', 'Agent operations', 'Evaluating agents (pass^k), safety and reliability, cost and latency, online experimentation for LLM products, and jailbreaks and adversarial robustness.', ['evals', 'prompt injection', 'A/B tests', 'jailbreaks']),

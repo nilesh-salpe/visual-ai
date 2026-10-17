@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="../../shared/deck.css">
 <link rel="stylesheet" href="../../shared/learn.css">
 </head>
-<body data-deck="Planning a pretraining run" data-home="../index.html" data-home-label="System design">
+<body data-deck="Planning a pretraining run" data-home="../index.html" data-home-label="System design" data-doc="design.html">
 
 <section class="slide title-slide" id="s-title" data-chapter="Start">
   <div class="inner">
@@ -90,6 +90,52 @@
       <div class="card b"><h3>Interval from the failure rate</h3><p>Young/Daly: τ* ≈ √(2 δ M) for save time δ and mean time between failures M. At the Llama 3 rate a 4,096-GPU job fails about every 12 hours: with 5-minute saves, checkpoint roughly every 86 minutes.</p></div>
       <div class="card c"><h3>Make saves cheap</h3><p>Asynchronous, sharded checkpoints written in the background shrink δ, which shortens the interval and the work lost.</p></div>
       <div class="card e"><h3>Resume exactly</h3><p>Checkpoint the optimizer state, RNG (random number generator) state and data-loader position too, so a resumed run is the same run.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-deep2" data-chapter="Recovery">
+  <div class="inner">
+    <span class="qtag b5">5 · Deep dive: recovery</span>
+    <h2>Deep dive: recovering fast when something breaks</h2>
+    <hr>
+<p class="lede">At Llama 3 scale (16,384 GPUs) Meta saw 419 unexpected interruptions in 54 days, about one every 3 hours. Goodput depends less on how rarely jobs fail than on how fast they come back.</p>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Stage</th>
+<th>What it costs</th>
+<th>How to shrink it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Detect</td>
+<td>minutes if you wait for a collective-communication timeout</td>
+<td>heartbeats, per-rank progress counters, GPU health checks; MegaScale-style diagnosis to find the bad node</td>
+</tr>
+<tr>
+<td>Decide</td>
+<td>operator time</td>
+<td>automation: cordon the node, pick a hot spare, restart without a human</td>
+</tr>
+<tr>
+<td>Reload state</td>
+<td>a full read of the checkpoint from storage</td>
+<td>keep the latest checkpoint in host or peer memory; load only each rank's shard</td>
+</tr>
+<tr>
+<td>Recompute</td>
+<td>everything since the last checkpoint</td>
+<td>checkpoint more often; asynchronous saves make that cheap</td>
+</tr>
+</tbody>
+</table></div>
+<div class="grid2">
+      <div class="card a"><h3>Asynchronous checkpoints</h3><p>PyTorch Distributed Checkpoint <code>async_save</code> copies state into CPU (central processing unit) buffers, then writes in the background while training continues; the price is CPU memory of about checkpoint size per rank × ranks per host.</p></div>
+      <div class="card c"><h3>Checkpoint systems at scale</h3><p>ByteCheckpoint reports an average 54.20× reduction in checkpoint stalls compared with open-source baselines, and reshards checkpoints when the parallelism layout changes.</p></div>
+      <div class="card b"><h3>Hot spares</h3><p>Keep a few healthy nodes reserved; on failure, swap one in rather than waiting for a repair or shrinking the job.</p></div>
+      <div class="card e"><h3>Measure goodput</h3><p>Track effective training time ÷ wall-clock time, broken down into detection, restart, reload and lost work, so you know which stage to attack.</p></div>
     </div>
   </div>
 </section>
@@ -223,6 +269,12 @@
     <hr>
     <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
     <div class="papers">
+      <div class="paper-item"><a href="https://arxiv.org/abs/2407.20143" target="_blank" rel="noopener">ByteCheckpoint: A Unified Checkpointing System for Large Foundation Model Development</a>
+        <div class="meta">Wan et al. · arXiv 2024</div>
+        <p>Production checkpointing for large training jobs across frameworks and storage backends, with automatic resharding between parallelism layouts and optimised save and load.</p><div class="num">Remember: average 54.20× reduction in checkpoint stalls vs open-source systems</div></div>
+      <div class="paper-item"><a href="https://docs.pytorch.org/tutorials/recipes/distributed_async_checkpoint_recipe.html" target="_blank" rel="noopener">Asynchronous Saving with Distributed Checkpoint (PyTorch tutorial)</a>
+        <div class="meta">PyTorch · PyTorch docs 2026</div>
+        <p>torch.distributed.checkpoint.async_save copies state to CPU buffers and writes in the background so training continues; raises CPU memory by checkpoint size per rank × ranks.</p><div class="num">Remember: PyTorch 2.4 or later</div></div>
       <div class="paper-item"><a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener">The Llama 3 Herd of Models</a>
         <div class="meta">Llama Team, AI (artificial intelligence) @ Meta · arXiv 2024</div>
         <p>Dense Transformer with GQA (8 KV (key-value) heads), RoPE (rotary position embedding) base 500,000, a 128K vocabulary and a document mask; staged long-context pretraining to 128K; post-training with SFT (supervised fine-tuning), rejection sampling and DPO (Direct Preference Optimization) in six rounds.</p><div class="num">Remember: 128K context after six stages over ~800B tokens</div></div>

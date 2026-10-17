@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--x:ga--><!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-67CZB0CXVD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-67CZB0CXVD');
+</script><!--/x:ga-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-tenant LLM API platform</title>
+<link rel="stylesheet" href="../../shared/deck.css">
+<link rel="stylesheet" href="../../shared/learn.css">
+</head>
+<body data-deck="Multi-tenant LLM API platform" data-home="../index.html" data-home-label="System design" data-doc="design.html">
+
+<section class="slide title-slide" id="s-title" data-chapter="Start">
+  <div class="inner">
+    <div class="kicker">Visual AI · System design · 05</div><div class="status-row"><span class="lbl lbl-current" title="widely used in production today">Current practice</span><span class="reviewed">Reviewed 2026-10-17</span><span class="status-note">Numbers are labelled assumptions or cited (Claude API (application programming interface) docs, VTC (Virtual Token Counter), S-LoRA) as of 2026-10-17.</span></div>
+    <h1>Multi-tenant LLM API platform</h1>
+    <p class="sub">The backend of a public LLM (large language model) API or a ChatGPT-style product: rate limits by tokens, fair scheduling across tenants, priority tiers, routing to model pools and LoRA (Low-Rank Adaptation) adapters, a discounted batch tier, metering, and the cost model behind it all.</p>
+    <div class="ps">
+      <div class="p"><b>What is the problem?</b>Thousands of organisations call several models over one API. Keep time to first token low, stop any tenant from taking all the GPUs (graphics processing units), cap free-user cost, and bill accurately.</div>
+      <div class="c"><b>Core idea</b>Put a <b>stateless API gateway</b> in front of <b>model pools</b>. Limit each organisation with <b>token buckets</b> on requests, input tokens and output tokens; admit by <b>priority class</b>, then by <b>fair share of tokens</b>; route to the right pool and to the replica that <b>caches the prompt prefix</b>; fill idle capacity with a <b>discounted batch tier</b>; meter every token for billing.</div>
+    </div>
+    <div class="toc" data-auto></div>
+    <p class="start-hint"><a href="design.html">Read the detailed design document →</a> · Previous: <a href="../04-pretraining-run/index.html">Planning a pretraining run</a> · Next: <a href="../06-batched-inference/index.html">Batched inference service →</a> · <a href="../index.html">All case studies</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-req" data-chapter="Requirements">
+  <div class="inner">
+    <span class="qtag b1">1 · Clarify requirements</span>
+    <h2>Clarify before you design</h2>
+    <hr>
+<div class="grid2">
+      <div class="card f"><h3>Ask first</h3><p>How many models and sizes? Streaming? Is conversation state on the server (here: no, clients send history)? How skewed are tenants? What does fair mean: equal, or weighted by tier?</p></div>
+      <div class="card a"><h3>Functional</h3><p>Create a response (streaming or not), choose a model, system prompts, prompt caching, batch jobs, usage reporting, limits per key and per organisation.</p></div>
+      <div class="card c"><h3>Non-functional (targets)</h3><p>Time to first token p95 under 1 s for paid tiers; 40+ tokens/s per stream; 99.9% monthly availability; isolation: a tenant within its limits keeps its latency target.</p></div>
+      <div class="card e"><h3>Scale (assumptions)</h3><p>10,000 organisations; peak 5,000 requests/s; 2,000 input tokens (40% cached) and 400 output tokens per request.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-est" data-chapter="Estimates">
+  <div class="inner">
+    <span class="qtag b2">2 · Estimates</span>
+    <h2>Back-of-the-envelope <span class="ill">calculator</span></h2>
+    <hr>
+<div class="visual"><div class="controls"><label class="ctl">peak requests/s <input type="range" id="eR" min="500" max="20000" step="500" value="5000"> <output id="eRo"></output></label><label class="ctl">output tokens <input type="range" id="eO" min="100" max="2000" step="50" value="400"> <output id="eOo"></output></label><label class="ctl">routed to small model <input type="range" id="eS" min="0" max="90" step="5" value="50"> <output id="eSo"></output></label><label class="ctl">replica throughput (tokens/s) <input type="range" id="eT" min="2" max="30" step="1" value="10"> <output id="eTo"></output></label><label class="ctl">GPU $/hour <input type="range" id="eP" min="1" max="6" step="0.25" value="2"> <output id="ePo"></output></label></div><div class="bars"><div id="eBars"></div></div><p class="readout" id="eOut"></p></div>
+
+<p>Replica throughput at the latency target is the one number that must come from a load test; GPU price is an assumption.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-api" data-chapter="API">
+  <div class="inner">
+    <span class="qtag b3">3 · API and data</span>
+    <h2>API and data model</h2>
+    <hr>
+<div class="visual"><pre class="code">POST /v1/responses   {&quot;model&quot;: &quot;large&quot;, &quot;stream&quot;: true, &quot;max_tokens&quot;: 1024,
+                      &quot;system&quot;: &quot;...&quot;, &quot;messages&quot;: [...]}
+→ 200 text/event-stream ... final: {&quot;usage&quot;: {&quot;input&quot;: 812,
+        &quot;cache_read&quot;: 1200, &quot;output&quot;: 391}}
+→ 429 {&quot;error&quot;: &quot;rate_limit&quot;, &quot;limit&quot;: &quot;output_tokens_per_minute&quot;}
+      retry-after: 7
+POST /v1/batches     {&quot;requests&quot;: [... up to 100,000 ...]}  → batch id</pre></div>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Record</th>
+<th>Store</th>
+<th>Key</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API key → org, tier, scopes</td>
+<td>key-value store, cached at gateways</td>
+<td>key hash</td>
+</tr>
+<tr>
+<td>Org limits (RPM (requests per minute), ITPM (input tokens per minute), OTPM (output tokens per minute), budget)</td>
+<td>config store</td>
+<td>org id</td>
+</tr>
+<tr>
+<td>Token buckets</td>
+<td>in memory, sharded by org</td>
+<td>org id + limit</td>
+</tr>
+<tr>
+<td>Usage events</td>
+<td>append-only log → warehouse</td>
+<td>request id (idempotent)</td>
+</tr>
+<tr>
+<td>Batch jobs</td>
+<td>object store + job table</td>
+<td>batch id</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-hld" data-chapter="High-level design">
+  <div class="inner">
+    <span class="qtag b4">4 · High-level design</span>
+    <h2>High-level design</h2>
+    <hr>
+<div class="visual dgm" data-steps="[&quot;Tenants call one HTTPS API with an API key; responses stream as server-sent events.&quot;, &quot;The gateway authenticates the key, validates the request (model, max tokens, context length) and assigns a request id for idempotent retries.&quot;, &quot;A distributed rate limiter checks the organisation&#x27;s token buckets for requests, input tokens and output tokens per minute; over the limit returns 429 with retry-after.&quot;, &quot;Admission decides who runs now when capacity is tight: priority classes, then fair share by tokens across tenants, so one tenant cannot fill the queue.&quot;, &quot;The router picks the model pool (or LoRA adapter) and a replica, preferring the replica that already caches this prompt&#x27;s prefix.&quot;, &quot;Model pools: replicas of each model with continuous batching and prefix caching; fine-tunes served as LoRA adapters on shared base models.&quot;, &quot;Asynchronous batch jobs wait in a separate queue and are admitted only into spare capacity, at a discount.&quot;, &quot;Every response reports input, cached and output tokens; metering aggregates them per tenant for billing and for the rate limiter.&quot;]"><div class="controls"><button class="btn primary" data-dg="play">▶ play</button><button class="btn" data-dg="next">next step</button><button class="btn" data-dg="all">show all</button><button class="btn" data-dg="reset">reset</button></div><svg viewBox="0 0 660 300" role="img" aria-label="diagram"><defs><marker id="dga1" class="dg-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs><g class="dg-edge" data-step="1"><line x1="107.0" y1="153.0" x2="124.0" y2="153.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="3"><line x1="185.5" y1="123.0" x2="185.5" y2="75.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="4"><line x1="245.0" y1="153.0" x2="262.0" y2="153.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="5"><line x1="388.0" y1="153.0" x2="405.0" y2="153.0" marker-end="url(#dga1)"/></g><g class="dg-edge" data-step="6"><line x1="511.0" y1="153.0" x2="528.0" y2="153.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="7"><line x1="326.0" y1="238.0" x2="326.0" y2="185.0" marker-end="url(#dga1)"/></g><g class="dg-edge dash" data-step="8"><line x1="530.0" y1="205.9" x2="493.8" y2="236.0" marker-end="url(#dga1)"/></g><g class="dg-node f" data-step="1"><rect x="10" y="125" width="95" height="56" rx="10"/><text class="dg-text" x="57.5" y="151.0" text-anchor="middle">Tenants</text><text class="dg-sub" x="57.5" y="167.0" text-anchor="middle">keys · SDKs</text></g><g class="dg-node a" data-step="2"><rect x="128" y="125" width="115" height="56" rx="10"/><text class="dg-text" x="185.5" y="151.0" text-anchor="middle">API gateway</text><text class="dg-sub" x="185.5" y="167.0" text-anchor="middle">auth · validate</text></g><g class="dg-node d" data-step="3"><rect x="128" y="15" width="115" height="56" rx="10"/><text class="dg-text" x="185.5" y="41.0" text-anchor="middle">Rate limiter</text><text class="dg-sub" x="185.5" y="57.0" text-anchor="middle">RPM · ITPM · OTPM</text></g><g class="dg-node b" data-step="4"><rect x="266" y="125" width="120" height="56" rx="10"/><text class="dg-text" x="326.0" y="151.0" text-anchor="middle">Admission</text><text class="dg-sub" x="326.0" y="167.0" text-anchor="middle">priority · fairness</text></g><g class="dg-node c" data-step="5"><rect x="409" y="125" width="100" height="56" rx="10"/><text class="dg-text" x="459.0" y="151.0" text-anchor="middle">Router</text><text class="dg-sub" x="459.0" y="167.0" text-anchor="middle">model · prefix</text></g><g class="dg-node e" data-step="6"><rect x="532" y="60" width="123" height="186" rx="10"/><text class="dg-text" x="593.5" y="151.0" text-anchor="middle">Model pools</text><text class="dg-sub" x="593.5" y="167.0" text-anchor="middle">small · large · LoRA</text></g><g class="dg-node b" data-step="7"><rect x="266" y="240" width="120" height="50" rx="10"/><text class="dg-text" x="326.0" y="263.0" text-anchor="middle">Batch queue</text><text class="dg-sub" x="326.0" y="279.0" text-anchor="middle">fills idle GPUs</text></g><g class="dg-node f" data-step="8"><rect x="409" y="240" width="100" height="50" rx="10"/><text class="dg-text" x="459.0" y="263.0" text-anchor="middle">Metering</text><text class="dg-sub" x="459.0" y="279.0" text-anchor="middle">usage · billing</text></g><g data-step="1"><text class="dg-label" x="115.5" y="145.0" text-anchor="middle"><tspan x="115.5" y="145.0">HTTPS</tspan></text></g><g data-step="7"><text class="dg-label" x="358.4" y="208.5" text-anchor="middle"><tspan x="358.4" y="208.5">low</tspan><tspan x="358.4" y="221.5">priority</tspan></text></g><g data-step="8"><text class="dg-label" x="496.7" y="206.2" text-anchor="middle"><tspan x="496.7" y="206.2">tokens</tspan></text></g></svg><p class="readout dgcap"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="s-deep1" data-chapter="Deep dive 1">
+  <div class="inner">
+    <span class="qtag b5">5 · Deep dive</span>
+    <h2>Deep dive: who runs next when the GPUs are busy <span class="ill">animation</span></h2>
+    <hr>
+<div class="visual"><div class="seg" id="fSeg"><button data-v="fcfs" class="on">First come, first served</button><button data-v="fair">Fair share of tokens</button></div><svg id="fSvg" viewBox="0 0 660 240" class="anim-lg" role="img" aria-label="Three tenants' requests over time, waiting and being served"></svg><p class="readout" id="fOut"></p></div>
+
+<p>Rate limits cap each tenant, but inside the limits first-come-first-served lets a bulk tenant delay everyone. The Virtual Token Counter (VTC) serves the backlogged tenant that has used the fewest tokens: isolation like a limit, but no idle GPUs while anyone waits. Priority classes (enterprise &gt; paid &gt; free &gt; batch) sit above it.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-deep2" data-chapter="Deep dive 2">
+  <div class="inner">
+    <span class="qtag b5">5 · Deep dive</span>
+    <h2>Deep dive: rate limits, routing and the batch tier</h2>
+    <hr>
+<div class="grid2">
+      <div class="card d"><h3>Token buckets</h3><p>Three per organisation, as on the Claude API: requests, input tokens and output tokens per minute, refilled continuously. Reserve max_tokens at admission, refund the rest. Cache reads can be exempt from the input limit, rewarding prompt caching. Gateways hold local allowances so most checks need no network call.</p></div>
+      <div class="card c"><h3>Routing</h3><p>Model pool from the request (optionally a router sends easy prompts to the small model); fine-tunes as LoRA adapters on shared base models (S-LoRA, Punica); replica by prefix hash with a load cap, so repeated system prompts hit the prefix cache.</p></div>
+      <div class="card b"><h3>Free-user caps</h3><p>Daily token budget, small model by default, lower max_tokens, lowest priority, admitted only into capacity paid tiers are not using.</p></div>
+      <div class="card e"><h3>Batch tier</h3><p>Asynchronous jobs at the lowest priority soak up idle GPUs. The Claude API: up to 100,000 requests or 256 MB per batch, done within 24 hours (most within an hour), 50% cheaper.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-scale" data-chapter="Scaling">
+  <div class="inner">
+    <span class="qtag b6">6 · Bottlenecks and scaling</span>
+    <h2>Bottlenecks and scaling</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Bottleneck</th>
+<th>Symptom</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPU capacity at the daily peak</td>
+<td>time to first token rises</td>
+<td>autoscale on queue depth and KV-cache (KV = key-value) use; scheduled pre-scaling; shift work to batch</td>
+</tr>
+<tr>
+<td>One very large tenant</td>
+<td>its share starves others</td>
+<td>weighted fair share; a dedicated pool with reserved capacity</td>
+</tr>
+<tr>
+<td>Rate-limit service</td>
+<td>hot shard for a big org</td>
+<td>local allowances at gateways; shard by org</td>
+</tr>
+<tr>
+<td>Long prompts</td>
+<td>prefills stall decoding</td>
+<td>chunked prefill; prefill/decode disaggregation</td>
+</tr>
+<tr>
+<td>Thousands of fine-tunes</td>
+<td>GPU memory for weights</td>
+<td>LoRA adapters on shared bases; cache adapters by popularity</td>
+</tr>
+<tr>
+<td>Single region</td>
+<td>latency and outages</td>
+<td>stateless API in several regions; route by latency and capacity</td>
+</tr>
+</tbody>
+</table></div>
+  </div>
+</section>
+
+<section class="slide" id="s-ops" data-chapter="Failures and cost">
+  <div class="inner">
+    <span class="qtag b7">7 · Failures, monitoring, cost</span>
+    <h2>Failures, monitoring and cost</h2>
+    <hr>
+<div class="visual scroll-x"><table class="tbl">
+<thead>
+<tr>
+<th>Failure</th>
+<th>Detection</th>
+<th>Handling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Replica dies mid-stream</td>
+<td>stream error, health check</td>
+<td>client retries with the same request id; billing deduplicated by id</td>
+</tr>
+<tr>
+<td>Overload</td>
+<td>queue depth, admission rejects</td>
+<td>429 with retry-after; shed batch then free tiers first; never drop admitted streams</td>
+</tr>
+<tr>
+<td>Rate-limit service down</td>
+<td>error rate</td>
+<td>fail open with local caps for paid tiers; fail closed for free</td>
+</tr>
+<tr>
+<td>Bad deploy</td>
+<td>canary SLOs (service-level objectives), eval regressions</td>
+<td>automatic rollback; tenants can pin model versions</td>
+</tr>
+</tbody>
+</table></div>
+<p>Monitor per tenant and model: tokens (input, cached, output), time to first token, inter-token latency, 429s by limit, queue time, cost. Cost per million output tokens ≈ GPU $/hour × GPUs per replica ÷ (tokens/s × 3,600 ÷ 10⁶) ÷ utilisation.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-wrap" data-chapter="Wrap-up">
+  <div class="inner">
+    <span class="qtag b9">8 · Wrap-up</span>
+    <h2>Wrap-up</h2>
+    <hr>
+<div class="grid2">
+      <div class="card a"><h3>Decisions</h3><p>Token-based limits and fairness (requests differ by 1,000× in cost); stateless API; prefix-aware routing; LoRA for fine-tunes; batch tier for utilisation.</p></div>
+      <div class="card b"><h3>Trade-offs</h3><p>Dedicated pools give the strongest isolation at lower utilisation; shared pools with fair scheduling give utilisation with weaker guarantees.</p></div>
+      <div class="card c"><h3>Next steps</h3><p>Load-test replica throughput per model; enable fair scheduling in log-only mode first; publish limits and 429 semantics before enforcing.</p></div>
+      <div class="card e"><h3>Risks and open questions</h3><p>Pricing of cached tokens; how much capacity to reserve; forecasting throughput of new models. (The Claude API's Priority Tier commitments are no longer sold: offers like this change.)</p></div>
+    </div>
+<p><a href="design.html">Read the detailed design document →</a></p>
+  </div>
+</section>
+
+<section class="slide" id="s-papers" data-chapter="Papers">
+  <div class="inner">
+    <span class="qtag b9">Further reading</span>
+    <h2>Key papers</h2>
+    <hr>
+    <p class="lede">The primary sources behind this deck, each with what it contributed. Links go to the paper (arXiv or the conference page).</p>
+    <div class="papers">
+      <div class="paper-item"><a href="https://platform.claude.com/docs/en/api/rate-limits" target="_blank" rel="noopener">Rate limits</a>
+        <div class="meta">Anthropic documentation · platform.claude.com 2026</div>
+        <p>Limits in requests, input tokens and output tokens per minute (RPM, ITPM, OTPM) per model class, enforced with a token bucket; 429 errors with retry-after; for most models cached input tokens do not count toward ITPM.</p><div class="num">Remember: 2M ITPM with an 80% cache hit rate ≈ 10M total input tokens per minute</div></div>
+      <div class="paper-item"><a href="https://platform.claude.com/docs/en/build-with-claude/batch-processing" target="_blank" rel="noopener">Batch processing (Claude documentation)</a>
+        <div class="meta">Anthropic · Claude platform docs 2026</div>
+        <p>Message Batches API: asynchronous processing of large request volumes at lower cost; results within 24 hours, most within an hour.</p><div class="num">Remember: 50% cheaper; up to 100,000 requests or 256 MB per batch</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2401.00588" target="_blank" rel="noopener">Fairness in Serving Large Language Models</a>
+        <div class="meta">Sheng et al. · arXiv 2024</div>
+        <p>Defines LLM serving fairness by weighted input and output tokens and introduces the Virtual Token Counter scheduler on top of continuous batching; work-conserving.</p><div class="num">Remember: provable 2× tight bound on service difference between backlogged clients</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2311.03285" target="_blank" rel="noopener">S-LoRA: Serving Thousands of Concurrent LoRA Adapters</a>
+        <div class="meta">Sheng et al. · MLSys 2024</div>
+        <p>Keeps adapters in host memory, pages them into a unified GPU memory pool and batches requests for different adapters together.</p><div class="num">Remember: up to 4× throughput vs Hugging Face PEFT (parameter-efficient fine-tuning) and naive vLLM LoRA</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2310.18547" target="_blank" rel="noopener">Punica: Multi-Tenant LoRA Serving</a>
+        <div class="meta">Chen et al. · MLSys 2024</div>
+        <p>A CUDA (Compute Unified Device Architecture, NVIDIA's programming platform for its graphics processors) kernel (SGMV (segmented gather matrix-vector multiplication)) that batches requests for many different LoRA adapters through one shared base model.</p><div class="num">Remember: 12× throughput, +2 ms latency per token</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2309.06180" target="_blank" rel="noopener">Efficient Memory Management for Large Language Model Serving with PagedAttention</a>
+        <div class="meta">Kwon et al. · SOSP 2023</div>
+        <p>Stores the KV cache in fixed-size blocks mapped by a block table, like virtual memory pages, giving near-zero fragmentation and sharing with copy-on-write. The basis of vLLM.</p><div class="num">Remember: 2–4× throughput vs FasterTransformer and Orca at the same latency</div></div>
+      <div class="paper-item"><a href="https://vllm.ai/blog/2025-12-13-vllm-router-release" target="_blank" rel="noopener">vLLM Router: A High-Performance and Prefill/Decode Aware Load Balancer for Large-scale Serving</a>
+        <div class="meta">vLLM Team · vLLM blog 2025</div>
+        <p>Rust load balancer forked from the SGLang model gateway: consistent hashing, power of two, round robin and random; native P/D routing (NIXL (NVIDIA Inference Xfer Library), NCCL (NVIDIA Collective Communications Library)); retries, circuit breakers, Kubernetes discovery, Prometheus metrics.</p><div class="num">Remember: Llama 3.1 8B (8P/8D): +25% throughput vs llm-d, 2× a round-robin K8s Service</div></div>
+      <div class="paper-item"><a href="https://arxiv.org/abs/2406.18665" target="_blank" rel="noopener">RouteLLM: Learning to Route LLMs with Preference Data</a>
+        <div class="meta">Ong et al. · ICLR 2025</div>
+        <p>Routers trained on human preference data (with augmentation) choose between a strong and a weak model per query; they transfer when the model pair changes.</p><div class="num">Remember: costs cut by over 2× in some cases without lowering response quality</div></div>
+    </div>
+  </div>
+</section>
+
+<script src="../../shared/deck.js"></script>
+<script src="../../shared/learn.js"></script>
+<script src="../../shared/diagram.js"></script>
+<script>
+(() => {
+  const { svg, clear } = Deck;
+// ---- estimates calculator
+Deck.bind(['eR', 'eO', 'eS', 'eT', 'eP'], () => {
+  const R = Deck.val('eR'), O = Deck.val('eO'), sm = Deck.val('eS') / 100, T = Deck.val('eT') * 1000, P = Deck.val('eP');
+  Deck.out('eRo', R.toLocaleString()); Deck.out('eOo', O); Deck.out('eSo', Math.round(sm * 100) + '%'); Deck.out('eTo', (T / 1000) + 'K'); Deck.out('ePo', '$' + P.toFixed(2));
+  const out = R * O, large = out * (1 - sm), reps = Math.ceil(large / T), gpus = reps * 8, perM = P * 8 / (T * 3600 / 1e6);
+  const conc = R * O / 40;
+  Deck.hbars(document.getElementById('eBars'), [
+    { label: 'output tokens/s at peak', value: 1, color: 'var(--a)', text: (out / 1e6).toFixed(2) + 'M' },
+    { label: 'concurrent streams (Little\'s law at 40 tok/s)', value: 1, color: 'var(--c)', text: Math.round(conc).toLocaleString() },
+    { label: 'large-model GPUs (8 per replica)', value: 1, color: 'var(--d)', text: gpus.toLocaleString() },
+    { label: 'cost per million output tokens (large, full use)', value: 1, color: 'var(--e)', text: '$' + perM.toFixed(2) }], { max: 1 });
+  document.getElementById('eOut').innerHTML = `${R.toLocaleString()} requests/s × ${O} output tokens = <b>${(out / 1e6).toFixed(2)}M tokens/s</b>. With ${Math.round(sm * 100)}% routed to the small model, the large model needs <b>${reps} replicas (${gpus.toLocaleString()} GPUs)</b> at ${(T / 1000)}K tokens/s each. Cost per million output tokens rises as utilisation falls: fill troughs with batch work.`;
+});
+
+// ---- fair scheduling animation: FCFS vs token-fair (VTC-style)
+const s = document.getElementById('fSvg'); let mode = 'fcfs', t0 = performance.now();
+const ARR = [];   // tenant A: heavy burst of long requests; B and C: light, short
+for (let k = 0; k < 14; k++) ARR.push({ t: k * 0.25, who: 0, cost: 3 });
+for (let k = 0; k < 6; k++) ARR.push({ t: 0.6 + k * 0.7, who: 1, cost: 1 });
+for (let k = 0; k < 5; k++) ARR.push({ t: 1.1 + k * 0.9, who: 2, cost: 1 });
+ARR.sort((a, b) => a.t - b.t);
+const COL = ['var(--d)', 'var(--a)', 'var(--e)'], NAME = ['tenant A (bulk)', 'tenant B', 'tenant C'];
+function simulate() {   // one server, 2 cost units per second
+  const done = [], cnt = [0, 0, 0]; let clock = 0; const q = []; let i = 0;
+  while (done.length < ARR.length) {
+    while (i < ARR.length && ARR[i].t <= clock) q.push({ ...ARR[i++] });
+    if (!q.length) { clock = ARR[i].t; continue; }
+    let k = 0;
+    if (mode === 'fair') { const back = new Set(q.map(r => r.who)); let best = Infinity; q.forEach((r, j) => { if (cnt[r.who] < best) { best = cnt[r.who]; k = j; } }); back.forEach(w => { if (cnt[w] < Math.min(...[...back].map(x => cnt[x]))) cnt[w] = Math.min(...[...back].map(x => cnt[x])); }); }
+    const r = q.splice(k, 1)[0]; const start = clock; clock += r.cost / 2; cnt[r.who] += r.cost;
+    done.push({ ...r, start, end: clock });
+  }
+  return done;
+}
+function draw(now) {
+  const d = simulate(), T = Math.max(...d.map(x => x.end)), sx = x => 150 + x / T * 495; now = now % (T + 2);
+  clear(s);
+  svg('text', { x: 10, y: 20, class: 't', style: 'font-weight:700', text: mode === 'fcfs' ? 'First come, first served' : 'Fair share of tokens (VTC-style)' }, s);
+  [0, 1, 2].forEach(w => {
+    const y = 45 + w * 55; svg('text', { x: 10, y: y + 22, class: 't', text: NAME[w] }, s);
+    d.filter(x => x.who === w).forEach(x => {
+      if (x.start > now) return;
+      const e = Math.min(x.end, now);
+      svg('rect', { x: sx(x.t), y: y + 8, width: Math.max(1, sx(x.start) - sx(x.t)), height: 22, rx: 3, style: 'fill:var(--panel-2)' }, s);
+      svg('rect', { x: sx(x.start), y: y + 8, width: Math.max(1, sx(e) - sx(x.start)), height: 22, rx: 3, style: `fill:${COL[w]};opacity:.85` }, s);
+    });
+  });
+  svg('line', { x1: sx(Math.min(now, T)), x2: sx(Math.min(now, T)), y1: 40, y2: 210, style: 'stroke:var(--ink);stroke-width:1.5' }, s);
+  svg('text', { x: 150, y: 232, class: 'tm', text: 'grey = waiting in the queue · colour = being served' }, s);
+  const avg = w => { const xs = d.filter(x => x.who === w); return xs.reduce((a, x) => a + x.end - x.t, 0) / xs.length; };
+  document.getElementById('fOut').innerHTML = `Average latency: tenant A <b>${avg(0).toFixed(1)}</b>, tenant B <b>${avg(1).toFixed(1)}</b>, tenant C <b>${avg(2).toFixed(1)}</b> time units. ` +
+    (mode === 'fcfs' ? 'B and C queue behind A\'s burst of long requests.' : 'Light tenants are served first because they have used fewer tokens; A still gets all the spare capacity (work-conserving).');
+}
+Deck.seg('fSeg', v => { mode = v; t0 = performance.now(); draw(0); });
+Deck.enter('s-deep1', () => Deck.loop(() => draw((performance.now() - t0) / 1000 * 1.2)));
+})();
+</script>
+</body>
+</html>

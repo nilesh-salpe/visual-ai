@@ -289,3 +289,7 @@ svg.anim-lg .t { font-size: 15px; }
   .seg button { flex: 1 1 auto; }
 }
 .ctl input[type=range] { min-width: 0; }
+/* Case-study decks: a link to the detailed design document on every slide */
+.doc-btn { flex: 0 0 auto; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--a); color: var(--a); background: var(--a-soft); font: 600 13px Inter, sans-serif; text-decoration: none; white-space: nowrap; margin-right: 8px; }
+.doc-btn:hover { background: var(--a); color: #fff; }
+@media (max-width: 600px) { .doc-btn { padding: 5px 9px; font-size: 12px; } }

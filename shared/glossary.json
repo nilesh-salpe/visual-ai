@@ -953,6 +953,21 @@
   },
   "UCX": {
    "exp": "Unified Communication X"
+  },
+  "VTC": {
+   "exp": "Virtual Token Counter"
+  },
+  "AIMD": {
+   "exp": "additive increase, multiplicative decrease"
+  },
+  "GCS": {
+   "exp": "Google Cloud Storage"
+  },
+  "SHA": {
+   "exp": "Secure Hash Algorithm"
+  },
+  "SLA": {
+   "exp": "service-level agreement"
   }
  },
  "exempt": [
@@ -1424,6 +1439,10 @@
   "LMCacheConnectorV1",
   "MooncakeConnector",
   "NixlConnector",
-  "OffloadingConnector"
+  "OffloadingConnector",
+  "BitTorrent",
+  "BlitzScale",
+  "ServerlessLLM",
+  "ByteCheckpoint"
  ]
 }

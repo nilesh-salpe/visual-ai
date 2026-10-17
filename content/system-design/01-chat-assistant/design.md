@@ -128,6 +128,25 @@ Track time to first token, inter-token latency, tokens per request (input, cache
 
 Load-test a single replica to measure throughput at the latency target; launch to internal users; ramp external traffic 1% → 10% → 50% → 100% with canaries; add the routing tier and disaggregation only when metrics show the need.
 
+## 13. Data model
+
+| Record | Store | Key | Notes |
+|---|---|---|---|
+| Conversation | relational or key-value store | conversation id | owner, product, created, retention policy |
+| Message | same store, partitioned by conversation | (conversation id, sequence) | role, text, token counts, safety flags |
+| Usage event | append-only log → warehouse | request id | input, cached and output tokens, latency, model, replica |
+| Quota counters | in-memory token buckets | user or org id | rebuilt from usage events if lost |
+
+Prompts are assembled from these records in a fixed order (system prompt, history, new message) so that the prefix cache hits across turns.
+
+## 14. Cost model
+
+Fleet cost per hour = replicas × 8 GPUs × GPU price. Cost per request = fleet cost per hour ÷ requests per hour. Example with assumptions: a fleet of 10 replicas (80 GPUs) at $2 per GPU-hour costs $160/hour; at the average 231 requests/s (832K/hour) that is about **$0.0002 per request** (about $0.19 per 1,000), rising off-peak as utilisation falls. The biggest levers: prefix caching (the shared 1,000-token system prompt is two-thirds of each prompt), routing simple requests to a smaller model, FP8 weights and KV cache, and scaling down outside the daily peak.
+
+## 15. Risks and open questions
+
+Replica throughput at the latency target is unknown until load-tested; prompt lengths drift upward as conversations grow; a new model version can change both quality and cost; safety-filter latency adds to time to first token.
+
 ## References
 
 Kwon et al. 2023 (PagedAttention / vLLM); vLLM automatic prefix caching design; Yu et al. 2022 (Orca); Agrawal et al. 2024 (Sarathi-Serve); Zhong et al. 2024 (DistServe); Llama 3 model card shapes via the Llama 3 report; Anthropic rate-limit documentation (token buckets, 429 and retry-after). Related decks: KV cache, continuous batching, vLLM scheduler and prefix caching, LLM gateway.

@@ -84,6 +84,55 @@
 </code></pre>
 <h2 id="7-scaling-plan">7. Scaling plan</h2>
 <p>Quantize or move to SSD-resident (SSD = solid-state drive) graphs as the corpus grows; shard by source with a query router; priority queues so deletes and permission changes overtake bulk imports; scheduled re-embedding backfills.</p>
+<h3 id="71-at-web-scale-a-billion-documents-a-million-queries-per-second">7.1 At web scale: a billion documents, a million queries per second</h3>
+<p>A frequently reported variant asks for search over a billion documents at a million queries per second. The enterprise design above changes in five ways (all inputs below are assumptions):</p>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Formula</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Vectors</td>
+<td>1B documents × 3 chunks</td>
+<td>3B</td>
+</tr>
+<tr>
+<td>Index size</td>
+<td>3B × (64-byte PQ (product quantization) code + 64 bytes graph and ids)</td>
+<td>≈ 384 GB in RAM (random-access memory)</td>
+</tr>
+<tr>
+<td>Shards</td>
+<td>3B ÷ 50M vectors per shard</td>
+<td>60</td>
+</tr>
+<tr>
+<td>Shard replicas</td>
+<td>uncached queries/s ÷ 2,000 queries/s per replica</td>
+<td>1M × 50% miss ÷ 2,000 = 250 per shard → 15,000 shard servers if every query hits every shard</td>
+</tr>
+<tr>
+<td>Slow queries</td>
+<td>1 − 0.99⁶⁰</td>
+<td>≈ 45% of queries touch at least one shard in its slowest 1%</td>
+</tr>
+<tr>
+<td>LLM answers</td>
+<td>queries × share answered × 300 tokens ÷ 10,000 tokens/s per 8-GPU replica</td>
+<td>5% of 500K/s → 750 replicas = 6,000 GPUs (graphics processing units); for every query: 120,000 GPUs</td>
+</tr>
+</tbody>
+</table>
+<p>Design changes:
+1. <strong>Partition to cut fan-out.</strong> Route a query only to shards that can contain its answer (by language, region, tenant or a coarse topic classifier); each halving of fan-out halves the shard servers needed.
+2. <strong>Tolerate the tail.</strong> Hedged requests: after the expected latency, send the same shard request to a second replica and take the first answer (Dean and Barroso, The Tail at Scale). Return partial results if a shard misses the deadline.
+3. <strong>Cache aggressively.</strong> Result and answer caches keyed by normalised query; a 50% hit rate halves every downstream row.
+4. <strong>Keep the index compact.</strong> Product quantization (64 bytes per vector) in RAM, or SSD-resident graph indexes (DiskANN) to cut RAM cost; full text fetched only for the final top-k.
+5. <strong>Budget the LLM.</strong> Generate only where it adds value (an answer box for a fraction of queries), cache answers, prefer a small model, and stream.</p>
 <h2 id="8-reliability-and-security">8. Reliability and security</h2>
 <table>
 <thead>
@@ -119,6 +168,19 @@
 <li><strong>Post-filtering by permission:</strong> leaks text into the pipeline and returns too few results.</li>
 <li><strong>Long-context only:</strong> if a team's corpus is under about 200,000 tokens, put it in the prompt with prompt caching instead.</li>
 </ul>
+<h2 id="11-observability">11. Observability</h2>
+<p>Retrieval: recall@k on a labelled question set, the share of answers with citations, "not found" rate, permission-filter rejections. Freshness: lag from source edit to searchable, and from revocation to enforcement (targets 15 and 5 minutes). Serving: time to first token, tokens per answer, cache hit rate, cost per question. Feedback: thumbs-down rate and the questions behind it.</p>
+<h2 id="12-cost-model">12. Cost model</h2>
+<ul>
+<li><strong>One-time indexing:</strong> contextual chunking at Anthropic's estimate of $1.02 per million document tokens → about $20,000 for 20B tokens, plus embedding cost, then only changed documents.</li>
+<li><strong>Per question (assumptions):</strong> 20 retrieved chunks × 400 tokens = 8,000 input tokens plus ~500 output tokens. At 500K questions a day: <strong>4B input and 250M output tokens per day</strong>. Multiply by the model's price per token (or by GPU-hours if self-hosted).</li>
+<li><strong>Levers:</strong> fewer, better chunks after reranking; prompt caching of the fixed instructions; a smaller model for simple questions; caching answers to repeated questions.</li>
+<li><strong>Index storage:</strong> 205 GB of full vectors, or 3.6 GB with product quantization plus re-scoring.</li>
+</ul>
+<h2 id="13-rollout">13. Rollout</h2>
+<p>Start with one department's sources and an evaluation set of real questions with expected citations; shadow-launch answers to measure recall and faithfulness; enable permissions enforcement and freshness monitoring before broad launch; add sources one connector at a time.</p>
+<h2 id="14-risks-and-open-questions">14. Risks and open questions</h2>
+<p>Permission models differ per source system and must be mirrored exactly; stale ACLs are a security incident, not a quality bug; tables and scanned PDFs (Portable Document Formats) parse poorly; users will ask questions the corpus cannot answer, so "not found" must be a good answer.</p>
 <h2 id="references">References</h2>
 <p>Anthropic, Introducing Contextual Retrieval (2024); Cormack et al. 2009 (RRF (reciprocal rank fusion)); Nogueira &amp; Cho 2019 (cross-encoder reranking); Malkov &amp; Yashunin (HNSW); Subramanya et al. 2019 (DiskANN); Thakur et al. 2021 (BEIR); OWASP (Open Worldwide Application Security Project) Top 10 for LLM Applications 2025. Related decks: indexing pipelines, vector databases, rerankers, identity and access control, agentic RAG (retrieval-augmented generation).</p>
 </article>

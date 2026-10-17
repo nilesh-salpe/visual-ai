@@ -89,6 +89,26 @@ chunk(id, doc_id, doc_version, text, context, embedding_v3, bm25_terms,
 
 Quantize or move to SSD-resident graphs as the corpus grows; shard by source with a query router; priority queues so deletes and permission changes overtake bulk imports; scheduled re-embedding backfills.
 
+### 7.1 At web scale: a billion documents, a million queries per second
+
+A frequently reported variant asks for search over a billion documents at a million queries per second. The enterprise design above changes in five ways (all inputs below are assumptions):
+
+| Quantity | Formula | Value |
+|---|---|---|
+| Vectors | 1B documents × 3 chunks | 3B |
+| Index size | 3B × (64-byte PQ code + 64 bytes graph and ids) | ≈ 384 GB in RAM |
+| Shards | 3B ÷ 50M vectors per shard | 60 |
+| Shard replicas | uncached queries/s ÷ 2,000 queries/s per replica | 1M × 50% miss ÷ 2,000 = 250 per shard → 15,000 shard servers if every query hits every shard |
+| Slow queries | 1 − 0.99⁶⁰ | ≈ 45% of queries touch at least one shard in its slowest 1% |
+| LLM answers | queries × share answered × 300 tokens ÷ 10,000 tokens/s per 8-GPU replica | 5% of 500K/s → 750 replicas = 6,000 GPUs; for every query: 120,000 GPUs |
+
+Design changes:
+1. **Partition to cut fan-out.** Route a query only to shards that can contain its answer (by language, region, tenant or a coarse topic classifier); each halving of fan-out halves the shard servers needed.
+2. **Tolerate the tail.** Hedged requests: after the expected latency, send the same shard request to a second replica and take the first answer (Dean and Barroso, The Tail at Scale). Return partial results if a shard misses the deadline.
+3. **Cache aggressively.** Result and answer caches keyed by normalised query; a 50% hit rate halves every downstream row.
+4. **Keep the index compact.** Product quantization (64 bytes per vector) in RAM, or SSD-resident graph indexes (DiskANN) to cut RAM cost; full text fetched only for the final top-k.
+5. **Budget the LLM.** Generate only where it adds value (an answer box for a fraction of queries), cache answers, prefer a small model, and stream.
+
 ## 8. Reliability and security
 
 | Risk | Control |
@@ -107,6 +127,25 @@ A labelled set of real questions with known supporting documents: **recall@20** 
 - **Dense-only retrieval:** simpler, but misses exact identifiers; BEIR found BM25 a robust zero-shot baseline.
 - **Post-filtering by permission:** leaks text into the pipeline and returns too few results.
 - **Long-context only:** if a team's corpus is under about 200,000 tokens, put it in the prompt with prompt caching instead.
+
+## 11. Observability
+
+Retrieval: recall@k on a labelled question set, the share of answers with citations, "not found" rate, permission-filter rejections. Freshness: lag from source edit to searchable, and from revocation to enforcement (targets 15 and 5 minutes). Serving: time to first token, tokens per answer, cache hit rate, cost per question. Feedback: thumbs-down rate and the questions behind it.
+
+## 12. Cost model
+
+- **One-time indexing:** contextual chunking at Anthropic's estimate of $1.02 per million document tokens → about $20,000 for 20B tokens, plus embedding cost, then only changed documents.
+- **Per question (assumptions):** 20 retrieved chunks × 400 tokens = 8,000 input tokens plus ~500 output tokens. At 500K questions a day: **4B input and 250M output tokens per day**. Multiply by the model's price per token (or by GPU-hours if self-hosted).
+- **Levers:** fewer, better chunks after reranking; prompt caching of the fixed instructions; a smaller model for simple questions; caching answers to repeated questions.
+- **Index storage:** 205 GB of full vectors, or 3.6 GB with product quantization plus re-scoring.
+
+## 13. Rollout
+
+Start with one department's sources and an evaluation set of real questions with expected citations; shadow-launch answers to measure recall and faithfulness; enable permissions enforcement and freshness monitoring before broad launch; add sources one connector at a time.
+
+## 14. Risks and open questions
+
+Permission models differ per source system and must be mirrored exactly; stale ACLs are a security incident, not a quality bug; tables and scanned PDFs parse poorly; users will ask questions the corpus cannot answer, so "not found" must be a good answer.
 
 ## References
 

@@ -95,6 +95,24 @@ Per-rank step time (stragglers), MFU, loss and gradient-norm monitoring with spi
 | Loss spike | gradient norm, loss | roll back to a checkpoint before the spike; skip the offending data |
 | Storage stall | checkpoint write time | asynchronous writes; local staging |
 
+## 6b. Fault tolerance in depth
+
+At 16,384 GPUs, Llama 3 training saw 419 unexpected interruptions in 54 days, roughly one every 3.1 hours. Lost time per failure = detection + decision + restart + reload + recomputation since the last checkpoint. Each term has its own fix:
+
+| Stage | Typical cause of delay | Fix |
+|---|---|---|
+| Detection | waiting for a collective-communication timeout (often minutes) | heartbeats and per-rank step counters; GPU and NIC health checks; automated localisation of the faulty node (MegaScale built diagnosis tooling for this) |
+| Decision | a human in the loop | policy: cordon the node, take a hot spare, restart automatically, page only on repeated failures |
+| Restart | scheduling and process start-up, NCCL initialisation | pre-warmed spares; persistent containers; topology-aware placement of the replacement |
+| Reload | reading a multi-terabyte checkpoint from shared storage | keep the latest checkpoint in host or peer memory; each rank loads only its shard |
+| Recompute | work since the last checkpoint (half an interval on average) | shorter intervals, made affordable by asynchronous saves |
+
+**Asynchronous checkpointing.** PyTorch Distributed Checkpoint `async_save` first copies model and optimiser state into CPU buffers and then writes in the background, so training resumes after the copy; it raises CPU memory by about checkpoint size per rank × ranks per host. Production systems go further: ByteCheckpoint reports an average 54.20× reduction in checkpoint stalls compared with open-source checkpointing and supports resharding when the parallelism layout changes.
+
+**Interval.** With save cost δ and mean time between failures M, the Young/Daly interval τ* ≈ √(2 δ M) (section 3). Cutting the *blocking* part of δ with asynchronous saves shortens τ* and the recomputation term together.
+
+**Goodput accounting.** Track the effective training time ratio (productive time ÷ wall-clock time) and attribute every lost minute to detection, restart, reload or recomputation; the largest bucket is the next thing to automate.
+
 ## 7. Risks and de-risking
 
 - **Data mixture wrong:** run small-scale ablations with several seeds and low-noise metrics; DataDecide found 150M-parameter rankings predicted about 80% of 1B comparisons.
@@ -106,6 +124,25 @@ Per-rank step time (stragglers), MFU, loss and gradient-norm monitoring with spi
 - **FSDP only:** simpler, but a 70B model with long sequences needs model parallelism for memory and scaling efficiency.
 - **Synchronous rare checkpoints:** lower overhead per save but much more lost work per failure.
 - **Shared scheduler queue:** cheaper utilisation, but restarts would wait behind other jobs.
+
+## 9. Data and checkpoint storage
+
+- **Checkpoint size:** 70B parameters × 16 bytes (BF16 weights and gradients are not saved; FP32 master weights and Adam moments plus BF16 weights) ≈ **1.1 TB** per full checkpoint.
+- **Write bandwidth:** saving 1.1 TB in the assumed 5 minutes needs ≈ **3.7 GB/s** aggregate to storage; asynchronous saves hide most of it.
+- **Retention:** keep the last few checkpoints for restarts plus periodic milestones for evaluation and ablations.
+- **Data:** the 15T-token mixture stored as pre-tokenised shards with a manifest (source, version, sampling weight); the data loader records its position in every checkpoint so restarts resume the exact data order.
+
+## 10. Observability
+
+Training: loss, gradient norm, learning rate, tokens/s, MFU per step; loss spikes and NaNs. Fleet: per-node GPU errors (ECC, XID), NIC errors, stragglers (slowest rank per step), temperature. Goodput: productive time ÷ wall-clock time, with lost time attributed to detection, restart, reload and recomputation (section 6b).
+
+## 11. Cost model
+
+GPU-hours = 4,096 GPUs × 52 days × 24 h ≈ **5.1M GPU-hours**. At an assumed $2 per GPU-hour that is about **$10M**; every percentage point of goodput is worth about $100K. Add storage, networking, evaluation runs and the ablations that precede the main run.
+
+## 12. Rollout
+
+Staged: short runs at small scale to validate data, code and loss curves; a full-scale shakedown of a few hours to measure MFU, failure handling and checkpoint save and restore; then the main run with scheduled evaluation checkpoints.
 
 ## References
 
